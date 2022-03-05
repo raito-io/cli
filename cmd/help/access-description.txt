@@ -1,0 +1,2 @@
+Update the access permissions of the target with information from a YAML file.
+This command is typically used during development or a continuous integration build of a data engineering project, to easily update the access controls for one or multiple target data sources.

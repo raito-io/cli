@@ -1,0 +1,8 @@
+The Raito CLI can be used for multiple cases:
+
+ - Using the 'access' command, you can integrate the CLI into your CI pipeline to implement an access-as-code (GitOps) strategy for your data projects.
+ - Using the 'run' command, it acts as an edge component between your data source and identity stores to continuously synchronize the necessary metadata with the Raito graph and to update the access controls of your data sources.
+
+To understand how to use each of these commands, simply execute: raito [command] --help
+
+For more information check out the full documentation on https://docs.raito.io

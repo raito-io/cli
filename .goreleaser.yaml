@@ -1,0 +1,47 @@
+# Make sure to check the documentation at https://goreleaser.com
+project_name: raito
+before:
+  hooks:
+    - go mod tidy
+    - ./scripts/completions.sh
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    ldflags:
+      - -X main.version={{.Version}} -X main.date={{ .CommitDate }}
+archives:
+    -
+      format: 'tar.gz'
+      name_template: '{{ .ProjectName }}-{{ .Version }}-{{ .Os }}_{{ .Arch }}'
+      files:
+        - completions/*
+brews:
+  - tap:
+      owner: raito-io
+      name: homebrew-tap
+    name: cli
+    folder: Formula
+    goarm: "7"
+    homepage:  https://raito.io
+    description: Extensible CLI to easily manage the authorization of your data sources.
+    license: Apache v2
+    test: |
+      system "#{bin}/raito -v"
+    install: |-
+      bin.install "raito"
+      bash_completion.install "completions/raito.bash" => "raito"
+      zsh_completion.install "completions/raito.zsh" => "_raito"
+      fish_completion.install "completions/raito.fish"
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-snapshot"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

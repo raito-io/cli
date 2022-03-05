@@ -1,0 +1,51 @@
+# If you like to leverage the full power of Raito by connecting it to Raito cloud,
+# specify domain, api-user and api-secret config parameters (or using the appropriate flags or environment variables)
+# Note: these are the global ones. If you want to use a different api user & secret per target, you can override them for each.
+dev: true
+
+# The list of targets (data sources and/or identity stores) to handle in the CLI
+targets:
+  - name: okta1
+    connector: okta
+    identity-store-id: zzz
+
+    # Specify api-user and api-secret if you want to override the user to use for
+    api-user: okta1
+    api-secret: apisecret
+
+    okta-domain: mydomain.okta.com
+    okta-token: mytoken
+
+    delete-temp-files: true
+    replace-tags: true
+    replace-groups: true
+    delete-untouched: true
+
+  - name: snowflake1
+    connector: snowflake
+    data-source-id: xxx
+    identity-store-id: yyy
+
+    # Specify api-user and api-secret if you want to override the user to use for
+    api-user: snowflake1
+    api-secret: apisecret
+
+    # Specifying the Snowflake specific config parameters
+    sf-account: myaccount.eu-central-1
+    sf-user: raito
+    sf-password: sfpassword
+    sf-role:
+    sf-database:  RAITO_DEMO
+    sf-excluded-databases:
+    sf-excluded-schemas:
+    sf-excluded-owners: OKTA_PROVISIONER
+    sf-create-future-grants: false
+
+    delete-temp-files: true
+    replace-tags: true
+    replace-groups: true
+    delete-untouched: true
+
+    skip-data-source-sync: false
+    skip-identity-store-sync: false
+    skip-data-access-sync: false

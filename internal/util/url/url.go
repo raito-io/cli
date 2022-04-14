@@ -10,10 +10,13 @@ import (
 var TestURL = ""
 
 func GetRaitoURL() string {
+	env := viper.GetString(constants.EnvironmentFlag)
 	if TestURL != "" {
 		return TestURL
-	} else if viper.GetBool(constants.DevFlag) {
+	} else if env == constants.EnvironmentDev {
 		return "http://localhost:8080/"
+	} else if env == constants.EnvironmentTest {
+		return "https://api.raito.dev/"
 	} else {
 		return "https://api.raito.io/"
 	}

@@ -9,8 +9,12 @@ import (
 
 func TestGetRaitoURL(t *testing.T) {
 	assert.Equal(t, "https://api.raito.io/", GetRaitoURL())
-	viper.Set(constants.DevFlag, true)
+	viper.Set(constants.EnvironmentFlag, "dev")
 	assert.Equal(t, "http://localhost:8080/", GetRaitoURL())
+	viper.Set(constants.EnvironmentFlag, "test")
+	assert.Equal(t, "https://api.raito.dev/", GetRaitoURL())
+	viper.Set(constants.EnvironmentFlag, "blah")
+	assert.Equal(t, "https://api.raito.io/", GetRaitoURL())
 }
 
 func TestCreateRaitoURL(t *testing.T) {

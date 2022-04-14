@@ -2,7 +2,6 @@ package connect
 
 import (
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target"
 	url2 "github.com/raito-io/cli/internal/util/url"
 	"github.com/stretchr/testify/assert"
@@ -13,12 +12,10 @@ import (
 )
 
 func TestDoGet(t *testing.T) {
-	var domainHeader, user, secret, url, method string
+	var token, url, method string
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		domainHeader = req.Header.Get(constants.OrgDomainHeader)
-		user = req.Header.Get(constants.ApiUserHeader)
-		secret = req.Header.Get(constants.ApiSecretHeader)
+		token = req.Header.Get("Authorization")
 		method = req.Method
 
 		url = req.RequestURI
@@ -39,23 +36,20 @@ func TestDoGet(t *testing.T) {
 	res, err := DoGetToRaito("the/path", &config)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
-	assert.Equal(t, "TestRaito", domainHeader)
-	assert.Equal(t, "Userke", user)
-	assert.Equal(t, "SecretStuff", secret)
+	assert.Equal(t, "token idToken", token)
+
 	assert.Equal(t, "/the/path", url)
 	assert.Equal(t, "GET", method)
 }
 
 func TestDoPost(t *testing.T) {
-	var body, contentType, domainHeader, user, secret, url, method string
+	var body, contentType, token, url, method string
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		buf, _ := ioutil.ReadAll(req.Body)
 		body = string(buf)
 		contentType = req.Header.Get("Content-Type")
-		domainHeader = req.Header.Get(constants.OrgDomainHeader)
-		user = req.Header.Get(constants.ApiUserHeader)
-		secret = req.Header.Get(constants.ApiSecretHeader)
+		token = req.Header.Get("Authorization")
 		method = req.Method
 
 		url = req.RequestURI
@@ -78,9 +72,7 @@ func TestDoPost(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.Equal(t, "The body", body)
 	assert.Equal(t, "application/json", contentType)
-	assert.Equal(t, "TestRaito", domainHeader)
-	assert.Equal(t, "Userke", user)
-	assert.Equal(t, "SecretStuff", secret)
+	assert.Equal(t, "token idToken", token)
 	assert.Equal(t, "/the/path", url)
 	assert.Equal(t, "POST", method)
 }

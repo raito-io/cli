@@ -3,7 +3,6 @@ package file
 import (
 	"fmt"
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/url"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,7 @@ func TestCreateUniqueFileName(t *testing.T) {
 }
 
 func TestFileUpload(t *testing.T) {
-	var domainHeader, user, secret, urlMethod, urlPath, uploadMethod, fileBody string
+	var token, urlMethod, urlPath, uploadMethod, fileBody string
 
 	uploadTestServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		uploadMethod = req.Method
@@ -43,13 +42,11 @@ func TestFileUpload(t *testing.T) {
 	defer uploadTestServer.Close()
 
 	getUrlTestServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		domainHeader = req.Header.Get(constants.OrgDomainHeader)
-		user = req.Header.Get(constants.ApiUserHeader)
-		secret = req.Header.Get(constants.ApiSecretHeader)
+		token = req.Header.Get("Authorization")
 		urlMethod = req.Method
 		urlPath = req.RequestURI
 		res.WriteHeader(200)
-		ret := "{ \"URL\": \""+uploadTestServer.URL+"\", \"Key\": \"filekey\" }"
+		ret := "{ \"URL\": \"" + uploadTestServer.URL + "\", \"Key\": \"filekey\" }"
 		res.Write([]byte(ret))
 	}))
 
@@ -58,9 +55,9 @@ func TestFileUpload(t *testing.T) {
 	url.TestURL = getUrlTestServer.URL
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
-		Logger: hclog.L(),
-		Domain: "mydomain",
-		ApiUser: "api-user",
+		Logger:    hclog.L(),
+		Domain:    "mydomain",
+		ApiUser:   "api-user",
 		ApiSecret: "api-secret",
 	})
 
@@ -70,9 +67,7 @@ func TestFileUpload(t *testing.T) {
 	assert.Equal(t, "GET", urlMethod)
 	assert.Equal(t, "PUT", uploadMethod)
 	assert.Equal(t, "Hellow!", fileBody)
-	assert.Equal(t, "mydomain", domainHeader)
-	assert.Equal(t, "api-user", user)
-	assert.Equal(t, "api-secret", secret)
+	assert.Equal(t, "token idToken", token)
 }
 
 func TestFileUploadNotFound(t *testing.T) {
@@ -85,7 +80,7 @@ func TestFileUploadNotFound(t *testing.T) {
 
 	getUrlTestServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(200)
-		res.Write([]byte("{ \"URL\": \""+uploadTestServer.URL+"\", \"Key\": \"filekey\" }"))
+		res.Write([]byte("{ \"URL\": \"" + uploadTestServer.URL + "\", \"Key\": \"filekey\" }"))
 	}))
 
 	defer getUrlTestServer.Close()
@@ -110,7 +105,7 @@ func TestFileUploadErrorUploading(t *testing.T) {
 
 	getUrlTestServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(200)
-		res.Write([]byte("{ \"URL\": \""+uploadTestServer.URL+"\", \"Key\": \"filekey\" }"))
+		res.Write([]byte("{ \"URL\": \"" + uploadTestServer.URL + "\", \"Key\": \"filekey\" }"))
 	}))
 
 	defer getUrlTestServer.Close()

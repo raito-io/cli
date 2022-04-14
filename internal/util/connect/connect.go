@@ -2,18 +2,12 @@ package connect
 
 import (
 	"fmt"
-	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/auth"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/url"
 	"net/http"
 	"strings"
 )
-
-func AddRaitoAuthorizationHeaders(req *http.Request, config *target.BaseTargetConfig) {
-	req.Header.Set(constants.OrgDomainHeader, config.Domain)
-	req.Header.Set(constants.ApiUserHeader, config.ApiUser)
-	req.Header.Set(constants.ApiSecretHeader, config.ApiSecret)
-}
 
 func doPost(host, path, body, contentType string, config *target.BaseTargetConfig) (*http.Response, error) {
 	url := url.CreateRaitoURL(host, path)
@@ -23,7 +17,10 @@ func doPost(host, path, body, contentType string, config *target.BaseTargetConfi
 		return nil, fmt.Errorf("error while creating HTTP GET request to %q: %s", url, err.Error())
 	}
 	req.Header.Set("Content-Type", contentType)
-	AddRaitoAuthorizationHeaders(req, config);
+	err = auth.AddToken(req, config)
+	if err != nil {
+		return nil, fmt.Errorf("error while adding authorization token: %s", err.Error())
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -43,7 +40,10 @@ func doGet(host, path string, config *target.BaseTargetConfig) (*http.Response, 
 	if err != nil {
 		return nil, fmt.Errorf("error while creating HTTP GET request to %q: %s", url, err.Error())
 	}
-	AddRaitoAuthorizationHeaders(req, config);
+	err = auth.AddToken(req, config)
+	if err != nil {
+		return nil, fmt.Errorf("error while adding authorization token: %s", err.Error())
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

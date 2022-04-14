@@ -2,7 +2,6 @@ package graphql
 
 import (
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target"
 	url2 "github.com/raito-io/cli/internal/util/url"
 	"github.com/stretchr/testify/assert"
@@ -13,15 +12,13 @@ import (
 )
 
 func TestGraphQL(t *testing.T) {
-	var body, contentType, domainHeader, user, secret, url, method string
+	var body, contentType, token, url, method string
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		buf, _ := ioutil.ReadAll(req.Body)
 		body = string(buf)
 		contentType = req.Header.Get("Content-Type")
-		domainHeader = req.Header.Get(constants.OrgDomainHeader)
-		user = req.Header.Get(constants.ApiUserHeader)
-		secret = req.Header.Get(constants.ApiSecretHeader)
+		token = req.Header.Get("Authorization")
 		method = req.Method
 
 		url = req.RequestURI
@@ -45,9 +42,7 @@ func TestGraphQL(t *testing.T) {
 	assert.NotNil(t, buf)
 	assert.Equal(t, "{ \"operationName\": \"nastyOperation\" }", body)
 	assert.Equal(t, "application/json", contentType)
-	assert.Equal(t, "TestRaito", domainHeader)
-	assert.Equal(t, "Userke", user)
-	assert.Equal(t, "SecretStuff", secret)
+	assert.Equal(t, "token idToken", token)
 	assert.Equal(t, "/query", url)
 	assert.Equal(t, "POST", method)
 	assert.Equal(t, "body", string(buf))
@@ -63,7 +58,7 @@ func TestGraphQLError(t *testing.T) {
 	url2.TestURL = testServer.URL
 
 	config := target.BaseTargetConfig{
-		Logger:    hclog.Default(),
+		Logger: hclog.Default(),
 	}
 
 	buf, err := ExecuteGraphQL("{ \"operationName\": \"nastyOperation\" }", &config)
@@ -76,7 +71,7 @@ func TestGraphQLIllegalURL(t *testing.T) {
 	url2.TestURL = "//\nbadbadbad"
 
 	config := target.BaseTargetConfig{
-		Logger:    hclog.Default(),
+		Logger: hclog.Default(),
 	}
 
 	buf, err := ExecuteGraphQL("{ \"operationName\": \"nastyOperation\" }", &config)

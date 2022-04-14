@@ -21,13 +21,13 @@ import (
 var rootDescription string
 
 var (
-	logger hclog.InterceptLogger
+	logger  hclog.InterceptLogger
 	cfgFile string
 )
 
 type rootCmd struct {
-	cmd     *cobra.Command
-	exit    func(int)
+	cmd  *cobra.Command
+	exit func(int)
 }
 
 func (cmd *rootCmd) Execute(args []string) {
@@ -48,7 +48,7 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	rootCmd := &cobra.Command{
 		Use:   "raito",
 		Short: "The Raito CLI to take care of all your data access needs.",
-		Long: rootDescription,
+		Long:  rootDescription,
 		// TODO complete the long description
 		Version: version,
 	}
@@ -62,13 +62,13 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	rootCmd.PersistentFlags().StringP(constants.ApiSecretFlag, "s", "", "The API key secret to authenticate against Raito.")
 	rootCmd.PersistentFlags().String(constants.LogFileFlag, "", "The log file to store structured logs in. If not specified, no logging to file is done.")
 	rootCmd.PersistentFlags().Bool(constants.LogOutputFlag, false, "When set, logging is sent to the command line (stderr) instead of more human readable output.")
-	rootCmd.PersistentFlags().Bool(constants.DevFlag, false, "")
+	rootCmd.PersistentFlags().String(constants.EnvironmentFlag, constants.EnvironmentProd, "")
 	rootCmd.PersistentFlags().Bool(constants.DebugFlag, false, fmt.Sprintf("If set, extra debug logging is generated. Only useful in combination with %s or %s", constants.LogFileFlag, constants.LogOutputFlag))
 	rootCmd.PersistentFlags().StringP(constants.OnlyTargetsFlag, "t", "", "Can be used to only execute a subset of the defined targets in the configuration file. To specify multiple, use a comma-separated list.")
 	rootCmd.PersistentFlags().String(constants.ConnectorNameFlag, "", "The name of the connector to use. If not set, the CLI will use a configuration file to define the targets.")
 	rootCmd.PersistentFlags().String(constants.ConnectorVersionFlag, "", "The version of the connector to use. This is only relevant if the 'connector' flag is set as well. If not set (but the 'connector' flag is), then 'latest' is used.")
 	rootCmd.PersistentFlags().StringP(constants.NameFlag, "n", "", "The name for the target. This is only relevant if the 'connector' flag is set as well. If not set, the name of the connector will be used.")
-	err := rootCmd.PersistentFlags().MarkHidden(constants.DevFlag)
+	err := rootCmd.PersistentFlags().MarkHidden(constants.EnvironmentFlag)
 	if err != nil {
 		// No logger yet
 		fmt.Printf("error while hiding dev flag.\n")
@@ -84,7 +84,7 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	BindFlag(constants.DomainFlag, rootCmd)
 	BindFlag(constants.ApiUserFlag, rootCmd)
 	BindFlag(constants.ApiSecretFlag, rootCmd)
-	BindFlag(constants.DevFlag, rootCmd)
+	BindFlag(constants.EnvironmentFlag, rootCmd)
 	BindFlag(constants.DebugFlag, rootCmd)
 	BindFlag(constants.LogFileFlag, rootCmd)
 	BindFlag(constants.LogOutputFlag, rootCmd)
@@ -147,7 +147,7 @@ func setupLogging() {
 	if viper.GetBool(constants.LogOutputFlag) {
 		output = os.Stderr
 		if viper.GetString(constants.LogFileFlag) != "" {
-			f, err := os.OpenFile(viper.GetString(constants.LogFileFlag), os.O_APPEND | os.O_CREATE | os.O_RDWR, 0666)
+			f, err := os.OpenFile(viper.GetString(constants.LogFileFlag), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 			if err != nil {
 				fmt.Printf("error opening file: %v", err)
 			}
@@ -155,7 +155,7 @@ func setupLogging() {
 		}
 	} else {
 		if viper.GetString(constants.LogFileFlag) != "" {
-			f, err := os.OpenFile(viper.GetString(constants.LogFileFlag), os.O_APPEND | os.O_CREATE | os.O_RDWR, 0666)
+			f, err := os.OpenFile(viper.GetString(constants.LogFileFlag), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 			if err != nil {
 				fmt.Printf("error opening file: %v", err)
 			}
@@ -164,7 +164,7 @@ func setupLogging() {
 	}
 
 	logger = hclog.NewInterceptLogger(&hclog.LoggerOptions{
-		Name:  "raito-cli",
+		Name:   "raito-cli",
 		Output: output,
 	})
 	if !viper.GetBool(constants.LogOutputFlag) {
@@ -191,10 +191,10 @@ func (w *nilWriter) Write(p []byte) (n int, err error) {
 }
 
 type sinkAdapter struct {
-	iteration int
-	progress map[string]*pterm.SpinnerPrinter
+	iteration    int
+	progress     map[string]*pterm.SpinnerPrinter
 	wasIteration bool
-	mu sync.Mutex
+	mu           sync.Mutex
 }
 
 func newSinkAdapter() *sinkAdapter {
@@ -225,7 +225,7 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 				s.progress[spinnerKey] = spinner
 
 				// TODO this is to avoid a threading issue with pterm? When not done, fast targets (e.g. when skipped) give weird results in the CLI output (spinner appearing again)
-				time.Sleep(500*time.Millisecond)
+				time.Sleep(500 * time.Millisecond)
 			}
 			s.handleProgress(spinner, it, tar, level, msg, args)
 		} else {
@@ -261,7 +261,7 @@ func (s *sinkAdapter) handleProgress(spinner *pterm.SpinnerPrinter, iteration in
 	} else if level == hclog.Error {
 		spinner.Fail(text)
 	} else if level == hclog.Warn {
-		spinner.UpdateText("Warning: " +text)
+		spinner.UpdateText("Warning: " + text)
 	}
 }
 

@@ -182,7 +182,12 @@ func fetchClientAppId(targetConfig *target.BaseTargetConfig) error {
 			return fmt.Errorf("invalid domain name %q. A domain should start with a letter and can only contain alphanumeric characters and the dash character. It also should not end with a dash character", domain)
 		}
 
-		url := url.CreateRaitoURL(url.GetRaitoURL(), "admin/client-id/"+domain)
+		if isInTest() {
+			clientAppId = "testclient"
+			return nil
+		}
+
+		url := url.CreateRaitoURL(url.GetRaitoURL(), "admin/org/"+domain)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return fmt.Errorf("error while creating HTTP GET request to %q: %s", url, err.Error())

@@ -5,6 +5,7 @@ import (
 	"github.com/raito-io/cli/internal/auth"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/url"
+	"github.com/raito-io/cli/internal/version"
 	"net/http"
 	"strings"
 )
@@ -17,6 +18,7 @@ func doPost(host, path, body, contentType string, config *target.BaseTargetConfi
 		return nil, fmt.Errorf("error while creating HTTP GET request to %q: %s", url, err.Error())
 	}
 	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("User-Agent", "Raito CLI "+version.GetVersion())
 	err = auth.AddToken(req, config)
 	if err != nil {
 		return nil, fmt.Errorf("error while adding authorization token: %s", err.Error())
@@ -40,6 +42,7 @@ func doGet(host, path string, config *target.BaseTargetConfig) (*http.Response, 
 	if err != nil {
 		return nil, fmt.Errorf("error while creating HTTP GET request to %q: %s", url, err.Error())
 	}
+	req.Header.Set("User-Agent", "Raito CLI "+version.GetVersion())
 	err = auth.AddToken(req, config)
 	if err != nil {
 		return nil, fmt.Errorf("error while adding authorization token: %s", err.Error())

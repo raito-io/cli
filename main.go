@@ -2,18 +2,16 @@ package main
 
 import (
 	"github.com/raito-io/cli/cmd"
+	v "github.com/raito-io/cli/internal/version"
 	"os"
 )
 
 var (
 	version = "dev"
-	date = ""
+	date    = ""
 )
 
 func main() {
-	cmd.Execute(buildVersion(version, date), os.Args[1:], os.Exit)
-}
-
-func buildVersion(version, date string) string {
-	return version + " ("+date+")"
+	v.SetVersion(version, date)
+	cmd.Execute(v.GetVersion(), os.Args[1:], os.Exit)
 }

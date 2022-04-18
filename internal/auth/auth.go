@@ -7,8 +7,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	idp "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/hashicorp/go-hclog"
+	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/url"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -30,6 +32,12 @@ var (
 )
 
 func AddToken(r *http.Request, targetConfig *target.BaseTargetConfig) error {
+	env := viper.GetString(constants.EnvironmentFlag)
+	if env == constants.EnvironmentDev {
+		targetConfig.Logger.Info("Skipping authentication for development environment.")
+		return nil
+	}
+
 	tokens, found := tokenMap[targetConfig.ApiUser]
 	if !found {
 		tokens = &userTokens{userName: targetConfig.ApiUser}

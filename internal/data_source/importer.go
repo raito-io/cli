@@ -4,25 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/go-hclog"
+	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/spf13/viper"
 	"strings"
 	"time"
 )
 
 type DataSourceImportConfig struct {
 	target.BaseTargetConfig
-	TargetFile string
+	TargetFile      string
 	DeleteUntouched bool
-	ReplaceTags bool
+	ReplaceTags     bool
 }
 
 type DataSourceImportResult struct {
-	DataObjectsAdded    int     `json:"dataObjectsAdded"`
-	DataObjectsUpdated  int     `json:"dataObjectsUpdated"`
-	DataObjectsRemoved  int             `json:"dataObjectsRemoved"`
-	Errors              []graphql.Error `json:"_"`
+	DataObjectsAdded   int             `json:"dataObjectsAdded"`
+	DataObjectsUpdated int             `json:"dataObjectsUpdated"`
+	DataObjectsRemoved int             `json:"dataObjectsRemoved"`
+	Errors             []graphql.Error `json:"_"`
 }
 
 type DataSourceImporter interface {
@@ -31,22 +33,28 @@ type DataSourceImporter interface {
 
 type dataSourceImporter struct {
 	config *DataSourceImportConfig
-	log hclog.Logger
+	log    hclog.Logger
 }
 
 func NewDataSourceImporter(config *DataSourceImportConfig) DataSourceImporter {
 	logger := config.Logger.With("datasource", config.DataSourceId, "file", config.TargetFile)
-	dsI := dataSourceImporter{config, logger	}
+	dsI := dataSourceImporter{config, logger}
 	return &dsI
 }
 
 func (d *dataSourceImporter) TriggerImport() (*DataSourceImportResult, error) {
-	key, err := d.upload()
-	if err != nil {
-		return nil, err
-	}
+	env := viper.GetString(constants.EnvironmentFlag)
+	if env == constants.EnvironmentDev {
+		// In the development environment, we skip the upload and use the local file for the import
+		return d.doImport(d.config.TargetFile)
+	} else {
+		key, err := d.upload()
+		if err != nil {
+			return nil, err
+		}
 
-	return d.doImport(key)
+		return d.doImport(key)
+	}
 }
 
 func (d *dataSourceImporter) upload() (string, error) {
@@ -96,7 +104,7 @@ func (d *dataSourceImporter) doImport(fileKey string) (*DataSourceImportResult, 
 
 func (d *dataSourceImporter) parseImportResult(res []byte) (*DataSourceImportResult, error) {
 	resp := Response{}
-	gr := graphql.GraphqlResponse{ Data: &resp }
+	gr := graphql.GraphqlResponse{Data: &resp}
 	err := json.Unmarshal(res, &gr)
 
 	if err != nil {

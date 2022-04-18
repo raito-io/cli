@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/go-hclog"
+	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/spf13/viper"
 	"strings"
 	"time"
 )
@@ -21,11 +23,11 @@ type IdentityStoreImportConfig struct {
 }
 
 type IdentityStoreImportResult struct {
-	UsersAdded    int   `json:"usersAdded"`
-	UsersUpdated  int   `json:"usersUpdated"`
-	UsersRemoved  int   `json:"usersRemoved"`
-	GroupsAdded   int   `json:"groupsAdded"`
-	GroupsUpdated int   `json:"groupsUpdated"`
+	UsersAdded    int             `json:"usersAdded"`
+	UsersUpdated  int             `json:"usersUpdated"`
+	UsersRemoved  int             `json:"usersRemoved"`
+	GroupsAdded   int             `json:"groupsAdded"`
+	GroupsUpdated int             `json:"groupsUpdated"`
 	GroupsRemoved int             `json:"groupsRemoved"`
 	Errors        []graphql.Error `json:"_"`
 }
@@ -36,22 +38,28 @@ type IdentityStoreImporter interface {
 
 type identityStoreImporter struct {
 	config *IdentityStoreImportConfig
-	log hclog.Logger
+	log    hclog.Logger
 }
 
 func NewIdentityStoreImporter(config *IdentityStoreImportConfig) IdentityStoreImporter {
 	logger := config.Logger.With("identitystore", config.IdentityStoreId, "userfile", config.UserFile, "groupfile", config.GroupFile)
-	isI := identityStoreImporter{config, logger	}
+	isI := identityStoreImporter{config, logger}
 	return &isI
 }
 
 func (i *identityStoreImporter) TriggerImport() (*IdentityStoreImportResult, error) {
-	userKey, groupKey, err := i.upload()
-	if err != nil {
-		return nil, err
-	}
+	env := viper.GetString(constants.EnvironmentFlag)
+	if env == constants.EnvironmentDev {
+		// In the development environment, we skip the upload and use the local file for the import
+		return i.doImport(i.config.UserFile, i.config.GroupFile)
+	} else {
+		userKey, groupKey, err := i.upload()
+		if err != nil {
+			return nil, err
+		}
 
-	return i.doImport(userKey, groupKey)
+		return i.doImport(userKey, groupKey)
+	}
 }
 
 func (i *identityStoreImporter) upload() (string, string, error) {
@@ -110,7 +118,7 @@ func (i *identityStoreImporter) doImport(userKey string, groupKey string) (*Iden
 
 func (i *identityStoreImporter) parseImportResult(res []byte) (*IdentityStoreImportResult, error) {
 	resp := Response{}
-	gr := graphql.GraphqlResponse{ Data: &resp }
+	gr := graphql.GraphqlResponse{Data: &resp}
 	err := json.Unmarshal(res, &gr)
 
 	if err != nil {

@@ -54,7 +54,7 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	}
 	cobra.OnInitialize((*root).initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, constants.ConfigFileFlag, "", "The config file (default is ./raito.yml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, constants.ConfigFileFlag, "", "The config file (default is ./raito.yml).")
 	rootCmd.PersistentFlags().String(constants.IdentityStoreIdFlag, "", "The ID of the identity store in Raito to import the user and group information to. This is only applicable if specifying the (single) target information in the commandline.")
 	rootCmd.PersistentFlags().String(constants.DataSourceIdFlag, "", "The ID of the data source in Raito to import the meta data information to or get the access permissions from. This is only applicable if specifying the (single) target information in the commandline.")
 	rootCmd.PersistentFlags().StringP(constants.DomainFlag, "d", "", "The subdomain to your Raito instance (https://<subdomain>.raito.io).")

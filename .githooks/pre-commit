@@ -1,0 +1,24 @@
+#!/bin/bash
+
+echo "Running precommit hook..."
+
+## this will retrieve all of the .go files that have been changed since the last commit
+STAGED_GO_FILES=$(git diff --cached --name-only -- '*.go')
+
+if [[ $STAGED_GO_FILES == "" ]]; then
+    echo "No Go files to update"
+else
+    go mod tidy
+    golangci-lint run --tests=false
+    go test ./...
+
+    for file in $STAGED_GO_FILES; do
+        ## format our file
+        go fmt $file
+        ## add any potential changes from our formatting to the
+        ## commit
+        git add $file
+    done
+
+fi
+

@@ -8,12 +8,7 @@ access.yml
 raito-access.yml
 raito.yml
 
-# User specific stuff for IntelliJ Idea
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/usage.statistics.xml
-.idea/dictionaries
-.idea/shelf
+.idea
 
 # Binaries for programs and plugins
 *.exe

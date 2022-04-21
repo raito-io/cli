@@ -49,6 +49,7 @@ Take a look at our [Contribution Guide](https://github.com/raito-io/cli/blob/HEA
 -->
 ### Prerequisites
  - Install the correct version of Go (see go.mod for the version being used now)
+ - After you check out this git repository, make sure to execute the following command (in the root of the repository) to run the pre-commit hooks: `git config core.hooksPath .githooks`
  - We use `golangci-lint` to check the code for quality. Please make sure to [install it](https://golangci-lint.run/usage/install/#local-installation)
 
 ### Before you push

@@ -15,10 +15,10 @@ import (
 
 type BaseTargetConfig struct {
 	config.ConfigMap
-	ConnectorName    string
-	ConnectorVersion string
-	Name             string
-	DataSourceId string
+	ConnectorName         string
+	ConnectorVersion      string
+	Name                  string
+	DataSourceId          string
 	IdentityStoreId       string
 	ApiUser               string
 	ApiSecret             string
@@ -136,13 +136,25 @@ func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[interface{}]in
 
 	// If not set in the target, we take the globally set values.
 	if tConfig.ApiSecret == "" {
-		tConfig.ApiSecret = viper.GetString(constants.ApiSecretFlag)
+		cv, err := iconfig.HandleField(viper.GetString(constants.ApiSecretFlag), reflect.String)
+		if err != nil {
+			return nil, err
+		}
+		tConfig.ApiSecret = cv.(string)
 	}
 	if tConfig.ApiUser == "" {
-		tConfig.ApiUser = viper.GetString(constants.ApiUserFlag)
+		cv, err := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
+		if err != nil {
+			return nil, err
+		}
+		tConfig.ApiUser = cv.(string)
 	}
 	if tConfig.Domain == "" {
-		tConfig.Domain = viper.GetString(constants.DomainFlag)
+		cv, err := iconfig.HandleField(viper.GetString(constants.DomainFlag), reflect.String)
+		if err != nil {
+			return nil, err
+		}
+		tConfig.Domain = cv.(string)
 	}
 
 	return &tConfig, nil
@@ -192,10 +204,10 @@ func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*B
 		SkipDataSourceSync:    viper.GetBool(constants.SkipDataSourceSyncFlag),
 		SkipDataAccessSync:    viper.GetBool(constants.SkipDataAccessSyncFlag),
 		Logger:                baseLogger.With("target", name),
-		DeleteUntouched: viper.GetBool(constants.DeleteUntouchedFlag),
-		DeleteTempFiles: viper.GetBool(constants.DeleteTempFilesFlag),
-		ReplaceTags: viper.GetBool(constants.ReplaceTagsFlag),
-		ReplaceGroups: viper.GetBool(constants.ReplaceGroupsFlag),
+		DeleteUntouched:       viper.GetBool(constants.DeleteUntouchedFlag),
+		DeleteTempFiles:       viper.GetBool(constants.DeleteTempFilesFlag),
+		ReplaceTags:           viper.GetBool(constants.ReplaceTagsFlag),
+		ReplaceGroups:         viper.GetBool(constants.ReplaceGroupsFlag),
 	}
 	targetConfig.Parameters = buildParameterMapFromArguments(otherArgs)
 	return &targetConfig, nil

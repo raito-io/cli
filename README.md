@@ -17,14 +17,6 @@
 
 <hr/>
 
-:rotating_light: :rotating_light: :rotating_light:  
-
-**Note: This repository is still in a very early stage of development.  
-It contains code that will allow communication with Raito Cloud once it is released. 
-At this point, no contributions are accepted to the project yet.**  
-
-:rotating_light: :rotating_light: :rotating_light:
-
 # Introduction
 This is the core Raito CLI implementation.
 

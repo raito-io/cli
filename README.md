@@ -25,7 +25,9 @@ At this point, no contributions are accepted to the project yet.**
 # Introduction
 This is the core Raito CLI implementation.
 
-# Install
+# Getting Started
+
+## Install
 Using HomeBrew:
 ```bash
 brew install raito-io/tap/cli
@@ -37,17 +39,9 @@ To get an overview of the possibilities, simply use the `--help` flag
 raito --help
 ```
 
-<!--
-# Join the Raito Community
-We would love to hear your thoughts and questions.  
-So please join our [Slack Community](https://join.slack.com/t/raitocommunity/shared_invite/zt-13ti14ezm-RsGFyJq4FU9IEfjqg_POag) if you would like to join the conversation and contribute.
--->
+## Next
+For more information, check out our [documentation](https://docs.raito.io)
+
 # Contributing
-<!--
-Want to contribute to the Raito open source code base? Great!  
-Take a look at our [Contribution Guide](https://github.com/raito-io/cli/blob/HEAD/CONTRIBUTING.md) to get you started.
--->
-### Prerequisites
- - Install the correct version of Go (see go.mod for the version being used now)
- - After you check out this git repository, make sure to execute the following command (in the root of the repository) to run the pre-commit hooks: `git config core.hooksPath .githooks`
- - We use `golangci-lint` to check the code for quality. Please make sure to [install it](https://golangci-lint.run/usage/install/#local-installation)
+Want to contribute to the project? Great! 
+Check out our documentation on [how to contribute](CONTRIBUTING.md).

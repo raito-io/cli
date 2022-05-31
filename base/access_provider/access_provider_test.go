@@ -40,17 +40,21 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	}
 
 	aps = append(aps, AccessProvider{
-		ExternalId:    "eid1",
-		Name:          "AP1",
-		Users:         []string{"uid1"},
-		AccessObjects: []Access{{Permissions: []string{"A", "B"}, DataObject: &do}},
+		ExternalId:        "eid1",
+		NonInternalizable: false,
+		Name:              "AP1",
+		Users:             []string{"uid1"},
+		Groups:            []string{"gid1"},
+		AccessObjects:     []Access{{Permissions: []string{"A", "B"}, DataObject: &do}},
 	})
 
 	aps = append(aps, AccessProvider{
-		ExternalId:    "eid2",
-		Name:          "AP2",
-		Users:         []string{"uid1", "uid2"},
-		AccessObjects: []Access{{Permissions: []string{"C"}, DataObject: &do}},
+		ExternalId:        "eid2",
+		NonInternalizable: true,
+		Name:              "AP2",
+		Users:             []string{"uid1", "uid2"},
+		Groups:            []string{"gid1", "gid2"},
+		AccessObjects:     []Access{{Permissions: []string{"C"}, DataObject: &do}},
 	})
 
 	err = apfc.AddAccessProvider(aps)
@@ -70,9 +74,12 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, 2, len(apsr))
 
 	assert.Equal(t, "eid1", apsr[0].ExternalId)
+	assert.False(t, apsr[0].NonInternalizable)
 	assert.Equal(t, "AP1", apsr[0].Name)
 	assert.Equal(t, 1, len(apsr[0].Users))
 	assert.Equal(t, "uid1", apsr[0].Users[0])
+	assert.Equal(t, 1, len(apsr[0].Groups))
+	assert.Equal(t, "gid1", apsr[0].Groups[0])
 	assert.Equal(t, 1, len(apsr[0].AccessObjects))
 	assert.Equal(t, 2, len(apsr[0].AccessObjects[0].Permissions))
 	assert.Equal(t, "A", apsr[0].AccessObjects[0].Permissions[0])
@@ -87,10 +94,14 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "v1", apsr[0].AccessObjects[0].DataObject.Tags["k1"])
 
 	assert.Equal(t, "eid2", apsr[1].ExternalId)
+	assert.True(t, apsr[1].NonInternalizable)
 	assert.Equal(t, "AP2", apsr[1].Name)
 	assert.Equal(t, 2, len(apsr[1].Users))
 	assert.Equal(t, "uid1", apsr[1].Users[0])
 	assert.Equal(t, "uid2", apsr[1].Users[1])
+	assert.Equal(t, 2, len(apsr[1].Groups))
+	assert.Equal(t, "gid1", apsr[1].Groups[0])
+	assert.Equal(t, "gid2", apsr[1].Groups[1])
 	assert.Equal(t, 1, len(apsr[1].AccessObjects))
 	assert.Equal(t, 1, len(apsr[1].AccessObjects[0].Permissions))
 	assert.Equal(t, "C", apsr[1].AccessObjects[0].Permissions[0])

@@ -15,16 +15,18 @@ import (
 	"github.com/raito-io/cli/common/api/data_access"
 )
 
-// DataObject represents a data object in the format that is suitable to be imported into a Raito data source.
+// AccessProvider describes data access in the format that is suitable to be imported into Raito.x
 type AccessProvider struct {
-	ExternalId    string   `json:"externalId"`
-	Name          string   `json:"name"`
-	Users         []string `json:"users"`
-	AccessObjects []Access `json:"accessObjects"`
+	ExternalId        string   `json:"externalId"`
+	NonInternalizable bool     `json:"nonInternalizable"`
+	Name              string   `json:"name"`
+	Users             []string `json:"users"`
+	Groups            []string `json:"groups"`
+	AccessObjects     []Access `json:"accessObjects"`
 }
 
 type Access struct {
-	DataObject  *data_source.DataObject `json:"dataobject"`
+	DataObject  *data_source.DataObject `json:"dataObject"`
 	Permissions []string                `json:"permissions"`
 }
 

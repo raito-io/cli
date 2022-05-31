@@ -68,8 +68,8 @@ func (d *accessProviderImporter) upload() (string, error) {
 func (d *accessProviderImporter) doImport(fileKey string) (*AccessProviderImportResult, error) {
 	start := time.Now()
 
-	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportAccessProvider", "variables":{}, "query": "mutation ImportAccessProvider {
-        importAccessProvider(input: {
+	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportAccessProviders", "variables":{}, "query": "mutation ImportAccessProviders {
+        importAccessProviders(input: {
           dataSource: \"%s\",
           deleteUntouched: %t,
           accessObjects: \"%s\"
@@ -113,11 +113,11 @@ func (d *accessProviderImporter) parseImportResult(res []byte) (*AccessProviderI
 	}
 
 	// Flatten the result
-	resp.ImportDataSource.Errors = gr.Errors
+	resp.ImportAccessProviders.Errors = gr.Errors
 
-	return &(resp.ImportDataSource), nil
+	return &(resp.ImportAccessProviders), nil
 }
 
 type Response struct {
-	ImportDataSource AccessProviderImportResult `json:"importDataAccess"`
+	ImportAccessProviders AccessProviderImportResult `json:"importAccessProviders"`
 }

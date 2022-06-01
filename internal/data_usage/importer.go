@@ -17,8 +17,8 @@ type DataUsageImportConfig struct {
 }
 
 type DataUsageImportResult struct {
-	TransactionAdded int             `json:"transactionsAdded"`
-	Errors           []graphql.Error `json:"_"`
+	StatementsAdded int             `json:"statementsAdded"`
+	Errors          []graphql.Error `json:"_"`
 }
 
 type DataUsageImporter interface {

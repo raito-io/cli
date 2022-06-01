@@ -6,11 +6,13 @@ import (
 	"github.com/hashicorp/go-hclog"
 	dapc "github.com/raito-io/cli/common/api/data_access"
 	dspc "github.com/raito-io/cli/common/api/data_source"
+	dupc "github.com/raito-io/cli/common/api/data_usage"
 	ispc "github.com/raito-io/cli/common/api/identity_store"
 	baseconfig "github.com/raito-io/cli/common/util/config"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/data_access"
 	"github.com/raito-io/cli/internal/data_source"
+	"github.com/raito-io/cli/internal/data_usage"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/identity_store"
 	"github.com/raito-io/cli/internal/plugin"
@@ -28,20 +30,22 @@ var accessRightsLastUpdated int64 = 0
 func initRunCommand(rootCmd *cobra.Command) {
 	var cmd = &cobra.Command{
 		Hidden: true,
-		Use:   "run",
-		Short: "Run all the configured synchronizations",
-		Long: `Run all the configured synchronizations`,
-		Run: executeRun,
+		Use:    "run",
+		Short:  "Run all the configured synchronizations",
+		Long:   `Run all the configured synchronizations`,
+		Run:    executeRun,
 	}
 	cmd.PersistentFlags().IntP(constants.FrequencyFlag, "f", 0, "The frequency used to do the sync (in minutes). When not set, the default value '0' is used, which means the sync will run once and quit after.")
 	cmd.PersistentFlags().Bool(constants.SkipDataSourceSyncFlag, false, "If set, the data source meta data synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipIdentityStoreSyncFlag, false, "If set, the identity store synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipDataAccessSyncFlag, false, "If set, the data access information from Raito will not be synced to the data sources in the target list.")
+	cmd.PersistentFlags().Bool(constants.SkipDataUsageSyncFlag, false, "If set, the data usage information synchronization step to Raito will be skipped for each of the targets.")
 
 	BindFlag(constants.FrequencyFlag, cmd)
 	BindFlag(constants.SkipDataSourceSyncFlag, cmd)
 	BindFlag(constants.SkipIdentityStoreSyncFlag, cmd)
 	BindFlag(constants.SkipDataAccessSyncFlag, cmd)
+	BindFlag(constants.SkipDataUsageSyncFlag, cmd)
 
 	cmd.FParseErrWhitelist.UnknownFlags = true
 
@@ -72,10 +76,10 @@ func executeRun(cmd *cobra.Command, args []string) {
 			it := 2
 			for {
 				select {
-				case <- ticker.C:
+				case <-ticker.C:
 					executeSingleRun(logger.With("iteration", it), otherArgs) //nolint
 					it++
-				case <- quit:
+				case <-quit:
 					ticker.Stop()
 					finished <- struct{}{}
 					return
@@ -95,7 +99,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 			}
 		}
 
-		<- finished
+		<-finished
 		logger.Info("All routines finished. Bye!")
 	}
 }
@@ -172,6 +176,21 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 		}
 	}
 
+	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataUsageSync {
+		targetConfig.Logger.Info("Synchronizing data usage...")
+		err := syncDataUsage(&client, *targetConfig)
+		if err != nil {
+			target.HandleTargetError(err, targetConfig, "sychronizing data usage information to the data source")
+			return err
+		}
+	} else {
+		if targetConfig.DataSourceId == "" {
+			targetConfig.Logger.Info("No data-source-id argument found. Skipping data usage syncing")
+		} else {
+			targetConfig.Logger.Info("Skipping data usage syncing")
+		}
+	}
+
 	targetConfig.Logger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
 
 	return nil
@@ -190,8 +209,8 @@ func syncDataSource(client *plugin.PluginClient, targetConfig target.BaseTargetC
 	}
 
 	syncerConfig := dspc.DataSourceSyncConfig{
-		ConfigMap: baseconfig.ConfigMap{ Parameters: targetConfig.Parameters },
-		TargetFile:       targetFile,
+		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		TargetFile: targetFile,
 	}
 	dss, err := (*client).GetDataSourceSyncer()
 	if err != nil {
@@ -238,9 +257,9 @@ func syncIdentityStore(client *plugin.PluginClient, targetConfig target.BaseTarg
 	}
 
 	syncerConfig := ispc.IdentityStoreSyncConfig{
-		ConfigMap: baseconfig.ConfigMap{ Parameters: targetConfig.Parameters },
-		UserFile:         userFile,
-		GroupFile:        groupFile,
+		ConfigMap: baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		UserFile:  userFile,
+		GroupFile: groupFile,
 	}
 
 	iss, err := (*client).GetIdentityStoreSyncer()
@@ -287,8 +306,8 @@ func syncDataAccess(client *plugin.PluginClient, targetConfig target.BaseTargetC
 	accessRightsLastUpdated = dar.LastCalculated
 
 	syncerConfig := dapc.DataAccessSyncConfig{
-		ConfigMap: baseconfig.ConfigMap{ Parameters: targetConfig.Parameters },
-		Prefix: "R",
+		ConfigMap: baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		Prefix:    "R",
 	}
 	syncerConfig.DataAccess = dar
 
@@ -300,6 +319,45 @@ func syncDataAccess(client *plugin.PluginClient, targetConfig target.BaseTargetC
 	if res.Error != nil {
 		return err
 	}
+
+	return nil
+}
+
+func syncDataUsage(client *plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
+	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
+	if err != nil {
+		return err
+	}
+	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
+
+	if targetConfig.DeleteTempFiles {
+		defer os.Remove(targetFile)
+	}
+
+	syncerConfig := dupc.DataUsageSyncConfig{
+		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		TargetFile: targetFile,
+	}
+	dus, err := (*client).GetDataUsageSyncer()
+	if err != nil {
+		return err
+	}
+	res := dus.SyncDataUsage(&syncerConfig)
+	if res.Error != nil {
+		return err
+	}
+
+	importerConfig := data_usage.DataUsageImportConfig{
+		BaseTargetConfig: targetConfig,
+		TargetFile:       targetFile,
+	}
+	duImporter := data_usage.NewDataUsageImporter(&importerConfig)
+	duResult, err := duImporter.TriggerImport()
+	if err != nil {
+		return err
+	}
+	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced data usage. Added: %d transactions", duResult.TransactionAdded))
 
 	return nil
 }

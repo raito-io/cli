@@ -23,7 +23,7 @@ type Statement struct {
 // DataUsageFileCreator describes the interface for easily creating the data usage import files
 // to be exported from the Raito CLI.
 type DataUsageFileCreator interface {
-	AddStatement(Statement []Statement) error
+	AddStatements(statements []Statement) error
 	Close()
 	GetStatementCount() int
 }
@@ -55,7 +55,7 @@ func NewDataUsageFileCreator(config *data_usage.DataUsageSyncConfig) (DataUsageF
 // AddTransaction adds the slice of data objects to the import file.
 // It returns an error when writing one of the data objects fails (it will not process the other data objects after that).
 // It returns nil if everything went well.
-func (d *dataUsageFileCreator) AddStatement(statements []Statement) error {
+func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 	if len(statements) == 0 {
 		return nil
 	}

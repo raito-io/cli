@@ -77,7 +77,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 		RowsReturned:     0,
 	})
 
-	err = dufc.AddStatement(dus)
+	err = dufc.AddStatements(dus)
 	assert.Nil(t, err)
 	dufc.Close()
 

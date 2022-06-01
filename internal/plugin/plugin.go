@@ -30,7 +30,7 @@ const LATEST = "latest"
 var nameRegexp = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9]$`)
 var versionRegexp = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
-var localPluginFolder = "~/.raito/plugins/"
+var localPluginFolder = "./raito/plugins/"
 var globalPluginFolder string
 
 var pluginMap = map[string]plugin.Plugin{

@@ -7,31 +7,31 @@ import (
 	"os"
 )
 
-type TransactionStatement struct {
-	ExternalId       string  `json:"externalId"`
-	Resource         string  `json:"resource"`
-	Action           string  `json:"action"`
-	Status           bool    `json:"status"`
-	User             string  `json:"user"`
-	StartTime        int64   `json:"startTime"`
-	EndTime          int64   `json:"endTime"`
-	TotalTime        float32 `json:"totalTime"`
-	BytesTransferred int     `json:"bytesTransferred"`
-	RowsReturned     int     `json:"rowsReturned"`
+type Statement struct {
+	ExternalId       string   `json:"externalId"`
+	Resources        []string `json:"resources"`
+	Action           string   `json:"action"`
+	Status           bool     `json:"status"`
+	User             string   `json:"user"`
+	StartTime        int64    `json:"startTime"`
+	EndTime          int64    `json:"endTime"`
+	TotalTime        float32  `json:"totalTime"`
+	BytesTransferred int      `json:"bytesTransferred"`
+	RowsReturned     int      `json:"rowsReturned"`
 }
 
 // DataUsageFileCreator describes the interface for easily creating the data usage import files
 // to be exported from the Raito CLI.
 type DataUsageFileCreator interface {
-	AddTransaction(Statement []TransactionStatement) error
+	AddStatement(Statement []Statement) error
 	Close()
-	GetTransactionCount() int
+	GetStatementCount() int
 }
 
 type dataUsageFileCreator struct {
-	config     *data_usage.DataUsageSyncConfig
-	targetFile *os.File
-	queryCount int
+	config         *data_usage.DataUsageSyncConfig
+	targetFile     *os.File
+	statementCount int
 }
 
 func NewDataUsageFileCreator(config *data_usage.DataUsageSyncConfig) (DataUsageFileCreator, error) {
@@ -55,22 +55,22 @@ func NewDataUsageFileCreator(config *data_usage.DataUsageSyncConfig) (DataUsageF
 // AddTransaction adds the slice of data objects to the import file.
 // It returns an error when writing one of the data objects fails (it will not process the other data objects after that).
 // It returns nil if everything went well.
-func (d *dataUsageFileCreator) AddTransaction(queries []TransactionStatement) error {
-	if len(queries) == 0 {
+func (d *dataUsageFileCreator) AddStatement(statements []Statement) error {
+	if len(statements) == 0 {
 		return nil
 	}
 
-	for _, do := range queries {
+	for _, statement := range statements {
 		var err error
 
-		if d.queryCount > 0 {
+		if d.statementCount > 0 {
 			d.targetFile.Write([]byte(",")) //nolint:errcheck
 		}
 		d.targetFile.Write([]byte("\n")) //nolint:errcheck
 
-		doBuf, err := json.Marshal(do)
+		doBuf, err := json.Marshal(statement)
 		if err != nil {
-			return fmt.Errorf("error while serializing data object with externalID %q", do.ExternalId)
+			return fmt.Errorf("error while serializing data object with externalID %q", statement.ExternalId)
 		}
 		//d.targetFile.Write([]byte("\n")) //nolint:errcheck
 		_, err = d.targetFile.Write(doBuf)
@@ -79,7 +79,7 @@ func (d *dataUsageFileCreator) AddTransaction(queries []TransactionStatement) er
 		if err != nil {
 			return fmt.Errorf("error while writing to temp file %q", d.targetFile.Name())
 		}
-		d.queryCount++
+		d.statementCount++
 	}
 
 	return nil
@@ -94,8 +94,8 @@ func (d *dataUsageFileCreator) Close() {
 }
 
 // GetTransactionCount returns the number of data objects that has been added to the import file.
-func (d *dataUsageFileCreator) GetTransactionCount() int {
-	return d.queryCount
+func (d *dataUsageFileCreator) GetStatementCount() int {
+	return d.statementCount
 }
 
 func (d *dataUsageFileCreator) createTargetFile() error {

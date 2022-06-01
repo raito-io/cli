@@ -26,10 +26,10 @@ func TestDataUsageFileCreator(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, dufc)
 
-	dus := make([]TransactionStatement, 0, 3)
-	dus = append(dus, TransactionStatement{
+	dus := make([]Statement, 0, 3)
+	dus = append(dus, Statement{
 		ExternalId:       "transaction1",
-		Resource:         "schema1.table1.column1",
+		Resources:        []string{"schema1.table1.column1"},
 		Action:           "SELECT",
 		Status:           true,
 		User:             "Alice",
@@ -39,9 +39,10 @@ func TestDataUsageFileCreator(t *testing.T) {
 		BytesTransferred: 52,
 		RowsReturned:     3,
 	})
-	dus = append(dus, TransactionStatement{
-		ExternalId:       "transaction2",
-		Resource:         "schema1.table2.column3",
+	dus = append(dus, Statement{
+		ExternalId: "transaction2",
+		Resources: []string{"schema1.table2.column3",
+			"schema1.table2.column5", "schema1.table2.column7"},
 		Action:           "ALTER",
 		Status:           false,
 		User:             "Alice",
@@ -51,9 +52,9 @@ func TestDataUsageFileCreator(t *testing.T) {
 		BytesTransferred: 180,
 		RowsReturned:     27,
 	})
-	dus = append(dus, TransactionStatement{
+	dus = append(dus, Statement{
 		ExternalId:       "transaction3",
-		Resource:         "schema3",
+		Resources:        []string{"schema3"},
 		Action:           "GRANT",
 		Status:           true,
 		User:             "Bob",
@@ -64,23 +65,23 @@ func TestDataUsageFileCreator(t *testing.T) {
 		RowsReturned:     0,
 	})
 
-	err = dufc.AddTransaction(dus)
+	err = dufc.AddStatement(dus)
 	assert.Nil(t, err)
 	dufc.Close()
 
-	assert.Equal(t, 3, dufc.GetTransactionCount())
+	assert.Equal(t, 3, dufc.GetStatementCount())
 
 	bytes, err := ioutil.ReadAll(tempFile)
 	assert.Nil(t, err)
 
-	dusr := make([]TransactionStatement, 0, 3)
+	dusr := make([]Statement, 0, 3)
 	err = json.Unmarshal(bytes, &dusr)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 3, len(dusr))
 
 	assert.Equal(t, "transaction1", dusr[0].ExternalId)
-	assert.Equal(t, "schema1.table1.column1", dusr[0].Resource)
+	assert.Equal(t, []string{"schema1.table1.column1"}, dusr[0].Resources)
 	assert.Equal(t, "SELECT", dusr[0].Action)
 	assert.Equal(t, true, dusr[0].Status)
 	assert.Equal(t, "Alice", dusr[0].User)
@@ -91,7 +92,8 @@ func TestDataUsageFileCreator(t *testing.T) {
 	assert.Equal(t, 3, dusr[0].RowsReturned)
 
 	assert.Equal(t, "transaction2", dusr[1].ExternalId)
-	assert.Equal(t, "schema1.table2.column3", dusr[1].Resource)
+	assert.Equal(t, []string{"schema1.table2.column3",
+		"schema1.table2.column5", "schema1.table2.column7"}, dusr[1].Resources)
 	assert.Equal(t, "ALTER", dusr[1].Action)
 	assert.Equal(t, false, dusr[1].Status)
 	assert.Equal(t, "Alice", dusr[1].User)
@@ -102,7 +104,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 	assert.Equal(t, 27, dusr[1].RowsReturned)
 
 	assert.Equal(t, "transaction3", dusr[2].ExternalId)
-	assert.Equal(t, "schema3", dusr[2].Resource)
+	assert.Equal(t, []string{"schema3"}, dusr[2].Resources)
 	assert.Equal(t, "GRANT", dusr[2].Action)
 	assert.Equal(t, true, dusr[2].Status)
 	assert.Equal(t, "Bob", dusr[2].User)

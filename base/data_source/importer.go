@@ -9,19 +9,26 @@ package data_source
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/raito-io/cli/common/api/data_source"
 	"os"
+
+	"github.com/raito-io/cli/common/api/data_source"
 )
 
 // DataObject represents a data object in the format that is suitable to be imported into a Raito data source.
 type DataObject struct {
-	ExternalId       string  `json:"externalId"`
-	Name             string  `json:"name"`
-	FullName         string  `json:"fullName"`
-	Type             string  `json:"type"`
-	Description      string  `json:"description"`
-	ParentExternalId string  `json:"parentExternalId"`
+	ExternalId       string                 `json:"externalId"`
+	Name             string                 `json:"name"`
+	FullName         string                 `json:"fullName"`
+	Type             string                 `json:"type"`
+	Description      string                 `json:"description"`
+	ParentExternalId string                 `json:"parentExternalId"`
 	Tags             map[string]interface{} `json:"tags"`
+}
+
+// DataObjectReference represents the reference to a DataObject suitable for e.g. defining the What in Access Provider import
+type DataObjectReference struct {
+	FullName string `json:"fullName"`
+	Type     string `json:"type"`
 }
 
 // DataSourceFileCreator describes the interface for easily creating the data object import files
@@ -97,7 +104,7 @@ func (d *dataSourceFileCreator) AddDataObjects(dataObjects []DataObject) error {
 		d.dataObjectCount++
 	}
 
-	return  nil
+	return nil
 }
 
 // GetDataObjectCount returns the number of data objects that has been added to the import file.

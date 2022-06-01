@@ -3,12 +3,13 @@ package data_access
 import (
 	"crypto/sha1"
 	"encoding/base64"
-	"github.com/hashicorp/go-plugin"
-	"github.com/raito-io/cli/common/api"
-	"github.com/raito-io/cli/common/util/config"
 	"net/rpc"
 	"sort"
 	"strings"
+
+	"github.com/hashicorp/go-plugin"
+	"github.com/raito-io/cli/common/api"
+	"github.com/raito-io/cli/common/util/config"
 )
 
 // DataAccessSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.
@@ -17,6 +18,7 @@ type DataAccessSyncConfig struct {
 	config.ConfigMap
 	DataAccess *DataAccessResult
 	Prefix     string
+	TargetFile string
 }
 
 // DataAccessResult is the main structure containing the information coming from Raito describing the data access rules for this data source.

@@ -3,11 +3,17 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/hashicorp/go-hclog"
 	dapc "github.com/raito-io/cli/common/api/data_access"
 	dspc "github.com/raito-io/cli/common/api/data_source"
 	ispc "github.com/raito-io/cli/common/api/identity_store"
 	baseconfig "github.com/raito-io/cli/common/util/config"
+	"github.com/raito-io/cli/internal/access_provider"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/data_access"
 	"github.com/raito-io/cli/internal/data_source"
@@ -17,10 +23,6 @@ import (
 	"github.com/raito-io/cli/internal/target"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 var accessRightsLastUpdated int64 = 0
@@ -28,10 +30,10 @@ var accessRightsLastUpdated int64 = 0
 func initRunCommand(rootCmd *cobra.Command) {
 	var cmd = &cobra.Command{
 		Hidden: true,
-		Use:   "run",
-		Short: "Run all the configured synchronizations",
-		Long: `Run all the configured synchronizations`,
-		Run: executeRun,
+		Use:    "run",
+		Short:  "Run all the configured synchronizations",
+		Long:   `Run all the configured synchronizations`,
+		Run:    executeRun,
 	}
 	cmd.PersistentFlags().IntP(constants.FrequencyFlag, "f", 0, "The frequency used to do the sync (in minutes). When not set, the default value '0' is used, which means the sync will run once and quit after.")
 	cmd.PersistentFlags().Bool(constants.SkipDataSourceSyncFlag, false, "If set, the data source meta data synchronization step to Raito will be skipped for each of the targets.")
@@ -72,10 +74,10 @@ func executeRun(cmd *cobra.Command, args []string) {
 			it := 2
 			for {
 				select {
-				case <- ticker.C:
+				case <-ticker.C:
 					executeSingleRun(logger.With("iteration", it), otherArgs) //nolint
 					it++
-				case <- quit:
+				case <-quit:
 					ticker.Stop()
 					finished <- struct{}{}
 					return
@@ -95,7 +97,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 			}
 		}
 
-		<- finished
+		<-finished
 		logger.Info("All routines finished. Bye!")
 	}
 }
@@ -190,8 +192,8 @@ func syncDataSource(client *plugin.PluginClient, targetConfig target.BaseTargetC
 	}
 
 	syncerConfig := dspc.DataSourceSyncConfig{
-		ConfigMap: baseconfig.ConfigMap{ Parameters: targetConfig.Parameters },
-		TargetFile:       targetFile,
+		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		TargetFile: targetFile,
 	}
 	dss, err := (*client).GetDataSourceSyncer()
 	if err != nil {
@@ -238,9 +240,9 @@ func syncIdentityStore(client *plugin.PluginClient, targetConfig target.BaseTarg
 	}
 
 	syncerConfig := ispc.IdentityStoreSyncConfig{
-		ConfigMap: baseconfig.ConfigMap{ Parameters: targetConfig.Parameters },
-		UserFile:         userFile,
-		GroupFile:        groupFile,
+		ConfigMap: baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		UserFile:  userFile,
+		GroupFile: groupFile,
 	}
 
 	iss, err := (*client).GetIdentityStoreSyncer()
@@ -271,9 +273,22 @@ func syncIdentityStore(client *plugin.PluginClient, targetConfig target.BaseTarg
 }
 
 func syncDataAccess(client *plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
+	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
+	if err != nil {
+		return err
+	}
+	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
+
+	if targetConfig.DeleteTempFiles {
+		defer os.Remove(targetFile)
+	}
+
 	config := data_access.DataAccessConfig{
 		BaseTargetConfig: targetConfig,
 	}
+
+	config.ConfigMap.Parameters["runImport"] = true // signal syncer to also run raito import
 
 	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, accessRightsLastUpdated, true)
 	if err != nil {
@@ -287,8 +302,9 @@ func syncDataAccess(client *plugin.PluginClient, targetConfig target.BaseTargetC
 	accessRightsLastUpdated = dar.LastCalculated
 
 	syncerConfig := dapc.DataAccessSyncConfig{
-		ConfigMap: baseconfig.ConfigMap{ Parameters: targetConfig.Parameters },
-		Prefix: "R",
+		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		Prefix:     "R",
+		TargetFile: targetFile,
 	}
 	syncerConfig.DataAccess = dar
 
@@ -300,6 +316,18 @@ func syncDataAccess(client *plugin.PluginClient, targetConfig target.BaseTargetC
 	if res.Error != nil {
 		return err
 	}
+
+	importerConfig := access_provider.AccessProviderImportConfig{
+		BaseTargetConfig: targetConfig,
+		TargetFile:       targetFile,
+		DeleteUntouched:  targetConfig.DeleteUntouched,
+	}
+	daImporter := access_provider.NewAccessProviderImporter(&importerConfig)
+	daResult, err := daImporter.TriggerImport()
+	if err != nil {
+		return err
+	}
+	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
 
 	return nil
 }

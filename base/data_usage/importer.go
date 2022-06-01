@@ -3,21 +3,21 @@ package data_usage
 import (
 	"encoding/json"
 	"fmt"
+	ap "github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/common/api/data_usage"
 	"os"
 )
 
 type Statement struct {
-	ExternalId       string   `json:"externalId"`
-	Resources        []string `json:"resources"`
-	Action           string   `json:"action"`
-	Status           bool     `json:"status"`
-	User             string   `json:"user"`
-	StartTime        int64    `json:"startTime"`
-	EndTime          int64    `json:"endTime"`
-	TotalTime        float32  `json:"totalTime"`
-	BytesTransferred int      `json:"bytesTransferred"`
-	RowsReturned     int      `json:"rowsReturned"`
+	ExternalId          string      `json:"externalId"`
+	AccessedDataObjects []ap.Access `json:"accessedDataObjects"`
+	Status              bool        `json:"status"`
+	User                string      `json:"user"`
+	StartTime           int64       `json:"startTime"`
+	EndTime             int64       `json:"endTime"`
+	TotalTime           float32     `json:"totalTime"`
+	BytesTransferred    int         `json:"bytesTransferred"`
+	RowsReturned        int         `json:"rowsReturned"`
 }
 
 // DataUsageFileCreator describes the interface for easily creating the data usage import files

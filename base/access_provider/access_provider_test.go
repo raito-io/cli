@@ -29,14 +29,9 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.NotNil(t, apfc)
 
 	aps := make([]AccessProvider, 0, 3)
-	do := data_source.DataObject{
-		ExternalId:       "eid1",
-		Name:             "DO1",
-		FullName:         "Data Object 1",
-		Type:             "schema",
-		Description:      "The first data object",
-		ParentExternalId: "pid1",
-		Tags:             map[string]interface{}{"k1": "v1"},
+	do := data_source.DataObjectReference{
+		FullName: "Data Object 1",
+		Type:     "schema",
 	}
 
 	aps = append(aps, AccessProvider{
@@ -45,7 +40,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		Name:              "AP1",
 		Users:             []string{"uid1"},
 		Groups:            []string{"gid1"},
-		AccessObjects:     []Access{{Permissions: []string{"A", "B"}, DataObject: &do}},
+		AccessObjects:     []Access{{Permissions: []string{"A", "B"}, DataObjectReference: &do}},
 	})
 
 	aps = append(aps, AccessProvider{
@@ -54,7 +49,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		Name:              "AP2",
 		Users:             []string{"uid1", "uid2"},
 		Groups:            []string{"gid1", "gid2"},
-		AccessObjects:     []Access{{Permissions: []string{"C"}, DataObject: &do}},
+		AccessObjects:     []Access{{Permissions: []string{"C"}, DataObjectReference: &do}},
 	})
 
 	err = apfc.AddAccessProvider(aps)
@@ -84,14 +79,8 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, 2, len(apsr[0].AccessObjects[0].Permissions))
 	assert.Equal(t, "A", apsr[0].AccessObjects[0].Permissions[0])
 	assert.Equal(t, "B", apsr[0].AccessObjects[0].Permissions[1])
-	assert.Equal(t, "eid1", apsr[0].AccessObjects[0].DataObject.ExternalId)
-	assert.Equal(t, "DO1", apsr[0].AccessObjects[0].DataObject.Name)
-	assert.Equal(t, "Data Object 1", apsr[0].AccessObjects[0].DataObject.FullName)
-	assert.Equal(t, "schema", apsr[0].AccessObjects[0].DataObject.Type)
-	assert.Equal(t, "The first data object", apsr[0].AccessObjects[0].DataObject.Description)
-	assert.Equal(t, "pid1", apsr[0].AccessObjects[0].DataObject.ParentExternalId)
-	assert.Equal(t, 1, len(apsr[0].AccessObjects[0].DataObject.Tags))
-	assert.Equal(t, "v1", apsr[0].AccessObjects[0].DataObject.Tags["k1"])
+	assert.Equal(t, "Data Object 1", apsr[0].AccessObjects[0].DataObjectReference.FullName)
+	assert.Equal(t, "schema", apsr[0].AccessObjects[0].DataObjectReference.Type)
 
 	assert.Equal(t, "eid2", apsr[1].ExternalId)
 	assert.True(t, apsr[1].NonInternalizable)
@@ -105,12 +94,6 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, 1, len(apsr[1].AccessObjects))
 	assert.Equal(t, 1, len(apsr[1].AccessObjects[0].Permissions))
 	assert.Equal(t, "C", apsr[1].AccessObjects[0].Permissions[0])
-	assert.Equal(t, "eid1", apsr[1].AccessObjects[0].DataObject.ExternalId)
-	assert.Equal(t, "DO1", apsr[1].AccessObjects[0].DataObject.Name)
-	assert.Equal(t, "Data Object 1", apsr[1].AccessObjects[0].DataObject.FullName)
-	assert.Equal(t, "schema", apsr[1].AccessObjects[0].DataObject.Type)
-	assert.Equal(t, "The first data object", apsr[1].AccessObjects[0].DataObject.Description)
-	assert.Equal(t, "pid1", apsr[1].AccessObjects[0].DataObject.ParentExternalId)
-	assert.Equal(t, 1, len(apsr[1].AccessObjects[0].DataObject.Tags))
-	assert.Equal(t, "v1", apsr[1].AccessObjects[0].DataObject.Tags["k1"])
+	assert.Equal(t, "Data Object 1", apsr[1].AccessObjects[0].DataObjectReference.FullName)
+	assert.Equal(t, "schema", apsr[1].AccessObjects[0].DataObjectReference.Type)
 }

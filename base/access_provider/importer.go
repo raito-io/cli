@@ -26,8 +26,8 @@ type AccessProvider struct {
 }
 
 type Access struct {
-	DataObject  *data_source.DataObject `json:"dataObject"`
-	Permissions []string                `json:"permissions"`
+	DataObjectReference *data_source.DataObjectReference `json:"dataObjectReference"`
+	Permissions         []string                         `json:"permissions"`
 }
 
 // AccessProviderFileCreator describes the interface for easily creating the access object import files

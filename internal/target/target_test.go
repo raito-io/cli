@@ -3,15 +3,16 @@ package target
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/jinzhu/copier"
 	config2 "github.com/raito-io/cli/common/util/config"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"strings"
-	"testing"
 )
 
 func TestToCamelCase(t *testing.T) {
@@ -26,21 +27,21 @@ func TestToCamelCase(t *testing.T) {
 }
 
 type fillerStruct struct {
-	FieldName string
+	FieldName  string
 	AnotherOne int
-	Another2 float64
-	Ok bool
-	cannotSet string
+	Another2   float64
+	Ok         bool
+	cannotSet  string
 }
 
 func TestFillStruct(t *testing.T) {
 	fs := fillerStruct{}
 	err := fillStruct(&fs, map[interface{}]interface{}{
-		"field-name": "blah",
+		"field-name":  "blah",
 		"another one": 666,
-		"another 2": 5.5,
-		"Ok": true,
-		"unknown": "skip",
+		"another 2":   5.5,
+		"Ok":          true,
+		"unknown":     "skip",
 	})
 
 	assert.Nil(t, err)
@@ -58,11 +59,11 @@ func TestFillStructWithEnvironmentVariables(t *testing.T) {
 
 	fs := fillerStruct{}
 	err := fillStruct(&fs, map[interface{}]interface{}{
-		"field-name": "{{RAITO_TEST_FIELDNAME}}",
+		"field-name":  "{{RAITO_TEST_FIELDNAME}}",
 		"another one": "{{RAITO_TEST_ANOTHERONE}}",
-		"another 2": "{{RAITO_TEST_ANOTHERTWO}}",
-		"Ok": "{{RAITO_TEST_OK}}",
-		"unknown": "skip",
+		"another 2":   "{{RAITO_TEST_ANOTHERTWO}}",
+		"Ok":          "{{RAITO_TEST_OK}}",
+		"unknown":     "skip",
 	})
 
 	assert.Nil(t, err)
@@ -80,11 +81,11 @@ func TestFillStructWithEnvironmentVariablesNotSet(t *testing.T) {
 
 	fs := fillerStruct{}
 	err := fillStruct(&fs, map[interface{}]interface{}{
-		"field-name": "{{RAITO_TEST_FIELDNAME}}",
+		"field-name":  "{{RAITO_TEST_FIELDNAME}}",
 		"another one": "{{RAITO_TEST_ANOTHERONE}}",
-		"another 2": "{{RAITO_TEST_ANOTHERTWO}}",
-		"Ok": "{{RAITO_TEST_OK}}",
-		"unknown": "skip",
+		"another 2":   "{{RAITO_TEST_ANOTHERTWO}}",
+		"Ok":          "{{RAITO_TEST_OK}}",
+		"unknown":     "skip",
 	})
 
 	assert.NotNil(t, err)
@@ -94,16 +95,16 @@ func TestFillStructWithEnvironmentVariablesNotSet(t *testing.T) {
 func TestFillStructWithEnvironmentVariablesWrongType(t *testing.T) {
 	os.Setenv("RAITO_TEST_FIELDNAME", "eblah")
 	os.Setenv("RAITO_TEST_ANOTHERONE", "xxx")
-	os.Unsetenv("RAITO_TEST_ANOTHERTWO")
+	os.Setenv("RAITO_TEST_ANOTHERTWO", "1.2")
 	os.Setenv("RAITO_TEST_OK", "true")
 
 	fs := fillerStruct{}
 	err := fillStruct(&fs, map[interface{}]interface{}{
-		"field-name": "{{RAITO_TEST_FIELDNAME}}",
+		"field-name":  "{{RAITO_TEST_FIELDNAME}}",
 		"another one": "{{RAITO_TEST_ANOTHERONE}}",
-		"another 2": "{{RAITO_TEST_ANOTHERTWO}}",
-		"Ok": "{{RAITO_TEST_OK}}",
-		"unknown": "skip",
+		"another 2":   "{{RAITO_TEST_ANOTHERTWO}}",
+		"Ok":          "{{RAITO_TEST_OK}}",
+		"unknown":     "skip",
 	})
 
 	assert.NotNil(t, err)
@@ -128,17 +129,17 @@ func TestFillStructCannotSet(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-var targets1 = []interface{} {
-	map[interface{}]interface{} {
-		"name": "snowflake1",
+var targets1 = []interface{}{
+	map[interface{}]interface{}{
+		"name":      "snowflake1",
 		"connector": "snowflake",
 	},
-	map[interface{}]interface{} {
-		"name": "okta1",
+	map[interface{}]interface{}{
+		"name":      "okta1",
 		"connector": "okta",
 	},
-	map[interface{}]interface{} {
-		"name": "snowflake2",
+	map[interface{}]interface{}{
+		"name":      "snowflake2",
 		"connector": "snowflake",
 	},
 }
@@ -146,28 +147,28 @@ var targets1 = []interface{} {
 func TestBuildTargetConfigFromMapError(t *testing.T) {
 	clearViper()
 	data := map[interface{}]interface{}{
-		"connector-name":                666,
+		"connector-name": 666,
 	}
 	config, err := buildTargetConfigFromMap(hclog.L(), data)
 	assert.NotNil(t, err)
 	assert.Nil(t, config)
 }
 
-var baseConfigMap = map[interface{}]interface{} {
-	"connector-name": "c1",
-	"connector-version": "0.1.0",
-	"name": "cn1",
-	"data-source-id": "xxx",
-	"identity-store-id": "yyy",
-	"api-user": "c1user",
-	"api-secret": "<secret>",
-	"domain": "my-raito-domain",
+var baseConfigMap = map[interface{}]interface{}{
+	"connector-name":           "c1",
+	"connector-version":        "0.1.0",
+	"name":                     "cn1",
+	"data-source-id":           "xxx",
+	"identity-store-id":        "yyy",
+	"api-user":                 "c1user",
+	"api-secret":               "<secret>",
+	"domain":                   "my-raito-domain",
 	"skip-identity-store-sync": true,
-	"skip-data-source-sync": false,
-	"skip-data-access-sync": true,
-	"custom1": "v1",
-	"custom2": 5,
-	"custom3": true,
+	"skip-data-source-sync":    false,
+	"skip-data-access-sync":    true,
+	"custom1":                  "v1",
+	"custom2":                  5,
+	"custom3":                  true,
 }
 
 func TestBuildTargetConfigFromMap(t *testing.T) {
@@ -270,7 +271,7 @@ func TestBuildTargetConfigFromFlags(t *testing.T) {
 	viper.Set("skip-data-source-sync", true)
 	viper.Set("skip-data-access-sync", true)
 
-	config, err := buildTargetConfigFromFlags(hclog.L(), []string {"--custom1", "ok"})
+	config, err := buildTargetConfigFromFlags(hclog.L(), []string{"--custom1", "ok"})
 	assert.Nil(t, err)
 	assert.NotNil(t, config)
 
@@ -293,7 +294,7 @@ func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
 
 	viper.Set(constants.ConnectorNameFlag, "conn1")
 
-	config, err := buildTargetConfigFromFlags(hclog.L(), []string { })
+	config, err := buildTargetConfigFromFlags(hclog.L(), []string{})
 	assert.Nil(t, err)
 	assert.NotNil(t, config)
 
@@ -302,7 +303,7 @@ func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
 }
 
 func TestBuildParameterMapFromArguments(t *testing.T) {
-	params := buildParameterMapFromArguments([]string {"--bool-val", "--string-val=blah", "--another-one", "moremoremore" })
+	params := buildParameterMapFromArguments([]string{"--bool-val", "--string-val=blah", "--another-one", "moremoremore"})
 	assert.Equal(t, 3, len(params))
 	assert.Equal(t, true, params["bool-val"])
 	assert.Equal(t, "blah", params["string-val"])
@@ -325,7 +326,7 @@ func TestRunSingleTarget(t *testing.T) {
 	viper.Set("skip-data-access-sync", true)
 
 	runs := 0
-	RunTargets(hclog.L(), []string {}, func(tConfig *BaseTargetConfig) error {
+	RunTargets(hclog.L(), []string{}, func(tConfig *BaseTargetConfig) error {
 		assert.Equal(t, "name1", tConfig.Name)
 		runs++
 		return nil
@@ -336,25 +337,24 @@ func TestRunSingleTarget(t *testing.T) {
 func TestRunMultipleTargets(t *testing.T) {
 	clearViper()
 
-	t1 := map[interface{}]interface{} {
+	t1 := map[interface{}]interface{}{
 		constants.ConnectorNameFlag: "c1",
-		constants.NameFlag:      "cn1",
-		"api-secret":            "secret1",
-		"other-stuff":           "ok",
+		constants.NameFlag:          "cn1",
+		"api-secret":                "secret1",
+		"other-stuff":               "ok",
 	}
-	t2 := map[interface{}]interface{} {
+	t2 := map[interface{}]interface{}{
 		constants.ConnectorNameFlag: "c2",
-		"api-secret":            "secret2",
+		"api-secret":                "secret2",
 	}
 
-	targets := []interface{} {
+	targets := []interface{}{
 		t1, t2,
-
 	}
 	viper.Set("targets", targets)
 
 	runs := 0
-	RunTargets(hclog.L(), []string {}, func(tConfig *BaseTargetConfig) error {
+	RunTargets(hclog.L(), []string{}, func(tConfig *BaseTargetConfig) error {
 		if runs == 0 {
 			assert.Equal(t, "c1", tConfig.ConnectorName)
 			assert.Equal(t, "cn1", tConfig.Name)
@@ -374,24 +374,23 @@ func TestRunMultipleTargets(t *testing.T) {
 func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	clearViper()
 
-	t1 := map[interface{}]interface{} {
+	t1 := map[interface{}]interface{}{
 		constants.ConnectorNameFlag: "c1",
-		constants.NameFlag:      "name1",
+		constants.NameFlag:          "name1",
 	}
-	t2 := map[interface{}]interface{} {
+	t2 := map[interface{}]interface{}{
 		constants.ConnectorNameFlag: "c2",
 	}
 
-	targets := []interface{} {
+	targets := []interface{}{
 		t1, t2,
-
 	}
 	viper.Set("targets", targets)
 
 	viper.Set("only-targets", "name1")
 
 	runs := 0
-	RunTargets(hclog.L(), []string {}, func(tConfig *BaseTargetConfig) error {
+	RunTargets(hclog.L(), []string{}, func(tConfig *BaseTargetConfig) error {
 		assert.Equal(t, "c1", tConfig.ConnectorName)
 		assert.Equal(t, "name1", tConfig.Name)
 		runs++
@@ -402,7 +401,7 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	viper.Set("only-targets", "c2")
 
 	runs = 0
-	RunTargets(hclog.L(), []string {}, func(tConfig *BaseTargetConfig) error {
+	RunTargets(hclog.L(), []string{}, func(tConfig *BaseTargetConfig) error {
 		assert.Equal(t, "c2", tConfig.ConnectorName)
 		assert.Equal(t, "c2", tConfig.Name)
 		runs++
@@ -434,9 +433,9 @@ func TestLogTarget(t *testing.T) {
 	config := BaseTargetConfig{
 		ApiSecret: "mylittlesecret",
 		ConfigMap: config2.ConfigMap{
-			Parameters: map[string]interface{} {
+			Parameters: map[string]interface{}{
 				"password": "anothersecret",
-				"normal": "readible",
+				"normal":   "readible",
 			},
 		},
 		ApiUser: "theuser",

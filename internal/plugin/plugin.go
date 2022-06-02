@@ -10,6 +10,7 @@ import (
 	"github.com/raito-io/cli/common/api"
 	"github.com/raito-io/cli/common/api/data_access"
 	"github.com/raito-io/cli/common/api/data_source"
+	"github.com/raito-io/cli/common/api/data_usage"
 	"github.com/raito-io/cli/common/api/identity_store"
 	"io"
 	"io/fs"
@@ -25,6 +26,7 @@ import (
 // TODO add cancel and async (done context) support
 
 const LATEST = "latest"
+
 var nameRegexp = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9]$`)
 var versionRegexp = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
@@ -33,9 +35,10 @@ var globalPluginFolder string
 
 var pluginMap = map[string]plugin.Plugin{
 	"identityStoreSyncer": &identity_store.IdentityStoreSyncerPlugin{},
-	"dataSourceSyncer": &data_source.DataSourceSyncerPlugin{},
-	"dataAccessSyncer": &data_access.DataAccessSyncerPlugin{},
-	"info": &api.InfoPlugin{},
+	"dataSourceSyncer":    &data_source.DataSourceSyncerPlugin{},
+	"dataAccessSyncer":    &data_access.DataAccessSyncerPlugin{},
+	"dataUsageSyncer":     &data_usage.DataUsageSyncerPlugin{},
+	"info":                &api.InfoPlugin{},
 }
 
 func init() {
@@ -57,6 +60,7 @@ type PluginClient interface {
 	GetDataSourceSyncer() (data_source.DataSourceSyncer, error)
 	GetIdentityStoreSyncer() (identity_store.IdentityStoreSyncer, error)
 	GetDataAccessSyncer() (data_access.DataAccessSyncer, error)
+	GetDataUsageSyncer() (data_usage.DataUsageSyncer, error)
 	GetInfo() (api.Info, error)
 }
 
@@ -82,14 +86,14 @@ func NewPluginClient(connector string, version string, logger hclog.Logger) (Plu
 		return nil, fmt.Errorf("error connecting to plugin %q. It may be corrupt or invalid", connector)
 	}
 
-	pci := pluginClientImpl{client }
+	pci := pluginClientImpl{client}
 
 	is, err := pci.GetInfo()
 	if err != nil {
 		return nil, fmt.Errorf("the plugin (%s) doesn't correctly implement the necessary interfaces", connector)
 	}
 	info := is.PluginInfo()
-	logger.Debug("Using plugin: "+info.String())
+	logger.Debug("Using plugin: " + info.String())
 
 	return pci, nil
 }
@@ -166,7 +170,7 @@ func extractFromDownloadFile(pluginRequest *pluginRequest, downloadedFile, targe
 }
 
 func extractTarGz(gzipStream io.Reader, extractedPath string) (string, error) {
-	parentFolder := extractedPath[0:strings.LastIndex(extractedPath, "/")+1]
+	parentFolder := extractedPath[0 : strings.LastIndex(extractedPath, "/")+1]
 	err := os.MkdirAll(parentFolder, fs.ModePerm)
 	if err != nil {
 		return "", fmt.Errorf("error while creating plugin parent folder %q: %s", parentFolder, err.Error())
@@ -247,7 +251,7 @@ func getLatestVersion(matches []string) string {
 	return versions[len(versions)-1].String()
 }
 
-func parsePluginRequest (connector string, version string) (*pluginRequest, error) {
+func parsePluginRequest(connector string, version string) (*pluginRequest, error) {
 	if strings.Count(connector, "/") != 1 {
 		return nil, errors.New("the connector name is expected to have exactly 1 slash (/) in it")
 	}
@@ -284,8 +288,8 @@ func parsePluginRequest (connector string, version string) (*pluginRequest, erro
 	}
 
 	return &pluginRequest{
-		Name: name,
-		Group: group,
+		Name:    name,
+		Group:   group,
 		Version: version,
 	}, nil
 }
@@ -302,7 +306,7 @@ func (c pluginClientImpl) Close() {
 	c.client.Kill()
 }
 
-// TODO once Go Generics are released, these 3 methodes can probably be implemented in 1 helper
+// TODO once Go Generics are released, these 4 methodes can probably be implemented in 1 helper
 
 func (c pluginClientImpl) GetDataSourceSyncer() (data_source.DataSourceSyncer, error) {
 	rpcClient, err := c.client.Client()
@@ -358,6 +362,24 @@ func (c pluginClientImpl) GetDataAccessSyncer() (data_access.DataAccessSyncer, e
 	}
 }
 
+func (c pluginClientImpl) GetDataUsageSyncer() (data_usage.DataUsageSyncer, error) {
+	rpcClient, err := c.client.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	raw, err := rpcClient.Dispense(data_usage.DataUsageSyncerName)
+	if err != nil {
+		return nil, err
+	}
+
+	if syncer, ok := raw.(data_usage.DataUsageSyncer); ok {
+		return syncer, nil
+	} else {
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the DataUsageSyncer interface")
+	}
+}
+
 func (c pluginClientImpl) GetInfo() (api.Info, error) {
 	rpcClient, err := c.client.Client()
 	if err != nil {
@@ -383,8 +405,8 @@ var handshakeConfig = plugin.HandshakeConfig{
 }
 
 type pluginRequest struct {
-	Group string
-	Name string
+	Group   string
+	Name    string
 	Version string
 }
 

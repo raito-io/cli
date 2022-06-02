@@ -14,6 +14,7 @@ var KnownFlags = map[string]struct{}{
 	SkipIdentityStoreSyncFlag: struct{}{},
 	SkipDataSourceSyncFlag:    struct{}{},
 	SkipDataAccessSyncFlag:    struct{}{},
+	SkipDataUsageSyncFlag:     struct{}{},
 	DataSourceIdFlag:          struct{}{},
 	IdentityStoreIdFlag:       struct{}{},
 	OnlyTargetsFlag:           struct{}{},
@@ -40,6 +41,7 @@ const (
 	SkipDataSourceSyncFlag    = "skip-data-source-sync"
 	SkipDataAccessSyncFlag    = "skip-data-access-sync"
 	SkipIdentityStoreSyncFlag = "skip-identity-store-sync"
+	SkipDataUsageSyncFlag     = "skip-data-usage-sync"
 	DataSourceIdFlag          = "data-source-id"
 	IdentityStoreIdFlag       = "identity-store-id"
 	OnlyTargetsFlag           = "only-targets"

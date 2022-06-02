@@ -11,12 +11,14 @@ import (
 	"github.com/hashicorp/go-hclog"
 	dapc "github.com/raito-io/cli/common/api/data_access"
 	dspc "github.com/raito-io/cli/common/api/data_source"
+	dupc "github.com/raito-io/cli/common/api/data_usage"
 	ispc "github.com/raito-io/cli/common/api/identity_store"
 	baseconfig "github.com/raito-io/cli/common/util/config"
 	"github.com/raito-io/cli/internal/access_provider"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/data_access"
 	"github.com/raito-io/cli/internal/data_source"
+	"github.com/raito-io/cli/internal/data_usage"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/identity_store"
 	"github.com/raito-io/cli/internal/plugin"
@@ -39,11 +41,13 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.SkipDataSourceSyncFlag, false, "If set, the data source meta data synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipIdentityStoreSyncFlag, false, "If set, the identity store synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipDataAccessSyncFlag, false, "If set, the data access information from Raito will not be synced to the data sources in the target list.")
+	cmd.PersistentFlags().Bool(constants.SkipDataUsageSyncFlag, false, "If set, the data usage information synchronization step to Raito will be skipped for each of the targets.")
 
 	BindFlag(constants.FrequencyFlag, cmd)
 	BindFlag(constants.SkipDataSourceSyncFlag, cmd)
 	BindFlag(constants.SkipIdentityStoreSyncFlag, cmd)
 	BindFlag(constants.SkipDataAccessSyncFlag, cmd)
+	BindFlag(constants.SkipDataUsageSyncFlag, cmd)
 
 	cmd.FParseErrWhitelist.UnknownFlags = true
 
@@ -171,6 +175,21 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 			targetConfig.Logger.Info("No data-source-id argument found. Skipping data access syncing")
 		} else {
 			targetConfig.Logger.Info("Skipping data access syncing")
+		}
+	}
+
+	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataUsageSync {
+		targetConfig.Logger.Info("Synchronizing data usage...")
+		err := syncDataUsage(&client, *targetConfig)
+		if err != nil {
+			target.HandleTargetError(err, targetConfig, "sychronizing data usage information to the data source")
+			return err
+		}
+	} else {
+		if targetConfig.DataSourceId == "" {
+			targetConfig.Logger.Info("No data-source-id argument found. Skipping data usage syncing")
+		} else {
+			targetConfig.Logger.Info("Skipping data usage syncing")
 		}
 	}
 
@@ -328,6 +347,45 @@ func syncDataAccess(client *plugin.PluginClient, targetConfig target.BaseTargetC
 		return err
 	}
 	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+
+	return nil
+}
+
+func syncDataUsage(client *plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
+	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
+	if err != nil {
+		return err
+	}
+	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
+
+	if targetConfig.DeleteTempFiles {
+		defer os.Remove(targetFile)
+	}
+
+	syncerConfig := dupc.DataUsageSyncConfig{
+		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		TargetFile: targetFile,
+	}
+	dus, err := (*client).GetDataUsageSyncer()
+	if err != nil {
+		return err
+	}
+	res := dus.SyncDataUsage(&syncerConfig)
+	if res.Error != nil {
+		return err
+	}
+
+	importerConfig := data_usage.DataUsageImportConfig{
+		BaseTargetConfig: targetConfig,
+		TargetFile:       targetFile,
+	}
+	duImporter := data_usage.NewDataUsageImporter(&importerConfig)
+	duResult, err := duImporter.TriggerImport()
+	if err != nil {
+		return err
+	}
+	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced data usage. Added: %d transactions", duResult.StatementsAdded))
 
 	return nil
 }

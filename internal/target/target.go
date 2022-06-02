@@ -26,6 +26,7 @@ type BaseTargetConfig struct {
 	SkipIdentityStoreSync bool
 	SkipDataSourceSync    bool
 	SkipDataAccessSync    bool
+	SkipDataUsageSync     bool
 	Logger                hclog.Logger
 
 	DeleteUntouched bool
@@ -127,6 +128,7 @@ func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[interface{}]in
 	tConfig.SkipDataAccessSync = tConfig.SkipDataAccessSync || viper.GetBool(constants.SkipDataAccessSyncFlag)
 	tConfig.SkipDataSourceSync = tConfig.SkipDataSourceSync || viper.GetBool(constants.SkipDataSourceSyncFlag)
 	tConfig.SkipIdentityStoreSync = tConfig.SkipIdentityStoreSync || viper.GetBool(constants.SkipIdentityStoreSyncFlag)
+	tConfig.SkipDataUsageSync = tConfig.SkipDataUsageSync || viper.GetBool(constants.SkipDataUsageSyncFlag)
 
 	// Merge with import parameters
 	tConfig.DeleteUntouched = tConfig.DeleteUntouched || viper.GetBool(constants.DeleteUntouchedFlag)
@@ -203,6 +205,7 @@ func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*B
 		SkipIdentityStoreSync: viper.GetBool(constants.SkipIdentityStoreSyncFlag),
 		SkipDataSourceSync:    viper.GetBool(constants.SkipDataSourceSyncFlag),
 		SkipDataAccessSync:    viper.GetBool(constants.SkipDataAccessSyncFlag),
+		SkipDataUsageSync:     viper.GetBool(constants.SkipDataUsageSyncFlag),
 		Logger:                baseLogger.With("target", name),
 		DeleteUntouched:       viper.GetBool(constants.DeleteUntouchedFlag),
 		DeleteTempFiles:       viper.GetBool(constants.DeleteTempFilesFlag),

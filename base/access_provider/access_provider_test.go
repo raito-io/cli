@@ -36,7 +36,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 
 	aps = append(aps, AccessProvider{
 		ExternalId:        "eid1",
-		NonInternalizable: false,
+		NotInternalizable: false,
 		Name:              "AP1",
 		Users:             []string{"uid1"},
 		Groups:            []string{"gid1"},
@@ -45,7 +45,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 
 	aps = append(aps, AccessProvider{
 		ExternalId:        "eid2",
-		NonInternalizable: true,
+		NotInternalizable: true,
 		Name:              "AP2",
 		Users:             []string{"uid1", "uid2"},
 		Groups:            []string{"gid1", "gid2"},
@@ -69,7 +69,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, 2, len(apsr))
 
 	assert.Equal(t, "eid1", apsr[0].ExternalId)
-	assert.False(t, apsr[0].NonInternalizable)
+	assert.False(t, apsr[0].NotInternalizable)
 	assert.Equal(t, "AP1", apsr[0].Name)
 	assert.Equal(t, 1, len(apsr[0].Users))
 	assert.Equal(t, "uid1", apsr[0].Users[0])
@@ -83,7 +83,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "schema", apsr[0].AccessObjects[0].DataObjectReference.Type)
 
 	assert.Equal(t, "eid2", apsr[1].ExternalId)
-	assert.True(t, apsr[1].NonInternalizable)
+	assert.True(t, apsr[1].NotInternalizable)
 	assert.Equal(t, "AP2", apsr[1].Name)
 	assert.Equal(t, 2, len(apsr[1].Users))
 	assert.Equal(t, "uid1", apsr[1].Users[0])

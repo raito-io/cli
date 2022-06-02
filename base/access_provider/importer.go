@@ -18,7 +18,7 @@ import (
 // AccessProvider describes data access in the format that is suitable to be imported into Raito.x
 type AccessProvider struct {
 	ExternalId        string   `json:"externalId"`
-	NonInternalizable bool     `json:"nonInternalizable"`
+	NotInternalizable bool     `json:"notInternalizable"`
 	Name              string   `json:"name"`
 	Users             []string `json:"users"`
 	Groups            []string `json:"groups"`

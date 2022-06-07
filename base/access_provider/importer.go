@@ -23,6 +23,9 @@ type AccessProvider struct {
 	Users             []string `json:"users"`
 	Groups            []string `json:"groups"`
 	AccessObjects     []Access `json:"accessObjects"`
+	IsMask            bool     `json:"isMask"`
+	IsFiltered        bool     `json:"isFiltered"`
+	Policy            string   `json:"policy"`
 }
 
 type Access struct {

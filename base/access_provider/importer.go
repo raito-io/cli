@@ -18,14 +18,14 @@ import (
 
 // AccessProvider describes data access in the format that is suitable to be imported into Raito.x
 type AccessProvider struct {
-	ExternalId        string               `json:"externalId"`
-	NotInternalizable bool                 `json:"notInternalizable"`
-	Name              string               `json:"name"`
-	Users             []string             `json:"users"`
-	Groups            []string             `json:"groups"`
-	AccessObjects     []Access             `json:"accessObjects"`
-	Action            AccessProviderAction `json:"action"`
-	Policy            string               `json:"policy"`
+	ExternalId        string   `json:"externalId"`
+	NotInternalizable bool     `json:"notInternalizable"`
+	Name              string   `json:"name"`
+	Users             []string `json:"users"`
+	Groups            []string `json:"groups"`
+	AccessObjects     []Access `json:"accessObjects"`
+	Action            Action   `json:"action"`
+	Policy            string   `json:"policy"`
 }
 
 type Access struct {
@@ -33,10 +33,10 @@ type Access struct {
 	Permissions         []string                         `json:"permissions"`
 }
 
-type AccessProviderAction int
+type Action int
 
 const (
-	Promise AccessProviderAction = iota
+	Promise Action = iota
 	Grant
 	Deny
 	Mask
@@ -134,10 +134,10 @@ func (d *accessProviderFileCreator) createTargetFile() error {
 }
 
 var actionNames = [...]string{"Promise", "Grant", "Deny", "Mask", "Filtered"}
-var actionNameMap = map[string]AccessProviderAction{"Promise": Promise, "Grant": Grant, "Deny": Deny, "Mask": Mask, "Filtered": Filtered}
+var actionNameMap = map[string]Action{"Promise": Promise, "Grant": Grant, "Deny": Deny, "Mask": Mask, "Filtered": Filtered}
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
-func (y *AccessProviderAction) UnmarshalJSON(b []byte) error {
+func (y *Action) UnmarshalJSON(b []byte) error {
 	var j string
 	err := json.Unmarshal(b, &j)
 	if err != nil {
@@ -150,7 +150,7 @@ func (y *AccessProviderAction) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalJSON marshals the enum as a quoted json string
-func (s AccessProviderAction) MarshalJSON() ([]byte, error) {
+func (s Action) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
 	buffer.WriteString(actionNames[s])
 	buffer.WriteString(`"`)

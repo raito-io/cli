@@ -7,6 +7,7 @@
 package access_provider
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -130,4 +131,14 @@ func (d *accessProviderFileCreator) createTargetFile() error {
 	}
 	d.targetFile = f
 	return nil
+}
+
+var actionNames = [...]string{"Promise", "Grant", "Deny", "Mask", "Filtered"}
+
+// MarshalJSON marshals the enum as a quoted json string
+func (s AccessProviderAction) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(actionNames[s])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
 }

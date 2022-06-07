@@ -17,21 +17,30 @@ import (
 
 // AccessProvider describes data access in the format that is suitable to be imported into Raito.x
 type AccessProvider struct {
-	ExternalId        string   `json:"externalId"`
-	NotInternalizable bool     `json:"notInternalizable"`
-	Name              string   `json:"name"`
-	Users             []string `json:"users"`
-	Groups            []string `json:"groups"`
-	AccessObjects     []Access `json:"accessObjects"`
-	IsMask            bool     `json:"isMask"`
-	IsFiltered        bool     `json:"isFiltered"`
-	Policy            string   `json:"policy"`
+	ExternalId        string               `json:"externalId"`
+	NotInternalizable bool                 `json:"notInternalizable"`
+	Name              string               `json:"name"`
+	Users             []string             `json:"users"`
+	Groups            []string             `json:"groups"`
+	AccessObjects     []Access             `json:"accessObjects"`
+	Action            AccessProviderAction `json:"accessProviderAction"`
+	Policy            string               `json:"policy"`
 }
 
 type Access struct {
 	DataObjectReference *data_source.DataObjectReference `json:"dataObjectReference"`
 	Permissions         []string                         `json:"permissions"`
 }
+
+type AccessProviderAction int
+
+const (
+	Promise AccessProviderAction = iota
+	Grant
+	Deny
+	Mask
+	Filtered
+)
 
 // AccessProviderFileCreator describes the interface for easily creating the access object import files
 // to be imported by the Raito CLI.

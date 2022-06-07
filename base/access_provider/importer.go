@@ -7,6 +7,7 @@
 package access_provider
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -23,12 +24,24 @@ type AccessProvider struct {
 	Users             []string `json:"users"`
 	Groups            []string `json:"groups"`
 	AccessObjects     []Access `json:"accessObjects"`
+	Action            Action   `json:"action"`
+	Policy            string   `json:"policy"`
 }
 
 type Access struct {
 	DataObjectReference *data_source.DataObjectReference `json:"dataObjectReference"`
 	Permissions         []string                         `json:"permissions"`
 }
+
+type Action int
+
+const (
+	Promise Action = iota
+	Grant
+	Deny
+	Mask
+	Filtered
+)
 
 // AccessProviderFileCreator describes the interface for easily creating the access object import files
 // to be imported by the Raito CLI.
@@ -118,4 +131,28 @@ func (d *accessProviderFileCreator) createTargetFile() error {
 	}
 	d.targetFile = f
 	return nil
+}
+
+var actionNames = [...]string{"Promise", "Grant", "Deny", "Mask", "Filtered"}
+var actionNameMap = map[string]Action{"Promise": Promise, "Grant": Grant, "Deny": Deny, "Mask": Mask, "Filtered": Filtered}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (y *Action) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	*y = actionNameMap[j]
+	return nil
+}
+
+// MarshalJSON marshals the enum as a quoted json string
+func (s Action) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(actionNames[s])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
 }

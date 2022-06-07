@@ -47,6 +47,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		ExternalId:        "eid2",
 		NotInternalizable: true,
 		Name:              "AP2",
+		Action:            Filtered,
 		Users:             []string{"uid1", "uid2"},
 		Groups:            []string{"gid1", "gid2"},
 		AccessObjects:     []Access{{Permissions: []string{"C"}, DataObjectReference: &do}},
@@ -71,6 +72,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "eid1", apsr[0].ExternalId)
 	assert.False(t, apsr[0].NotInternalizable)
 	assert.Equal(t, "AP1", apsr[0].Name)
+	assert.Equal(t, Promise, apsr[0].Action)
 	assert.Equal(t, 1, len(apsr[0].Users))
 	assert.Equal(t, "uid1", apsr[0].Users[0])
 	assert.Equal(t, 1, len(apsr[0].Groups))
@@ -85,6 +87,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "eid2", apsr[1].ExternalId)
 	assert.True(t, apsr[1].NotInternalizable)
 	assert.Equal(t, "AP2", apsr[1].Name)
+	assert.Equal(t, Filtered, apsr[1].Action)
 	assert.Equal(t, 2, len(apsr[1].Users))
 	assert.Equal(t, "uid1", apsr[1].Users[0])
 	assert.Equal(t, "uid2", apsr[1].Users[1])

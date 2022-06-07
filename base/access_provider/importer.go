@@ -24,7 +24,7 @@ type AccessProvider struct {
 	Users             []string             `json:"users"`
 	Groups            []string             `json:"groups"`
 	AccessObjects     []Access             `json:"accessObjects"`
-	Action            AccessProviderAction `json:"accessProviderAction"`
+	Action            AccessProviderAction `json:"action"`
 	Policy            string               `json:"policy"`
 }
 
@@ -134,6 +134,20 @@ func (d *accessProviderFileCreator) createTargetFile() error {
 }
 
 var actionNames = [...]string{"Promise", "Grant", "Deny", "Mask", "Filtered"}
+var actionNameMap = map[string]AccessProviderAction{"Promise": Promise, "Grant": Grant, "Deny": Deny, "Mask": Mask, "Filtered": Filtered}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (y *AccessProviderAction) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	*y = actionNameMap[j]
+	return nil
+}
 
 // MarshalJSON marshals the enum as a quoted json string
 func (s AccessProviderAction) MarshalJSON() ([]byte, error) {

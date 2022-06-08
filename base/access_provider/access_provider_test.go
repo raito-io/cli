@@ -38,6 +38,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		ExternalId:        "eid1",
 		NotInternalizable: false,
 		Name:              "AP1",
+		NamingHint:        "AP1Hint",
 		Users:             []string{"uid1"},
 		Groups:            []string{"gid1"},
 		AccessObjects:     []Access{{Permissions: []string{"A", "B"}, DataObjectReference: &do}},
@@ -47,6 +48,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		ExternalId:        "eid2",
 		NotInternalizable: true,
 		Name:              "AP2",
+		NamingHint:        "AP2Hint",
 		Action:            Filtered,
 		Users:             []string{"uid1", "uid2"},
 		Groups:            []string{"gid1", "gid2"},
@@ -72,6 +74,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "eid1", apsr[0].ExternalId)
 	assert.False(t, apsr[0].NotInternalizable)
 	assert.Equal(t, "AP1", apsr[0].Name)
+	assert.Equal(t, "AP1Hint", apsr[0].NamingHint)
 	assert.Equal(t, Promise, apsr[0].Action)
 	assert.Equal(t, 1, len(apsr[0].Users))
 	assert.Equal(t, "uid1", apsr[0].Users[0])
@@ -87,6 +90,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "eid2", apsr[1].ExternalId)
 	assert.True(t, apsr[1].NotInternalizable)
 	assert.Equal(t, "AP2", apsr[1].Name)
+	assert.Equal(t, "AP2Hint", apsr[1].NamingHint)
 	assert.Equal(t, Filtered, apsr[1].Action)
 	assert.Equal(t, 2, len(apsr[1].Users))
 	assert.Equal(t, "uid1", apsr[1].Users[0])

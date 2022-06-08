@@ -21,6 +21,7 @@ type AccessProvider struct {
 	ExternalId        string   `json:"externalId"`
 	NotInternalizable bool     `json:"notInternalizable"`
 	Name              string   `json:"name"`
+	NamingHint        string   `json:"namingHint"`
 	Users             []string `json:"users"`
 	Groups            []string `json:"groups"`
 	AccessObjects     []Access `json:"accessObjects"`

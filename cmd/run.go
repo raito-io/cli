@@ -385,7 +385,8 @@ func syncDataUsage(client *plugin.PluginClient, targetConfig target.BaseTargetCo
 	if err != nil {
 		return err
 	}
-	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced data usage. Added: %d transactions", duResult.StatementsAdded))
+	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced data usage. %d statements added, %d failed",
+		duResult.StatementsAdded, duResult.StatementsFailed))
 
 	return nil
 }

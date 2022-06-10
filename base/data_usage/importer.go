@@ -3,9 +3,10 @@ package data_usage
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	ap "github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/common/api/data_usage"
-	"os"
 )
 
 type Statement struct {
@@ -36,7 +37,8 @@ type dataUsageFileCreator struct {
 
 func NewDataUsageFileCreator(config *data_usage.DataUsageSyncConfig) (DataUsageFileCreator, error) {
 	duI := dataUsageFileCreator{
-		config: config,
+		config:         config,
+		statementCount: 0,
 	}
 
 	err := duI.createTargetFile()

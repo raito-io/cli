@@ -1,14 +1,17 @@
 package data_usage
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/spf13/viper"
-	"time"
 )
 
 type DataUsageImportConfig struct {
@@ -17,8 +20,9 @@ type DataUsageImportConfig struct {
 }
 
 type DataUsageImportResult struct {
-	StatementsAdded int             `json:"statementsAdded"`
-	Errors          []graphql.Error `json:"_"`
+	StatementsAdded  int             `json:"statementsAdded"`
+	StatementsFailed int             `json:"statementsFailed"`
+	Errors           []graphql.Error `json:"errors"`
 }
 
 type DataUsageImporter interface {
@@ -62,8 +66,50 @@ func (d *dataUsageImporter) upload() (string, error) {
 func (d *dataUsageImporter) doImport(fileKey string) (*DataUsageImportResult, error) {
 	start := time.Now()
 
-	d.log.Info(fmt.Sprintf("Actual import to appserver still needs to be implemented, reading from file %s", fileKey))
-	d.log.Info(fmt.Sprintf("Done executing import in %s", time.Since(start).Round(time.Millisecond)))
+	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataUsage", "variables":{}, "query": "mutation ImportDataUsage {
+        importDataUsage(input: {
+          dataSource: \"%s\",
+          dataObjects: \"%s\"
+        }) {
+          statementsAdded
+          statementsFailed
+          errors
+        }
+    }" }"`, d.config.DataSourceId, fileKey)
+	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
-	return &DataUsageImportResult{}, nil
+	res, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
+	}
+
+	ret, err := d.parseImportResult(res)
+	if err != nil {
+		return nil, err
+	}
+	if len(ret.Errors) > 0 {
+		return ret, fmt.Errorf("errors while importing/processing data usage: %s", ret.Errors[0].Message)
+	}
+
+	d.log.Info(fmt.Sprintf("Successfully imported %d data usage statements, %d failures, in %s", ret.StatementsAdded, ret.StatementsFailed, time.Since(start).Round(time.Millisecond)))
+
+	return &DataUsageImportResult{StatementsAdded: ret.StatementsAdded, StatementsFailed: ret.StatementsFailed}, nil
+}
+
+func (d *dataUsageImporter) parseImportResult(res []byte) (*DataUsageImportResult, error) {
+	resp := Response{}
+	gr := graphql.GraphqlResponse{Data: &resp}
+	err := json.Unmarshal(res, &gr)
+	if err != nil {
+		return nil, fmt.Errorf("error while parsing data usage import result: %s", err.Error())
+	}
+
+	// Flatten the result
+	resp.ImportDataUsage.Errors = gr.Errors
+
+	return &(resp.ImportDataUsage), nil
+}
+
+type Response struct {
+	ImportDataUsage DataUsageImportResult `json:"importDataUsage"`
 }

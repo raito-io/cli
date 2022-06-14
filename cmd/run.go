@@ -307,8 +307,6 @@ func syncDataAccess(client *plugin.PluginClient, targetConfig target.BaseTargetC
 		BaseTargetConfig: targetConfig,
 	}
 
-	config.ConfigMap.Parameters["runImport"] = true // signal syncer to also run raito import
-
 	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, accessRightsLastUpdated, true)
 	if err != nil {
 		return err
@@ -322,8 +320,9 @@ func syncDataAccess(client *plugin.PluginClient, targetConfig target.BaseTargetC
 
 	syncerConfig := dapc.DataAccessSyncConfig{
 		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
-		Prefix:     "R",
+		Prefix:     "",
 		TargetFile: targetFile,
+		RunImport:  true, // signal syncer to also run raito import
 	}
 	syncerConfig.DataAccess = dar
 

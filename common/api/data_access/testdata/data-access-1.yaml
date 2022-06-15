@@ -2,6 +2,7 @@ lastCalculated: 0
 accessRights:
   -
     id: 11111111-1111-1111-1111-111111111111
+    namingHint: "1_NAME_"
     dataObject:
       type: table
       name: table1
@@ -17,12 +18,13 @@ accessRights:
     users:
       - bart
       - dieter
-    rule:
+    provider:
       name: my first rule
       description: This describes the first rule
       id: xxxx-xxxx-xxxx
   -
     id: 11111111-1111-1111-1111-111111111112
+    namingHint: "2_NAME_"
     dataObject:
       type: table
       name: table2
@@ -37,7 +39,7 @@ accessRights:
     users:
       - katleen
       - stefanie
-    rule:
+    provider:
       name: my first rule2
       description: This describes the first rule2
       id: xxxx-xxxx-xxxx2

@@ -17,7 +17,7 @@ accessRights:
     users:
       - bart
       - dieter
-    rule:
+    provider:
       name: my first rule
       description: This describes the first rule
       id: xxxx-xxxx-xxxx
@@ -37,7 +37,7 @@ accessRights:
     users:
       - katleen
       - stefanie
-    rule:
+    provider:
       name: my first rule2
       description: This describes the first rule2
       id: xxxx-xxxx-xxxx2

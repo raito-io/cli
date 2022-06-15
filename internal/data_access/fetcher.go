@@ -2,12 +2,13 @@ package data_access
 
 import (
 	"fmt"
+	"io/ioutil"
+	"strconv"
+
 	"github.com/raito-io/cli/common/api/data_access"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/connect"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"strconv"
 )
 
 type DataAccessConfig struct {
@@ -18,9 +19,9 @@ type DataAccessConfig struct {
 // It will return 'nil, nil' if no changes happened since the date provided in the 'since' parameter.
 // Use 0 for the 'since' parameter if you want to force the fetching of the data access rights.
 func RetrieveDataAccessListForDataSource(config *DataAccessConfig, since int64, flattened bool) (*data_access.DataAccessResult, error) {
-	path := "access/data-source/" + (*config).DataSourceId
+	path := "access-provider/data-source/" + (*config).DataSourceId
 	if since > 0 {
-		path += "?since="+strconv.Itoa(int(since))
+		path += "?since=" + strconv.Itoa(int(since))
 	}
 	resp, err := connect.DoGetToRaito(path, &config.BaseTargetConfig)
 	if err != nil {
@@ -50,7 +51,7 @@ func RetrieveDataAccessListForDataSource(config *DataAccessConfig, since int64, 
 	return dar, nil
 }
 
-func flattenDataAccessList(dataAccessList []*data_access.DataAccess) ([]*data_access.DataAccess) {
+func flattenDataAccessList(dataAccessList []*data_access.DataAccess) []*data_access.DataAccess {
 	das := make([]*data_access.DataAccess, 0, len(dataAccessList))
 	dasMap := make(map[string][]*data_access.DataAccess)
 

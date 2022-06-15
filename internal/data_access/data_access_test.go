@@ -22,9 +22,9 @@ func TestBasicDataAccessParsing(t *testing.T) {
 
 	da0 := das[0]
 	assert.Equal(t, "11111111-1111-1111-1111-111111111111", da0.Id)
-	assert.Equal(t, "my first rule", da0.Rule.Name)
-	assert.Equal(t, "This describes the first rule", da0.Rule.Description)
-	assert.Equal(t, "xxxx-xxxx-xxxx", da0.Rule.Id)
+	assert.Equal(t, "my first rule", da0.Provider.Name)
+	assert.Equal(t, "This describes the first rule", da0.Provider.Description)
+	assert.Equal(t, "xxxx-xxxx-xxxx", da0.Provider.Id)
 	dao0 := *(da0.DataObject)
 	assert.Equal(t, "table1", dao0.Name)
 	assert.Equal(t, "table", dao0.Type)
@@ -45,9 +45,9 @@ func TestBasicDataAccessParsing(t *testing.T) {
 
 	da1 := das[1]
 	assert.Equal(t, "11111111-1111-1111-1111-111111111112", da1.Id)
-	assert.Equal(t, "my first rule2", da1.Rule.Name)
-	assert.Equal(t, "This describes the first rule2", da1.Rule.Description)
-	assert.Equal(t, "xxxx-xxxx-xxxx2", da1.Rule.Id)
+	assert.Equal(t, "my first rule2", da1.Provider.Name)
+	assert.Equal(t, "This describes the first rule2", da1.Provider.Description)
+	assert.Equal(t, "xxxx-xxxx-xxxx2", da1.Provider.Id)
 	dao1 := *(da1.DataObject)
 	assert.Equal(t, "table2", dao1.Name)
 	assert.Equal(t, "table", dao1.Type)
@@ -81,7 +81,7 @@ func TestRulesGeneratedParsing(t *testing.T) {
 
 	da0 := das[0]
 	assert.Equal(t, "11111111-1111-1111-1111-111111111111", da0.Id)
-	assert.Nil(t, da0.Rule)
+	assert.Nil(t, da0.Provider)
 	dao0 := *(da0.DataObject)
 	assert.Equal(t, "BE_Employees", dao0.Name)
 	assert.Equal(t, "Table", dao0.Type)
@@ -96,9 +96,9 @@ func TestRulesGeneratedParsing(t *testing.T) {
 
 	da1 := das[1]
 	assert.Equal(t, "a7379157-d4f2-459e-bada-a003f27ad03d", da1.Id)
-	assert.Equal(t, "Rule 1", da1.Rule.Name)
-	assert.Equal(t, "Some description", da1.Rule.Description)
-	assert.Equal(t, "00000000-0000-0000-0009-000000000001", da1.Rule.Id)
+	assert.Equal(t, "Rule 1", da1.Provider.Name)
+	assert.Equal(t, "Some description", da1.Provider.Description)
+	assert.Equal(t, "00000000-0000-0000-0009-000000000001", da1.Provider.Id)
 	dao1 := *(da1.DataObject)
 	assert.Equal(t, "BE_Employees", dao1.Name)
 	assert.Equal(t, "Table", dao1.Type)

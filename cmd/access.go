@@ -3,6 +3,10 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"time"
+
 	dapc "github.com/raito-io/cli/common/api/data_access"
 	"github.com/raito-io/cli/common/util/config"
 	"github.com/raito-io/cli/internal/constants"
@@ -11,9 +15,6 @@ import (
 	"github.com/raito-io/cli/internal/target"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"io/ioutil"
-	"os"
-	"time"
 )
 
 const defaultAccessFile = "access.yml"
@@ -25,8 +26,8 @@ func initAccessCommand(rootCmd *cobra.Command) {
 	var cmd = &cobra.Command{
 		Use:   "access",
 		Short: "Update the access permissions of the target with information from a YAML file.",
-		Long: accessDescription,
-		RunE: executeAccessCmd,
+		Long:  accessDescription,
+		RunE:  executeAccessCmd,
 	}
 
 	cmd.PersistentFlags().StringP(constants.AccessFileFlag, "a", "", fmt.Sprintf("Use this to specify a custom file path to use for the location of the access definition file. Default is %q. This can also be specified under the target in the configuration file.", defaultAccessFile))
@@ -67,8 +68,9 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 	defer client.Close()
 
 	config := dapc.DataAccessSyncConfig{
-		ConfigMap: config.ConfigMap{ Parameters: targetConfig.Parameters },
-		Prefix: "RR",
+		ConfigMap: config.ConfigMap{Parameters: targetConfig.Parameters},
+		Prefix:    "R",
+		RunImport: false,
 	}
 
 	af, err := os.Open(accessFile)

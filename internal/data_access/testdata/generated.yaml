@@ -10,7 +10,7 @@ accessRights:
       - DELETE
     users:
       - hAGzp
-    rule: null
+    provider: null
   - id: a7379157-d4f2-459e-bada-a003f27ad03d
     dataObject:
       type: Table
@@ -3983,7 +3983,7 @@ accessRights:
       - NiL
       - LlLLHl
       - SwipLBj
-    rule:
+    provider:
       name: Rule 1
       description: Some description
       id: 00000000-0000-0000-0009-000000000001

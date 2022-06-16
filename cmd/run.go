@@ -353,7 +353,7 @@ func syncDataAccess(client *plugin.PluginClient, targetConfig target.BaseTargetC
 
 func syncDataUsage(client *plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
 	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-du", "json"))
 	if err != nil {
 		return err
 	}

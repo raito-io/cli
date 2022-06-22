@@ -8,8 +8,8 @@ import (
 )
 
 type GraphqlResponse struct {
-	Data interface{} `json:"data"`
-	Errors []Error   `json:"errors"`
+	Data   interface{} `json:"data"`
+	Errors []Error     `json:"errors"`
 }
 
 type Error struct {

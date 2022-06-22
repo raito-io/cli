@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"github.com/raito-io/cli/internal/graphql"
 	"os"
@@ -129,14 +130,28 @@ func startJob(cfg *target.BaseTargetConfig) (string, error) {
 
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
-	id, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
+	res, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
 	if err != nil {
 		return "", fmt.Errorf("error while executing import: %s", err.Error())
 	}
 
-	cfg.Logger.Info("Job ID: " + string(id))
+	resp := Response{}
+	gr := graphql.GraphqlResponse{Data: &resp}
 
-	return "", nil
+	err = json.Unmarshal(res, &gr)
+	if err != nil {
+		return "", fmt.Errorf("error while parsing job event result: %s", err.Error())
+	}
+
+	return *resp.Job.JobID, nil
+}
+
+type Response struct {
+	Job Job `json:"createJob"`
+}
+
+type Job struct {
+	JobID *string `json:"jobId"`
 }
 
 func addJobEvent(cfg *target.BaseTargetConfig, jobID, jobType, status string) {

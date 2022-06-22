@@ -32,7 +32,8 @@ func doPost(host, path, body, contentType string, config *target.BaseTargetConfi
 }
 
 func DoPostToRaito(path, body, contentType string, config *target.BaseTargetConfig) (*http.Response, error) {
-	return doPost(url.GetRaitoURL(), path, body, contentType, config)
+	//return doPost(url.GetRaitoURL(), path, body, contentType, config)
+	return doPost("http://localhost:8080", path, body, contentType, config)
 }
 
 func doGet(host, path string, config *target.BaseTargetConfig) (*http.Response, error) {

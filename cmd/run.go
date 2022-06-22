@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"github.com/raito-io/cli/internal/graphql"
 	"os"
 	"path/filepath"
 	"strings"
@@ -121,6 +122,38 @@ func runSync(baseLogger hclog.Logger, otherArgs []string) error {
 	return target.RunTargets(baseLogger, otherArgs, runTargetSync)
 }
 
+func startJob(cfg *target.BaseTargetConfig) (string, error) {
+	gqlQuery := fmt.Sprintf(`{ "query": "mutation createJob {
+        createJob(input: { dataSourceId: \"%s\", eventTime: \"%s\" }) { jobId } }" }"`,
+		cfg.DataSourceId, time.Now().Format(time.RFC3339))
+
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+
+	id, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
+	if err != nil {
+		return "", fmt.Errorf("error while executing import: %s", err.Error())
+	}
+
+	cfg.Logger.Info("Job ID: " + string(id))
+
+	return "", nil
+}
+
+func addJobEvent(cfg *target.BaseTargetConfig, jobID, jobType, status string) {
+	gqlQuery := fmt.Sprintf(`{ "query": "mutation createJobEvent {
+        createJobEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", jobType: \"%s\", status: \"%s\", eventTime: \"%s\" }) { jobId } }" }"`,
+		jobID, cfg.DataSourceId, jobType, status, time.Now().Format(time.RFC3339))
+
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+
+	id, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
+	if err != nil {
+		cfg.Logger.Info("job update failed: %s", err.Error())
+	}
+
+	cfg.Logger.Info("Job ID: " + string(id))
+}
+
 func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	targetConfig.Logger.Info("Executing target...")
 
@@ -133,14 +166,27 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	}
 	defer client.Close()
 
+	jobID, jobErr := startJob(targetConfig)
+	// TODO: Don't send jobEvents if job creation failed
+	if jobErr != nil {
+		targetConfig.Logger.Warn(fmt.Sprintf("Error creating status job: %s", err.Error()))
+	}
+
 	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataSourceSync {
 		targetConfig.Logger.Info("Synchronizing data source meta data...")
+		addJobEvent(targetConfig, jobID, constants.DataSourceSync, constants.Started)
+
 		err := syncDataSource(&client, *targetConfig)
 		if err != nil {
-			target.HandleTargetError(err, targetConfig, "sychronizing data source meta data")
+			target.HandleTargetError(err, targetConfig, "synchronizing data source meta data")
+			addJobEvent(targetConfig, jobID, constants.DataSourceSync, constants.Failed)
+
 			return err
+		} else {
+			addJobEvent(targetConfig, jobID, constants.DataSourceSync, constants.Completed)
 		}
 	} else {
+		addJobEvent(targetConfig, jobID, constants.DataSourceSync, constants.Skipped)
 		if targetConfig.DataSourceId == "" {
 			targetConfig.Logger.Info("No data-source-id argument found. Skipping syncing of data source meta data")
 		} else {
@@ -150,12 +196,20 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 
 	if targetConfig.IdentityStoreId != "" && !targetConfig.SkipIdentityStoreSync {
 		targetConfig.Logger.Info("Synchronizing identity store data...")
+		addJobEvent(targetConfig, jobID, constants.IdentitySync, constants.Started)
+
 		err := syncIdentityStore(&client, *targetConfig)
 		if err != nil {
 			target.HandleTargetError(err, targetConfig, "sychronizing identity store data")
+			addJobEvent(targetConfig, jobID, constants.IdentitySync, constants.Failed)
+
 			return err
+		} else {
+			addJobEvent(targetConfig, jobID, constants.IdentitySync, constants.Completed)
 		}
 	} else {
+		addJobEvent(targetConfig, jobID, constants.IdentitySync, constants.Skipped)
+
 		if targetConfig.DataSourceId == "" {
 			targetConfig.Logger.Info("No identity-store-id argument found. Skipping identity store syncing")
 		} else {
@@ -165,12 +219,20 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 
 	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataAccessSync {
 		targetConfig.Logger.Info("Synchronizing data access...")
+		addJobEvent(targetConfig, jobID, constants.DataAccessSync, constants.Started)
+
 		err := syncDataAccess(&client, *targetConfig)
 		if err != nil {
 			target.HandleTargetError(err, targetConfig, "sychronizing data access information to the data source")
+			addJobEvent(targetConfig, jobID, constants.DataAccessSync, constants.Failed)
+
 			return err
+		} else {
+			addJobEvent(targetConfig, jobID, constants.DataAccessSync, constants.Completed)
 		}
 	} else {
+		addJobEvent(targetConfig, jobID, constants.DataAccessSync, constants.Skipped)
+
 		if targetConfig.DataSourceId == "" {
 			targetConfig.Logger.Info("No data-source-id argument found. Skipping data access syncing")
 		} else {
@@ -180,12 +242,20 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 
 	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataUsageSync {
 		targetConfig.Logger.Info("Synchronizing data usage...")
+		addJobEvent(targetConfig, jobID, constants.DataUsageSync, constants.Started)
+
 		err := syncDataUsage(&client, *targetConfig)
 		if err != nil {
 			target.HandleTargetError(err, targetConfig, "sychronizing data usage information to the data source")
+			addJobEvent(targetConfig, jobID, constants.DataUsageSync, constants.Failed)
+
 			return err
+		} else {
+			addJobEvent(targetConfig, jobID, constants.DataUsageSync, constants.Completed)
 		}
 	} else {
+		addJobEvent(targetConfig, jobID, constants.DataUsageSync, constants.Skipped)
+
 		if targetConfig.DataSourceId == "" {
 			targetConfig.Logger.Info("No data-source-id argument found. Skipping data usage syncing")
 		} else {
@@ -194,6 +264,9 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	}
 
 	targetConfig.Logger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
+
+	// TODO: If one fails, fail the whole job?
+	addJobEvent(targetConfig, jobID, constants.Job, constants.Completed)
 
 	return nil
 }

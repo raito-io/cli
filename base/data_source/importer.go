@@ -58,7 +58,7 @@ func NewDataSourceFileCreator(config *data_source.DataSourceSyncConfig) (DataSou
 		return nil, err
 	}
 
-	_, err = dsI.targetFile.Write([]byte("["))
+	_, err = dsI.targetFile.WriteString("[")
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func NewDataSourceFileCreator(config *data_source.DataSourceSyncConfig) (DataSou
 // This method must be called when all data objects have been added and before control is given back
 // to the CLI. It's advised to call this using 'defer'.
 func (d *dataSourceFileCreator) Close() {
-	d.targetFile.Write([]byte("\n]")) //nolint:errcheck
+	d.targetFile.WriteString("\n]") //nolint:errcheck
 	d.targetFile.Close()
 }
 
@@ -86,15 +86,17 @@ func (d *dataSourceFileCreator) AddDataObjects(dataObjects []DataObject) error {
 		var err error
 
 		if d.dataObjectCount > 0 {
-			d.targetFile.Write([]byte(",")) //nolint:errcheck
+			d.targetFile.WriteString(",") //nolint:errcheck
 		}
-		d.targetFile.Write([]byte("\n")) //nolint:errcheck
+
+		d.targetFile.WriteString("\n") //nolint:errcheck
 
 		doBuf, err := json.Marshal(do)
 		if err != nil {
 			return fmt.Errorf("error while serializing data object with externalID %q", do.ExternalId)
 		}
-		d.targetFile.Write([]byte("\n")) //nolint:errcheck
+
+		d.targetFile.WriteString("\n") //nolint:errcheck
 		_, err = d.targetFile.Write(doBuf)
 
 		// Only looking at writing errors at the end, supposing if one fails, all would fail
@@ -118,5 +120,6 @@ func (d *dataSourceFileCreator) createTargetFile() error {
 		return fmt.Errorf("error creating temporary file for data source importer: %s", err.Error())
 	}
 	d.targetFile = f
+
 	return nil
 }

@@ -5,13 +5,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
-	"github.com/raito-io/cli/common/api"
-	"github.com/raito-io/cli/common/api/data_access"
-	"github.com/raito-io/cli/common/api/data_source"
-	"github.com/raito-io/cli/common/api/data_usage"
-	"github.com/raito-io/cli/common/api/identity_store"
 	"io"
 	"io/fs"
 	"os"
@@ -21,14 +14,22 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
+	"github.com/raito-io/cli/common/api"
+	"github.com/raito-io/cli/common/api/data_access"
+	"github.com/raito-io/cli/common/api/data_source"
+	"github.com/raito-io/cli/common/api/data_usage"
+	"github.com/raito-io/cli/common/api/identity_store"
 )
 
 // TODO add cancel and async (done context) support
 
 const LATEST = "latest"
 
-var nameRegexp = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9]$`)
-var versionRegexp = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
+var nameRegexp = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z\d]$`)
+var versionRegexp = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 
 var localPluginFolder = "./raito/plugins/"
 var globalPluginFolder string
@@ -44,7 +45,7 @@ var pluginMap = map[string]plugin.Plugin{
 func init() {
 	userHome, _ := os.UserHomeDir()
 	if !strings.HasSuffix(userHome, "/") {
-		userHome = userHome + "/"
+		userHome += "/"
 	}
 	globalPluginFolder = userHome + ".raito/plugins/"
 
@@ -69,6 +70,7 @@ func NewPluginClient(connector string, version string, logger hclog.Logger) (Plu
 	if err != nil {
 		return nil, fmt.Errorf("error while finding matching plugin for %q (version %q): %s", connector, version, err.Error())
 	}
+
 	if pluginPath == "" {
 		return nil, fmt.Errorf("unable to find matching plugin for %q (version %q)", connector, version)
 	}
@@ -109,6 +111,7 @@ func findMatchingPlugin(connector string, version string, logger hclog.Logger) (
 	if err != nil {
 		return "", err
 	}
+
 	logger.Debug(fmt.Sprintf("Using plugin request %+v", pluginRequest))
 
 	// We're looking for a specific plugin version
@@ -171,6 +174,7 @@ func extractFromDownloadFile(pluginRequest *pluginRequest, downloadedFile, targe
 
 func extractTarGz(gzipStream io.Reader, extractedPath string) (string, error) {
 	parentFolder := extractedPath[0 : strings.LastIndex(extractedPath, "/")+1]
+
 	err := os.MkdirAll(parentFolder, fs.ModePerm)
 	if err != nil {
 		return "", fmt.Errorf("error while creating plugin parent folder %q: %s", parentFolder, err.Error())
@@ -204,18 +208,31 @@ func extractTarGz(gzipStream io.Reader, extractedPath string) (string, error) {
 				continue
 			}
 			outFile, err := os.Create(extractedPath)
+
 			if err != nil {
 				return "", fmt.Errorf("error while extracting file from tar.gz archive: %s", err.Error())
 			}
-			if _, err := io.Copy(outFile, tarReader); err != nil {
-				return "", fmt.Errorf("error while extracting file from tar.gz archive: %s", err.Error())
+
+			for {
+				if _, err := io.CopyN(outFile, tarReader, 1024); err != nil {
+					if err != nil {
+						if err == io.EOF {
+							break
+						}
+
+						return "", fmt.Errorf("error while extracting file from tar.gz archive: %s", err.Error())
+					}
+				}
 			}
+
 			outFile.Close()
+
 			return extractedPath, nil
 		default:
 			return "", errors.New("unknown entry found in tar.gz archive")
 		}
 	}
+
 	return "", errors.New("no files found to extract from tar.gz archive")
 }
 
@@ -223,9 +240,11 @@ func getLatestVersionFromFiles(matches []string) string {
 	versionStart := strings.LastIndex(matches[0], "-") + 1
 	prefix := matches[0][0:versionStart]
 	versions := make([]string, 0, len(matches))
+
 	for _, match := range matches {
 		versions = append(versions, match[versionStart:])
 	}
+
 	return prefix + getLatestVersion(versions)
 }
 
@@ -234,6 +253,7 @@ func getLatestVersion(matches []string) string {
 	for _, match := range matches {
 		versions = append(versions, api.ParseVersion(match))
 	}
+
 	sort.SliceStable(versions, func(i, j int) bool {
 		v1 := versions[i]
 		v2 := versions[j]
@@ -248,6 +268,7 @@ func getLatestVersion(matches []string) string {
 		}
 		return false
 	})
+
 	return versions[len(versions)-1].String()
 }
 
@@ -255,22 +276,26 @@ func parsePluginRequest(connector string, version string) (*pluginRequest, error
 	if strings.Count(connector, "/") != 1 {
 		return nil, errors.New("the connector name is expected to have exactly 1 slash (/) in it")
 	}
+
 	parts := strings.Split(connector, "/")
 	if len(parts) != 2 {
 		return nil, errors.New("the connector name should be in the format <group>/<name>")
 	}
-	if len(parts[0]) == 0 {
+
+	if parts[0] == "" {
 		return nil, errors.New("no connector group specified. The connector name should be in the format <group>/<name>")
 	}
-	if len(parts[1]) == 0 {
+
+	if parts[1] == "" {
 		return nil, errors.New("no connector name specified. The connector name should be in the format <group>/<name>")
 	}
 
 	group := parts[0]
-	name := parts[1]
 	if !validateName(group) {
 		return nil, errors.New("the connector group should only contain alphanumeric characters and dash (-) characters (not at the start or the end)")
 	}
+
+	name := parts[1]
 	if !validateName(name) {
 		return nil, errors.New("the connector name should only contain alphanumeric characters and dash (-) characters (not at the start or the end)")
 	}
@@ -280,9 +305,10 @@ func parsePluginRequest(connector string, version string) (*pluginRequest, error
 	if version == "" {
 		version = LATEST
 	}
+
 	version = strings.ToLower(version)
 	if version != LATEST {
-		if !versionRegexp.Match([]byte(version)) {
+		if !versionRegexp.MatchString(version) {
 			return nil, errors.New("the connector version should either be empty, 'latest' or in the format X.Y.Z")
 		}
 	}
@@ -295,7 +321,7 @@ func parsePluginRequest(connector string, version string) (*pluginRequest, error
 }
 
 func validateName(name string) bool {
-	return nameRegexp.Match([]byte(name))
+	return nameRegexp.MatchString(name)
 }
 
 type pluginClientImpl struct {
@@ -322,7 +348,7 @@ func (c pluginClientImpl) GetDataSourceSyncer() (data_source.DataSourceSyncer, e
 	if syncer, ok := raw.(data_source.DataSourceSyncer); ok {
 		return syncer, nil
 	} else {
-		return nil, fmt.Errorf("Found plugin doesn't correctly implement the DataSourceSyncer interface.")
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the DataSourceSyncer interface")
 	}
 }
 
@@ -340,7 +366,7 @@ func (c pluginClientImpl) GetIdentityStoreSyncer() (identity_store.IdentityStore
 	if syncer, ok := raw.(identity_store.IdentityStoreSyncer); ok {
 		return syncer, nil
 	} else {
-		return nil, fmt.Errorf("Found plugin doesn't correctly implement the IdentityStoreSyncer interface.")
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the IdentityStoreSyncer interface")
 	}
 }
 
@@ -358,7 +384,7 @@ func (c pluginClientImpl) GetDataAccessSyncer() (data_access.DataAccessSyncer, e
 	if syncer, ok := raw.(data_access.DataAccessSyncer); ok {
 		return syncer, nil
 	} else {
-		return nil, fmt.Errorf("Found plugin doesn't correctly implement the DataAccessSyncer interface.")
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the DataAccessSyncer interface")
 	}
 }
 
@@ -394,7 +420,7 @@ func (c pluginClientImpl) GetInfo() (api.Info, error) {
 	if info, ok := raw.(api.Info); ok {
 		return info, nil
 	} else {
-		return nil, fmt.Errorf("Found plugin doesn't correctly implement the Info interface.")
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the Info interface")
 	}
 }
 
@@ -422,6 +448,7 @@ func (r *pluginRequest) Path() string {
 	if r.IsLatest() {
 		return r.GroupAndName() + "-*"
 	}
+
 	return r.GroupAndName() + "-" + r.Version
 }
 
@@ -437,5 +464,6 @@ func (r *pluginRequest) RemoteFilePath() string {
 	sb.WriteString("-")
 	sb.WriteString(r.Version)
 	sb.WriteString(".tar.gz")
+
 	return sb.String()
 }

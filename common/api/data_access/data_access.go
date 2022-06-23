@@ -1,7 +1,7 @@
 package data_access
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec
 	"encoding/base64"
 	"net/rpc"
 	"sort"
@@ -66,16 +66,18 @@ type DataObject struct {
 func (d *DataAccess) CalculateHash() string {
 	sort.Strings(d.Permissions)
 	permissions := strings.Join(d.Permissions, ",")
+
 	path := d.DataObject.Path
 	if path == "" {
 		path = d.DataObject.BuildPath(".")
 	}
 
-	hasher := sha1.New()
+	hasher := sha1.New() //nolint:gosec
 
 	hasher.Write([]byte(path))
 	hasher.Write([]byte("|"))
 	hasher.Write([]byte(permissions))
+
 	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))
 }
 
@@ -93,10 +95,12 @@ func (d *DataAccess) Merge(input []*DataAccess) *DataAccess {
 
 	// Now remove the duplicates
 	check := make(map[string]int)
+
 	for _, val := range ret.Users {
 		check[val] = 1
 	}
 	mergedUsers := make([]string, 0)
+
 	for u := range check {
 		mergedUsers = append(mergedUsers, u)
 	}
@@ -114,6 +118,7 @@ func (d *DataObject) BuildPath(sep string) string {
 	} else {
 		d.Path = d.Name
 	}
+
 	return d.Path
 }
 
@@ -151,6 +156,7 @@ type dataAccessSyncerRPC struct{ client *rpc.Client }
 
 func (g *dataAccessSyncerRPC) SyncDataAccess(config *DataAccessSyncConfig) DataAccessSyncResult {
 	var resp DataAccessSyncResult
+
 	err := g.client.Call("Plugin.SyncDataAccess", config, &resp)
 	if err != nil && resp.Error == nil {
 		resp.Error = api.ToErrorResult(err)

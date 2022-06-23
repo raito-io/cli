@@ -7,12 +7,12 @@ import (
 
 func TestPluginInfo(t *testing.T) {
 	i := PluginInfo{
-		Name: "TestPlugin",
-		Version: Version{ 1, 2, 3 },
+		Name:        "TestPlugin",
+		Version:     Version{1, 2, 3},
 		Description: "Plugin Description!",
 		Parameters: []ParameterInfo{
-			{ "p1", "p1 descr", true },
-			{ "p2", "p2 descr", false },
+			{"p1", "p1 descr", true},
+			{"p2", "p2 descr", false},
 		},
 	}
 

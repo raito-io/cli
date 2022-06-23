@@ -9,30 +9,30 @@ package identity_store
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/raito-io/cli/common/api/identity_store"
 	"os"
+
+	"github.com/raito-io/cli/common/api/identity_store"
 )
 
 // Group represents a user group in the format that is suitable to be imported into a Raito identity store.
 type Group struct {
-	ExternalId             string    `json:"externalId"`
-	Name                   string    `json:"name"`
-	DisplayName            string    `json:"displayName"`
-	Description            string    `json:"description"`
-	ParentGroupExternalIds []string  `json:"parentGroupExternalIds"`
+	ExternalId             string                 `json:"externalId"`
+	Name                   string                 `json:"name"`
+	DisplayName            string                 `json:"displayName"`
+	Description            string                 `json:"description"`
+	ParentGroupExternalIds []string               `json:"parentGroupExternalIds"`
 	Tags                   map[string]interface{} `json:"tags"`
 }
 
 // User represents a user in the format that is suitable to be imported into a Raito identity store.
 type User struct {
-	ExternalId       string   `json:"externalId"`
-	Name             string   `json:"name"`
-	UserName         string   `json:"userName"`
-	Email            string   `json:"email"`
-	GroupExternalIds []string `json:"groupExternalIds"`
+	ExternalId       string                 `json:"externalId"`
+	Name             string                 `json:"name"`
+	UserName         string                 `json:"userName"`
+	Email            string                 `json:"email"`
+	GroupExternalIds []string               `json:"groupExternalIds"`
 	Tags             map[string]interface{} `json:"tags"`
 }
-
 
 // IdentityStoreFileCreator describes the interface for easily creating the user and group import files
 // to be imported by the Raito CLI.
@@ -47,9 +47,9 @@ type IdentityStoreFileCreator interface {
 type identityStoreImporter struct {
 	config *identity_store.IdentityStoreSyncConfig
 
-	usersFile *os.File
+	usersFile  *os.File
 	groupsFile *os.File
-	userCount int
+	userCount  int
 	groupCount int
 }
 
@@ -65,11 +65,14 @@ func NewIdentityStoreFileCreator(config *identity_store.IdentityStoreSyncConfig)
 		return nil, err
 	}
 
-	_, err = isI.usersFile.Write([]byte("["))
+	_, err = isI.usersFile.WriteString("[")
+
 	if err != nil {
 		return nil, err
 	}
-	_, err = isI.groupsFile.Write([]byte("["))
+
+	_, err = isI.groupsFile.WriteString("[")
+
 	if err != nil {
 		return nil, err
 	}
@@ -80,12 +83,12 @@ func NewIdentityStoreFileCreator(config *identity_store.IdentityStoreSyncConfig)
 // Close finalizes the import files and closes them so they can be correctly read by the Raito CLI.
 // This method must be called when all users and groups have been added and before control is given back
 // to the CLI. It's advised to call this using 'defer'.
-func (d *identityStoreImporter) Close() {
-	d.usersFile.Write([]byte("\n]")) //nolint:errcheck
-	d.groupsFile.Write([]byte("\n]")) //nolint:errcheck
+func (i *identityStoreImporter) Close() {
+	i.usersFile.WriteString("\n]")  //nolint:errcheck
+	i.groupsFile.WriteString("\n]") //nolint:errcheck
 
-	d.usersFile.Close()
-	d.groupsFile.Close()
+	i.usersFile.Close()
+	i.groupsFile.Close()
 }
 
 // AddGroups adds the slice of groups to the groups import file.
@@ -100,15 +103,18 @@ func (i *identityStoreImporter) AddGroups(groups []Group) error {
 		var err error
 
 		if i.groupCount > 0 {
-			i.groupsFile.Write([]byte(",")) //nolint:errcheck
+			i.groupsFile.WriteString(",") //nolint:errcheck
 		}
-		i.groupsFile.Write([]byte("\n")) //nolint:errcheck
+
+		i.groupsFile.WriteString("\n") //nolint:errcheck
 
 		gBuf, _ := json.Marshal(g)
+
 		if err != nil {
 			return fmt.Errorf("error while serializing group with externalID %q", g.ExternalId)
 		}
-		i.groupsFile.Write([]byte("\n")) //nolint:errcheck
+
+		i.groupsFile.WriteString("\n") //nolint:errcheck
 		_, err = i.groupsFile.Write(gBuf)
 
 		// Only looking at writing errors at the end, supposing if one fails, all would fail
@@ -118,7 +124,7 @@ func (i *identityStoreImporter) AddGroups(groups []Group) error {
 		i.groupCount++
 	}
 
-	return  nil
+	return nil
 }
 
 // AddUsers adds the slice of users to the users import file.
@@ -133,15 +139,18 @@ func (i *identityStoreImporter) AddUsers(users []User) error {
 		var err error
 
 		if i.userCount > 0 {
-			i.usersFile.Write([]byte(",")) //nolint:errcheck
+			i.usersFile.WriteString(",") //nolint:errcheck
 		}
-		i.usersFile.Write([]byte("\n")) //nolint:errcheck
+
+		i.usersFile.WriteString("\n") //nolint:errcheck
 
 		uBuf, _ := json.Marshal(u)
+
 		if err != nil {
 			return fmt.Errorf("error while serializing user with externalID %q", u.ExternalId)
 		}
-		i.usersFile.Write([]byte("\n")) //nolint:errcheck
+
+		i.usersFile.WriteString("\n") //nolint:errcheck
 		_, err = i.usersFile.Write(uBuf)
 
 		// Only looking at writing errors at the end, supposing if one fails, all would fail
@@ -151,7 +160,7 @@ func (i *identityStoreImporter) AddUsers(users []User) error {
 		i.userCount++
 	}
 
-	return  nil
+	return nil
 }
 
 // GetUserCount returns the number of users that has been added to the import file.
@@ -164,18 +173,20 @@ func (i *identityStoreImporter) GetGroupCount() int {
 	return i.groupCount
 }
 
-func (d *identityStoreImporter) createTargetFiles() error {
-	f, err := os.Create(d.config.UserFile)
+func (i *identityStoreImporter) createTargetFiles() error {
+	f, err := os.Create(i.config.UserFile)
 	if err != nil {
 		return fmt.Errorf("error creating temporary file for identity store importer (users): %s", err.Error())
 	}
-	d.usersFile = f
 
-	f2, err := os.Create(d.config.GroupFile)
+	i.usersFile = f
+
+	f2, err := os.Create(i.config.GroupFile)
 	if err != nil {
 		return fmt.Errorf("error creating temporary file for identity store importer (groups): %s", err.Error())
 	}
-	d.groupsFile = f2
+
+	i.groupsFile = f2
+
 	return nil
 }
-

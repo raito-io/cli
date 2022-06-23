@@ -17,15 +17,18 @@ func HandleField(value interface{}, targetType reflect.Kind) (interface{}, error
 	if sv, ok := value.(string); ok {
 		sv = strings.TrimSpace(sv)
 		if strings.HasPrefix(sv, "{{") && strings.HasSuffix(sv, "}}") {
-			envVar := sv[2:len(sv)-2]
+			envVar := sv[2 : len(sv)-2]
 			envValue, envSet := os.LookupEnv(envVar)
+
 			if !envSet {
-				return nil, errors.New("no environment variable with name "+envVar+" found")
+				return nil, errors.New("no environment variable with name " + envVar + " found")
 			}
 			converted, err := convertStringToType(envValue, targetType)
+
 			if err != nil {
 				return nil, fmt.Errorf("error when converting environment variable %q: %s", envVar, err.Error())
 			}
+
 			return converted, nil
 		}
 	}
@@ -34,7 +37,7 @@ func HandleField(value interface{}, targetType reflect.Kind) (interface{}, error
 }
 
 func convertStringToType(v string, k reflect.Kind) (interface{}, error) {
-	switch k {
+	switch k { //nolint:exhaustive
 	case reflect.String:
 		return v, nil
 	case reflect.Int:
@@ -43,6 +46,7 @@ func convertStringToType(v string, k reflect.Kind) (interface{}, error) {
 		return strconv.ParseFloat(v, 64)
 	case reflect.Bool:
 		return strconv.ParseBool(v)
+	default:
+		return nil, fmt.Errorf("unknown type %q to convert", k.String())
 	}
-	return nil, fmt.Errorf("Unknown type %q to convert", k.String())
 }

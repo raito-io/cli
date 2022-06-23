@@ -3,14 +3,15 @@ package data_source
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/spf13/viper"
-	"strings"
-	"time"
 )
 
 type DataSourceImportConfig struct {
@@ -39,6 +40,7 @@ type dataSourceImporter struct {
 func NewDataSourceImporter(config *DataSourceImportConfig) DataSourceImporter {
 	logger := config.Logger.With("datasource", config.DataSourceId, "file", config.TargetFile)
 	dsI := dataSourceImporter{config, logger}
+
 	return &dsI
 }
 
@@ -62,6 +64,7 @@ func (d *dataSourceImporter) upload() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error while uploading data source import files to Raito: %s", err.Error())
 	}
+
 	return key, nil
 }
 
@@ -93,6 +96,7 @@ func (d *dataSourceImporter) doImport(fileKey string) (*DataSourceImportResult, 
 	if err != nil {
 		return nil, err
 	}
+
 	if len(ret.Errors) > 0 {
 		return ret, fmt.Errorf("errors while importing into data source: %s", ret.Errors[0].Message)
 	}

@@ -71,7 +71,7 @@ func NewAccessProviderFileCreator(config *data_access.DataAccessSyncConfig) (Acc
 		return nil, err
 	}
 
-	_, err = dsI.targetFile.Write([]byte("["))
+	_, err = dsI.targetFile.WriteString("[")
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func NewAccessProviderFileCreator(config *data_access.DataAccessSyncConfig) (Acc
 // This method must be called when all data objects have been added and before control is given back
 // to the CLI. It's advised to call this using 'defer'.
 func (d *accessProviderFileCreator) Close() {
-	d.targetFile.Write([]byte("\n]")) //nolint:errcheck
+	d.targetFile.WriteString("\n]") //nolint:errcheck
 	d.targetFile.Close()
 }
 
@@ -95,19 +95,21 @@ func (d *accessProviderFileCreator) AddAccessProvider(dataAccessList []AccessPro
 		return nil
 	}
 
-	for _, da := range dataAccessList {
+	for _, da := range dataAccessList { //nolint
 		var err error
 
 		if d.dataAccessCount > 0 {
-			d.targetFile.Write([]byte(",")) //nolint:errcheck
+			d.targetFile.WriteString(",") //nolint:errcheck
 		}
-		d.targetFile.Write([]byte("\n")) //nolint:errcheck
+
+		d.targetFile.WriteString("\n") //nolint:errcheck
 
 		doBuf, err := json.Marshal(da)
 		if err != nil {
 			return fmt.Errorf("error while serializing data object with externalID %q", da.ExternalId)
 		}
-		d.targetFile.Write([]byte("\n")) //nolint:errcheck
+
+		d.targetFile.WriteString("\n") //nolint:errcheck
 		_, err = d.targetFile.Write(doBuf)
 
 		// Only looking at writing errors at the end, supposing if one fails, all would fail
@@ -131,6 +133,7 @@ func (d *accessProviderFileCreator) createTargetFile() error {
 		return fmt.Errorf("error creating temporary file for data source importer: %s", err.Error())
 	}
 	d.targetFile = f
+
 	return nil
 }
 
@@ -138,15 +141,17 @@ var actionNames = [...]string{"Promise", "Grant", "Deny", "Mask", "Filtered"}
 var actionNameMap = map[string]Action{"Promise": Promise, "Grant": Grant, "Deny": Deny, "Mask": Mask, "Filtered": Filtered}
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
-func (y *Action) UnmarshalJSON(b []byte) error {
+func (s *Action) UnmarshalJSON(b []byte) error {
 	var j string
+
 	err := json.Unmarshal(b, &j)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err.Error()) //nolint:forbidigo
 		return err
 	}
 	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
-	*y = actionNameMap[j]
+	*s = actionNameMap[j]
+
 	return nil
 }
 
@@ -155,5 +160,6 @@ func (s Action) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
 	buffer.WriteString(actionNames[s])
 	buffer.WriteString(`"`)
+
 	return buffer.Bytes(), nil
 }

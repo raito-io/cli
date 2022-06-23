@@ -2,16 +2,17 @@ package api
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-plugin"
 	"net/rpc"
 	"strconv"
 	"strings"
+
+	"github.com/hashicorp/go-plugin"
 )
 
 // Version contains semantic versioning information of the plugin
 type Version struct {
-	Major int
-	Minor int
+	Major       int
+	Minor       int
 	Maintenance int
 }
 
@@ -25,64 +26,74 @@ func (i Version) String() string {
 func ParseVersion(version string) Version {
 	parts := strings.Split(version, ".")
 	if len(parts) != 3 {
-		return Version{ }
+		return Version{}
 	}
 	major, err := strconv.Atoi(parts[0])
+
 	if err != nil {
-		return Version{ }
+		return Version{}
 	}
 	minor, err := strconv.Atoi(parts[1])
+
 	if err != nil {
-		return Version{ }
+		return Version{}
 	}
 	maintenance, err := strconv.Atoi(parts[2])
+
 	if err != nil {
-		return Version{ }
+		return Version{}
 	}
-	return Version{ Major: major, Minor: minor, Maintenance: maintenance }
+
+	return Version{Major: major, Minor: minor, Maintenance: maintenance}
 }
 
 // ParameterInfo contains the information about a parameter.
 // This is used to inform the CLI user what command-line parameters are expected explicitly for this target (plugin).
 type ParameterInfo struct {
-	Name string
+	Name        string
 	Description string
-	Mandatory bool
+	Mandatory   bool
 }
 
 func (i ParameterInfo) String() string {
 	if i.Mandatory {
 		return fmt.Sprintf("%s (mandatory): %s", i.Name, i.Description)
 	}
+
 	return fmt.Sprintf("%s (optional): %s", i.Name, i.Description)
 }
 
 // PluginInfo represents the information about a plugin.
 type PluginInfo struct {
-	Name string
+	Name        string
 	Description string
-	Version Version
-	Parameters []ParameterInfo
+	Version     Version
+	Parameters  []ParameterInfo
 }
 
 func (i PluginInfo) String() string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("%s v%s", i.Name, i.Version))
+
 	return sb.String()
 }
 
 func (i PluginInfo) FullOverview() string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("%s v%s", i.Name, i.Version))
+
 	if i.Description != "" {
 		sb.WriteString(fmt.Sprintf("\n\n%s", i.Description))
 	}
+
 	if len(i.Parameters) > 0 {
 		sb.WriteString("\n\nParameters:")
+
 		for _, param := range i.Parameters {
 			sb.WriteString(fmt.Sprintf("\n   %s", param))
 		}
 	}
+
 	return sb.String()
 }
 
@@ -114,6 +125,7 @@ type infoRPC struct{ client *rpc.Client }
 
 func (g *infoRPC) PluginInfo() PluginInfo {
 	var resp PluginInfo
+
 	err := g.client.Call("Plugin.PluginInfo", new(interface{}), &resp)
 	if err != nil {
 		return PluginInfo{}
@@ -121,6 +133,7 @@ func (g *infoRPC) PluginInfo() PluginInfo {
 
 	return resp
 }
+
 type infoRPCServer struct {
 	Impl Info
 }

@@ -15,7 +15,7 @@ func TestToErrorResult(t *testing.T) {
 func TestToErrorResultAsIs(t *testing.T) {
 	res := ToErrorResult(ErrorResult{
 		ErrorMessage: "Existing",
-		ErrorCode: BadInputParameterError,
+		ErrorCode:    BadInputParameterError,
 	})
 	assert.Equal(t, BadInputParameterError, res.ErrorCode)
 	assert.Equal(t, "Existing", res.ErrorMessage)
@@ -24,7 +24,7 @@ func TestToErrorResultAsIs(t *testing.T) {
 func TestToErrorResultAsPointer(t *testing.T) {
 	res := ToErrorResult(&ErrorResult{
 		ErrorMessage: "Pointer",
-		ErrorCode: MissingInputParameterError,
+		ErrorCode:    MissingInputParameterError,
 	})
 	assert.Equal(t, MissingInputParameterError, res.ErrorCode)
 	assert.Equal(t, "Pointer", res.ErrorMessage)

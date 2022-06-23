@@ -46,7 +46,7 @@ func NewDataUsageFileCreator(config *data_usage.DataUsageSyncConfig) (DataUsageF
 		return nil, err
 	}
 
-	_, err = duI.targetFile.Write([]byte("["))
+	_, err = duI.targetFile.WriteString("[")
 	if err != nil {
 		return nil, err
 	}
@@ -66,15 +66,15 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 		var err error
 
 		if d.statementCount > 0 {
-			d.targetFile.Write([]byte(",")) //nolint:errcheck
+			d.targetFile.WriteString(",") //nolint:errcheck
 		}
-		d.targetFile.Write([]byte("\n")) //nolint:errcheck
+
+		d.targetFile.WriteString("\n") //nolint:errcheck
 
 		doBuf, err := json.Marshal(statement)
 		if err != nil {
 			return fmt.Errorf("error while serializing data object with externalID %q", statement.ExternalId)
 		}
-		//d.targetFile.Write([]byte("\n")) //nolint:errcheck
 		_, err = d.targetFile.Write(doBuf)
 
 		// Only looking at writing errors at the end, supposing if one fails, all would fail
@@ -91,7 +91,7 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 // This method must be called when all data objects have been added and before control is given back
 // to the CLI. It's advised to call this using 'defer'.
 func (d *dataUsageFileCreator) Close() {
-	d.targetFile.Write([]byte("\n]")) //nolint:errcheck
+	d.targetFile.WriteString("\n]") //nolint:errcheck
 	d.targetFile.Close()
 }
 
@@ -106,5 +106,6 @@ func (d *dataUsageFileCreator) createTargetFile() error {
 		return fmt.Errorf("error creating temporary file for data usage importer: %s", err.Error())
 	}
 	d.targetFile = f
+
 	return nil
 }

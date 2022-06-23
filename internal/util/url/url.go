@@ -1,16 +1,18 @@
 package url
 
 import (
+	"strings"
+
 	"github.com/raito-io/cli/common/util/url"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 var TestURL = ""
 
 func GetRaitoURL() string {
 	env := viper.GetString(constants.EnvironmentFlag)
+
 	if TestURL != "" {
 		return TestURL
 	} else if env == constants.EnvironmentDev {
@@ -24,8 +26,10 @@ func GetRaitoURL() string {
 
 func CreateRaitoURL(schemaAndHost, path string) string {
 	if !strings.HasSuffix(schemaAndHost, "/") {
-		schemaAndHost = schemaAndHost + "/"
+		schemaAndHost += "/"
 	}
+
 	relPath := url.GetRelativePath(path)
+
 	return schemaAndHost + relPath
 }

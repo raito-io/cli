@@ -3,11 +3,6 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
-	"github.com/hashicorp/go-hclog"
-	"github.com/pterm/pterm"
-	"github.com/raito-io/cli/internal/constants"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"io"
 	"log"
 	"os"
@@ -15,6 +10,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	hclog "github.com/hashicorp/go-hclog"
+	"github.com/pterm/pterm"
+	"github.com/raito-io/cli/internal/constants"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 //go:embed help/root-description.txt
@@ -32,6 +33,7 @@ type rootCmd struct {
 
 func (cmd *rootCmd) Execute(args []string) {
 	cmd.cmd.SetArgs(args)
+
 	if err := cmd.cmd.Execute(); err != nil {
 		cmd.exitForError(err)
 	}
@@ -52,6 +54,7 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 		// TODO complete the long description
 		Version: version,
 	}
+
 	cobra.OnInitialize((*root).initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, constants.ConfigFileFlag, "", "The config file (default is ./raito.yml).")
@@ -68,10 +71,11 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	rootCmd.PersistentFlags().String(constants.ConnectorNameFlag, "", "The name of the connector to use. If not set, the CLI will use a configuration file to define the targets.")
 	rootCmd.PersistentFlags().String(constants.ConnectorVersionFlag, "", "The version of the connector to use. This is only relevant if the 'connector' flag is set as well. If not set (but the 'connector' flag is), then 'latest' is used.")
 	rootCmd.PersistentFlags().StringP(constants.NameFlag, "n", "", "The name for the target. This is only relevant if the 'connector' flag is set as well. If not set, the name of the connector will be used.")
+
 	err := rootCmd.PersistentFlags().MarkHidden(constants.EnvironmentFlag)
 	if err != nil {
 		// No logger yet
-		fmt.Printf("error while hiding dev flag.\n")
+		fmt.Printf("error while hiding dev flag.\n") //nolint:forbidigo
 	}
 
 	BindFlag(constants.IdentityStoreIdFlag, rootCmd)
@@ -104,7 +108,7 @@ func BindFlag(flag string, cmd *cobra.Command) {
 	err := viper.BindPFlag(flag, cmd.PersistentFlags().Lookup(flag))
 	if err != nil {
 		// No logger yet
-		fmt.Printf("error while binding flag %q: %s\n", flag, err.Error())
+		fmt.Printf("error while binding flag %q: %s\n", flag, err.Error()) //nolint:forbidigo
 	}
 }
 
@@ -125,6 +129,7 @@ func (cmd *rootCmd) initConfig() {
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("raito")
 	}
+
 	viper.SetEnvPrefix("RAITO")
 	replacer := strings.NewReplacer(".", "_", "-", "_")
 	viper.SetEnvKeyReplacer(replacer)
@@ -133,7 +138,7 @@ func (cmd *rootCmd) initConfig() {
 	err := viper.ReadInConfig()
 	if cfgFile != "" && err != nil {
 		// No logger yet
-		fmt.Printf("error while reading config file: %s\n", err.Error())
+		fmt.Printf("error while reading config file: %s\n", err.Error()) //nolint:forbidigo
 		cmd.exitForError(err)
 	}
 
@@ -146,27 +151,27 @@ func setupLogging() {
 
 	if viper.GetBool(constants.LogOutputFlag) {
 		output = os.Stderr
+
 		if viper.GetString(constants.LogFileFlag) != "" {
 			f, err := os.OpenFile(viper.GetString(constants.LogFileFlag), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 			if err != nil {
-				fmt.Printf("error opening file: %v", err)
+				fmt.Printf("error opening file: %v", err) //nolint:forbidigo
 			}
 			output = io.MultiWriter(f, os.Stderr)
 		}
-	} else {
-		if viper.GetString(constants.LogFileFlag) != "" {
-			f, err := os.OpenFile(viper.GetString(constants.LogFileFlag), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
-			if err != nil {
-				fmt.Printf("error opening file: %v", err)
-			}
-			output = f
+	} else if viper.GetString(constants.LogFileFlag) != "" {
+		f, err := os.OpenFile(viper.GetString(constants.LogFileFlag), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
+		if err != nil {
+			fmt.Printf("error opening file: %v", err) //nolint:forbidigo
 		}
+		output = f
 	}
 
 	logger = hclog.NewInterceptLogger(&hclog.LoggerOptions{
 		Name:   "raito-cli",
 		Output: output,
 	})
+
 	if !viper.GetBool(constants.LogOutputFlag) {
 		logger.RegisterSink(newSinkAdapter())
 	}
@@ -200,12 +205,14 @@ type sinkAdapter struct {
 func newSinkAdapter() *sinkAdapter {
 	sa := &sinkAdapter{}
 	sa.iteration = -1
+
 	return sa
 }
 
 func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ...interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	it, tar := s.getIterationAndTarget(args)
 	if it >= 0 {
 		s.wasIteration = true
@@ -217,8 +224,10 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 			s.startNewIteration()
 			s.iteration = it
 		}
+
 		if tar != "" {
 			spinnerKey := strconv.Itoa(it) + "-" + tar
+
 			spinner := s.progress[spinnerKey]
 			if spinner == nil {
 				spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Running target %s...", tar))
@@ -227,6 +236,7 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 				// TODO this is to avoid a threading issue with pterm? When not done, fast targets (e.g. when skipped) give weird results in the CLI output (spinner appearing again)
 				time.Sleep(500 * time.Millisecond)
 			}
+
 			s.handleProgress(spinner, it, tar, level, msg, args)
 		} else {
 			s.handleNormalOutput(name, level, msg, args)
@@ -252,6 +262,7 @@ func (s *sinkAdapter) handleNormalOutput(name string, level hclog.Level, msg str
 
 func (s *sinkAdapter) handleProgress(spinner *pterm.SpinnerPrinter, iteration int, target string, level hclog.Level, msg string, args []interface{}) {
 	text := fmt.Sprintf("Target %s - %s", target, msg)
+
 	if level == hclog.Info {
 		if s.hasSuccess(args) {
 			spinner.Success(text)
@@ -271,6 +282,7 @@ func (s *sinkAdapter) hasSuccess(args []interface{}) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -301,16 +313,20 @@ func (s *sinkAdapter) getIterationAndTarget(args []interface{}) (int, string) {
 			iteration = arg.(int)
 			iterationFound = false
 		}
+
 		if targetFound {
 			target = arg.(string)
 			targetFound = false
 		}
+
 		if arg == "iteration" {
 			iterationFound = true
 		}
+
 		if arg == "target" {
 			targetFound = true
 		}
 	}
+
 	return iteration, target
 }

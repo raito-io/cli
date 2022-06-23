@@ -40,12 +40,10 @@ func AddJobEvent(cfg *target.BaseTargetConfig, jobID, jobType, status string) {
 
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
-	id, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
+	_, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
 	if err != nil {
-		cfg.Logger.Info("job update failed: %s", err.Error())
+		cfg.Logger.Debug("job update failed: %s", err.Error())
 	}
-
-	cfg.Logger.Info("Job ID: " + string(id))
 }
 
 type Response struct {

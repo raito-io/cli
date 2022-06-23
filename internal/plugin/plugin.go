@@ -69,6 +69,7 @@ func NewPluginClient(connector string, version string, logger hclog.Logger) (Plu
 	if err != nil {
 		return nil, fmt.Errorf("error while finding matching plugin for %q (version %q): %s", connector, version, err.Error())
 	}
+
 	if pluginPath == "" {
 		return nil, fmt.Errorf("unable to find matching plugin for %q (version %q)", connector, version)
 	}
@@ -92,6 +93,7 @@ func NewPluginClient(connector string, version string, logger hclog.Logger) (Plu
 	if err != nil {
 		return nil, fmt.Errorf("the plugin (%s) doesn't correctly implement the necessary interfaces", connector)
 	}
+
 	info := is.PluginInfo()
 	logger.Debug("Using plugin: " + info.String())
 

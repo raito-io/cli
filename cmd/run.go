@@ -122,6 +122,33 @@ func runSync(baseLogger hclog.Logger, otherArgs []string) error {
 	return target.RunTargets(baseLogger, otherArgs, runTargetSync)
 }
 
+func execute(targetID string, jobID string, syncType string, skipSync bool,
+	syncFunc func(c *plugin.PluginClient, cfg target.BaseTargetConfig) error,
+	cfg *target.BaseTargetConfig, c *plugin.PluginClient) error {
+	if skipSync {
+		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
+		cfg.Logger.Info("Skipping syncing of " + syncType)
+	} else if targetID == "" {
+		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
+		cfg.Logger.Info("No source-id argument found. Skipping syncing of " + syncType)
+	} else {
+		cfg.Logger.Info("Synchronizing data source meta data...")
+		job.AddJobEvent(cfg, jobID, syncType, constants.Started)
+
+		err := syncFunc(c, *cfg)
+		if err != nil {
+			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
+			job.AddJobEvent(cfg, jobID, syncType, constants.Failed)
+
+			return err
+		} else {
+			job.AddJobEvent(cfg, jobID, syncType, constants.Completed)
+		}
+	}
+
+	return nil
+}
+
 func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	targetConfig.Logger.Info("Executing target...")
 
@@ -134,103 +161,12 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	}
 	defer client.Close()
 
-	jobID, jobErr := job.StartJob(targetConfig)
-	// TODO: Don't send jobEvents if job creation failed
-	if jobErr != nil {
-		targetConfig.Logger.Warn(fmt.Sprintf("Error creating status job: %s", jobErr.Error()))
-	}
+	jobID, _ := job.StartJob(targetConfig)
 
-	// TODO: Extract this whole code block and make it reusable? Every sync is the same
-	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataSourceSync {
-		targetConfig.Logger.Info("Synchronizing data source meta data...")
-		job.AddJobEvent(targetConfig, jobID, constants.DataSourceSync, constants.Started)
-
-		err := syncDataSource(&client, *targetConfig)
-		if err != nil {
-			target.HandleTargetError(err, targetConfig, "synchronizing data source meta data")
-			job.AddJobEvent(targetConfig, jobID, constants.DataSourceSync, constants.Failed)
-
-			return err
-		} else {
-			job.AddJobEvent(targetConfig, jobID, constants.DataSourceSync, constants.Completed)
-		}
-	} else {
-		job.AddJobEvent(targetConfig, jobID, constants.DataSourceSync, constants.Skipped)
-		if targetConfig.DataSourceId == "" {
-			targetConfig.Logger.Info("No data-source-id argument found. Skipping syncing of data source meta data")
-		} else {
-			targetConfig.Logger.Info("Skipping syncing of data source meta data")
-		}
-	}
-
-	if targetConfig.IdentityStoreId != "" && !targetConfig.SkipIdentityStoreSync {
-		targetConfig.Logger.Info("Synchronizing identity store data...")
-		job.AddJobEvent(targetConfig, jobID, constants.IdentitySync, constants.Started)
-
-		err := syncIdentityStore(&client, *targetConfig)
-		if err != nil {
-			target.HandleTargetError(err, targetConfig, "sychronizing identity store data")
-			job.AddJobEvent(targetConfig, jobID, constants.IdentitySync, constants.Failed)
-
-			return err
-		} else {
-			job.AddJobEvent(targetConfig, jobID, constants.IdentitySync, constants.Completed)
-		}
-	} else {
-		job.AddJobEvent(targetConfig, jobID, constants.IdentitySync, constants.Skipped)
-
-		if targetConfig.DataSourceId == "" {
-			targetConfig.Logger.Info("No identity-store-id argument found. Skipping identity store syncing")
-		} else {
-			targetConfig.Logger.Info("Skipping identity store syncing")
-		}
-	}
-
-	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataAccessSync {
-		targetConfig.Logger.Info("Synchronizing data access...")
-		job.AddJobEvent(targetConfig, jobID, constants.DataAccessSync, constants.Started)
-
-		err := syncDataAccess(&client, *targetConfig)
-		if err != nil {
-			target.HandleTargetError(err, targetConfig, "sychronizing data access information to the data source")
-			job.AddJobEvent(targetConfig, jobID, constants.DataAccessSync, constants.Failed)
-
-			return err
-		} else {
-			job.AddJobEvent(targetConfig, jobID, constants.DataAccessSync, constants.Completed)
-		}
-	} else {
-		job.AddJobEvent(targetConfig, jobID, constants.DataAccessSync, constants.Skipped)
-
-		if targetConfig.DataSourceId == "" {
-			targetConfig.Logger.Info("No data-source-id argument found. Skipping data access syncing")
-		} else {
-			targetConfig.Logger.Info("Skipping data access syncing")
-		}
-	}
-
-	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataUsageSync {
-		targetConfig.Logger.Info("Synchronizing data usage...")
-		job.AddJobEvent(targetConfig, jobID, constants.DataUsageSync, constants.Started)
-
-		err := syncDataUsage(&client, *targetConfig)
-		if err != nil {
-			target.HandleTargetError(err, targetConfig, "sychronizing data usage information to the data source")
-			job.AddJobEvent(targetConfig, jobID, constants.DataUsageSync, constants.Failed)
-
-			return err
-		} else {
-			job.AddJobEvent(targetConfig, jobID, constants.DataUsageSync, constants.Completed)
-		}
-	} else {
-		job.AddJobEvent(targetConfig, jobID, constants.DataUsageSync, constants.Skipped)
-
-		if targetConfig.DataSourceId == "" {
-			targetConfig.Logger.Info("No data-source-id argument found. Skipping data usage syncing")
-		} else {
-			targetConfig.Logger.Info("Skipping data usage syncing")
-		}
-	}
+	execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, targetConfig.SkipDataSourceSync, syncDataSource, targetConfig, &client)
+	execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, targetConfig.SkipIdentityStoreSync, syncIdentityStore, targetConfig, &client)
+	execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, targetConfig.SkipDataAccessSync, syncDataAccess, targetConfig, &client)
+	execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, targetConfig.SkipDataUsageSync, syncDataUsage, targetConfig, &client)
 
 	targetConfig.Logger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
 

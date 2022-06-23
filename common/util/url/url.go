@@ -10,6 +10,7 @@ func CutOffPrefix(input string, prefix string) string {
 	if strings.HasPrefix(input, prefix) {
 		return input[len(prefix):]
 	}
+
 	return input
 }
 
@@ -18,6 +19,7 @@ func CutOffSuffix(input string, suffix string) string {
 	if strings.HasSuffix(input, suffix) {
 		return input[:len(input)-len(suffix)]
 	}
+
 	return input
 }
 
@@ -27,6 +29,7 @@ func CutOffSchema(input string) string {
 	if strings.Contains(input, "://") {
 		return input[strings.Index(input, "://")+3:]
 	}
+
 	return input
 }
 
@@ -39,5 +42,6 @@ func GetRelativePath(path string) string {
 	if relPath != path && strings.Contains(relPath, "/") {
 		relPath = relPath[strings.Index(relPath, "/")+1:]
 	}
+
 	return CutOffPrefix(relPath, "/")
 }

@@ -37,6 +37,7 @@ type dataUsageImporter struct {
 func NewDataUsageImporter(config *DataUsageImportConfig) DataUsageImporter {
 	logger := config.Logger.With("data-usage", config.DataSourceId, "file", config.TargetFile)
 	duI := dataUsageImporter{config, logger}
+
 	return &duI
 }
 
@@ -60,6 +61,7 @@ func (d *dataUsageImporter) upload() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error while uploading data usage import files to Raito: %s", err.Error())
 	}
+
 	return key, nil
 }
 
@@ -87,6 +89,7 @@ func (d *dataUsageImporter) doImport(fileKey string) (*DataUsageImportResult, er
 	if err != nil {
 		return nil, err
 	}
+
 	if len(ret.Errors) > 0 {
 		return ret, fmt.Errorf("errors while importing/processing data usage: %s", ret.Errors[0].Message)
 	}
@@ -99,6 +102,7 @@ func (d *dataUsageImporter) doImport(fileKey string) (*DataUsageImportResult, er
 func (d *dataUsageImporter) parseImportResult(res []byte) (*DataUsageImportResult, error) {
 	resp := Response{}
 	gr := graphql.GraphqlResponse{Data: &resp}
+
 	err := json.Unmarshal(res, &gr)
 	if err != nil {
 		return nil, fmt.Errorf("error while parsing data usage import result: %s", err.Error())

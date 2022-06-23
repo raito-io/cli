@@ -3,14 +3,15 @@ package identity_store
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/spf13/viper"
-	"strings"
-	"time"
 )
 
 type IdentityStoreImportConfig struct {
@@ -44,6 +45,7 @@ type identityStoreImporter struct {
 func NewIdentityStoreImporter(config *IdentityStoreImportConfig) IdentityStoreImporter {
 	logger := config.Logger.With("identitystore", config.IdentityStoreId, "userfile", config.UserFile, "groupfile", config.GroupFile)
 	isI := identityStoreImporter{config, logger}
+
 	return &isI
 }
 
@@ -67,10 +69,12 @@ func (i *identityStoreImporter) upload() (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("error while uploading users JSON file to the backend: %s", err.Error())
 	}
+
 	groupKey, err := file.UploadFile(i.config.GroupFile, &i.config.BaseTargetConfig)
 	if err != nil {
 		return "", "", fmt.Errorf("error while uploading groups JSON file to the backend: %s", err.Error())
 	}
+
 	return userKey, groupKey, nil
 }
 
@@ -107,6 +111,7 @@ func (i *identityStoreImporter) doImport(userKey string, groupKey string) (*Iden
 	if err != nil {
 		return nil, err
 	}
+
 	if len(ret.Errors) > 0 {
 		return ret, fmt.Errorf("errors while importing: %s", ret.Errors[0].Message)
 	}

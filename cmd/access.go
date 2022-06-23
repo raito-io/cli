@@ -3,7 +3,7 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"time"
 
@@ -42,6 +42,7 @@ func executeAccessCmd(cmd *cobra.Command, args []string) error {
 	defer logger.Info("")
 
 	baseLogger := logger.With("iteration", 0)
+
 	return target.RunTargets(baseLogger, cmd.Flags().Args(), runAccessTarget)
 }
 
@@ -56,6 +57,7 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 			}
 		}
 	}
+
 	if accessFile == "" {
 		accessFile = defaultAccessFile
 	}
@@ -78,11 +80,13 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 		targetConfig.Logger.Error(fmt.Sprintf("Error while opening data access file %q: %s", accessFile, err.Error()))
 		return err
 	}
-	buf, err := ioutil.ReadAll(af)
+
+	buf, err := io.ReadAll(af)
 	if err != nil {
 		targetConfig.Logger.Error(fmt.Sprintf("Error while reading data access file %q: %s", accessFile, err.Error()))
 		return err
 	}
+
 	dar, err := data_access.ParseDataAccess(buf)
 	if err != nil {
 		targetConfig.Logger.Error(fmt.Sprintf("Error while parsing data access file %q: %s", accessFile, err.Error()))
@@ -95,6 +99,7 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 		targetConfig.Logger.Error(fmt.Sprintf("The plugin (%s) does not implement the DataAccessSyncer interface", targetConfig.ConnectorName))
 		return err
 	}
+
 	res := das.SyncDataAccess(&config)
 	if res.Error != nil {
 		target.HandleTargetError(res.Error, targetConfig, "sychronizing data access information to the data source")

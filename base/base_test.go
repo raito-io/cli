@@ -122,7 +122,7 @@ func TestRegisterNoInfoPlugin(t *testing.T) {
 
 type another struct{}
 
-type combo struct {}
+type combo struct{}
 
 func (s *combo) SyncIdentityStore(config *identity_store.IdentityStoreSyncConfig) identity_store.IdentityStoreSyncResult {
 	return identity_store.IdentityStoreSyncResult{}
@@ -136,25 +136,25 @@ func (s *combo) PluginInfo() api.PluginInfo {
 	return api.PluginInfo{}
 }
 
-type identityStoryPlugin struct {}
+type identityStoryPlugin struct{}
 
 func (s *identityStoryPlugin) SyncIdentityStore(config *identity_store.IdentityStoreSyncConfig) identity_store.IdentityStoreSyncResult {
 	return identity_store.IdentityStoreSyncResult{}
 }
 
-type dataSourcePlugin struct {}
+type dataSourcePlugin struct{}
 
 func (s *dataSourcePlugin) SyncDataSource(config *data_source.DataSourceSyncConfig) data_source.DataSourceSyncResult {
 	return data_source.DataSourceSyncResult{}
 }
 
-type dataAccessPlugin struct {}
+type dataAccessPlugin struct{}
 
 func (s *dataAccessPlugin) SyncDataAccess(config *data_access.DataAccessSyncConfig) data_access.DataAccessSyncResult {
 	return data_access.DataAccessSyncResult{}
 }
 
-type infoPlugin struct {}
+type infoPlugin struct{}
 
 func (s *infoPlugin) PluginInfo() api.PluginInfo {
 	return api.PluginInfo{}

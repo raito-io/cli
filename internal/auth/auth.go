@@ -4,6 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	idp "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/hashicorp/go-hclog"
@@ -11,12 +18,6 @@ import (
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/url"
 	"github.com/spf13/viper"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"regexp"
-	"strings"
-	"time"
 )
 
 type userTokens struct {
@@ -50,6 +51,7 @@ func AddToken(r *http.Request, targetConfig *target.BaseTargetConfig) error {
 	}
 
 	r.Header.Add("Authorization", "token "+tokens.idToken)
+
 	return nil
 }
 
@@ -73,6 +75,7 @@ func checkTokenValidity(targetConfig *target.BaseTargetConfig, tokens *userToken
 		targetConfig.Logger.Debug(fmt.Sprintf("Token for user %q is expired", tokens.userName))
 		return false
 	}
+
 	return true
 }
 
@@ -126,6 +129,7 @@ func setTestTokens(tokens *userTokens) error {
 	tokens.refreshToken = "refreshToken"
 	exp := time.Now().Add(time.Hour)
 	tokens.expiration = &exp
+
 	return nil
 }
 
@@ -165,13 +169,16 @@ func handleAuthOutput(output *idp.InitiateAuthOutput, tokens *userTokens) error 
 		if output.AuthenticationResult.IdToken == nil {
 			return fmt.Errorf("no id token found in authentication result")
 		}
+
 		if output.AuthenticationResult.RefreshToken == nil {
 			return fmt.Errorf("no refresh token found in authentication result")
 		}
+
 		tokens.idToken = *output.AuthenticationResult.IdToken
 		tokens.refreshToken = *output.AuthenticationResult.RefreshToken
 		e := time.Now().Add(time.Second * time.Duration(output.AuthenticationResult.ExpiresIn))
 		tokens.expiration = &e
+
 		return nil
 	} else {
 		return fmt.Errorf("invalid authentication result received (challenge %q)", output.ChallengeName)
@@ -185,6 +192,7 @@ func fetchClientAppId(targetConfig *target.BaseTargetConfig) error {
 		if domain == "" {
 			return fmt.Errorf("no domain specified")
 		}
+
 		domain = strings.ToLower(domain)
 		if !isValidDomain(domain) {
 			return fmt.Errorf("invalid domain name %q. A domain should start with a letter and can only contain alphanumeric characters and the dash character. It also should not end with a dash character", domain)
@@ -196,11 +204,13 @@ func fetchClientAppId(targetConfig *target.BaseTargetConfig) error {
 		}
 
 		url := url.CreateRaitoURL(url.GetRaitoURL(), "admin/org/"+domain)
-		req, err := http.NewRequest("GET", url, nil)
+
+		req, err := http.NewRequest("GET", url, http.NoBody)
 		if err != nil {
 			return fmt.Errorf("error while creating HTTP GET request to %q: %s", url, err.Error())
 		}
 		client := &http.Client{}
+
 		resp, err := client.Do(req)
 		if err != nil {
 			return fmt.Errorf("error while doing HTTP GET to %q: %s", url, err.Error())
@@ -211,12 +221,13 @@ func fetchClientAppId(targetConfig *target.BaseTargetConfig) error {
 			return fmt.Errorf("unexpected status code %q received when calling URL %q", resp.StatusCode, url)
 		}
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("error while reading body for call to %q: %s", url, err.Error())
 		}
 
 		org := orgInfo{}
+
 		err = json.Unmarshal(body, &org)
 		if err != nil {
 			return fmt.Errorf("error while parsing organization info response from %q: %s", url, err.Error())
@@ -225,6 +236,7 @@ func fetchClientAppId(targetConfig *target.BaseTargetConfig) error {
 		clientAppId = org.ClientAppId
 		targetConfig.Logger.Info(fmt.Sprintf("Received clientAppId %q for domain %q", clientAppId, domain))
 	}
+
 	return nil
 }
 
@@ -234,6 +246,7 @@ func isValidDomain(domain string) bool {
 		hclog.L().Error(fmt.Sprintf("Error while checking domain validity: %s", err.Error()))
 		return false
 	}
+
 	return matched
 }
 

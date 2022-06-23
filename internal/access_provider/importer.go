@@ -39,6 +39,7 @@ type accessProviderImporter struct {
 func NewAccessProviderImporter(config *AccessProviderImportConfig) AccessProviderImporter {
 	logger := config.Logger.With("AccessProvider", config.DataSourceId, "file", config.TargetFile)
 	dsI := accessProviderImporter{config, logger}
+
 	return &dsI
 }
 
@@ -62,6 +63,7 @@ func (d *accessProviderImporter) upload() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error while uploading data source import files to Raito: %s", err.Error())
 	}
+
 	return key, nil
 }
 
@@ -81,8 +83,6 @@ func (d *accessProviderImporter) doImport(fileKey string) (*AccessProviderImport
         }
     }" }"`, d.config.DataSourceId, d.config.DeleteUntouched, fileKey)
 
-	//d.log.Info(gqlQuery + "\n")
-
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
 	res, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig)
@@ -94,6 +94,7 @@ func (d *accessProviderImporter) doImport(fileKey string) (*AccessProviderImport
 	if err != nil {
 		return nil, err
 	}
+
 	if len(ret.Errors) > 0 {
 		return ret, fmt.Errorf("errors while importing into data source: %s", ret.Errors[0].Message)
 	}

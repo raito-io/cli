@@ -17,12 +17,12 @@ func init() {
 }
 
 func TestIdentityStoreFileCreator_Users(t *testing.T) {
-	tempFile1, _ := os.Create("tempfile-"+strconv.Itoa(rand.Int())+".json")
+	tempFile1, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile1.Name())
-	tempFile2, _ := os.Create("tempfile-"+strconv.Itoa(rand.Int())+".json")
+	tempFile2, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile2.Name())
 	config := identity_store.IdentityStoreSyncConfig{
-		UserFile: tempFile1.Name(),
+		UserFile:  tempFile1.Name(),
 		GroupFile: tempFile2.Name(),
 	}
 	isfc, err := NewIdentityStoreFileCreator(&config)
@@ -31,25 +31,25 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 
 	users := make([]User, 0, 3)
 	users = append(users, User{
-		ExternalId: "ueid1",
-		Name: "User 1",
-		UserName: "u1",
-		Email: "u1@raito.io",
-		GroupExternalIds: []string { "geid1" },
-		Tags: map[string]interface{} { "k1": "v1", "k2": "v2" },
+		ExternalId:       "ueid1",
+		Name:             "User 1",
+		UserName:         "u1",
+		Email:            "u1@raito.io",
+		GroupExternalIds: []string{"geid1"},
+		Tags:             map[string]interface{}{"k1": "v1", "k2": "v2"},
 	})
 	users = append(users, User{
-		ExternalId: "ueid2",
-		Name: "User 2",
-		UserName: "u2",
-		Email: "u2@raito.io",
-		GroupExternalIds: []string { "geid1", "geid2" },
-		Tags: map[string]interface{} { "k3": "v3" },
+		ExternalId:       "ueid2",
+		Name:             "User 2",
+		UserName:         "u2",
+		Email:            "u2@raito.io",
+		GroupExternalIds: []string{"geid1", "geid2"},
+		Tags:             map[string]interface{}{"k3": "v3"},
 	})
 	users = append(users, User{
 		ExternalId: "ueid3",
-		Name: "User 3",
-		UserName: "u3",
+		Name:       "User 3",
+		UserName:   "u3",
 	})
 
 	err = isfc.AddUsers(users)
@@ -57,18 +57,18 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 
 	groups := make([]Group, 0, 2)
 	groups = append(groups, Group{
-		ExternalId: "geid1",
-		Name: "g1",
-		DisplayName: "Group1",
-		Description: "A group",
-		ParentGroupExternalIds: []string { "geid2" },
-		Tags: map[string]interface{} { "gk1": "gv1", "gk2": "gv2" },
+		ExternalId:             "geid1",
+		Name:                   "g1",
+		DisplayName:            "Group1",
+		Description:            "A group",
+		ParentGroupExternalIds: []string{"geid2"},
+		Tags:                   map[string]interface{}{"gk1": "gv1", "gk2": "gv2"},
 	})
 	groups = append(groups, Group{
-		ExternalId: "geid2",
-		Name: "g2",
+		ExternalId:  "geid2",
+		Name:        "g2",
 		DisplayName: "Group2",
-		Tags: map[string]interface{} { "gk3": "gv3" },
+		Tags:        map[string]interface{}{"gk3": "gv3"},
 	})
 
 	err = isfc.AddGroups(groups)

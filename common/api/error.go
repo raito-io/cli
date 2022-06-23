@@ -15,7 +15,7 @@ const (
 // ErrorResult represents an error returned by an API call.
 type ErrorResult struct {
 	ErrorMessage string
-	ErrorCode ErrorCode
+	ErrorCode    ErrorCode
 }
 
 func (e ErrorResult) Error() string {
@@ -26,7 +26,7 @@ func (e ErrorResult) Error() string {
 func CreateMissingInputParameterError(parameter string) *ErrorResult {
 	return &ErrorResult{
 		ErrorMessage: fmt.Sprintf("mandatory parameter %q is missing", parameter),
-		ErrorCode: MissingInputParameterError,
+		ErrorCode:    MissingInputParameterError,
 	}
 }
 
@@ -41,7 +41,7 @@ func CreateBadInputParameterError(parameter, value, explanation string) *ErrorRe
 
 	return &ErrorResult{
 		ErrorMessage: msg,
-		ErrorCode: BadInputParameterError,
+		ErrorCode:    BadInputParameterError,
 	}
 }
 
@@ -49,7 +49,7 @@ func CreateBadInputParameterError(parameter, value, explanation string) *ErrorRe
 func CreateSourceConnectionError(url, message string) *ErrorResult {
 	return &ErrorResult{
 		ErrorMessage: fmt.Sprintf("error while connecting to %q: %s", url, message),
-		ErrorCode: SourceConnectionError,
+		ErrorCode:    SourceConnectionError,
 	}
 }
 
@@ -58,8 +58,10 @@ func ToErrorResult(err error) *ErrorResult {
 	if res, ok := err.(ErrorResult); ok {
 		return &res
 	}
+
 	if res, ok := err.(*ErrorResult); ok {
 		return res
 	}
-	return &ErrorResult{ ErrorMessage: err.Error(), ErrorCode: UnknownError }
+
+	return &ErrorResult{ErrorMessage: err.Error(), ErrorCode: UnknownError}
 }

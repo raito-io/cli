@@ -2,17 +2,18 @@
 package data_source
 
 import (
+	"net/rpc"
+
 	"github.com/hashicorp/go-plugin"
 	"github.com/raito-io/cli/common/api"
 	"github.com/raito-io/cli/common/util/config"
-	"net/rpc"
 )
 
 // DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.
 // It contains all the necessary configuration parameters for the plugin to function.
 type DataSourceSyncConfig struct {
 	config.ConfigMap
-	TargetFile      string
+	TargetFile string
 }
 
 // DataSourceSyncResult represents the result from the data source sync process.
@@ -49,6 +50,7 @@ type dataSourceSyncerRPC struct{ client *rpc.Client }
 
 func (g *dataSourceSyncerRPC) SyncDataSource(config *DataSourceSyncConfig) DataSourceSyncResult {
 	var resp DataSourceSyncResult
+
 	err := g.client.Call("Plugin.SyncDataSource", config, &resp)
 	if err != nil && resp.Error == nil {
 		resp.Error = api.ToErrorResult(err)

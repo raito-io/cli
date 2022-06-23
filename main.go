@@ -1,9 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/raito-io/cli/cmd"
 	v "github.com/raito-io/cli/internal/version"
-	"os"
 )
 
 var (

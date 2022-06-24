@@ -52,6 +52,7 @@ func HandleTargetError(err error, config *BaseTargetConfig, during string) {
 			return
 		}
 	}
+
 	config.Logger.Error(fmt.Sprintf("Error during %s: %s", during, err.Error()))
 }
 

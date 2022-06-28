@@ -94,6 +94,7 @@ func NewPluginClient(connector string, version string, logger hclog.Logger) (Plu
 	if err != nil {
 		return nil, fmt.Errorf("the plugin (%s) doesn't correctly implement the necessary interfaces", connector)
 	}
+
 	info := is.PluginInfo()
 	logger.Debug("Using plugin: " + info.String())
 

@@ -66,4 +66,15 @@ const (
 	Repositories = "repositories"
 
 	GitHubToken = "token"
+
+	Started   = "STARTED"
+	Completed = "COMPLETED"
+	Failed    = "FAILED"
+	Skipped   = "SKIPPED"
+
+	IdentitySync   = "IS"
+	DataSourceSync = "DS"
+	DataAccessSync = "DA"
+	DataUsageSync  = "DU"
+	Job            = "JOB"
 )

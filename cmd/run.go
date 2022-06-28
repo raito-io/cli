@@ -21,6 +21,7 @@ import (
 	"github.com/raito-io/cli/internal/data_usage"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/identity_store"
+	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/spf13/cobra"
@@ -60,8 +61,8 @@ func executeRun(cmd *cobra.Command, args []string) {
 	freq := viper.GetInt(constants.FrequencyFlag)
 	if freq <= 0 {
 		logger.Info("Running synchronization just once.")
-		err := executeSingleRun(logger.With("iteration", 0), otherArgs)
 
+		err := executeSingleRun(logger.With("iteration", 0), otherArgs)
 		if err != nil {
 			os.Exit(1)
 		} else {
@@ -122,6 +123,40 @@ func runSync(baseLogger hclog.Logger, otherArgs []string) error {
 	return target.RunTargets(baseLogger, otherArgs, runTargetSync)
 }
 
+func execute(targetID string, jobID string, syncType string, skipSync bool,
+	syncFunc func(c plugin.PluginClient, cfg target.BaseTargetConfig) error,
+	cfg *target.BaseTargetConfig, c plugin.PluginClient) error {
+	switch {
+	case skipSync:
+		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
+		cfg.Logger.Info("Skipping syncing of " + syncType)
+	case targetID == "":
+		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
+
+		idField := "data-source-id"
+		if syncType == constants.IdentitySync {
+			idField = "identity-store-id"
+		}
+
+		cfg.Logger.Info("No " + idField + " argument found. Skipping syncing of " + syncType)
+	default:
+		cfg.Logger.Info("Synchronizing data source meta data...")
+		job.AddJobEvent(cfg, jobID, syncType, constants.Started)
+
+		err := syncFunc(c, *cfg)
+		if err != nil {
+			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
+			job.AddJobEvent(cfg, jobID, syncType, constants.Failed)
+
+			return err
+		}
+
+		job.AddJobEvent(cfg, jobID, syncType, constants.Completed)
+	}
+
+	return nil
+}
+
 func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	targetConfig.Logger.Info("Executing target...")
 
@@ -134,80 +169,43 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	}
 	defer client.Close()
 
-	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataSourceSync {
-		targetConfig.Logger.Info("Synchronizing data source meta data...")
+	jobID, _ := job.StartJob(targetConfig)
 
-		err := syncDataSource(client, *targetConfig)
-		if err != nil {
-			target.HandleTargetError(err, targetConfig, "sychronizing data source meta data")
-			return err
-		}
-	} else {
-		if targetConfig.DataSourceId == "" {
-			targetConfig.Logger.Info("No data-source-id argument found. Skipping syncing of data source meta data")
-		} else {
-			targetConfig.Logger.Info("Skipping syncing of data source meta data")
-		}
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, targetConfig.SkipDataSourceSync, syncDataSource, targetConfig, client)
+	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
+		return err
 	}
 
-	if targetConfig.IdentityStoreId != "" && !targetConfig.SkipIdentityStoreSync {
-		targetConfig.Logger.Info("Synchronizing identity store data...")
-
-		err := syncIdentityStore(client, *targetConfig)
-		if err != nil {
-			target.HandleTargetError(err, targetConfig, "sychronizing identity store data")
-			return err
-		}
-	} else {
-		if targetConfig.DataSourceId == "" {
-			targetConfig.Logger.Info("No identity-store-id argument found. Skipping identity store syncing")
-		} else {
-			targetConfig.Logger.Info("Skipping identity store syncing")
-		}
+	err = execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, targetConfig.SkipIdentityStoreSync, syncIdentityStore, targetConfig, client)
+	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
+		return err
 	}
 
-	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataAccessSync {
-		targetConfig.Logger.Info("Synchronizing data access...")
-
-		err := syncDataAccess(client, *targetConfig)
-		if err != nil {
-			target.HandleTargetError(err, targetConfig, "sychronizing data access information to the data source")
-
-			return err
-		}
-	} else {
-		if targetConfig.DataSourceId == "" {
-			targetConfig.Logger.Info("No data-source-id argument found. Skipping data access syncing")
-		} else {
-			targetConfig.Logger.Info("Skipping data access syncing")
-		}
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, targetConfig.SkipDataAccessSync, syncDataAccess, targetConfig, client)
+	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
+		return err
 	}
 
-	if targetConfig.DataSourceId != "" && !targetConfig.SkipDataUsageSync {
-		targetConfig.Logger.Info("Synchronizing data usage...")
-
-		err := syncDataUsage(client, *targetConfig)
-		if err != nil {
-			target.HandleTargetError(err, targetConfig, "sychronizing data usage information to the data source")
-			return err
-		}
-	} else {
-		if targetConfig.DataSourceId == "" {
-			targetConfig.Logger.Info("No data-source-id argument found. Skipping data usage syncing")
-		} else {
-			targetConfig.Logger.Info("Skipping data usage syncing")
-		}
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, targetConfig.SkipDataUsageSync, syncDataUsage, targetConfig, client)
+	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
+		return err
 	}
 
 	targetConfig.Logger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
+
+	job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Completed)
 
 	return nil
 }
 
 func syncDataSource(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
 	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
 
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
 	if err != nil {
 		return err
 	}
@@ -310,8 +308,8 @@ func syncIdentityStore(client plugin.PluginClient, targetConfig target.BaseTarge
 
 func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
 	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
 
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
 	if err != nil {
 		return err
 	}
@@ -362,8 +360,8 @@ func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetCo
 		DeleteUntouched:  targetConfig.DeleteUntouched,
 	}
 	daImporter := access_provider.NewAccessProviderImporter(&importerConfig)
-	daResult, err := daImporter.TriggerImport()
 
+	daResult, err := daImporter.TriggerImport()
 	if err != nil {
 		return err
 	}
@@ -375,8 +373,8 @@ func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetCo
 
 func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
 	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
-
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-du", "json"))
+
 	if err != nil {
 		return err
 	}
@@ -391,14 +389,13 @@ func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetCon
 		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
 		TargetFile: targetFile,
 	}
-	dus, err := client.GetDataUsageSyncer()
 
+	dus, err := client.GetDataUsageSyncer()
 	if err != nil {
 		return err
 	}
 
 	res := dus.SyncDataUsage(&syncerConfig)
-
 	if res.Error != nil {
 		return err
 	}

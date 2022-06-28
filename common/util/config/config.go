@@ -19,12 +19,15 @@ func (c *ConfigMap) GetBoolWithDefault(key string, defaultValue bool) bool {
 			if err != nil {
 				return defaultValue
 			}
+
 			return ret
 		}
+
 		if bv, ok := v.(bool); ok {
 			return bv
 		}
 	}
+
 	return defaultValue
 }
 
@@ -41,6 +44,7 @@ func (c *ConfigMap) GetStringWithDefault(key string, defaultValue string) string
 			return sv
 		}
 	}
+
 	return defaultValue
 }
 
@@ -58,15 +62,18 @@ func (c *ConfigMap) GetIntWithDefault(key string, defaultValue int) int {
 			if err != nil {
 				return defaultValue
 			}
+
 			return ret
 		}
+
 		if bv, ok := v.(int); ok {
 			return bv
 		}
+
 		if bv, ok := v.(int64); ok {
 			return int(bv)
 		}
 	}
+
 	return defaultValue
 }
-

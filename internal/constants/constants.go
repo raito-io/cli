@@ -1,7 +1,5 @@
 package constants
 
-// A set representing all the known flags.
-// If you add a new flag constant, add it in this set as well
 var KnownFlags = map[string]struct{}{
 	DebugFlag:                 {},
 	EnvironmentFlag:           {},

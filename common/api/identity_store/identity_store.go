@@ -1,18 +1,19 @@
 package identity_store
 
 import (
+	"net/rpc"
+
 	"github.com/hashicorp/go-plugin"
 	"github.com/raito-io/cli/common/api"
 	"github.com/raito-io/cli/common/util/config"
-	"net/rpc"
 )
 
 // IdentityStoreSyncConfig represents the configuration that is passed from the CLI to the IdentityStoreSyncer plugin interface.
 // It contains all the necessary configuration parameters for the plugin to function.
 type IdentityStoreSyncConfig struct {
 	config.ConfigMap
-	UserFile        string
-	GroupFile       string
+	UserFile  string
+	GroupFile string
 }
 
 // IdentityStoreSyncResult represents the result from the identity store sync process.
@@ -20,7 +21,6 @@ type IdentityStoreSyncConfig struct {
 type IdentityStoreSyncResult struct {
 	Error *api.ErrorResult
 }
-
 
 // IdentityStoreSyncer interface needs to be implemented by any plugin that wants to import users and groups into a Raito identity store.
 type IdentityStoreSyncer interface {
@@ -50,10 +50,12 @@ type identityStoreSyncerRPC struct{ client *rpc.Client }
 
 func (g *identityStoreSyncerRPC) SyncIdentityStore(config *IdentityStoreSyncConfig) IdentityStoreSyncResult {
 	var resp IdentityStoreSyncResult
+
 	err := g.client.Call("Plugin.SyncIdentityStore", config, &resp)
 	if err != nil && resp.Error == nil {
 		resp.Error = api.ToErrorResult(err)
 	}
+
 	return resp
 }
 
@@ -63,5 +65,6 @@ type identityStoreSyncerRPCServer struct {
 
 func (s *identityStoreSyncerRPCServer) SyncIdentityStore(config *IdentityStoreSyncConfig, resp *IdentityStoreSyncResult) error {
 	*resp = s.Impl.SyncIdentityStore(config)
+
 	return nil
 }

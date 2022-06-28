@@ -17,7 +17,7 @@ func init() {
 }
 
 func TestDataSourceFileCreator(t *testing.T) {
-	tempFile, _ := os.Create("tempfile-"+strconv.Itoa(rand.Int())+".json")
+	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile.Name())
 	config := data_source.DataSourceSyncConfig{
 		TargetFile: tempFile.Name(),
@@ -28,27 +28,27 @@ func TestDataSourceFileCreator(t *testing.T) {
 
 	dos := make([]DataObject, 0, 3)
 	dos = append(dos, DataObject{
-		ExternalId: "eid1",
-		Name: "DO1",
-		FullName: "Data Object 1",
-		Type: "table",
+		ExternalId:  "eid1",
+		Name:        "DO1",
+		FullName:    "Data Object 1",
+		Type:        "table",
 		Description: "The first data object",
-		Tags: map[string]interface{} { "k1": "v1", "k2": "v2" },
+		Tags:        map[string]interface{}{"k1": "v1", "k2": "v2"},
 	})
 	dos = append(dos, DataObject{
-		ExternalId: "eid2",
-		Name: "DO2",
-		FullName: "Data Object 2",
-		Type: "schema",
-		Description: "The second data object",
+		ExternalId:       "eid2",
+		Name:             "DO2",
+		FullName:         "Data Object 2",
+		Type:             "schema",
+		Description:      "The second data object",
 		ParentExternalId: "eid1",
-		Tags: map[string]interface{} { "k3": "v3" },
+		Tags:             map[string]interface{}{"k3": "v3"},
 	})
 	dos = append(dos, DataObject{
-		ExternalId: "eid3",
-		Name: "DO3",
-		FullName: "Data Object 3",
-		Type: "database",
+		ExternalId:       "eid3",
+		Name:             "DO3",
+		FullName:         "Data Object 3",
+		Type:             "database",
 		ParentExternalId: "eid2",
 	})
 

@@ -2,6 +2,9 @@ package target
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/jinzhu/copier"
 	"github.com/raito-io/cli/common/api"
@@ -9,8 +12,6 @@ import (
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
-	"reflect"
-	"strings"
 )
 
 type BaseTargetConfig struct {
@@ -39,6 +40,7 @@ func RunTargets(baseLogger hclog.Logger, otherArgs []string, runTarget func(tCon
 	if viper.GetString(constants.ConnectorNameFlag) != "" {
 		targetConfig, _ := buildTargetConfigFromFlags(baseLogger, otherArgs)
 		logTargetConfig(targetConfig)
+
 		return runTarget(targetConfig)
 	} else {
 		return runMultipleTargets(baseLogger, runTarget)
@@ -58,9 +60,9 @@ func HandleTargetError(err error, config *BaseTargetConfig, during string) {
 
 func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTargetConfig) error) error {
 	targets := viper.Get(constants.Targets)
+	onlyTargets := make(map[string]struct{})
 
 	onlyTargetsS := viper.GetString(constants.OnlyTargetsFlag)
-	onlyTargets := make(map[string]struct{})
 	if onlyTargetsS != "" {
 		for _, ot := range strings.Split(onlyTargetsS, ",") {
 			onlyTargets[strings.TrimSpace(ot)] = struct{}{}
@@ -69,30 +71,36 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 
 	if targetList, ok := targets.([]interface{}); ok {
 		hclog.L().Debug(fmt.Sprintf("Found %d targets to run.", len(targetList)))
-		for _, targetObj := range targetList {
-			if target, ok := targetObj.(map[interface{}]interface{}); ok {
-				tConfig, err := buildTargetConfigFromMap(baseLogger, target)
-				if err != nil {
-					hclog.L().Error(fmt.Sprintf("error while parsing target configuration: %s", err.Error()))
-					continue
-				}
-				if tConfig == nil {
-					continue
-				}
-				if len(onlyTargets) > 0 {
-					if _, found := onlyTargets[tConfig.Name]; !found {
-						//time.Sleep(3*time.Second)
-						tConfig.Logger.Info("Skipping target", "success")
-						continue
-					}
-				}
 
-				logTargetConfig(tConfig)
-				err = runTarget(tConfig)
-				if err != nil {
-					// In debug as the error should already be outputted, and we are ignoring it here.
-					tConfig.Logger.Debug("Error while executing target", "error", err.Error())
+		for _, targetObj := range targetList {
+			target, ok := targetObj.(map[interface{}]interface{})
+			if !ok {
+				break
+			}
+
+			tConfig, err := buildTargetConfigFromMap(baseLogger, target)
+			if err != nil {
+				hclog.L().Error(fmt.Sprintf("error while parsing target configuration: %s", err.Error()))
+				continue
+			}
+
+			if tConfig == nil {
+				continue
+			}
+
+			if len(onlyTargets) > 0 {
+				if _, found := onlyTargets[tConfig.Name]; !found {
+					tConfig.Logger.Info("Skipping target", "success")
+					continue
 				}
+			}
+
+			logTargetConfig(tConfig)
+
+			err = runTarget(tConfig)
+			if err != nil {
+				// In debug as the error should already be outputted, and we are ignoring it here.
+				tConfig.Logger.Debug("Error while executing target", "error", err.Error())
 			}
 		}
 	}
@@ -103,10 +111,12 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[interface{}]interface{}) (*BaseTargetConfig, error) {
 	tConfig := BaseTargetConfig{}
 	err := fillStruct(&tConfig, target)
+
 	if err != nil {
 		return nil, err
 	}
 	tConfig.Parameters = make(map[string]interface{})
+
 	for k, v := range target {
 		if ks, ok := k.(string); ok {
 			if _, f := constants.KnownFlags[ks]; !f {
@@ -118,6 +128,7 @@ func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[interface{}]in
 			}
 		}
 	}
+
 	if tConfig.Name == "" {
 		tConfig.Name = tConfig.ConnectorName
 	}
@@ -145,6 +156,7 @@ func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[interface{}]in
 		}
 		tConfig.ApiSecret = cv.(string)
 	}
+
 	if tConfig.ApiUser == "" {
 		cv, err := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
 		if err != nil {
@@ -152,6 +164,7 @@ func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[interface{}]in
 		}
 		tConfig.ApiUser = cv.(string)
 	}
+
 	if tConfig.Domain == "" {
 		cv, err := iconfig.HandleField(viper.GetString(constants.DomainFlag), reflect.String)
 		if err != nil {
@@ -165,6 +178,7 @@ func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[interface{}]in
 
 func buildParameterMapFromArguments(args []string) map[string]interface{} {
 	params := make(map[string]interface{})
+
 	for i := 0; i < len(args); i++ {
 		if strings.HasPrefix(args[i], "--") {
 			arg := args[i][2:]
@@ -183,6 +197,7 @@ func buildParameterMapFromArguments(args []string) map[string]interface{} {
 			}
 		}
 	}
+
 	return params
 }
 
@@ -190,6 +205,7 @@ func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*B
 	connector := viper.GetString(constants.ConnectorNameFlag)
 	version := viper.GetString(constants.ConnectorVersionFlag)
 	name := viper.GetString(constants.NameFlag)
+
 	if name == "" {
 		name = connector
 	}
@@ -214,6 +230,7 @@ func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*B
 		ReplaceGroups:         viper.GetBool(constants.ReplaceGroupsFlag),
 	}
 	targetConfig.Parameters = buildParameterMapFromArguments(otherArgs)
+
 	return &targetConfig, nil
 }
 
@@ -224,12 +241,14 @@ func logTargetConfig(config *BaseTargetConfig) {
 		return
 	}
 	cc := BaseTargetConfig{}
+
 	err := copier.Copy(&cc, config)
 	if err != nil {
 		hclog.L().Error("Error while copying config")
 		return
 	}
 	cc.Parameters = make(map[string]interface{})
+
 	err = copier.Copy(&cc.Parameters, config.Parameters)
 	if err != nil {
 		hclog.L().Error("Error while copying config")
@@ -239,6 +258,7 @@ func logTargetConfig(config *BaseTargetConfig) {
 	if cc.ApiSecret != "" {
 		cc.ApiSecret = "**censured**"
 	}
+
 	for k := range cc.Parameters {
 		lk := strings.ToLower(k)
 		if strings.Contains(lk, "secret") || strings.Contains(lk, "password") || strings.Contains(lk, "passwd") || strings.Contains(lk, "psswd") {
@@ -258,6 +278,7 @@ func fillStruct(o interface{}, m map[interface{}]interface{}) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -274,7 +295,7 @@ func setField(obj interface{}, name string, value interface{}) error {
 	}
 
 	if !structFieldValue.CanSet() {
-		return fmt.Errorf("Cannot set value of field %q field", name)
+		return fmt.Errorf("cannot set value of field %q field", name)
 	}
 
 	structFieldType := structFieldValue.Type()
@@ -287,10 +308,11 @@ func setField(obj interface{}, name string, value interface{}) error {
 	val := reflect.ValueOf(value)
 
 	if structFieldType != val.Type() {
-		return fmt.Errorf("Provided value type didn't match obj field type for %q", name)
+		return fmt.Errorf("provided value type didn't match obj field type for %q", name)
 	}
 
 	structFieldValue.Set(val)
+
 	return nil
 }
 
@@ -304,9 +326,11 @@ func toCamelInitCase(s string, initCase bool) string {
 	n := strings.Builder{}
 	n.Grow(len(s))
 	capNext := initCase
+
 	for i, v := range []byte(s) {
 		vIsCap := v >= 'A' && v <= 'Z'
 		vIsLow := v >= 'a' && v <= 'z'
+
 		if capNext {
 			if vIsLow {
 				v += 'A'
@@ -318,6 +342,7 @@ func toCamelInitCase(s string, initCase bool) string {
 				v -= 'A'
 			}
 		}
+
 		if vIsCap || vIsLow {
 			n.WriteByte(v)
 			capNext = false
@@ -328,5 +353,6 @@ func toCamelInitCase(s string, initCase bool) string {
 			capNext = v == '_' || v == ' ' || v == '-' || v == '.'
 		}
 	}
+
 	return n.String()
 }

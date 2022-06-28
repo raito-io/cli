@@ -9,29 +9,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
-      - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          go-version: '1.18'
+
       - name: Mod Tidy
         run: go mod tidy
+
       - name: Build
         run: go build ./...
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
         with:
-          args: --tests=false
-          version: v1.43
-          skip-go-installation: true
+          version: v1.46.2
+
       - run: go test -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt ./...
       - uses: codecov/codecov-action@v2
         with:

@@ -3,17 +3,18 @@ package plugin
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-retryablehttp"
-	"github.com/raito-io/cli/internal/config"
-	"github.com/raito-io/cli/internal/constants"
-	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-retryablehttp"
+	"github.com/raito-io/cli/internal/config"
+	"github.com/raito-io/cli/internal/constants"
+	"github.com/spf13/viper"
 )
 
 func downloadAndExtractPluginFromGitHubRepo(pluginRequest *pluginRequest, targetPath string, logger hclog.Logger) (string, error) {
@@ -21,6 +22,7 @@ func downloadAndExtractPluginFromGitHubRepo(pluginRequest *pluginRequest, target
 	if err != nil {
 		return "", fmt.Errorf("error looking for plugin to download from Github for %q (version %q): %s", pluginRequest.GroupAndName(), pluginRequest.Version, err.Error())
 	}
+
 	if asset == nil {
 		return "", nil
 	}
@@ -29,6 +31,7 @@ func downloadAndExtractPluginFromGitHubRepo(pluginRequest *pluginRequest, target
 	if downloadedFile != "" {
 		defer os.Remove(downloadedFile)
 	}
+
 	if err != nil {
 		return "", fmt.Errorf("error downloading plugin from Github for %q (version %q): %s", pluginRequest.GroupAndName(), pluginRequest.Version, err.Error())
 	}
@@ -37,6 +40,7 @@ func downloadAndExtractPluginFromGitHubRepo(pluginRequest *pluginRequest, target
 	if err != nil {
 		return extractedFile, fmt.Errorf("error extracting plugin binary from release asset from %q: %s", asset.URL, err.Error())
 	}
+
 	return extractedFile, nil
 }
 
@@ -48,16 +52,19 @@ func getGitHubAsset(pluginRequest *pluginRequest, logger hclog.Logger) (*gitHubR
 
 	client := retryablehttp.NewClient()
 	client.Logger = logger
+
 	request, err := retryablehttp.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	request.Header.Set("Accept", "application/vnd.github.v3+json")
 
 	token, err := findGitHubToken(pluginRequest)
 	if err != nil {
 		return nil, err
 	}
+
 	if token != "" {
 		logger.Debug(fmt.Sprintf("found token for repository %q", pluginRequest.Group))
 		request.Header.Set("Authorization", "token "+token)
@@ -69,7 +76,8 @@ func getGitHubAsset(pluginRequest *pluginRequest, logger hclog.Logger) (*gitHubR
 	}
 
 	defer resp.Body.Close()
-	respBytes, err := ioutil.ReadAll(resp.Body)
+
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error while reading response body from releases request to %q: %s", url, err.Error())
 	}
@@ -79,6 +87,7 @@ func getGitHubAsset(pluginRequest *pluginRequest, logger hclog.Logger) (*gitHubR
 	}
 
 	releaseInfo := gitHubReleaseInfo{}
+
 	err = json.Unmarshal(respBytes, &releaseInfo)
 	if err != nil {
 		return nil, fmt.Errorf("error while parsing response body from releases request to %q: %s", url, err.Error())
@@ -98,6 +107,7 @@ func getGitHubAsset(pluginRequest *pluginRequest, logger hclog.Logger) (*gitHubR
 func downloadGitHubAsset(pluginRequest *pluginRequest, url string, logger hclog.Logger) (string, error) {
 	client := retryablehttp.NewClient()
 	client.Logger = logger
+
 	request, err := retryablehttp.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
@@ -109,6 +119,7 @@ func downloadGitHubAsset(pluginRequest *pluginRequest, url string, logger hclog.
 	if err != nil {
 		return "", err
 	}
+
 	if token != "" {
 		logger.Debug(fmt.Sprintf("found token for repository %q", pluginRequest.Group))
 		request.Header.Set("Authorization", "token "+token)
@@ -139,6 +150,7 @@ func downloadGitHubAsset(pluginRequest *pluginRequest, url string, logger hclog.
 	if err != nil {
 		return out.Name(), fmt.Errorf("error while storing release asset from %q to temporary file: %s", url, err.Error())
 	}
+
 	return out.Name(), nil
 }
 
@@ -154,6 +166,7 @@ func getGitHubReleaseURL(pluginRequest *pluginRequest) string {
 		}
 		url += pluginRequest.Version
 	}
+
 	return url
 }
 
@@ -165,6 +178,7 @@ func findMatchingGitHubAsset(pluginRequest *pluginRequest, releaseInfo *gitHubRe
 	if releaseInfo.Assets != nil {
 		suffix := "-" + runtime.GOOS + "_" + runtime.GOARCH + ".tar.gz"
 		prefix := pluginRequest.Name + "-"
+
 		for _, asset := range releaseInfo.Assets {
 			if strings.HasPrefix(asset.Name, prefix) && strings.HasSuffix(asset.Name, suffix) {
 				return &asset
@@ -185,9 +199,11 @@ func findGitHubToken(pluginRequest *pluginRequest) (string, error) {
 				if repoName == pluginRequest.Group {
 					if v, f := repo[constants.GitHubToken]; f {
 						un, err := config.HandleField(v, reflect.String)
+
 						if err != nil {
 							return "", fmt.Errorf("error while handling username field for repository %q: %s", repoName, err.Error())
 						}
+
 						if sv, f := un.(string); f {
 							return sv, nil
 						}
@@ -196,6 +212,7 @@ func findGitHubToken(pluginRequest *pluginRequest) (string, error) {
 			}
 		}
 	}
+
 	return "", nil
 }
 

@@ -7,8 +7,8 @@ import (
 )
 
 func TestStringSliceDifference(t *testing.T) {
-	a := []string { "aaa", "bbb", "ccc", "ddd" }
-	b := []string { "aaa", "bbb", "ddd" }
+	a := []string{"aaa", "bbb", "ccc", "ddd"}
+	b := []string{"aaa", "bbb", "ddd"}
 
 	diff := StringSliceDifference(a, b, true)
 	assert.Equal(t, 1, len(diff))
@@ -16,8 +16,8 @@ func TestStringSliceDifference(t *testing.T) {
 }
 
 func TestStringSliceDifferenceEmptyB(t *testing.T) {
-	a := []string { "aaa", "bbb", "ccc", "ddd" }
-	b := []string {  }
+	a := []string{"aaa", "bbb", "ccc", "ddd"}
+	b := []string{}
 
 	diff := StringSliceDifference(a, b, true)
 	assert.Equal(t, 4, len(diff))
@@ -29,16 +29,16 @@ func TestStringSliceDifferenceEmptyB(t *testing.T) {
 }
 
 func TestStringSliceDifferenceEmptyA(t *testing.T) {
-	a := []string {  }
-	b := []string { "aaa", "bbb" }
+	a := []string{}
+	b := []string{"aaa", "bbb"}
 
 	diff := StringSliceDifference(a, b, true)
 	assert.Equal(t, 0, len(diff))
 }
 
 func TestStringSliceDifferenceCaseSensitive(t *testing.T) {
-	a := []string { "aaa", "bbb", "ccc", "ddd" }
-	b := []string { "aaa", "BBB", "ddd" }
+	a := []string{"aaa", "bbb", "ccc", "ddd"}
+	b := []string{"aaa", "BBB", "ddd"}
 
 	diff := StringSliceDifference(a, b, true)
 	assert.Equal(t, 2, len(diff))
@@ -48,8 +48,8 @@ func TestStringSliceDifferenceCaseSensitive(t *testing.T) {
 }
 
 func TestStringSliceDifferenceCaseInsensitive(t *testing.T) {
-	a := []string { "aaa", "bbb", "ccc", "ddd" }
-	b := []string { "aaa", "BBB", "ddd" }
+	a := []string{"aaa", "bbb", "ccc", "ddd"}
+	b := []string{"aaa", "BBB", "ddd"}
 
 	diff := StringSliceDifference(a, b, false)
 	assert.Equal(t, 1, len(diff))
@@ -57,20 +57,19 @@ func TestStringSliceDifferenceCaseInsensitive(t *testing.T) {
 }
 
 func TestSliceDifference(t *testing.T) {
-	a := []interface{} {
-		G{ "aaa", "bbb" },
-		G{ "ccc", "ddd" },
-		G{ "eee", "fff" },
+	a := []interface{}{
+		G{"aaa", "bbb"},
+		G{"ccc", "ddd"},
+		G{"eee", "fff"},
 	}
-	b := []interface{} {
-		G{ "aaa", "bbb" },
-		G{ "eee", "fff" },
+	b := []interface{}{
+		G{"aaa", "bbb"},
+		G{"eee", "fff"},
 	}
 
 	diff := SliceDifference(a, b)
 	assert.Equal(t, 1, len(diff))
 }
-
 
 type G struct {
 	F1 string

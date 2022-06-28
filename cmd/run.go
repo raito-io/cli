@@ -168,7 +168,6 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	}
 	defer client.Close()
 
-	// TODO: What happens if it fails to provide a job ID?
 	jobID, _ := job.StartJob(targetConfig)
 
 	err = execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, targetConfig.SkipDataSourceSync, syncDataSource, targetConfig, &client)

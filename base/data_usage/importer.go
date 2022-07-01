@@ -9,20 +9,22 @@ import (
 	"github.com/raito-io/cli/common/api/data_usage"
 )
 
+// Statement represents the format of the usage data that is created in the CLI
 type Statement struct {
 	ExternalId          string      `json:"externalId"`
 	AccessedDataObjects []ap.Access `json:"accessedDataObjects"`
-	Status              bool        `json:"status"`
+	Query               *string     `json:"query"` // query can be passed on for diagnostic purposes
+	Success             bool        `json:"success"`
+	Status              *string     `json:"status"` // could be used for e.g. 'unauthorized'
 	User                string      `json:"user"`
 	StartTime           int64       `json:"startTime"`
 	EndTime             int64       `json:"endTime"`
-	TotalTime           float32     `json:"totalTime"`
+	TotalTime           int         `json:"totalTime"`
 	BytesTransferred    int         `json:"bytesTransferred"`
 	RowsReturned        int         `json:"rowsReturned"`
 }
 
-// DataUsageFileCreator describes the interface for easily creating the data usage import files
-// to be exported from the Raito CLI.
+// DataUsageFileCreator describes the interface for easily creating the data usage import files to be exported from the Raito CLI.
 type DataUsageFileCreator interface {
 	AddStatements(statements []Statement) error
 	Close()

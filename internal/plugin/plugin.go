@@ -252,6 +252,9 @@ func getLatestVersionFromFiles(matches []string) string {
 func getLatestVersion(matches []string) string {
 	versions := make([]api.Version, 0, len(matches))
 	for _, match := range matches {
+		if match == "latest" {
+			return match
+		}
 		versions = append(versions, api.ParseVersion(match))
 	}
 

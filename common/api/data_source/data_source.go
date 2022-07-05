@@ -9,6 +9,12 @@ import (
 	"github.com/raito-io/cli/common/util/config"
 )
 
+const (
+	ColumnMasking   = "columnMasking"
+	RowFiltering    = "rowFiltering"
+	ColumnFiltering = "columnFiltering"
+)
+
 // DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.
 // It contains all the necessary configuration parameters for the plugin to function.
 type DataSourceSyncConfig struct {

@@ -132,6 +132,10 @@ func (s *combo) SyncDataSource(config *data_source.DataSourceSyncConfig) data_so
 	return data_source.DataSourceSyncResult{}
 }
 
+func (s *combo) GetMetaData() data_source.MetaData {
+	return data_source.MetaData{}
+}
+
 func (s *combo) PluginInfo() api.PluginInfo {
 	return api.PluginInfo{}
 }
@@ -146,6 +150,10 @@ type dataSourcePlugin struct{}
 
 func (s *dataSourcePlugin) SyncDataSource(config *data_source.DataSourceSyncConfig) data_source.DataSourceSyncResult {
 	return data_source.DataSourceSyncResult{}
+}
+
+func (s *dataSourcePlugin) GetMetaData() data_source.MetaData {
+	return data_source.MetaData{}
 }
 
 type dataAccessPlugin struct{}

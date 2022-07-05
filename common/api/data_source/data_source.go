@@ -13,6 +13,13 @@ const (
 	ColumnMasking   = "columnMasking"
 	RowFiltering    = "rowFiltering"
 	ColumnFiltering = "columnFiltering"
+
+	Database = "database"
+	Schema   = "schema"
+	Table    = "table"
+	View     = "view"
+	Column   = "column"
+	Dataset  = "dataset"
 )
 
 // DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.

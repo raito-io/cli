@@ -10,16 +10,29 @@ import (
 )
 
 const (
+	/*
+		Data Source features
+	*/
 	ColumnMasking   = "columnMasking"
 	RowFiltering    = "rowFiltering"
 	ColumnFiltering = "columnFiltering"
 
-	Database = "database"
-	Schema   = "schema"
-	Table    = "table"
-	View     = "view"
-	Column   = "column"
-	Dataset  = "dataset"
+	/*
+		The list of standard Data Object Types
+	*/
+	Datasource = "datasource"
+	Database   = "database"
+	Schema     = "schema"
+	Table      = "table"
+	View       = "view"
+	Column     = "column"
+	Dataset    = "dataset"
+
+	/*
+		The list of global permissions
+	*/
+	Write = "write"
+	Read  = "read"
 )
 
 // DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.

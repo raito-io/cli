@@ -3,11 +3,12 @@ package data_source
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/raito-io/cli/common/api/data_source"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target"
-	"strings"
-	"time"
 )
 
 func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) error {

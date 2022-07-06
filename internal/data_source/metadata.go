@@ -21,6 +21,7 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 		return fmt.Errorf("error while serializing metadata information: %s", err.Error())
 	}
 	md, err := fixMetaData(mdm)
+
 	if err != nil {
 		return err
 	}
@@ -58,31 +59,19 @@ func marshalMetaData(md data_source.MetaData) (string, error) {
 // fixMetaData converts the marshaled JSON into a valid GraphQL input
 func fixMetaData(input string) (string, error) {
 	md := input
-	reg, err := regexp.Compile("\"([a-zA-Z]+)\":")
-	if err != nil {
-		return "", fmt.Errorf("unable to compile regular expression: %s", err.Error())
-	}
+	reg := regexp.MustCompile("\"([a-zA-Z]+)\":")
 	md = reg.ReplaceAllString(md, "$1:")
 
 	// Replace a 'null' for the 'permissions' field to an empty array
-	reg2, err := regexp.Compile("(,)?permissions:null")
-	if err != nil {
-		return "", fmt.Errorf("unable to compile regular expression: %s", err.Error())
-	}
+	reg2 := regexp.MustCompile("(,)?permissions:null")
 	md = reg2.ReplaceAllString(md, "${1}permissions:[]")
 
 	// Replace a 'null' for the 'children' field to an empty array
-	reg3, err := regexp.Compile("(,)?children:null")
-	if err != nil {
-		return "", fmt.Errorf("unable to compile regular expression: %s", err.Error())
-	}
+	reg3 := regexp.MustCompile("(,)?children:null")
 	md = reg3.ReplaceAllString(md, "${1}children:[]")
 
 	// Remove all ',globalPermissions:null'
-	reg4, err := regexp.Compile("(,)?globalPermissions:null")
-	if err != nil {
-		return "", fmt.Errorf("unable to compile regular expression: %s", err.Error())
-	}
+	reg4 := regexp.MustCompile("(,)?globalPermissions:null")
 	md = reg4.ReplaceAllString(md, "")
 
 	return md, nil

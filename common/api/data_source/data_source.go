@@ -58,7 +58,7 @@ type DataObjectType struct {
 
 type DataObjectTypePermission struct {
 	Permission        string   `json:"permission"`
-	GlobalPermissions []string `json:"globalPermission"`
+	GlobalPermissions []string `json:"globalPermissions,omitempty"`
 }
 
 type MetaData struct {
@@ -107,7 +107,7 @@ func (g *dataSourceSyncerRPC) SyncDataSource(config *DataSourceSyncConfig) DataS
 func (g *dataSourceSyncerRPC) GetMetaData() MetaData {
 	var resp MetaData
 
-	err := g.client.Call("Plugin.GetMetaData", nil, &resp)
+	err := g.client.Call("Plugin.GetMetaData", new(interface{}), &resp)
 	if err != nil {
 		return MetaData{}
 	}

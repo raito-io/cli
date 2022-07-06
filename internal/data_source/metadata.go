@@ -45,6 +45,7 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 	return nil
 }
 
+// marshalMetaData marshals the MetaData struct to a string
 func marshalMetaData(md data_source.MetaData) (string, error) {
 	mdb, err := json.Marshal(md)
 	if err != nil {
@@ -54,6 +55,7 @@ func marshalMetaData(md data_source.MetaData) (string, error) {
 	return string(mdb), nil
 }
 
+// fixMetaData converts the marshaled JSON into a valid GraphQL input
 func fixMetaData(input string) (string, error) {
 	md := input
 	reg, err := regexp.Compile("\"([a-zA-Z]+)\":")
@@ -62,14 +64,14 @@ func fixMetaData(input string) (string, error) {
 	}
 	md = reg.ReplaceAllString(md, "$1:")
 
-	// Remove all ',permissions:null'
+	// Replace a 'null' for the 'permissions' field to an empty array
 	reg2, err := regexp.Compile("(,)?permissions:null")
 	if err != nil {
 		return "", fmt.Errorf("unable to compile regular expression: %s", err.Error())
 	}
 	md = reg2.ReplaceAllString(md, "${1}permissions:[]")
 
-	// Remove all ',children:null'
+	// Replace a 'null' for the 'children' field to an empty array
 	reg3, err := regexp.Compile("(,)?children:null")
 	if err != nil {
 		return "", fmt.Errorf("unable to compile regular expression: %s", err.Error())

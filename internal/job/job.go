@@ -11,38 +11,44 @@ import (
 )
 
 func StartJob(cfg *target.BaseTargetConfig) (string, error) {
-	gqlQuery := fmt.Sprintf(`{ "query": "mutation createJob {
+	if isRaitoCloudEnabled(cfg) {
+		gqlQuery := fmt.Sprintf(`{ "query": "mutation createJob {
         createJob(input: { dataSourceId: \"%s\", eventTime: \"%s\" }) { jobId } }" }"`,
-		cfg.DataSourceId, time.Now().Format(time.RFC3339))
+			cfg.DataSourceId, time.Now().Format(time.RFC3339))
 
-	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+		gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
-	res, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
-	if err != nil {
-		return "", fmt.Errorf("error while executing import: %s", err.Error())
+		res, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
+		if err != nil {
+			return "", fmt.Errorf("error while executing import: %s", err.Error())
+		}
+
+		resp := Response{}
+		gr := graphql.GraphqlResponse{Data: &resp}
+
+		err = json.Unmarshal(res, &gr)
+		if err != nil {
+			return "", fmt.Errorf("error while parsing job event result: %s", err.Error())
+		}
+
+		return *resp.Job.JobID, nil
 	}
 
-	resp := Response{}
-	gr := graphql.GraphqlResponse{Data: &resp}
-
-	err = json.Unmarshal(res, &gr)
-	if err != nil {
-		return "", fmt.Errorf("error while parsing job event result: %s", err.Error())
-	}
-
-	return *resp.Job.JobID, nil
+	return "offline-job", nil
 }
 
 func AddJobEvent(cfg *target.BaseTargetConfig, jobID, jobType, status string) {
-	gqlQuery := fmt.Sprintf(`{ "query": "mutation createJobEvent {
+	if isRaitoCloudEnabled(cfg) {
+		gqlQuery := fmt.Sprintf(`{ "query": "mutation createJobEvent {
         createJobEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", jobType: \"%s\", status: \"%s\", eventTime: \"%s\" }) { jobId } }" }"`,
-		jobID, cfg.DataSourceId, jobType, status, time.Now().Format(time.RFC3339))
+			jobID, cfg.DataSourceId, jobType, status, time.Now().Format(time.RFC3339))
 
-	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+		gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
-	_, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
-	if err != nil {
-		cfg.Logger.Debug("job update failed: %s", err.Error())
+		_, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
+		if err != nil {
+			cfg.Logger.Debug("job update failed: %s", err.Error())
+		}
 	}
 }
 
@@ -52,4 +58,8 @@ type Response struct {
 
 type Job struct {
 	JobID *string `json:"jobId"`
+}
+
+func isRaitoCloudEnabled(cfg *target.BaseTargetConfig) bool {
+	return cfg.ApiUser != "" && cfg.ApiSecret != ""
 }

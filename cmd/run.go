@@ -226,6 +226,13 @@ func syncDataSource(client plugin.PluginClient, targetConfig target.BaseTargetCo
 		return err
 	}
 
+	md := dss.GetMetaData()
+	err = data_source.SetMetaData(targetConfig, md)
+
+	if err != nil {
+		return err
+	}
+
 	res := dss.SyncDataSource(&syncerConfig)
 	if res.Error != nil {
 		return err

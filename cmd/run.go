@@ -124,8 +124,8 @@ func runSync(baseLogger hclog.Logger, otherArgs []string) error {
 }
 
 func execute(targetID string, jobID string, syncType string, skipSync bool,
-	syncFunc func(c plugin.PluginClient, cfg target.BaseTargetConfig) error,
-	cfg *target.BaseTargetConfig, c plugin.PluginClient) error {
+	syncFunc func(c plugin.PluginClient, cfg target.BaseTargetConfig, targetFiles ...string) error,
+	cfg *target.BaseTargetConfig, c plugin.PluginClient, targetFiles ...string) error {
 	switch {
 	case skipSync:
 		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
@@ -143,7 +143,7 @@ func execute(targetID string, jobID string, syncType string, skipSync bool,
 		cfg.Logger.Info("Synchronizing data source meta data...")
 		job.AddJobEvent(cfg, jobID, syncType, constants.Started)
 
-		err := syncFunc(c, *cfg)
+		err := syncFunc(c, *cfg, targetFiles...)
 		if err != nil {
 			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
 			job.AddJobEvent(cfg, jobID, syncType, constants.Failed)
@@ -169,52 +169,111 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	}
 	defer client.Close()
 
+	userTargetFile, _ := generateFileName(*targetConfig, "-is-user")
+	groupTargetFile, _ := generateFileName(*targetConfig, "is-group")
+	daTargetFile, _ := generateFileName(*targetConfig, "da")
+	duTargetFile, _ := generateFileName(*targetConfig, "du")
+	dsTargetFile, _ := generateFileName(*targetConfig, "ds")
+
+	if targetConfig.DeleteTempFiles {
+		defer os.Remove(userTargetFile)
+		defer os.Remove(groupTargetFile)
+		defer os.Remove(daTargetFile)
+		defer os.Remove(duTargetFile)
+		defer os.Remove(dsTargetFile)
+	}
+
 	jobID, _ := job.StartJob(targetConfig)
 
-	err = execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, targetConfig.SkipDataSourceSync, syncDataSource, targetConfig, client)
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataSourceExport, targetConfig.SkipDataSourceSync, syncDataSourceExport, targetConfig, client, dsTargetFile)
 	if err != nil {
 		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
-	err = execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, targetConfig.SkipIdentityStoreSync, syncIdentityStore, targetConfig, client)
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, targetConfig.SkipDataSourceSync, syncDataSourceImport, targetConfig, client, dsTargetFile)
 	if err != nil {
 		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
-	err = execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, targetConfig.SkipDataAccessSync, syncDataAccess, targetConfig, client)
+	err = execute(targetConfig.IdentityStoreId, jobID, constants.IdentityExport, targetConfig.SkipIdentityStoreSync, syncIdentityStoreExport, targetConfig, client, userTargetFile, groupTargetFile)
 	if err != nil {
 		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
-	err = execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, targetConfig.SkipDataUsageSync, syncDataUsage, targetConfig, client)
+	err = execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, targetConfig.SkipIdentityStoreSync, syncIdentityStoreImport, targetConfig, client, userTargetFile, groupTargetFile)
+	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
+		return err
+	}
+
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataAccessExport, targetConfig.SkipDataAccessSync, syncDataAccessExport, targetConfig, client, daTargetFile)
+	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
+		return err
+	}
+
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, targetConfig.SkipDataAccessSync, syncDataAccessImport, targetConfig, client, daTargetFile)
+	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
+		return err
+	}
+
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataUsageExport, targetConfig.SkipDataUsageSync, syncDataUsageExport, targetConfig, client, duTargetFile)
+	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
+		return err
+	}
+
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, targetConfig.SkipDataUsageSync, syncDataUsageImport, targetConfig, client, duTargetFile)
 	if err != nil {
 		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
 	targetConfig.Logger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
-
 	job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Completed)
 
 	return nil
 }
 
-func syncDataSource(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
+func generateFileName(targetConfig target.BaseTargetConfig, suffix string) (string, error) {
 	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
 
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-"+suffix, "json"))
+	if err != nil {
+		return "", err
+	}
+
+	return targetFile, nil
+}
+
+func syncDataSourceImport(client plugin.PluginClient, targetConfig target.BaseTargetConfig, targetFiles ...string) error {
+	targetFile := targetFiles[0]
+
+	importerConfig := data_source.DataSourceImportConfig{
+		BaseTargetConfig: targetConfig,
+		TargetFile:       targetFile,
+		DeleteUntouched:  targetConfig.DeleteUntouched,
+		ReplaceTags:      targetConfig.ReplaceTags,
+	}
+	dsImporter := data_source.NewDataSourceImporter(&importerConfig)
+
+	dsResult, err := dsImporter.TriggerImport()
 	if err != nil {
 		return err
 	}
 
-	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
+	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced data source. Added: %d - Removed: %d - Updated: %d", dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
 
-	if targetConfig.DeleteTempFiles {
-		defer os.Remove(targetFile)
-	}
+	return nil
+}
+
+func syncDataSourceExport(client plugin.PluginClient, targetConfig target.BaseTargetConfig, targetFiles ...string) error {
+	targetFile := targetFiles[0]
+	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
 
 	syncerConfig := dspc.DataSourceSyncConfig{
 		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
@@ -256,42 +315,9 @@ func syncDataSource(client plugin.PluginClient, targetConfig target.BaseTargetCo
 	return nil
 }
 
-func syncIdentityStore(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
-	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
-
-	userFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-user", "json"))
-	if err != nil {
-		return err
-	}
-
-	groupFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-group", "json"))
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as user target file", userFile))
-	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as groups target file", groupFile))
-
-	if targetConfig.DeleteTempFiles {
-		defer os.Remove(userFile)
-		defer os.Remove(groupFile)
-	}
-
-	syncerConfig := ispc.IdentityStoreSyncConfig{
-		ConfigMap: baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
-		UserFile:  userFile,
-		GroupFile: groupFile,
-	}
-
-	iss, err := client.GetIdentityStoreSyncer()
-	if err != nil {
-		return err
-	}
-
-	result := iss.SyncIdentityStore(&syncerConfig)
-	if result.Error != nil {
-		return *(result.Error)
-	}
+func syncIdentityStoreImport(_ plugin.PluginClient, targetConfig target.BaseTargetConfig, targetFiles ...string) error {
+	userFile := targetFiles[0]
+	groupFile := targetFiles[1]
 
 	importerConfig := identity_store.IdentityStoreImportConfig{
 		BaseTargetConfig: targetConfig,
@@ -313,19 +339,35 @@ func syncIdentityStore(client plugin.PluginClient, targetConfig target.BaseTarge
 	return nil
 }
 
-func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
-	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
+func syncIdentityStoreExport(client plugin.PluginClient, targetConfig target.BaseTargetConfig, targetFiles ...string) error {
+	userFile := targetFiles[0]
+	groupFile := targetFiles[1]
 
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
+	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as user target file", userFile))
+	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as groups target file", groupFile))
+
+	syncerConfig := ispc.IdentityStoreSyncConfig{
+		ConfigMap: baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		UserFile:  userFile,
+		GroupFile: groupFile,
+	}
+
+	iss, err := client.GetIdentityStoreSyncer()
 	if err != nil {
 		return err
 	}
 
-	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
-
-	if targetConfig.DeleteTempFiles {
-		defer os.Remove(targetFile)
+	result := iss.SyncIdentityStore(&syncerConfig)
+	if result.Error != nil {
+		return *(result.Error)
 	}
+
+	return nil
+}
+
+func syncDataAccessExport(client plugin.PluginClient, targetConfig target.BaseTargetConfig, targetFiles ...string) error {
+	targetFile := targetFiles[0]
+	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
 
 	config := data_access.DataAccessConfig{
 		BaseTargetConfig: targetConfig,
@@ -361,9 +403,13 @@ func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetCo
 		return err
 	}
 
+	return nil
+}
+
+func syncDataAccessImport(client plugin.PluginClient, targetConfig target.BaseTargetConfig, targetFiles ...string) error {
 	importerConfig := access_provider.AccessProviderImportConfig{
 		BaseTargetConfig: targetConfig,
-		TargetFile:       targetFile,
+		TargetFile:       targetFiles[0],
 		DeleteUntouched:  targetConfig.DeleteUntouched,
 	}
 	daImporter := access_provider.NewAccessProviderImporter(&importerConfig)
@@ -378,19 +424,9 @@ func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetCo
 	return nil
 }
 
-func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
-	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-du", "json"))
-
-	if err != nil {
-		return err
-	}
-
+func syncDataUsageExport(client plugin.PluginClient, targetConfig target.BaseTargetConfig, targetFiles ...string) error {
+	targetFile := targetFiles[0]
 	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
-
-	if targetConfig.DeleteTempFiles {
-		defer os.Remove(targetFile)
-	}
 
 	syncerConfig := dupc.DataUsageSyncConfig{
 		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
@@ -406,6 +442,12 @@ func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetCon
 	if res.Error != nil {
 		return err
 	}
+
+	return nil
+}
+
+func syncDataUsageImport(_ plugin.PluginClient, targetConfig target.BaseTargetConfig, targetFiles ...string) error {
+	targetFile := targetFiles[0]
 
 	importerConfig := data_usage.DataUsageImportConfig{
 		BaseTargetConfig: targetConfig,

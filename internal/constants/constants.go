@@ -72,9 +72,17 @@ const (
 	Failed    = "FAILED"
 	Skipped   = "SKIPPED"
 
+	IdentityExport = "IE"
 	IdentitySync   = "IS"
-	DataSourceSync = "DS"
-	DataAccessSync = "DA"
-	DataUsageSync  = "DU"
-	Job            = "JOB"
+
+	DataSourceExport = "DSE"
+	DataSourceSync   = "DS"
+
+	DataAccessExport = "DAE"
+	DataAccessSync   = "DA"
+
+	DataUsageExport = "DUE"
+	DataUsageSync   = "DU"
+
+	Job = "JOB"
 )

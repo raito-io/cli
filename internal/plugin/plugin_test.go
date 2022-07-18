@@ -60,9 +60,15 @@ func TestGetLatestVersion(t *testing.T) {
 }
 
 func TestGetLatestVersionFromFiles(t *testing.T) {
-	assert.Equal(t, "path/group/my-file-1.1.2", getLatestVersionFromFiles([]string{"path/group/my-file-1.1.0", "path/group/my-file-1.1.2", "path/group/my-file-1.1.1"}))
-	assert.Equal(t, "./path/gro-up/my_file-2.1.0", getLatestVersionFromFiles([]string{"./path/gro-up/my_file-2.1.0", "./path/gro-up/my_file-1.1.2", "./path/gro-up/my_file-1.1.1"}))
-	assert.Equal(t, "/pa-th/group/myfile-2.1.0", getLatestVersionFromFiles([]string{"/pa-th/group/myfile-2.1.0", "/pa-th/group/myfile-1.1.2", "/pa-th/group/myfile-2.1.0"}))
+	path, version := getLatestVersionFromFiles([]string{"path/group/my-file-1.1.0", "path/group/my-file-1.1.2", "path/group/my-file-1.1.1"})
+	assert.Equal(t, "path/group/my-file-1.1.2", path)
+	assert.Equal(t, "1.1.2", version)
+	path, version = getLatestVersionFromFiles([]string{"./path/gro-up/my_file-2.1.0", "./path/gro-up/my_file-1.1.2", "./path/gro-up/my_file-1.1.1"})
+	assert.Equal(t, "./path/gro-up/my_file-2.1.0", path)
+	assert.Equal(t, "2.1.0", version)
+	path, version = getLatestVersionFromFiles([]string{"/pa-th/group/myfile-2.1.0", "/pa-th/group/myfile-1.1.2", "/pa-th/group/myfile-2.1.0"})
+	assert.Equal(t, "/pa-th/group/myfile-2.1.0", path)
+	assert.Equal(t, "2.1.0", version)
 }
 
 // Commented as we should not be downloading stuff during unit tests. Can we fake this?

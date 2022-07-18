@@ -123,13 +123,13 @@ func runSync(baseLogger hclog.Logger, otherArgs []string) error {
 	return target.RunTargets(baseLogger, otherArgs, runTargetSync)
 }
 
-func execute(targetID string, jobID string, syncType string, skipSync bool,
+func execute(targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
 	syncFunc func(c plugin.PluginClient, cfg target.BaseTargetConfig) error,
 	cfg *target.BaseTargetConfig, c plugin.PluginClient) error {
 	switch {
 	case skipSync:
 		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
-		cfg.Logger.Info("Skipping syncing of " + syncType)
+		cfg.Logger.Info("Skipping sync of " + syncTypeLabel)
 	case targetID == "":
 		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
 
@@ -138,9 +138,9 @@ func execute(targetID string, jobID string, syncType string, skipSync bool,
 			idField = "identity-store-id"
 		}
 
-		cfg.Logger.Info("No " + idField + " argument found. Skipping syncing of " + syncType)
+		cfg.Logger.Info("No " + idField + " argument found. Skipping syncing of " + syncTypeLabel)
 	default:
-		cfg.Logger.Info("Synchronizing data source meta data...")
+		cfg.Logger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
 		job.AddJobEvent(cfg, jobID, syncType, constants.Started)
 
 		err := syncFunc(c, *cfg)
@@ -171,25 +171,25 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 
 	jobID, _ := job.StartJob(targetConfig)
 
-	err = execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, targetConfig.SkipDataSourceSync, syncDataSource, targetConfig, client)
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, "data source metadata", targetConfig.SkipDataSourceSync, syncDataSource, targetConfig, client)
 	if err != nil {
 		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
-	err = execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, targetConfig.SkipIdentityStoreSync, syncIdentityStore, targetConfig, client)
+	err = execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, "identity store", targetConfig.SkipIdentityStoreSync, syncIdentityStore, targetConfig, client)
 	if err != nil {
 		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
-	err = execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, targetConfig.SkipDataAccessSync, syncDataAccess, targetConfig, client)
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, "data access", targetConfig.SkipDataAccessSync, syncDataAccess, targetConfig, client)
 	if err != nil {
 		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
-	err = execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, targetConfig.SkipDataUsageSync, syncDataUsage, targetConfig, client)
+	err = execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, "data usage", targetConfig.SkipDataUsageSync, syncDataUsage, targetConfig, client)
 	if err != nil {
 		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err

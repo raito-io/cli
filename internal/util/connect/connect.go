@@ -32,7 +32,7 @@ func doPost(host, path, body, contentType string, config *target.BaseTargetConfi
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error while doing HTTP GET to %q: %s", url, err.Error())
+		return nil, fmt.Errorf("error while doing HTTP POST to %q: %s", url, err.Error())
 	}
 
 	return resp, nil

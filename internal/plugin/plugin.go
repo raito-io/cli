@@ -254,6 +254,7 @@ func getLatestVersionFromFiles(matches []string) (string, string) {
 	}
 
 	latestVersion := getLatestVersion(versions)
+
 	return prefix + latestVersion, latestVersion
 }
 

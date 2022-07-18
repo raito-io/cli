@@ -115,6 +115,9 @@ func findMatchingPlugin(connector string, version string, logger hclog.Logger) (
 
 	logger.Debug(fmt.Sprintf("Using plugin request %+v", pluginRequest))
 
+	latestVersion := ""
+	latestPath := ""
+
 	// We're looking for a specific plugin version
 	if !pluginRequest.IsLatest() {
 		// Look locally
@@ -134,23 +137,27 @@ func findMatchingPlugin(connector string, version string, logger hclog.Logger) (
 		path := localPluginFolder + pluginRequest.Path()
 		matches, err := filepath.Glob(path)
 		if len(matches) > 0 && err == nil {
-			latest := getLatestVersionFromFiles(matches)
-			logger.Debug(fmt.Sprintf("Found latest version for plugin %s locally at path %s", pluginRequest.GroupAndName(), latest))
-			return latest, nil
+			latestPath, latestVersion = getLatestVersionFromFiles(matches)
+			logger.Debug(fmt.Sprintf("Found version for plugin %s locally at path %s", pluginRequest.GroupAndName(), latestPath))
 		}
 
-		path = globalPluginFolder + pluginRequest.Path()
-		matches, err = filepath.Glob(path)
-		if len(matches) > 0 && err == nil {
-			latest := getLatestVersionFromFiles(matches)
-			logger.Debug(fmt.Sprintf("Found latest version for plugin %s globally at path %s", pluginRequest.GroupAndName(), latest))
-			return latest, nil
+		if latestVersion == "" {
+			path = globalPluginFolder + pluginRequest.Path()
+			matches, err = filepath.Glob(path)
+			if len(matches) > 0 && err == nil {
+				latestPath, latestVersion = getLatestVersionFromFiles(matches)
+				logger.Debug(fmt.Sprintf("Found version for plugin %s globally at path %s", pluginRequest.GroupAndName(), latestPath))
+			}
 		}
 	}
 
-	logger.Debug(fmt.Sprintf("No matching plugin found for %s version %s on local disk", pluginRequest.GroupAndName(), pluginRequest.Version))
+	if latestVersion != "" && pluginRequest.IsLatest() {
+		logger.Debug(fmt.Sprintf("A matching plugin found for %s version %s on local disk. Will check if there is a newer version available online.", pluginRequest.GroupAndName(), pluginRequest.Version))
+	} else {
+		logger.Debug(fmt.Sprintf("No matching plugin found for %s version %s on local disk", pluginRequest.GroupAndName(), pluginRequest.Version))
+	}
 
-	return downloadAndExtractPluginFromGitHubRepo(pluginRequest, globalPluginFolder, logger)
+	return downloadAndExtractPluginFromGitHubRepo(pluginRequest, globalPluginFolder, latestVersion, latestPath, logger)
 }
 
 func extractFromDownloadFile(pluginRequest *pluginRequest, downloadedFile, targetPath string) (string, error) {
@@ -237,7 +244,7 @@ func extractTarGz(gzipStream io.Reader, extractedPath string) (string, error) {
 	return "", errors.New("no files found to extract from tar.gz archive")
 }
 
-func getLatestVersionFromFiles(matches []string) string {
+func getLatestVersionFromFiles(matches []string) (string, string) {
 	versionStart := strings.LastIndex(matches[0], "-") + 1
 	prefix := matches[0][0:versionStart]
 	versions := make([]string, 0, len(matches))
@@ -246,7 +253,8 @@ func getLatestVersionFromFiles(matches []string) string {
 		versions = append(versions, match[versionStart:])
 	}
 
-	return prefix + getLatestVersion(versions)
+	latestVersion := getLatestVersion(versions)
+	return prefix + latestVersion, latestVersion
 }
 
 func getLatestVersion(matches []string) string {

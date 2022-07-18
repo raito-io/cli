@@ -17,10 +17,17 @@ import (
 	"github.com/spf13/viper"
 )
 
-func downloadAndExtractPluginFromGitHubRepo(pluginRequest *pluginRequest, targetPath string, logger hclog.Logger) (string, error) {
+// downloadAndExtractPluginFromGitHubRepo looks for the plugin with the given information and stores it in the 'targetPath'.
+// The versionToBeat parameter can be set when the requested version if 'latest'.
+// In this case it indicates that we already have the 'versionToBeat' version locally and so don't need to re-download it when it's still the same.
+func downloadAndExtractPluginFromGitHubRepo(pluginRequest *pluginRequest, targetPath string, versionToBeat string, versionToBeatPath string, logger hclog.Logger) (string, error) {
 	asset, err := getGitHubAsset(pluginRequest, logger)
 	if err != nil {
 		return "", fmt.Errorf("error looking for plugin to download from Github for %q (version %q): %s", pluginRequest.GroupAndName(), pluginRequest.Version, err.Error())
+	}
+
+	if versionToBeat != "" && pluginRequest.Version == versionToBeat {
+		return versionToBeatPath, nil
 	}
 
 	if asset == nil {

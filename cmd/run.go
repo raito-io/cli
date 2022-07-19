@@ -343,6 +343,15 @@ func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetCo
 
 	accessRightsLastUpdated = dar.LastCalculated
 
+	// retrieve permissions meta-data from data source syncer and validate all permissions in export file
+	dss, err := client.GetDataSourceSyncer()
+	if err != nil {
+		return err
+	}
+
+	md := dss.GetMetaData()
+	dar.AccessRights = validateAccessRightsWithMetaData(md, dar.AccessRights)
+
 	syncerConfig := dapc.DataAccessSyncConfig{
 		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
 		Prefix:     "",
@@ -422,4 +431,28 @@ func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetCon
 		duResult.StatementsAdded, duResult.StatementsFailed))
 
 	return nil
+}
+
+func validateAccessRightsWithMetaData(md dspc.MetaData, accessRights []*dapc.DataAccess) []*dapc.DataAccess {
+	retainedRights := make([]*dapc.DataAccess, 0)
+
+	for _, req := range accessRights {
+		do := req.DataObject
+		retainedPermissions := make([]string, 0)
+
+		for _, grantedPerm := range req.Permissions {
+			if !md.ValidatePermissionForDoType(do.Type, grantedPerm) {
+				logger.Warn(fmt.Sprintf("Removing Permission %q for %q Data Object %q in export as it is not an available permission in the Data Source permission meta-data", grantedPerm, do.Type, do.Name))
+			} else {
+				retainedPermissions = append(retainedPermissions, grantedPerm)
+			}
+		}
+
+		if len(retainedPermissions) > 0 {
+			req.Permissions = retainedPermissions
+			retainedRights = append(retainedRights, req)
+		}
+	}
+
+	return retainedRights
 }

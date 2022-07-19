@@ -3,6 +3,7 @@ package data_source
 
 import (
 	"net/rpc"
+	"strings"
 
 	"github.com/hashicorp/go-plugin"
 	"github.com/raito-io/cli/common/api"
@@ -127,4 +128,18 @@ func (s *dataSourceSyncerRPCServer) SyncDataSource(config *DataSourceSyncConfig,
 func (s *dataSourceSyncerRPCServer) GetMetaData(args interface{}, resp *MetaData) error {
 	*resp = s.Impl.GetMetaData()
 	return nil
+}
+
+func (md *MetaData) ValidatePermissionForDoType(doType string, permission string) bool {
+	for _, mdDoType := range md.DataObjectTypes {
+		if strings.EqualFold(mdDoType.Name, doType) {
+			for _, availPerm := range mdDoType.Permissions {
+				if strings.EqualFold(availPerm.Permission, permission) {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }

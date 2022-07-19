@@ -8,7 +8,7 @@ import (
 
 func TestFixMetaData(t *testing.T) {
 	input := map[string]data_source.MetaData{
-		"{dataObjectTypes:[{name:\"datasource\",label:\"\",icon:\"\",permissions:[{permission:\"APPLY MASKING POLICY\"}],children:[]}],supportedFeatures:[\"columnMasking\"]}": {
+		"{dataObjectTypes:[{name:\"datasource\",label:\"\",icon:\"\",permissions:[{permission:\"APPLY MASKING POLICY\",description:\"\"}],children:[]}],supportedFeatures:[\"columnMasking\"],type:\"\",icon:\"\"}": {
 			SupportedFeatures: []string{data_source.ColumnMasking},
 			DataObjectTypes: []data_source.DataObjectType{
 				{
@@ -23,7 +23,7 @@ func TestFixMetaData(t *testing.T) {
 			},
 		},
 
-		"{dataObjectTypes:[{name:\"datasource\",label:\"\",icon:\"\",permissions:[{permission:\"SELECT\"}],children:[]}],supportedFeatures:[\"columnMasking\"]}": {
+		"{dataObjectTypes:[{name:\"datasource\",label:\"\",icon:\"\",permissions:[{permission:\"SELECT\",description:\"test\"}],children:[]}],supportedFeatures:[\"columnMasking\"],type:\"\",icon:\"\"}": {
 			SupportedFeatures: []string{data_source.ColumnMasking},
 			DataObjectTypes: []data_source.DataObjectType{
 				{
@@ -32,13 +32,14 @@ func TestFixMetaData(t *testing.T) {
 						{
 							Permission:        "SELECT",
 							GlobalPermissions: []string{},
+							Description:       "test",
 						},
 					},
 				},
 			},
 		},
 
-		"{dataObjectTypes:[{name:\"datasource\",label:\"\",icon:\"\",permissions:[],children:[]}],supportedFeatures:[\"columnMasking\"]}": {
+		"{dataObjectTypes:[{name:\"datasource\",label:\"\",icon:\"\",permissions:[],children:[]}],supportedFeatures:[\"columnMasking\"],type:\"snowflake\",icon:\"sf-icon\"}": {
 			SupportedFeatures: []string{data_source.ColumnMasking},
 			DataObjectTypes: []data_source.DataObjectType{
 				{
@@ -46,14 +47,17 @@ func TestFixMetaData(t *testing.T) {
 					Permissions: []data_source.DataObjectTypePermission{},
 				},
 			},
+			Type: "snowflake",
+			Icon: "sf-icon",
 		},
-		"{dataObjectTypes:[{name:\"datasource\",label:\"\",icon:\"\",permissions:[],children:[]}],supportedFeatures:[\"columnFiltering\"]}": {
+		"{dataObjectTypes:[{name:\"datasource\",label:\"\",icon:\"\",permissions:[],children:[]}],supportedFeatures:[\"columnFiltering\"],type:\"snowflake\",icon:\"\"}": {
 			SupportedFeatures: []string{data_source.ColumnFiltering},
 			DataObjectTypes: []data_source.DataObjectType{
 				{
 					Name: data_source.Datasource,
 				},
 			},
+			Type: "snowflake",
 		},
 	}
 

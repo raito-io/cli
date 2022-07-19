@@ -83,7 +83,7 @@ func (d *dataSourceFileCreator) AddDataObjects(dataObjects []DataObject) error {
 		return nil
 	}
 
-	for _, do := range dataObjects {
+	for _, do := range dataObjects { //nolint
 		var err error
 
 		if d.dataObjectCount > 0 {

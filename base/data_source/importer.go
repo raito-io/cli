@@ -16,13 +16,14 @@ import (
 
 // DataObject represents a data object in the format that is suitable to be imported into a Raito data source.
 type DataObject struct {
-	ExternalId       string                 `json:"externalId"`
-	Name             string                 `json:"name"`
-	FullName         string                 `json:"fullName"`
-	Type             string                 `json:"type"`
-	Description      string                 `json:"description"`
-	ParentExternalId string                 `json:"parentExternalId"`
-	Tags             map[string]interface{} `json:"tags"`
+	ExternalId           string                 `json:"externalId"`
+	Name                 string                 `json:"name"`
+	FullName             string                 `json:"fullName"`
+	Type                 string                 `json:"type"`
+	Description          string                 `json:"description"`
+	ParentExternalId     string                 `json:"parentExternalId"`
+	Tags                 map[string]interface{} `json:"tags"`
+	AvailablePermissions []string               `json:"availablePermissions"`
 }
 
 // DataObjectReference represents the reference to a DataObject suitable for e.g. defining the What in Access Provider import
@@ -82,7 +83,7 @@ func (d *dataSourceFileCreator) AddDataObjects(dataObjects []DataObject) error {
 		return nil
 	}
 
-	for _, do := range dataObjects {
+	for _, do := range dataObjects { //nolint
 		var err error
 
 		if d.dataObjectCount > 0 {

@@ -59,11 +59,14 @@ type DataObjectType struct {
 type DataObjectTypePermission struct {
 	Permission        string   `json:"permission"`
 	GlobalPermissions []string `json:"globalPermissions,omitempty"`
+	Description       string   `json:"description"`
 }
 
 type MetaData struct {
 	DataObjectTypes   []DataObjectType `json:"dataObjectTypes"`
 	SupportedFeatures []string         `json:"supportedFeatures"`
+	Type              string           `json:"type"`
+	Icon              string           `json:"icon"`
 }
 
 // DataSourceSyncer interface needs to be implemented by any plugin that wants to import data objects into a Raito data source.

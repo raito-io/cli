@@ -35,7 +35,7 @@ func (d *DataSourceDetails) SetDescription(desc string) {
 	d.dataSource.Description = desc
 }
 
-func (d *DataSourceDetails) SetAvailablePermission(permission string) {
+func (d *DataSourceDetails) AddAvailablePermission(permission string) {
 	found := false
 
 	for _, p := range d.dataSource.AvailablePermissions {
@@ -52,6 +52,6 @@ func (d *DataSourceDetails) SetAvailablePermission(permission string) {
 
 func (d *DataSourceDetails) SetAvailablePermissions(permissions []string) {
 	for _, p := range permissions {
-		d.SetAvailablePermission(p)
+		d.AddAvailablePermission(p)
 	}
 }

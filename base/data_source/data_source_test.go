@@ -133,7 +133,7 @@ func TestDataSourceDetails(t *testing.T) {
 	dsfc.GetDataSourceDetails().SetName("dsName")
 	dsfc.GetDataSourceDetails().SetFullname("dsFullName")
 	dsfc.GetDataSourceDetails().SetDescription("dsDesc")
-	dsfc.GetDataSourceDetails().SetAvailablePermission("perm1")
+	dsfc.GetDataSourceDetails().AddAvailablePermission("perm1")
 	dsfc.GetDataSourceDetails().SetAvailablePermissions([]string{"perm2", "perm3", "perm3"})
 
 	err = dsfc.AddDataObjects(dos)

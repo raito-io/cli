@@ -39,7 +39,8 @@ const (
 // It contains all the necessary configuration parameters for the plugin to function.
 type DataSourceSyncConfig struct {
 	config.ConfigMap
-	TargetFile string
+	TargetFile   string
+	DataSourceId string
 }
 
 // DataSourceSyncResult represents the result from the data source sync process.

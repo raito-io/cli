@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/raito-io/cli/common/api/data_source"
 )
@@ -34,24 +35,28 @@ type DataObjectReference struct {
 
 // DataSourceFileCreator describes the interface for easily creating the data object import files
 // to be imported by the Raito CLI.
+// Use GetDataSourceDetails() to access DataSourceDetails setters like SetAvailablePermission()
 type DataSourceFileCreator interface {
 	AddDataObjects(dataObjects []DataObject) error
 	Close()
 	GetDataObjectCount() int
+	GetDataSourceDetails() *DataSourceDetails
 }
 
 type dataSourceFileCreator struct {
 	config *data_source.DataSourceSyncConfig
 
-	targetFile      *os.File
-	dataObjectCount int
+	targetFile        *os.File
+	dataObjectCount   int
+	dataSourceDetails DataSourceDetails
 }
 
 // NewDataSourceFileCreator creates a new DataSourceFileCreator based on the configuration coming from
 // the Raito CLI.
 func NewDataSourceFileCreator(config *data_source.DataSourceSyncConfig) (DataSourceFileCreator, error) {
 	dsI := dataSourceFileCreator{
-		config: config,
+		config:            config,
+		dataSourceDetails: newDataSourceDetails(config.DataSourceId),
 	}
 
 	err := dsI.createTargetFile()
@@ -75,6 +80,17 @@ func (d *dataSourceFileCreator) Close() {
 	d.targetFile.Close()
 }
 
+func (d *dataSourceFileCreator) GetDataSourceDetails() *DataSourceDetails {
+	return &d.dataSourceDetails
+}
+
+func (d *dataSourceFileCreator) prependDataSourceDataObject(dataObjects []DataObject) []DataObject {
+	finalDataObjects := []DataObject{d.dataSourceDetails.dataSource}
+	finalDataObjects = append(finalDataObjects, dataObjects...)
+
+	return finalDataObjects
+}
+
 // AddDataObjects adds the slice of data objects to the import file.
 // It returns an error when writing one of the data objects fails (it will not process the other data objects after that).
 // It returns nil if everything went well.
@@ -83,7 +99,20 @@ func (d *dataSourceFileCreator) AddDataObjects(dataObjects []DataObject) error {
 		return nil
 	}
 
+	// validate wether the first DataObject represents the Data Source, if not generate one
+	if d.dataObjectCount == 0 {
+		if !strings.EqualFold(dataObjects[0].Type, "datasource") {
+			dataObjects = d.prependDataSourceDataObject(dataObjects)
+		}
+	}
+
 	for _, do := range dataObjects { //nolint
+
+		// set datasource DO as the parent for all direct children
+		if do.ParentExternalId == "" && do.Type != "datasource" {
+			do.ParentExternalId = d.dataSourceDetails.dataSource.ExternalId
+		}
+
 		var err error
 
 		if d.dataObjectCount > 0 {

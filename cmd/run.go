@@ -217,8 +217,9 @@ func syncDataSource(client plugin.PluginClient, targetConfig target.BaseTargetCo
 	}
 
 	syncerConfig := dspc.DataSourceSyncConfig{
-		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
-		TargetFile: targetFile,
+		ConfigMap:    baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
+		TargetFile:   targetFile,
+		DataSourceId: targetConfig.DataSourceId,
 	}
 
 	dss, err := client.GetDataSourceSyncer()

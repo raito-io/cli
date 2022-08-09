@@ -102,6 +102,7 @@ func (i *identityStoreImporter) doImport(userKey string, groupKey string) (*Iden
 
 	res := Response{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseTargetConfig, &res)
+
 	if err != nil {
 		return nil, fmt.Errorf("error while executing identity store import: %s", err.Error())
 	}

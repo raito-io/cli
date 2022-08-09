@@ -19,6 +19,7 @@ func StartJob(cfg *target.BaseTargetConfig) (string, error) {
 
 		resp := Response{}
 		_, err := graphql.ExecuteGraphQL(gqlQuery, cfg, &resp)
+
 		if err != nil {
 			return "", fmt.Errorf("error while executing import: %s", err.Error())
 		}

@@ -24,6 +24,7 @@ type dummyResultObject struct{}
 func ExecuteGraphQLWithoutResponse(gql string, config *target.BaseTargetConfig) error {
 	result := dummyResultObject{}
 	_, err := ExecuteGraphQL(gql, config, result)
+
 	return err
 }
 
@@ -35,6 +36,7 @@ func ExecuteGraphQL(gql string, config *target.BaseTargetConfig, resultObject in
 	}
 
 	response := GraphqlResponse{Data: resultObject}
+
 	err = json.Unmarshal(rawResponse, &response)
 	if err != nil {
 		return nil, err
@@ -45,11 +47,11 @@ func ExecuteGraphQL(gql string, config *target.BaseTargetConfig, resultObject in
 		for _, error := range response.Errors {
 			errors = append(errors, fmt.Errorf("graphql server error: %s", error.Message))
 		}
+
 		return &response, multierror.Append(nil, errors...)
 	}
 
 	return &response, nil
-
 }
 
 func executeGraphQL(gql string, config *target.BaseTargetConfig) ([]byte, error) {

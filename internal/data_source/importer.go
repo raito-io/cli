@@ -87,6 +87,7 @@ func (d *dataSourceImporter) doImport(fileKey string) (*DataSourceImportResult, 
 
 	res := Response{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
+
 	if err != nil {
 		return nil, fmt.Errorf("error while executing import: %s", err.Error())
 	}

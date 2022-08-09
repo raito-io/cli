@@ -80,6 +80,7 @@ func (d *dataUsageImporter) doImport(fileKey string) (*DataUsageImportResult, er
 
 	res := Response{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
+
 	if err != nil {
 		return nil, fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
 	}

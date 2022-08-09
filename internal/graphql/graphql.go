@@ -19,11 +19,8 @@ type Error struct {
 	Message string `json:"message"`
 }
 
-type dummyResultObject struct{}
-
 func ExecuteGraphQLWithoutResponse(gql string, config *target.BaseTargetConfig) error {
-	result := dummyResultObject{}
-	_, err := ExecuteGraphQL(gql, config, result)
+	_, err := ExecuteGraphQL(gql, config, struct{}{})
 
 	return err
 }

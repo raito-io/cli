@@ -153,8 +153,9 @@ func findMatchingPlugin(connector string, version string, logger hclog.Logger) (
 
 	if latestVersion != "" && pluginRequest.IsLatest() {
 		logger.Debug(fmt.Sprintf("A matching plugin found for %s version %s on local disk. Will check if there is a newer version available online.", pluginRequest.GroupAndName(), pluginRequest.Version))
+
 		if latestVersion == LATEST {
-			logger.Warn(fmt.Sprintf("Using special development version of the plugin. Remove the '-latest' plugin if you want to go back to using the released plugins."))
+			logger.Warn("Using special development version of the plugin. Remove the '-latest' plugin if you want to go back to using the released plugins.")
 			return latestPath, nil
 		}
 	} else {

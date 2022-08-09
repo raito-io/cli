@@ -1,7 +1,6 @@
 package job
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -18,17 +17,10 @@ func StartJob(cfg *target.BaseTargetConfig) (string, error) {
 
 		gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
-		res, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
+		resp := Response{}
+		_, err := graphql.ExecuteGraphQL(gqlQuery, cfg, &resp)
 		if err != nil {
 			return "", fmt.Errorf("error while executing import: %s", err.Error())
-		}
-
-		resp := Response{}
-		gr := graphql.GraphqlResponse{Data: &resp}
-
-		err = json.Unmarshal(res, &gr)
-		if err != nil {
-			return "", fmt.Errorf("error while parsing job event result: %s", err.Error())
 		}
 
 		return *resp.Job.JobID, nil
@@ -45,7 +37,7 @@ func AddJobEvent(cfg *target.BaseTargetConfig, jobID, jobType, status string) {
 
 		gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
-		_, err := graphql.ExecuteGraphQL(gqlQuery, cfg)
+		err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, cfg)
 		if err != nil {
 			cfg.Logger.Debug("job update failed: %s", err.Error())
 		}

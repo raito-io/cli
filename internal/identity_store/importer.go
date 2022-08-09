@@ -1,7 +1,6 @@
 package identity_store
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -24,13 +23,12 @@ type IdentityStoreImportConfig struct {
 }
 
 type IdentityStoreImportResult struct {
-	UsersAdded    int             `json:"usersAdded"`
-	UsersUpdated  int             `json:"usersUpdated"`
-	UsersRemoved  int             `json:"usersRemoved"`
-	GroupsAdded   int             `json:"groupsAdded"`
-	GroupsUpdated int             `json:"groupsUpdated"`
-	GroupsRemoved int             `json:"groupsRemoved"`
-	Errors        []graphql.Error `json:"_"`
+	UsersAdded    int `json:"usersAdded"`
+	UsersUpdated  int `json:"usersUpdated"`
+	UsersRemoved  int `json:"usersRemoved"`
+	GroupsAdded   int `json:"groupsAdded"`
+	GroupsUpdated int `json:"groupsUpdated"`
+	GroupsRemoved int `json:"groupsRemoved"`
 }
 
 type IdentityStoreImporter interface {
@@ -102,39 +100,17 @@ func (i *identityStoreImporter) doImport(userKey string, groupKey string) (*Iden
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
-	res, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseTargetConfig)
+	res := Response{}
+	_, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseTargetConfig, &res)
 	if err != nil {
 		return nil, fmt.Errorf("error while executing identity store import: %s", err.Error())
 	}
 
-	ret, err := i.parseImportResult(res)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(ret.Errors) > 0 {
-		return ret, fmt.Errorf("errors while importing: %s", ret.Errors[0].Message)
-	}
+	ret := &res.ImportIdentityStore
 
 	i.log.Info(fmt.Sprintf("Executed import in %s", time.Since(start).Round(time.Millisecond)))
 
 	return ret, nil
-}
-
-func (i *identityStoreImporter) parseImportResult(res []byte) (*IdentityStoreImportResult, error) {
-	resp := Response{}
-	gr := graphql.GraphqlResponse{Data: &resp}
-	err := json.Unmarshal(res, &gr)
-
-	if err != nil {
-		i.log.Error("error while parsing identity store import result.", "error", err.Error())
-		return nil, err
-	}
-
-	// Flatten the result
-	resp.ImportIdentityStore.Errors = gr.Errors
-
-	return &(resp.ImportIdentityStore), nil
 }
 
 type Response struct {

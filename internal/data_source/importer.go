@@ -1,7 +1,6 @@
 package data_source
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -22,10 +21,9 @@ type DataSourceImportConfig struct {
 }
 
 type DataSourceImportResult struct {
-	DataObjectsAdded   int             `json:"dataObjectsAdded"`
-	DataObjectsUpdated int             `json:"dataObjectsUpdated"`
-	DataObjectsRemoved int             `json:"dataObjectsRemoved"`
-	Errors             []graphql.Error `json:"_"`
+	DataObjectsAdded   int `json:"dataObjectsAdded"`
+	DataObjectsUpdated int `json:"dataObjectsUpdated"`
+	DataObjectsRemoved int `json:"dataObjectsRemoved"`
 }
 
 type DataSourceImporter interface {
@@ -87,38 +85,17 @@ func (d *dataSourceImporter) doImport(fileKey string) (*DataSourceImportResult, 
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
-	res, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig)
+	res := Response{}
+	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
 	if err != nil {
 		return nil, fmt.Errorf("error while executing import: %s", err.Error())
 	}
 
-	ret, err := d.parseImportResult(res)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(ret.Errors) > 0 {
-		return ret, fmt.Errorf("errors while importing into data source: %s", ret.Errors[0].Message)
-	}
+	ret := &res.ImportDataSource
 
 	d.log.Info(fmt.Sprintf("Done executing import in %s", time.Since(start).Round(time.Millisecond)))
 
 	return ret, nil
-}
-
-func (d *dataSourceImporter) parseImportResult(res []byte) (*DataSourceImportResult, error) {
-	resp := Response{}
-	gr := graphql.GraphqlResponse{Data: &resp}
-	err := json.Unmarshal(res, &gr)
-
-	if err != nil {
-		return nil, fmt.Errorf("error while parsing data source import result: %s", err.Error())
-	}
-
-	// Flatten the result
-	resp.ImportDataSource.Errors = gr.Errors
-
-	return &(resp.ImportDataSource), nil
 }
 
 type Response struct {

@@ -1,16 +1,17 @@
 package identity_store
 
 import (
-	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/target"
-	"github.com/raito-io/cli/internal/util/url"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/go-hclog"
+	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/util/url"
+	"github.com/stretchr/testify/assert"
 )
 
 const GoodImportResult = "{ \"data\": { \"importIdentityStore\": { \"usersAdded\": 1, \"usersUpdated\": 2, \"usersRemoved\": 3, \"groupsAdded\": 4, \"groupsUpdated\": 5, \"groupsRemoved\": 6 } } }"
@@ -160,7 +161,7 @@ func TestIdentityStoreImportWithErrors(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "twisted")
-	assert.NotNil(t, res)
+	assert.Nil(t, res)
 }
 
 func UploadServer(fail bool, didUpload *bool, correctContent *bool) *httptest.Server {

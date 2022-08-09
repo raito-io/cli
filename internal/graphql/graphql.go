@@ -1,9 +1,11 @@
 package graphql
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/connect"
 )
@@ -17,7 +19,40 @@ type Error struct {
 	Message string `json:"message"`
 }
 
-func ExecuteGraphQL(gql string, config *target.BaseTargetConfig) ([]byte, error) {
+type dummyResultObject struct{}
+
+func ExecuteGraphQLWithoutResponse(gql string, config *target.BaseTargetConfig) error {
+	result := dummyResultObject{}
+	_, err := ExecuteGraphQL(gql, config, result)
+	return err
+}
+
+func ExecuteGraphQL(gql string, config *target.BaseTargetConfig, resultObject interface{}) (*GraphqlResponse, error) {
+	rawResponse, err := executeGraphQL(gql, config)
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := GraphqlResponse{Data: resultObject}
+	err = json.Unmarshal(rawResponse, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response.Errors) > 0 {
+		var errors []error
+		for _, error := range response.Errors {
+			errors = append(errors, fmt.Errorf("graphql server error: %s", error.Message))
+		}
+		return &response, multierror.Append(nil, errors...)
+	}
+
+	return &response, nil
+
+}
+
+func executeGraphQL(gql string, config *target.BaseTargetConfig) ([]byte, error) {
 	resp, err := connect.DoPostToRaito("query", gql, "application/json", config)
 
 	if err != nil {

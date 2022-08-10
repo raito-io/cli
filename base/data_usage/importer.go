@@ -12,13 +12,15 @@ import (
 type Statement struct {
 	ExternalId          string      `json:"externalId"`
 	AccessedDataObjects []ap.Access `json:"accessedDataObjects"`
-	Status              bool        `json:"status"`
 	User                string      `json:"user"`
+	Success             bool        `json:"success"`
+	Query               string      `json:"query"`
+	Status              string      `json:"status"`
 	StartTime           int64       `json:"startTime"`
 	EndTime             int64       `json:"endTime"`
-	TotalTime           float32     `json:"totalTime"`
-	BytesTransferred    int         `json:"bytesTransferred"`
-	RowsReturned        int         `json:"rowsReturned"`
+	Bytes               int         `json:"bytes"`
+	Rows                int         `json:"rows"`
+	Credits             float32     `json:"credits"`
 }
 
 // DataUsageFileCreator describes the interface for easily creating the data usage import files

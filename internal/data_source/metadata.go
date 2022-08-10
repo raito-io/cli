@@ -36,7 +36,7 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
-	_, err = graphql.ExecuteGraphQL(gqlQuery, &config)
+	err = graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &config)
 	if err != nil {
 		return fmt.Errorf("error while executing import: %s", err.Error())
 	}

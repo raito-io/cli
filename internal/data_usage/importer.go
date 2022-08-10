@@ -69,7 +69,7 @@ func (d *dataUsageImporter) doImport(fileKey string) (*DataUsageImportResult, er
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataUsage", "variables":{}, "query": "mutation ImportDataUsage {
         importDataUsage(input: {
           dataSource: \"%s\",
-          dataObjects: \"%s\"
+          fileKey: \"%s\"
         }) {
           statementsAdded
           statementsFailed

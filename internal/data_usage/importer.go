@@ -19,12 +19,21 @@ type DataUsageImportConfig struct {
 }
 
 type DataUsageImportResult struct {
-	StatementsAdded  int `json:"statementsAdded"`
-	StatementsFailed int `json:"statementsFailed"`
+	StatementsAdded       int `json:"statementsAdded"`
+	StatementsFailed      int `json:"statementsFailed"`
+	StatementsSkipped     int `json:"statementsSkipped"`
+	EdgesCreatedOrUpdated int `json:"edgesCreatedOrUpdated"`
+	EdgesRemoved          int `json:"edgesRemoved"`
+}
+
+type DataSourceLastUsed struct {
+	Id       string `json:"id"`
+	LastUsed string `json:"usageLastUsed"`
 }
 
 type DataUsageImporter interface {
 	TriggerImport() (*DataUsageImportResult, error)
+	GetLastUsage() (*time.Time, error)
 }
 
 type dataUsageImporter struct {
@@ -87,11 +96,37 @@ func (d *dataUsageImporter) doImport(fileKey string) (*DataUsageImportResult, er
 
 	ret := &res.ImportDataUsage
 
-	d.log.Info(fmt.Sprintf("Successfully imported %d data usage statements, %d failures, in %s", ret.StatementsAdded, ret.StatementsFailed, time.Since(start).Round(time.Millisecond)))
+	d.log.Info(fmt.Sprintf("Successfully imported %d data usage statements, %d failures, %d skipped; %d relationships created/updated, %d relationships deleted; in %s",
+		ret.StatementsAdded, ret.StatementsFailed, ret.StatementsSkipped, ret.EdgesCreatedOrUpdated, ret.EdgesRemoved, time.Since(start).Round(time.Millisecond)))
 
 	return &DataUsageImportResult{StatementsAdded: ret.StatementsAdded, StatementsFailed: ret.StatementsFailed}, nil
 }
 
+func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
+	gqlQuery := fmt.Sprintf(`{"variables":{}, "query": "query {dataSource(id:\"%s\") {id usageLastUsed}}" }`, d.config.DataSourceId)
+	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
+	res := LastUsedReponse{}
+	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
+	}
+
+	finalResult := time.Unix(int64(0), 0)
+	if res.DataSourceInfo.LastUsed != "" {
+		finalResultRaw, err := time.Parse(time.RFC3339, res.DataSourceInfo.LastUsed)
+		if err == nil {
+			finalResult = finalResultRaw
+		}
+	}
+
+	return &finalResult, nil
+}
+
 type Response struct {
 	ImportDataUsage DataUsageImportResult `json:"importDataUsage"`
+}
+
+type LastUsedReponse struct {
+	DataSourceInfo DataSourceLastUsed `json:"dataSource"`
 }

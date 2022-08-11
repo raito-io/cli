@@ -403,16 +403,27 @@ func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetCon
 		return err
 	}
 
-	res := dus.SyncDataUsage(&syncerConfig)
-	if res.Error != nil {
-		return err
-	}
-
 	importerConfig := data_usage.DataUsageImportConfig{
 		BaseTargetConfig: targetConfig,
 		TargetFile:       targetFile,
 	}
 	duImporter := data_usage.NewDataUsageImporter(&importerConfig)
+
+	lastUsed, err := duImporter.GetLastUsage()
+
+	if err != nil || lastUsed == nil {
+		logger.Warn(fmt.Sprintf("error retrieving last usage for data source %s, last used: %s", importerConfig.DataSourceId, lastUsed))
+		timeValue := time.Unix(int64(0), 0)
+		lastUsed = &timeValue
+	}
+	logger.Info(fmt.Sprintf("Only retrieve usage information after %s", lastUsed.Format(time.RFC3339)))
+
+	syncerConfig.ConfigMap.Parameters["lastUsed"] = (*lastUsed).Format(time.RFC3339)
+
+	res := dus.SyncDataUsage(&syncerConfig)
+	if res.Error != nil {
+		return err
+	}
 
 	duResult, err := duImporter.TriggerImport()
 	if err != nil {

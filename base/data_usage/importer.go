@@ -13,9 +13,10 @@ type Statement struct {
 	ExternalId          string      `json:"externalId"`
 	AccessedDataObjects []ap.Access `json:"accessedDataObjects"`
 	User                string      `json:"user"`
+	Role                string      `json:"role"`
 	Success             bool        `json:"success"`
-	Query               string      `json:"query"`
 	Status              string      `json:"status"`
+	Query               string      `json:"query"`
 	StartTime           int64       `json:"startTime"`
 	EndTime             int64       `json:"endTime"`
 	Bytes               int         `json:"bytes"`

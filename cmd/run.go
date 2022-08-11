@@ -416,7 +416,6 @@ func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetCon
 		timeValue := time.Unix(int64(0), 0)
 		lastUsed = &timeValue
 	}
-	logger.Info(fmt.Sprintf("Only retrieve usage information after %s", lastUsed.Format(time.RFC3339)))
 
 	syncerConfig.ConfigMap.Parameters["lastUsed"] = (*lastUsed).Format(time.RFC3339)
 

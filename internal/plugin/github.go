@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"runtime"
@@ -146,7 +145,7 @@ func downloadGitHubAsset(pluginRequest *pluginRequest, url string, logger hclog.
 	defer resp.Body.Close()
 
 	// Create the file
-	out, err := ioutil.TempFile("", "plugin-download-")
+	out, err := os.CreateTemp("", "plugin-download-")
 	if err != nil {
 		return "", fmt.Errorf("error while creating temporary file for asset download: %s", err.Error())
 	}

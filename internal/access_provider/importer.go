@@ -72,7 +72,7 @@ func (d *accessProviderImporter) doImport(fileKey string) (*AccessProviderImport
         importAccessProviders(input: {
           dataSource: \"%s\",
           deleteUntouched: %t,
-          accessObjects: \"%s\"
+          fileKey: \"%s\"
         }) {
           accessAdded
           accessUpdated

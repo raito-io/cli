@@ -64,8 +64,7 @@ func TestFixMetaData(t *testing.T) {
 	for expected, i := range input {
 		mds, err := marshalMetaData(i)
 		assert.NoError(t, err)
-		md, err := fixMetaData(mds)
-		assert.NoError(t, err)
+		md := fixMetaData(mds)
 		assert.Equal(t, expected, md)
 	}
 }

@@ -65,7 +65,8 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 		return nil
 	}
 
-	for _, statement := range statements {
+	for ind := range statements {
+		statement := statements[ind]
 		var err error
 
 		if d.statementCount > 0 {

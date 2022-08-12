@@ -113,6 +113,7 @@ func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
 	}
 
 	finalResult := time.Unix(int64(0), 0)
+
 	if res.DataSourceInfo.LastUsed != "" {
 		finalResultRaw, err := time.Parse(time.RFC3339, res.DataSourceInfo.LastUsed)
 		if err == nil {

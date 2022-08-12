@@ -417,7 +417,8 @@ func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetCon
 		lastUsed = &timeValue
 	}
 
-	syncerConfig.ConfigMap.Parameters["lastUsed"] = (*lastUsed).Format(time.RFC3339)
+	lastUsedValue := *lastUsed
+	syncerConfig.ConfigMap.Parameters["lastUsed"] = lastUsedValue.Format(time.RFC3339)
 
 	res := dus.SyncDataUsage(&syncerConfig)
 	if res.Error != nil {

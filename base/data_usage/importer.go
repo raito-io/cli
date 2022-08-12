@@ -12,13 +12,16 @@ import (
 type Statement struct {
 	ExternalId          string      `json:"externalId"`
 	AccessedDataObjects []ap.Access `json:"accessedDataObjects"`
-	Status              bool        `json:"status"`
 	User                string      `json:"user"`
+	Role                string      `json:"role"`
+	Success             bool        `json:"success"`
+	Status              string      `json:"status"`
+	Query               string      `json:"query"`
 	StartTime           int64       `json:"startTime"`
 	EndTime             int64       `json:"endTime"`
-	TotalTime           float32     `json:"totalTime"`
-	BytesTransferred    int         `json:"bytesTransferred"`
-	RowsReturned        int         `json:"rowsReturned"`
+	Bytes               int         `json:"bytes"`
+	Rows                int         `json:"rows"`
+	Credits             float32     `json:"credits"`
 }
 
 // DataUsageFileCreator describes the interface for easily creating the data usage import files
@@ -62,7 +65,8 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 		return nil
 	}
 
-	for _, statement := range statements {
+	for ind := range statements {
+		statement := statements[ind]
 		var err error
 
 		if d.statementCount > 0 {

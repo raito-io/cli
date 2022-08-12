@@ -271,8 +271,7 @@ func TestBuildTargetConfigFromFlags(t *testing.T) {
 	viper.Set("skip-data-source-sync", true)
 	viper.Set("skip-data-access-sync", true)
 
-	config, err := buildTargetConfigFromFlags(hclog.L(), []string{"--custom1", "ok"})
-	assert.Nil(t, err)
+	config := buildTargetConfigFromFlags(hclog.L(), []string{"--custom1", "ok"})
 	assert.NotNil(t, config)
 
 	assert.Equal(t, "conn1", config.ConnectorName)
@@ -294,8 +293,7 @@ func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
 
 	viper.Set(constants.ConnectorNameFlag, "conn1")
 
-	config, err := buildTargetConfigFromFlags(hclog.L(), []string{})
-	assert.Nil(t, err)
+	config := buildTargetConfigFromFlags(hclog.L(), []string{})
 	assert.NotNil(t, config)
 
 	assert.Equal(t, "conn1", config.ConnectorName)

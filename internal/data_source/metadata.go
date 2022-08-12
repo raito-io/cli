@@ -20,11 +20,8 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 	if err != nil {
 		return fmt.Errorf("error while serializing metadata information: %s", err.Error())
 	}
-	md, err := fixMetaData(mdm)
+	md := fixMetaData(mdm)
 
-	if err != nil {
-		return err
-	}
 	// Additional escaping the quotes to embed in graphql string
 	md = strings.Replace(md, "\"", "\\\"", -1)
 
@@ -57,7 +54,7 @@ func marshalMetaData(md data_source.MetaData) (string, error) {
 }
 
 // fixMetaData converts the marshaled JSON into a valid GraphQL input
-func fixMetaData(input string) (string, error) {
+func fixMetaData(input string) string {
 	md := input
 	reg := regexp.MustCompile("\"([a-zA-Z]+)\":")
 	md = reg.ReplaceAllString(md, "$1:")
@@ -74,5 +71,5 @@ func fixMetaData(input string) (string, error) {
 	reg4 := regexp.MustCompile("(,)?globalPermissions:null")
 	md = reg4.ReplaceAllString(md, "")
 
-	return md, nil
+	return md
 }

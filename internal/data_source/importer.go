@@ -74,7 +74,7 @@ func (d *dataSourceImporter) doImport(fileKey string) (*DataSourceImportResult, 
           dataSource: \"%s\",
           deleteUntouched: %t,
           replaceTags: %t,  
-          dataObjects: \"%s\"
+          fileKey: \"%s\"
         }) {
           dataObjectsAdded
           dataObjectsUpdated

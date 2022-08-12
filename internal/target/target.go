@@ -38,7 +38,7 @@ type BaseTargetConfig struct {
 
 func RunTargets(baseLogger hclog.Logger, otherArgs []string, runTarget func(tConfig *BaseTargetConfig) error) error {
 	if viper.GetString(constants.ConnectorNameFlag) != "" {
-		targetConfig, _ := buildTargetConfigFromFlags(baseLogger, otherArgs)
+		targetConfig := buildTargetConfigFromFlags(baseLogger, otherArgs)
 		logTargetConfig(targetConfig)
 
 		return runTarget(targetConfig)
@@ -201,7 +201,7 @@ func buildParameterMapFromArguments(args []string) map[string]interface{} {
 	return params
 }
 
-func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*BaseTargetConfig, error) {
+func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) *BaseTargetConfig {
 	connector := viper.GetString(constants.ConnectorNameFlag)
 	version := viper.GetString(constants.ConnectorVersionFlag)
 	name := viper.GetString(constants.NameFlag)
@@ -231,7 +231,7 @@ func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*B
 	}
 	targetConfig.Parameters = buildParameterMapFromArguments(otherArgs)
 
-	return &targetConfig, nil
+	return &targetConfig
 }
 
 // logTargetConfig will print out the target configuration in the log (debug level).

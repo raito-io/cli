@@ -21,7 +21,7 @@ func (i Version) String() string {
 }
 
 // ParseVersion parses
-//the given string version in the form X.Y.Z and returns a Version struct representing it.
+// the given string version in the form X.Y.Z and returns a Version struct representing it.
 // If the input string is invalid, a 0.0.0 version will be returned
 func ParseVersion(version string) Version {
 	parts := strings.Split(version, ".")

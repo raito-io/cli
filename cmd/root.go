@@ -35,11 +35,11 @@ func (cmd *rootCmd) Execute(args []string) {
 	cmd.cmd.SetArgs(args)
 
 	if err := cmd.cmd.Execute(); err != nil {
-		cmd.exitForError(err)
+		cmd.exitForError()
 	}
 }
 
-func (cmd *rootCmd) exitForError(err error) {
+func (cmd *rootCmd) exitForError() {
 	cmd.exit(1)
 }
 
@@ -139,7 +139,7 @@ func (cmd *rootCmd) initConfig() {
 	if cfgFile != "" && err != nil {
 		// No logger yet
 		fmt.Printf("error while reading config file: %s\n", err.Error()) //nolint:forbidigo
-		cmd.exitForError(err)
+		cmd.exitForError()
 	}
 
 	setupLogging()
@@ -237,9 +237,9 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 				time.Sleep(500 * time.Millisecond)
 			}
 
-			s.handleProgress(spinner, it, tar, level, msg, args)
+			s.handleProgress(spinner, tar, level, msg, args)
 		} else {
-			s.handleNormalOutput(name, level, msg, args)
+			s.handleNormalOutput(level, msg)
 		}
 	} else {
 		// Extra line break if we came from an iteration
@@ -248,11 +248,11 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 			pterm.Println()
 			s.wasIteration = false
 		}
-		s.handleNormalOutput(name, level, msg, args)
+		s.handleNormalOutput(level, msg)
 	}
 }
 
-func (s *sinkAdapter) handleNormalOutput(name string, level hclog.Level, msg string, args []interface{}) {
+func (s *sinkAdapter) handleNormalOutput(level hclog.Level, msg string) {
 	if level == hclog.Error {
 		pterm.Error.Println(msg)
 	} else if level == hclog.Info {
@@ -260,7 +260,7 @@ func (s *sinkAdapter) handleNormalOutput(name string, level hclog.Level, msg str
 	}
 }
 
-func (s *sinkAdapter) handleProgress(spinner *pterm.SpinnerPrinter, iteration int, target string, level hclog.Level, msg string, args []interface{}) {
+func (s *sinkAdapter) handleProgress(spinner *pterm.SpinnerPrinter, target string, level hclog.Level, msg string, args []interface{}) {
 	text := fmt.Sprintf("Target %s - %s", target, msg)
 
 	if level == hclog.Info {

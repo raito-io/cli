@@ -85,8 +85,8 @@ func (i *identityStoreImporter) doImport(userKey string, groupKey string) (*Iden
           deleteUntouched: %t,
           replaceGroups: %t,
           replaceTags: %t,  
-          users: \"%s\",
-          groups: \"%s\"
+          usersFileKey: \"%s\",
+          groupsFileKey: \"%s\"
         }) {
           usersAdded
           usersUpdated

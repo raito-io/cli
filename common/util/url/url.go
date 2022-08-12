@@ -35,8 +35,8 @@ func CutOffSchema(input string) string {
 
 // GetRelativePath returns the relative path part of a URL. It can handle both full URLs (with a schema) or just absolute paths.
 // For example:
-//  - https://www.google.com/my/path would become my/path
-//  - /a/cool/path would become a/cool/path
+//   - https://www.google.com/my/path would become my/path
+//   - /a/cool/path would become a/cool/path
 func GetRelativePath(path string) string {
 	relPath := CutOffSchema(path)
 	if relPath != path && strings.Contains(relPath, "/") {

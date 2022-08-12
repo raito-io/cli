@@ -2,8 +2,8 @@ package data_source
 
 import "strings"
 
-//To handle availablePermissions on Data Source level correctly, we need to import a DataObject of type datasource.
-//DataSourceDetails is a helper to abstract this from the plugin and just expose some setters. The import file creator then automatically prepends the import file with this DataObject
+// To handle availablePermissions on Data Source level correctly, we need to import a DataObject of type datasource.
+// DataSourceDetails is a helper to abstract this from the plugin and just expose some setters. The import file creator then automatically prepends the import file with this DataObject
 type DataSourceDetails struct {
 	dataSource DataObject
 }

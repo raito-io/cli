@@ -29,11 +29,11 @@ type DataAccessResult struct {
 }
 
 // DataAccess is the structure for one data access element. It has:
-//  - Id: the UUID of the data access element. Typically, this is not needed.
-//  - DataObject: the data object (e.g. schema, table, column) this data access is applicable to.
-//  - Permissions: the list of (Raito) permissions that are granted to the users on the data object.
-//  - Users: the list of users the permissions are granted to.
-//  - Provider (optional): the Raito Access Provider this data access is generated from. Can be nil.
+//   - Id: the UUID of the data access element. Typically, this is not needed.
+//   - DataObject: the data object (e.g. schema, table, column) this data access is applicable to.
+//   - Permissions: the list of (Raito) permissions that are granted to the users on the data object.
+//   - Users: the list of users the permissions are granted to.
+//   - Provider (optional): the Raito Access Provider this data access is generated from. Can be nil.
 type DataAccess struct {
 	Id          string
 	Delete      bool

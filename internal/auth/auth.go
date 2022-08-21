@@ -35,7 +35,7 @@ var (
 func AddToken(r *http.Request, targetConfig *target.BaseTargetConfig) error {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
-		targetConfig.Logger.Info("Skipping authentication for development environment.")
+		targetConfig.Logger.Debug("Skipping authentication for development environment.")
 		return nil
 	}
 

@@ -352,15 +352,8 @@ func (c pluginClientImpl) Close() {
 	c.client.Kill()
 }
 
-// TODO once Go Generics are released, these 4 methodes can probably be implemented in 1 helper
-
 func (c pluginClientImpl) GetDataSourceSyncer() (data_source.DataSourceSyncer, error) {
-	rpcClient, err := c.client.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	raw, err := rpcClient.Dispense(data_source.DataSourceSyncerName)
+	raw, err := c.getPlugin(data_source.DataSourceSyncerName)
 	if err != nil {
 		return nil, err
 	}
@@ -373,12 +366,7 @@ func (c pluginClientImpl) GetDataSourceSyncer() (data_source.DataSourceSyncer, e
 }
 
 func (c pluginClientImpl) GetIdentityStoreSyncer() (identity_store.IdentityStoreSyncer, error) {
-	rpcClient, err := c.client.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	raw, err := rpcClient.Dispense(identity_store.IdentityStoreSyncerName)
+	raw, err := c.getPlugin(identity_store.IdentityStoreSyncerName)
 	if err != nil {
 		return nil, err
 	}
@@ -391,12 +379,7 @@ func (c pluginClientImpl) GetIdentityStoreSyncer() (identity_store.IdentityStore
 }
 
 func (c pluginClientImpl) GetDataAccessSyncer() (data_access.DataAccessSyncer, error) {
-	rpcClient, err := c.client.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	raw, err := rpcClient.Dispense(data_access.DataAccessSyncerName)
+	raw, err := c.getPlugin(data_access.DataAccessSyncerName)
 	if err != nil {
 		return nil, err
 	}
@@ -409,12 +392,7 @@ func (c pluginClientImpl) GetDataAccessSyncer() (data_access.DataAccessSyncer, e
 }
 
 func (c pluginClientImpl) GetDataUsageSyncer() (data_usage.DataUsageSyncer, error) {
-	rpcClient, err := c.client.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	raw, err := rpcClient.Dispense(data_usage.DataUsageSyncerName)
+	raw, err := c.getPlugin(data_usage.DataUsageSyncerName)
 	if err != nil {
 		return nil, err
 	}
@@ -427,12 +405,7 @@ func (c pluginClientImpl) GetDataUsageSyncer() (data_usage.DataUsageSyncer, erro
 }
 
 func (c pluginClientImpl) GetInfo() (api.Info, error) {
-	rpcClient, err := c.client.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	raw, err := rpcClient.Dispense(api.InfoName)
+	raw, err := c.getPlugin(api.InfoName)
 	if err != nil {
 		return nil, err
 	}
@@ -442,6 +415,15 @@ func (c pluginClientImpl) GetInfo() (api.Info, error) {
 	} else {
 		return nil, fmt.Errorf("found plugin doesn't correctly implement the Info interface")
 	}
+}
+
+func (c pluginClientImpl) getPlugin(plugin string) (interface{}, error) {
+	rpcClient, err := c.client.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	return rpcClient.Dispense(plugin)
 }
 
 var handshakeConfig = plugin.HandshakeConfig{

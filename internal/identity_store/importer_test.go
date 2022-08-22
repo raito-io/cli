@@ -9,12 +9,14 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/url"
-	"github.com/stretchr/testify/assert"
 )
 
-const GoodImportResult = "{ \"data\": { \"importIdentityStore\": { \"usersAdded\": 1, \"usersUpdated\": 2, \"usersRemoved\": 3, \"groupsAdded\": 4, \"groupsUpdated\": 5, \"groupsRemoved\": 6 } } }"
+const GoodImportResult = "{ \"data\": { \"jobStatus\": \"QUEUED\" } }"
 const FaultyImportResult = ":::"
 const ImportResultWithErrors = "{ \"errors\": [ { \"message\": \"twisted error\" } ], \"data\": { \"importIdentityStore\": { \"usersAdded\": 1, \"usersUpdated\": 2, \"usersRemoved\": 3, \"groupsAdded\": 4, \"groupsUpdated\": 5, \"groupsRemoved\": 6 } } }"
 
@@ -35,7 +37,7 @@ func TestIdentityStoreImport(t *testing.T) {
 	defer os.Remove(f2.Name())
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport()
+	res, err := (*isi).TriggerImport("someJobId")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -43,12 +45,7 @@ func TestIdentityStoreImport(t *testing.T) {
 	assert.True(t, gotSignedURL)
 	assert.True(t, didUpload)
 	assert.True(t, calledImport)
-	assert.Equal(t, 1, res.UsersAdded)
-	assert.Equal(t, 2, res.UsersUpdated)
-	assert.Equal(t, 3, res.UsersRemoved)
-	assert.Equal(t, 4, res.GroupsAdded)
-	assert.Equal(t, 5, res.GroupsUpdated)
-	assert.Equal(t, 6, res.GroupsRemoved)
+	assert.Equal(t, job.Queued, res)
 }
 
 func TestIdentityStoreImportFailUploadUrl(t *testing.T) {
@@ -66,12 +63,12 @@ func TestIdentityStoreImportFailUploadUrl(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport()
+	res, err := (*isi).TriggerImport("SomeJobID")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "uploading")
 	assert.Contains(t, err.Error(), "upload URL")
-	assert.Nil(t, res)
+	assert.Equal(t, job.Failed, res)
 }
 
 func TestIdentityStoreImportFailUpload(t *testing.T) {
@@ -89,12 +86,12 @@ func TestIdentityStoreImportFailUpload(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport()
+	res, err := (*isi).TriggerImport("SomeJobID")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "uploading")
 	assert.Contains(t, err.Error(), "executing upload")
-	assert.Nil(t, res)
+	assert.Equal(t, job.Failed, res)
 }
 
 func TestIdentityStoreImportFailImport(t *testing.T) {
@@ -112,12 +109,12 @@ func TestIdentityStoreImportFailImport(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport()
+	res, err := (*isi).TriggerImport("SomeJobID")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "import")
 	assert.Contains(t, strings.ToLower(err.Error()), "graphql")
-	assert.Nil(t, res)
+	assert.Equal(t, job.Failed, res)
 }
 
 func TestIdentityStoreImportFaultyResponse(t *testing.T) {
@@ -135,11 +132,11 @@ func TestIdentityStoreImportFaultyResponse(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport()
+	res, err := (*isi).TriggerImport("SomeJobID")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "invalid character")
-	assert.Nil(t, res)
+	assert.Equal(t, job.Failed, res)
 }
 
 func TestIdentityStoreImportWithErrors(t *testing.T) {
@@ -157,11 +154,11 @@ func TestIdentityStoreImportWithErrors(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport()
+	res, err := (*isi).TriggerImport("SomeJobID")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "twisted")
-	assert.Nil(t, res)
+	assert.Equal(t, job.Failed, res)
 }
 
 func UploadServer(fail bool, didUpload *bool, correctContent *bool) *httptest.Server {
@@ -230,6 +227,8 @@ func newIdentityStoreImporter(f1, f2 string) *IdentityStoreImporter {
 		DeleteUntouched: true,
 		ReplaceGroups:   true,
 		ReplaceTags:     true,
+	}, func(status job.JobStatus) {
+		//DO nothing
 	})
 	return &isi
 }

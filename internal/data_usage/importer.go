@@ -6,24 +6,18 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/spf13/viper"
+
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
+	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/spf13/viper"
 )
 
 type DataUsageImportConfig struct {
 	target.BaseTargetConfig
 	TargetFile string
-}
-
-type DataUsageImportResult struct {
-	StatementsAdded       int `json:"statementsAdded"`
-	StatementsFailed      int `json:"statementsFailed"`
-	StatementsSkipped     int `json:"statementsSkipped"`
-	EdgesCreatedOrUpdated int `json:"edgesCreatedOrUpdated"`
-	EdgesRemoved          int `json:"edgesRemoved"`
 }
 
 type DataSourceLastUsed struct {
@@ -32,39 +26,42 @@ type DataSourceLastUsed struct {
 }
 
 type DataUsageImporter interface {
-	TriggerImport() (*DataUsageImportResult, error)
+	TriggerImport(jobId string) (job.JobStatus, error)
 	GetLastUsage() (*time.Time, error)
 }
 
 type dataUsageImporter struct {
-	config *DataUsageImportConfig
-	log    hclog.Logger
+	config        *DataUsageImportConfig
+	log           hclog.Logger
+	statusUpdater func(status job.JobStatus)
 }
 
-func NewDataUsageImporter(config *DataUsageImportConfig) DataUsageImporter {
+func NewDataUsageImporter(config *DataUsageImportConfig, statusUpdater func(status job.JobStatus)) DataUsageImporter {
 	logger := config.Logger.With("data-usage", config.DataSourceId, "file", config.TargetFile)
-	duI := dataUsageImporter{config, logger}
+	duI := dataUsageImporter{config, logger, statusUpdater}
 
 	return &duI
 }
 
-func (d *dataUsageImporter) TriggerImport() (*DataUsageImportResult, error) {
+func (d *dataUsageImporter) TriggerImport(jobId string) (job.JobStatus, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
-		return d.doImport(d.config.TargetFile)
+		return d.doImport(jobId, d.config.TargetFile)
 	} else {
 		key, err := d.upload()
 		if err != nil {
-			return nil, err
+			return job.Failed, err
 		}
 
-		return d.doImport(key)
+		return d.doImport(jobId, key)
 	}
 }
 
 func (d *dataUsageImporter) upload() (string, error) {
+	d.statusUpdater(job.DataUpload)
 	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
+
 	if err != nil {
 		return "", fmt.Errorf("error while uploading data usage import files to Raito: %s", err.Error())
 	}
@@ -72,34 +69,30 @@ func (d *dataUsageImporter) upload() (string, error) {
 	return key, nil
 }
 
-func (d *dataUsageImporter) doImport(fileKey string) (*DataUsageImportResult, error) {
-	start := time.Now()
-
-	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataUsage", "variables":{}, "query": "mutation ImportDataUsage {
-        importDataUsage(input: {
+func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatus, error) {
+	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataUsageRequest", "variables":{}, "query": "mutation ImportDataUsageRequest {
+      importDataUsageRequest(input: {
+        jobId: \"%s\",
+        importSettings: {
           dataSource: \"%s\",
           fileKey: \"%s\"
-        }) {
-          statementsAdded
-          statementsFailed
-          errors
         }
-    }" }"`, d.config.DataSourceId, fileKey)
+      }) {
+        jobStatus
+      }
+    }" }"`, jobId, d.config.DataSourceId, fileKey)
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
 	res := Response{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
+		return job.Failed, fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
 	}
 
-	ret := &res.ImportDataUsage
+	ret := res.Response.Status
 
-	d.log.Info(fmt.Sprintf("Successfully imported %d data usage statements, %d failures, %d skipped; %d relationships created/updated, %d relationships deleted; in %s",
-		ret.StatementsAdded, ret.StatementsFailed, ret.StatementsSkipped, ret.EdgesCreatedOrUpdated, ret.EdgesRemoved, time.Since(start).Round(time.Millisecond)))
-
-	return &DataUsageImportResult{StatementsAdded: ret.StatementsAdded, StatementsFailed: ret.StatementsFailed}, nil
+	return ret, nil
 }
 
 func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
@@ -124,8 +117,12 @@ func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
 	return &finalResult, nil
 }
 
+type QueryResponse struct {
+	Status job.JobStatus `json:"jobStatus"`
+}
+
 type Response struct {
-	ImportDataUsage DataUsageImportResult `json:"importDataUsage"`
+	Response QueryResponse `json:"importDataUsageRequest"`
 }
 
 type LastUsedReponse struct {

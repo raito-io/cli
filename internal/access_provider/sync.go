@@ -42,7 +42,7 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
 
 	if s.TargetConfig.DeleteTempFiles {
-		defer os.Remove(targetFile)
+		defer os.RemoveAll(targetFile)
 	}
 
 	config := data_access.DataAccessConfig{
@@ -50,14 +50,15 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	}
 
 	s.StatusUpdater(job.DataRetrieve)
-
+	s.TargetConfig.Logger.Info("Fetching access providers for this data source from Raito")
 	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, accessRightsLastUpdated, true)
+
 	if err != nil {
 		return job.Failed, err
 	}
 
 	if dar == nil {
-		s.TargetConfig.Logger.Info("No changes in the data access rights recorded since previous sync. Skipping.", "datasource", config.DataSourceId)
+		s.TargetConfig.Logger.Info("No changes in the access providers recorded since previous sync. Skipping.", "datasource", config.DataSourceId)
 		return job.Failed, nil
 	}
 
@@ -76,7 +77,9 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 		return job.Failed, err
 	}
 
+	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
 	res := das.SyncDataAccess(&syncerConfig)
+
 	if res.Error != nil {
 		return job.Failed, err
 	}
@@ -92,6 +95,9 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	if err != nil {
 		return job.Failed, err
 	}
+
+	s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, nil
 }

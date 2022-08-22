@@ -39,7 +39,7 @@ func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
 
 	if s.TargetConfig.DeleteTempFiles {
-		defer os.Remove(targetFile)
+		defer os.RemoveAll(targetFile)
 	}
 
 	syncerConfig := dspc.DataSourceSyncConfig{
@@ -53,14 +53,19 @@ func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 		return job.Failed, err
 	}
 
+	s.TargetConfig.Logger.Info("Fetching data source metadata configuration")
 	md := dss.GetMetaData()
+
+	s.TargetConfig.Logger.Info("Updating data source metadata configuration")
 	err = SetMetaData(*s.TargetConfig, md)
 
 	if err != nil {
 		return job.Failed, err
 	}
 
+	s.TargetConfig.Logger.Info("Gathering metadata from the data source")
 	res := dss.SyncDataSource(&syncerConfig)
+
 	if res.Error != nil {
 		return job.Failed, err
 	}
@@ -73,13 +78,15 @@ func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	}
 	dsImporter := NewDataSourceImporter(&importerConfig, s.StatusUpdater)
 
+	s.TargetConfig.Logger.Info("Importing metadata into Raito")
 	status, err := dsImporter.TriggerImport(s.JobId)
+
 	if err != nil {
 		return job.Failed, err
 	}
 
 	s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
-	s.TargetConfig.Logger.Debug("Current status: %s")
+	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status))
 
 	return status, nil
 }

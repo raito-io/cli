@@ -48,8 +48,8 @@ func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (jo
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as groups target file", groupFile))
 
 	if s.TargetConfig.DeleteTempFiles {
-		defer os.Remove(userFile)
-		defer os.Remove(groupFile)
+		defer os.RemoveAll(userFile)
+		defer os.RemoveAll(groupFile)
 	}
 
 	syncerConfig := ispc.IdentityStoreSyncConfig{
@@ -63,7 +63,9 @@ func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (jo
 		return job.Failed, err
 	}
 
+	s.TargetConfig.Logger.Info("Gathering users and groups")
 	result := iss.SyncIdentityStore(&syncerConfig)
+
 	if result.Error != nil {
 		return job.Failed, *(result.Error)
 	}
@@ -78,9 +80,11 @@ func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (jo
 	}
 	isImporter := NewIdentityStoreImporter(&importerConfig, s.StatusUpdater)
 
+	s.TargetConfig.Logger.Info("Importing users and groups into Raito")
 	status, err := isImporter.TriggerImport(s.JobId)
+
 	if err != nil {
-		return status, err
+		return job.Failed, err
 	}
 
 	s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")

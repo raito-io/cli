@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -28,6 +29,7 @@ type userTokens struct {
 }
 
 var (
+	mutex       sync.Mutex
 	tokenMap    = make(map[string]*userTokens)
 	clientAppId string
 )
@@ -35,7 +37,7 @@ var (
 func AddToken(r *http.Request, targetConfig *target.BaseTargetConfig) error {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
-		targetConfig.Logger.Info("Skipping authentication for development environment.")
+		targetConfig.Logger.Debug("Skipping authentication for development environment.")
 		return nil
 	}
 
@@ -186,9 +188,12 @@ func handleAuthOutput(output *idp.InitiateAuthOutput, tokens *userTokens) error 
 }
 
 func fetchClientAppId(targetConfig *target.BaseTargetConfig) error {
-	// TODO: make sure this only gets called once concurrency?
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	if clientAppId == "" {
 		domain := targetConfig.Domain
+
 		if domain == "" {
 			return fmt.Errorf("no domain specified")
 		}

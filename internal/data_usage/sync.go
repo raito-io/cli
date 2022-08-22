@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
+
 	dupc "github.com/raito-io/cli/common/api/data_usage"
 	baseconfig "github.com/raito-io/cli/common/util/config"
 	"github.com/raito-io/cli/internal/file"
@@ -40,7 +42,7 @@ func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.Jo
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
 
 	if s.TargetConfig.DeleteTempFiles {
-		defer os.Remove(targetFile)
+		defer os.RemoveAll(targetFile)
 	}
 
 	syncerConfig := dupc.DataUsageSyncConfig{
@@ -59,10 +61,12 @@ func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.Jo
 	}
 	duImporter := NewDataUsageImporter(&importerConfig, s.StatusUpdater)
 
+	s.TargetConfig.Logger.Info("Fetching last synchronization date")
+
 	lastUsed, err := duImporter.GetLastUsage()
 
 	if err != nil || lastUsed == nil {
-		s.TargetConfig.Logger.Warn(fmt.Sprintf("error retrieving last usage for data source %s, last used: %s", importerConfig.DataSourceId, lastUsed))
+		hclog.L().Warn(fmt.Sprintf("error retrieving last usage for data source %s, last used: %s", importerConfig.DataSourceId, lastUsed))
 		timeValue := time.Unix(int64(0), 0)
 		lastUsed = &timeValue
 	}
@@ -70,10 +74,14 @@ func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.Jo
 	lastUsedValue := *lastUsed
 	syncerConfig.ConfigMap.Parameters["lastUsed"] = lastUsedValue.Format(time.RFC3339)
 
+	s.TargetConfig.Logger.Info("Fetching usage data from the data source")
+
 	res := dus.SyncDataUsage(&syncerConfig)
 	if res.Error != nil {
 		return job.Failed, err
 	}
+
+	s.TargetConfig.Logger.Info("Importing usage data into Raito")
 
 	status, err := duImporter.TriggerImport(s.JobId)
 	if err != nil {

@@ -57,28 +57,28 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 	freq := viper.GetInt(constants.FrequencyFlag)
 	if freq <= 0 {
-		logger.Info("Running synchronization just once.")
+		hclog.L().Info("Running synchronization just once.")
 
-		err := executeSingleRun(logger.With("iteration", 0), otherArgs)
+		err := executeSingleRun(hclog.L().With("iteration", 0), otherArgs)
 		if err != nil {
 			os.Exit(1)
 		} else {
 			os.Exit(0)
 		}
 	} else {
-		logger.Info(fmt.Sprintf("Starting synchronization every %d minutes.", freq))
-		logger.Info("Press the letter 'q' (and press return) to stop the program.")
+		hclog.L().Info(fmt.Sprintf("Starting synchronization every %d minutes.", freq))
+		hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
 
 		ticker := time.NewTicker(time.Duration(freq) * time.Minute)
 		quit := make(chan struct{})
 		finished := make(chan struct{})
 		go func() {
-			executeSingleRun(logger.With("iteration", 1), otherArgs) //nolint
+			executeSingleRun(hclog.L().With("iteration", 1), otherArgs) //nolint
 			it := 2
 			for {
 				select {
 				case <-ticker.C:
-					executeSingleRun(logger.With("iteration", it), otherArgs) //nolint
+					executeSingleRun(hclog.L().With("iteration", it), otherArgs) //nolint
 					it++
 				case <-quit:
 					ticker.Stop()
@@ -92,16 +92,16 @@ func executeRun(cmd *cobra.Command, args []string) {
 			reader := bufio.NewReader(os.Stdin)
 			text, _ := reader.ReadString('\n')
 			if strings.TrimSpace(strings.ToLower(text)) == "q" {
-				logger.Info("Waiting for the current synchronization run to end ...")
+				hclog.L().Info("Waiting for the current synchronization run to end ...")
 				quit <- struct{}{}
 				break
 			} else {
-				logger.Info("Press the letter 'q' (and press return) to stop the program.")
+				hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
 			}
 		}
 
 		<-finished
-		logger.Info("All routines finished. Bye!")
+		hclog.L().Info("All routines finished. Bye!")
 	}
 }
 

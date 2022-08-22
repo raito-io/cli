@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,7 @@ func initInfoCommand(rootCmd *cobra.Command) {
 
 func executeInfoCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 || len(args) > 2 {
-		logger.Error("Expected 1 or 2 arguments after the info command.")
+		hclog.L().Error("Expected 1 or 2 arguments after the info command.")
 		return
 	}
 	connector := args[0]
@@ -31,7 +32,7 @@ func executeInfoCmd(cmd *cobra.Command, args []string) {
 		version = args[1]
 	}
 
-	client, err := plugin.NewPluginClient(connector, version, logger)
+	client, err := plugin.NewPluginClient(connector, version, hclog.L())
 	if err != nil {
 		return
 	}
@@ -39,9 +40,9 @@ func executeInfoCmd(cmd *cobra.Command, args []string) {
 
 	info, err := client.GetInfo()
 	if err != nil {
-		logger.Warn(fmt.Sprintf("The plugin (%s) does not implement the Info interface. Skipping.", connector))
+		hclog.L().Warn(fmt.Sprintf("The plugin (%s) does not implement the Info interface. Skipping.", connector))
 		return
 	}
 
-	logger.Info(info.PluginInfo().FullOverview())
+	hclog.L().Info(info.PluginInfo().FullOverview())
 }

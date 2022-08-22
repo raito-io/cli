@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
 	dapc "github.com/raito-io/cli/common/api/data_access"
 	"github.com/raito-io/cli/common/util/config"
 	"github.com/raito-io/cli/internal/constants"
@@ -38,10 +39,10 @@ func initAccessCommand(rootCmd *cobra.Command) {
 }
 
 func executeAccessCmd(cmd *cobra.Command, args []string) error {
-	logger.Info("")
-	defer logger.Info("")
+	hclog.L().Info("")
+	defer hclog.L().Info("")
 
-	baseLogger := logger.With("iteration", 0)
+	baseLogger := hclog.L().With("iteration", 0)
 
 	return target.RunTargets(baseLogger, cmd.Flags().Args(), runAccessTarget)
 }

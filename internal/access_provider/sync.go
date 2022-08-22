@@ -30,8 +30,6 @@ type DataAccessSync struct {
 }
 
 func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, error) {
-	s.StatusUpdater(job.Started)
-
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))

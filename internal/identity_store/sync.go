@@ -30,8 +30,6 @@ type IdentityStoreImportResult struct {
 }
 
 func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, error) {
-	s.StatusUpdater(job.Started)
-
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	userFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-user", "json"))

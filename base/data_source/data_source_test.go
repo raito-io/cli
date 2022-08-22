@@ -76,7 +76,6 @@ func TestDataSourceFileCreator(t *testing.T) {
 	assert.Equal(t, "", dosr[0].Description)
 	assert.Equal(t, "", dosr[0].ParentExternalId)
 	assert.Equal(t, 0, len(dosr[0].Tags))
-	assert.Equal(t, 0, len(dosr[0].AvailablePermissions))
 
 	assert.Equal(t, "eid1", dosr[1].ExternalId)
 	assert.Equal(t, "DO1", dosr[1].Name)
@@ -133,8 +132,6 @@ func TestDataSourceDetails(t *testing.T) {
 	dsfc.GetDataSourceDetails().SetName("dsName")
 	dsfc.GetDataSourceDetails().SetFullname("dsFullName")
 	dsfc.GetDataSourceDetails().SetDescription("dsDesc")
-	dsfc.GetDataSourceDetails().AddAvailablePermission("perm1")
-	dsfc.GetDataSourceDetails().SetAvailablePermissions([]string{"perm2", "perm3", "perm3"})
 
 	err = dsfc.AddDataObjects(dos)
 	assert.Nil(t, err)
@@ -158,8 +155,4 @@ func TestDataSourceDetails(t *testing.T) {
 	assert.Equal(t, "dsDesc", dosr[0].Description)
 	assert.Equal(t, "", dosr[0].ParentExternalId)
 	assert.Equal(t, 0, len(dosr[0].Tags))
-	assert.Equal(t, 3, len(dosr[0].AvailablePermissions))
-	assert.Equal(t, "perm1", dosr[0].AvailablePermissions[0])
-	assert.Equal(t, "perm2", dosr[0].AvailablePermissions[1])
-	assert.Equal(t, "perm3", dosr[0].AvailablePermissions[2])
 }

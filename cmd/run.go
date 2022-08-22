@@ -60,28 +60,28 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 	freq := viper.GetInt(constants.FrequencyFlag)
 	if freq <= 0 {
-		logger.Info("Running synchronization just once.")
+		hclog.L().Info("Running synchronization just once.")
 
-		err := executeSingleRun(logger.With("iteration", 0), otherArgs)
+		err := executeSingleRun(hclog.L().With("iteration", 0), otherArgs)
 		if err != nil {
 			os.Exit(1)
 		} else {
 			os.Exit(0)
 		}
 	} else {
-		logger.Info(fmt.Sprintf("Starting synchronization every %d minutes.", freq))
-		logger.Info("Press the letter 'q' (and press return) to stop the program.")
+		hclog.L().Info(fmt.Sprintf("Starting synchronization every %d minutes.", freq))
+		hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
 
 		ticker := time.NewTicker(time.Duration(freq) * time.Minute)
 		quit := make(chan struct{})
 		finished := make(chan struct{})
 		go func() {
-			executeSingleRun(logger.With("iteration", 1), otherArgs) //nolint
+			executeSingleRun(hclog.L().With("iteration", 1), otherArgs) //nolint
 			it := 2
 			for {
 				select {
 				case <-ticker.C:
-					executeSingleRun(logger.With("iteration", it), otherArgs) //nolint
+					executeSingleRun(hclog.L().With("iteration", it), otherArgs) //nolint
 					it++
 				case <-quit:
 					ticker.Stop()
@@ -95,16 +95,16 @@ func executeRun(cmd *cobra.Command, args []string) {
 			reader := bufio.NewReader(os.Stdin)
 			text, _ := reader.ReadString('\n')
 			if strings.TrimSpace(strings.ToLower(text)) == "q" {
-				logger.Info("Waiting for the current synchronization run to end ...")
+				hclog.L().Info("Waiting for the current synchronization run to end ...")
 				quit <- struct{}{}
 				break
 			} else {
-				logger.Info("Press the letter 'q' (and press return) to stop the program.")
+				hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
 			}
 		}
 
 		<-finished
-		logger.Info("All routines finished. Bye!")
+		hclog.L().Info("All routines finished. Bye!")
 	}
 }
 
@@ -213,7 +213,7 @@ func syncDataSource(client plugin.PluginClient, targetConfig target.BaseTargetCo
 	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
 
 	if targetConfig.DeleteTempFiles {
-		defer os.Remove(targetFile)
+		defer os.RemoveAll(targetFile)
 	}
 
 	syncerConfig := dspc.DataSourceSyncConfig{
@@ -227,14 +227,19 @@ func syncDataSource(client plugin.PluginClient, targetConfig target.BaseTargetCo
 		return err
 	}
 
+	targetConfig.Logger.Info("Fetching data source metadata configuration")
 	md := dss.GetMetaData()
+
+	targetConfig.Logger.Info("Updating data source metadata configuration")
 	err = data_source.SetMetaData(targetConfig, md)
 
 	if err != nil {
 		return err
 	}
 
+	targetConfig.Logger.Info("Gathering metadata from the data source")
 	res := dss.SyncDataSource(&syncerConfig)
+
 	if res.Error != nil {
 		return err
 	}
@@ -247,7 +252,9 @@ func syncDataSource(client plugin.PluginClient, targetConfig target.BaseTargetCo
 	}
 	dsImporter := data_source.NewDataSourceImporter(&importerConfig)
 
+	targetConfig.Logger.Info("Importing metadata into Raito")
 	dsResult, err := dsImporter.TriggerImport()
+
 	if err != nil {
 		return err
 	}
@@ -274,8 +281,8 @@ func syncIdentityStore(client plugin.PluginClient, targetConfig target.BaseTarge
 	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as groups target file", groupFile))
 
 	if targetConfig.DeleteTempFiles {
-		defer os.Remove(userFile)
-		defer os.Remove(groupFile)
+		defer os.RemoveAll(userFile)
+		defer os.RemoveAll(groupFile)
 	}
 
 	syncerConfig := ispc.IdentityStoreSyncConfig{
@@ -289,7 +296,9 @@ func syncIdentityStore(client plugin.PluginClient, targetConfig target.BaseTarge
 		return err
 	}
 
+	targetConfig.Logger.Info("Gathering users and groups")
 	result := iss.SyncIdentityStore(&syncerConfig)
+
 	if result.Error != nil {
 		return *(result.Error)
 	}
@@ -304,7 +313,9 @@ func syncIdentityStore(client plugin.PluginClient, targetConfig target.BaseTarge
 	}
 	isImporter := identity_store.NewIdentityStoreImporter(&importerConfig)
 
+	targetConfig.Logger.Info("Importing users and groups into Raito")
 	isResult, err := isImporter.TriggerImport()
+
 	if err != nil {
 		return err
 	}
@@ -325,20 +336,22 @@ func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetCo
 	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
 
 	if targetConfig.DeleteTempFiles {
-		defer os.Remove(targetFile)
+		defer os.RemoveAll(targetFile)
 	}
 
 	config := data_access.DataAccessConfig{
 		BaseTargetConfig: targetConfig,
 	}
 
+	targetConfig.Logger.Info("Fetching access providers for this data source from Raito")
 	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, accessRightsLastUpdated, true)
+
 	if err != nil {
 		return err
 	}
 
 	if dar == nil {
-		targetConfig.Logger.Info("No changes in the data access rights recorded since previous sync. Skipping.", "datasource", config.DataSourceId)
+		targetConfig.Logger.Info("No changes in the access providers recorded since previous sync. Skipping.", "datasource", config.DataSourceId)
 		return nil
 	}
 
@@ -357,7 +370,9 @@ func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetCo
 		return err
 	}
 
+	targetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
 	res := das.SyncDataAccess(&syncerConfig)
+
 	if res.Error != nil {
 		return err
 	}
@@ -390,7 +405,7 @@ func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetCon
 	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
 
 	if targetConfig.DeleteTempFiles {
-		defer os.Remove(targetFile)
+		defer os.RemoveAll(targetFile)
 	}
 
 	syncerConfig := dupc.DataUsageSyncConfig{
@@ -409,10 +424,12 @@ func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetCon
 	}
 	duImporter := data_usage.NewDataUsageImporter(&importerConfig)
 
+	targetConfig.Logger.Info("Fetching last synchronization date")
+
 	lastUsed, err := duImporter.GetLastUsage()
 
 	if err != nil || lastUsed == nil {
-		logger.Warn(fmt.Sprintf("error retrieving last usage for data source %s, last used: %s", importerConfig.DataSourceId, lastUsed))
+		hclog.L().Warn(fmt.Sprintf("error retrieving last usage for data source %s, last used: %s", importerConfig.DataSourceId, lastUsed))
 		timeValue := time.Unix(int64(0), 0)
 		lastUsed = &timeValue
 	}
@@ -420,10 +437,14 @@ func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetCon
 	lastUsedValue := *lastUsed
 	syncerConfig.ConfigMap.Parameters["lastUsed"] = lastUsedValue.Format(time.RFC3339)
 
+	targetConfig.Logger.Info("Fetching usage data from the data source")
+
 	res := dus.SyncDataUsage(&syncerConfig)
 	if res.Error != nil {
 		return err
 	}
+
+	targetConfig.Logger.Info("Importing usage data into Raito")
 
 	duResult, err := duImporter.TriggerImport()
 	if err != nil {

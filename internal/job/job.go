@@ -174,6 +174,8 @@ func (e JobStatus) IsRunning() bool {
 	switch e {
 	case Started, DataRetrieve, DataUpload, Queued, DataProcessing:
 		return true
+	case Completed, Failed, Skipped:
+		return false
 	default:
 		return false
 	}

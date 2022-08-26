@@ -1,11 +1,11 @@
 package data_usage
 
 import (
+	"github.com/raito-io/cli/base/util/config"
+	error2 "github.com/raito-io/cli/base/util/error"
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/raito-io/cli/common/api"
-	"github.com/raito-io/cli/common/util/config"
 )
 
 // DataUsageSyncConfig represents the configuration that is passed from the CLI to the DataUsageSyncer plugin interface.
@@ -18,7 +18,7 @@ type DataUsageSyncConfig struct {
 // DataUsageSyncResult represents the result from the data usage sync process.
 // A potential error is also modeled in here so specific errors remain intact when passed over RPC.
 type DataUsageSyncResult struct {
-	Error *api.ErrorResult
+	Error *error2.ErrorResult
 }
 
 // DataUsageSyncer interface needs to be implemented by any plugin that wants to import data usage information
@@ -53,7 +53,7 @@ func (g *dataUsageSyncerRPC) SyncDataUsage(config *DataUsageSyncConfig) DataUsag
 
 	err := g.client.Call("Plugin.SyncDataUsage", config, &resp)
 	if err != nil && resp.Error == nil {
-		resp.Error = api.ToErrorResult(err)
+		resp.Error = error2.ToErrorResult(err)
 	}
 
 	return resp

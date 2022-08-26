@@ -2,6 +2,7 @@ package data_usage
 
 import (
 	"encoding/json"
+	"github.com/raito-io/cli/base/access_provider/exporter"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -9,9 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
-	"github.com/raito-io/cli/common/api/data_usage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +21,7 @@ func init() {
 func TestDataUsageFileCreator(t *testing.T) {
 	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile.Name())
-	config := data_usage.DataUsageSyncConfig{
+	config := DataUsageSyncConfig{
 		TargetFile: tempFile.Name(),
 	}
 	dufc, err := NewDataUsageFileCreator(&config)
@@ -33,7 +32,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 
 	dus = append(dus, Statement{
 		ExternalId: "transaction1",
-		AccessedDataObjects: []access_provider.Access{
+		AccessedDataObjects: []exporter.Access{
 			{DataObjectReference: &data_source.DataObjectReference{"schema1.table1.column1", "column"},
 				Permissions: []string{"SELECT"}},
 		},
@@ -48,7 +47,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 	})
 	dus = append(dus, Statement{
 		ExternalId: "transaction2",
-		AccessedDataObjects: []access_provider.Access{
+		AccessedDataObjects: []exporter.Access{
 			{DataObjectReference: &data_source.DataObjectReference{"schema1.table2.column3", "column"},
 				Permissions: []string{"ALTER"}},
 			{DataObjectReference: &data_source.DataObjectReference{"schema1.table2.column5", "column"},
@@ -66,7 +65,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 	})
 	dus = append(dus, Statement{
 		ExternalId: "transaction3",
-		AccessedDataObjects: []access_provider.Access{
+		AccessedDataObjects: []exporter.Access{
 			{DataObjectReference: &data_source.DataObjectReference{"schema3", "schema"},
 				Permissions: []string{"GRANT"}},
 		},

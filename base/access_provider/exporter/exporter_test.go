@@ -1,4 +1,4 @@
-package access_provider
+package exporter
 
 import (
 	"encoding/json"
@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
-	"github.com/raito-io/cli/common/api/data_access"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +21,7 @@ func init() {
 func TestAccessProviderFileCreator(t *testing.T) {
 	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile.Name())
-	config := data_access.DataAccessSyncConfig{
+	config := access_provider.AccessSyncConfig{
 		TargetFile: tempFile.Name(),
 	}
 	apfc, err := NewAccessProviderFileCreator(&config)

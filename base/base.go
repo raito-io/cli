@@ -3,15 +3,15 @@ package base
 
 import (
 	"errors"
+	plugin2 "github.com/raito-io/cli/base/util/plugin"
 	"sync"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/raito-io/cli/common/api"
-	"github.com/raito-io/cli/common/api/data_access"
-	"github.com/raito-io/cli/common/api/data_source"
-	"github.com/raito-io/cli/common/api/data_usage"
-	"github.com/raito-io/cli/common/api/identity_store"
+	"github.com/raito-io/cli/base/access_provider"
+	"github.com/raito-io/cli/base/data_source"
+	"github.com/raito-io/cli/base/data_usage"
+	"github.com/raito-io/cli/base/identity_store"
 )
 
 var logger hclog.Logger
@@ -53,13 +53,13 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, error) {
 			logger.Debug("Registered DataSourceSyncer Plugin")
 		}
 
-		if das, ok := plugin.(data_access.DataAccessSyncer); ok {
-			if _, f := pluginMap[data_access.DataAccessSyncerName]; f {
-				return nil, errors.New("multiple implementations for DataAccessSyncer Plugin found. There should be only one")
+		if as, ok := plugin.(access_provider.AccessSyncer); ok {
+			if _, f := pluginMap[access_provider.AccessSyncerName]; f {
+				return nil, errors.New("multiple implementations for AccessSyncer Plugin found. There should be only one")
 			}
-			pluginMap[data_access.DataAccessSyncerName] = &data_access.DataAccessSyncerPlugin{Impl: das}
+			pluginMap[access_provider.AccessSyncerName] = &access_provider.AccessSyncerPlugin{Impl: as}
 
-			logger.Debug("Registered DataAccessSyncer Plugin")
+			logger.Debug("Registered AccessSyncer Plugin")
 		}
 
 		if dus, ok := plugin.(data_usage.DataUsageSyncer); ok {
@@ -71,11 +71,11 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, error) {
 			logger.Debug("Registered DataUsageSyncer Plugin")
 		}
 
-		if i, ok := plugin.(api.Info); ok {
-			if _, f := pluginMap[api.InfoName]; f {
+		if i, ok := plugin.(plugin2.Info); ok {
+			if _, f := pluginMap[plugin2.InfoName]; f {
 				return nil, errors.New("multiple implementation for Info Plugin found. There should be only one")
 			}
-			pluginMap[api.InfoName] = &api.InfoPlugin{Impl: i}
+			pluginMap[plugin2.InfoName] = &plugin2.InfoPlugin{Impl: i}
 
 			logger.Debug("Registered Info Plugin")
 

@@ -3,7 +3,7 @@ package data_source
 import (
 	"testing"
 
-	"github.com/raito-io/cli/common/api/data_source"
+	"github.com/raito-io/cli/base/data_source"
 	"github.com/stretchr/testify/assert"
 )
 

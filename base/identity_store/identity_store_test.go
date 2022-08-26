@@ -2,7 +2,6 @@ package identity_store
 
 import (
 	"encoding/json"
-	"github.com/raito-io/cli/common/api/identity_store"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"math/rand"
@@ -21,7 +20,7 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 	defer os.Remove(tempFile1.Name())
 	tempFile2, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile2.Name())
-	config := identity_store.IdentityStoreSyncConfig{
+	config := IdentityStoreSyncConfig{
 		UserFile:  tempFile1.Name(),
 		GroupFile: tempFile2.Name(),
 	}

@@ -1,4 +1,4 @@
-package api
+package error
 
 import "fmt"
 

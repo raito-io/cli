@@ -1,0 +1,26 @@
+lastCalculated: 100
+accessProviders:
+  -
+    id: 11111111
+    name: blah
+    description: Lots of blah
+    namingHint: Blah_
+    access:
+      - namingHint: Blahkes
+        who:
+          - bart
+          - dieter
+        what:
+          - dataObject:
+              type: table
+              fullName: zzz.yyy.table1
+            permissions:
+              - select
+              - delete
+          - dataObject:
+              type: table
+              fullName: zzz.yyy.table2
+            permissions:
+              - update
+              - select
+              - delete

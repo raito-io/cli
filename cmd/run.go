@@ -3,17 +3,17 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	baseconfig "github.com/raito-io/cli/base/util/config"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	dapc "github.com/raito-io/cli/common/api/data_access"
-	dspc "github.com/raito-io/cli/common/api/data_source"
-	dupc "github.com/raito-io/cli/common/api/data_usage"
-	ispc "github.com/raito-io/cli/common/api/identity_store"
-	baseconfig "github.com/raito-io/cli/common/util/config"
+	dapc "github.com/raito-io/cli/base/access_provider"
+	dspc "github.com/raito-io/cli/base/data_source"
+	dupc "github.com/raito-io/cli/base/data_usage"
+	ispc "github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/internal/access_provider"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/data_access"
@@ -339,39 +339,34 @@ func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetCo
 		defer os.RemoveAll(targetFile)
 	}
 
-	config := data_access.DataAccessConfig{
+	config := data_access.AccessSyncConfig{
 		BaseTargetConfig: targetConfig,
 	}
 
 	targetConfig.Logger.Info("Fetching access providers for this data source from Raito")
-	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, accessRightsLastUpdated, true)
+	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, accessRightsLastUpdated)
 
 	if err != nil {
 		return err
 	}
 
-	if dar == nil {
-		targetConfig.Logger.Info("No changes in the access providers recorded since previous sync. Skipping.", "datasource", config.DataSourceId)
-		return nil
-	}
+	// TODO read this from the file
+	//accessRightsLastUpdated = dar.LastCalculated
 
-	accessRightsLastUpdated = dar.LastCalculated
-
-	syncerConfig := dapc.DataAccessSyncConfig{
+	syncerConfig := dapc.AccessSyncConfig{
 		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
 		Prefix:     "",
 		TargetFile: targetFile,
-		RunImport:  true, // signal syncer to also run raito import
+		SourceFile: dar,
 	}
-	syncerConfig.DataAccess = dar
 
-	das, err := client.GetDataAccessSyncer()
+	das, err := client.GetAccessSyncer()
 	if err != nil {
 		return err
 	}
 
 	targetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
-	res := das.SyncDataAccess(&syncerConfig)
+	res := das.SyncAccess(&syncerConfig)
 
 	if res.Error != nil {
 		return err

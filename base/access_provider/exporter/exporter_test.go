@@ -39,9 +39,20 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		NotInternalizable: false,
 		Name:              "AP1",
 		NamingHint:        "AP1Hint",
-		Users:             []string{"uid1"},
-		Groups:            []string{"gid1"},
-		AccessObjects:     []Access{{Permissions: []string{"A", "B"}, DataObjectReference: &do}},
+		Access: []*Access{
+			{
+				Who: &WhoItem{
+					Users:  []string{"uid1"},
+					Groups: []string{"gid1"},
+				},
+				What: []WhatItem{
+					{
+						Permissions: []string{"A", "B"},
+						DataObject:  &do,
+					},
+				},
+			},
+		},
 	})
 
 	aps = append(aps, AccessProvider{
@@ -50,12 +61,23 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		Name:              "AP2",
 		NamingHint:        "AP2Hint",
 		Action:            Filtered,
-		Users:             []string{"uid1", "uid2"},
-		Groups:            []string{"gid1", "gid2"},
-		AccessObjects:     []Access{{Permissions: []string{"C"}, DataObjectReference: &do}},
+		Access: []*Access{
+			{
+				Who: &WhoItem{
+					Users:  []string{"uid1", "uid2"},
+					Groups: []string{"gid1", "gid2"},
+				},
+				What: []WhatItem{
+					{
+						Permissions: []string{"C"},
+						DataObject:  &do,
+					},
+				},
+			},
+		},
 	})
 
-	err = apfc.AddAccessProvider(aps)
+	err = apfc.AddAccessProviders(aps)
 	assert.Nil(t, err)
 
 	apfc.Close()
@@ -76,31 +98,31 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "AP1", apsr[0].Name)
 	assert.Equal(t, "AP1Hint", apsr[0].NamingHint)
 	assert.Equal(t, Promise, apsr[0].Action)
-	assert.Equal(t, 1, len(apsr[0].Users))
-	assert.Equal(t, "uid1", apsr[0].Users[0])
-	assert.Equal(t, 1, len(apsr[0].Groups))
-	assert.Equal(t, "gid1", apsr[0].Groups[0])
-	assert.Equal(t, 1, len(apsr[0].AccessObjects))
-	assert.Equal(t, 2, len(apsr[0].AccessObjects[0].Permissions))
-	assert.Equal(t, "A", apsr[0].AccessObjects[0].Permissions[0])
-	assert.Equal(t, "B", apsr[0].AccessObjects[0].Permissions[1])
-	assert.Equal(t, "Data Object 1", apsr[0].AccessObjects[0].DataObjectReference.FullName)
-	assert.Equal(t, "schema", apsr[0].AccessObjects[0].DataObjectReference.Type)
+	assert.Equal(t, 1, len(apsr[0].Access[0].Who.Users))
+	assert.Equal(t, "uid1", apsr[0].Access[0].Who.Users[0])
+	assert.Equal(t, 1, len(apsr[0].Access[0].Who.Groups))
+	assert.Equal(t, "gid1", apsr[0].Access[0].Who.Groups[0])
+	assert.Equal(t, 1, len(apsr[0].Access[0].What))
+	assert.Equal(t, 2, len(apsr[0].Access[0].What[0].Permissions))
+	assert.Equal(t, "A", apsr[0].Access[0].What[0].Permissions[0])
+	assert.Equal(t, "B", apsr[0].Access[0].What[0].Permissions[1])
+	assert.Equal(t, "Data Object 1", apsr[0].Access[0].What[0].DataObject.FullName)
+	assert.Equal(t, "schema", apsr[0].Access[0].What[0].DataObject.Type)
 
 	assert.Equal(t, "eid2", apsr[1].ExternalId)
 	assert.True(t, apsr[1].NotInternalizable)
 	assert.Equal(t, "AP2", apsr[1].Name)
 	assert.Equal(t, "AP2Hint", apsr[1].NamingHint)
 	assert.Equal(t, Filtered, apsr[1].Action)
-	assert.Equal(t, 2, len(apsr[1].Users))
-	assert.Equal(t, "uid1", apsr[1].Users[0])
-	assert.Equal(t, "uid2", apsr[1].Users[1])
-	assert.Equal(t, 2, len(apsr[1].Groups))
-	assert.Equal(t, "gid1", apsr[1].Groups[0])
-	assert.Equal(t, "gid2", apsr[1].Groups[1])
-	assert.Equal(t, 1, len(apsr[1].AccessObjects))
-	assert.Equal(t, 1, len(apsr[1].AccessObjects[0].Permissions))
-	assert.Equal(t, "C", apsr[1].AccessObjects[0].Permissions[0])
-	assert.Equal(t, "Data Object 1", apsr[1].AccessObjects[0].DataObjectReference.FullName)
-	assert.Equal(t, "schema", apsr[1].AccessObjects[0].DataObjectReference.Type)
+	assert.Equal(t, 2, len(apsr[1].Access[0].Who.Users))
+	assert.Equal(t, "uid1", apsr[1].Access[0].Who.Users[0])
+	assert.Equal(t, "uid2", apsr[1].Access[0].Who.Users[1])
+	assert.Equal(t, 2, len(apsr[1].Access[0].Who.Groups))
+	assert.Equal(t, "gid1", apsr[1].Access[0].Who.Groups[0])
+	assert.Equal(t, "gid2", apsr[1].Access[0].Who.Groups[1])
+	assert.Equal(t, 1, len(apsr[1].Access[0].What))
+	assert.Equal(t, 1, len(apsr[1].Access[0].What[0].Permissions))
+	assert.Equal(t, "C", apsr[1].Access[0].What[0].Permissions[0])
+	assert.Equal(t, "Data Object 1", apsr[1].Access[0].What[0].DataObject.FullName)
+	assert.Equal(t, "schema", apsr[1].Access[0].What[0].DataObject.Type)
 }

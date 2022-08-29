@@ -1,11 +1,11 @@
 package data_usage
 
 import (
-	"github.com/raito-io/cli/base/util/config"
-	error2 "github.com/raito-io/cli/base/util/error"
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
+	"github.com/raito-io/cli/base/util/config"
+	error2 "github.com/raito-io/cli/base/util/error"
 )
 
 // DataUsageSyncConfig represents the configuration that is passed from the CLI to the DataUsageSyncer plugin interface.

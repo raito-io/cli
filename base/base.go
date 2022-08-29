@@ -3,7 +3,6 @@ package base
 
 import (
 	"errors"
-	plugin2 "github.com/raito-io/cli/base/util/plugin"
 	"sync"
 
 	"github.com/hashicorp/go-hclog"
@@ -12,6 +11,7 @@ import (
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
+	plugin2 "github.com/raito-io/cli/base/util/plugin"
 )
 
 var logger hclog.Logger

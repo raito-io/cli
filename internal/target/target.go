@@ -2,13 +2,13 @@ package target
 
 import (
 	"fmt"
-	"github.com/raito-io/cli/base/util/config"
-	error2 "github.com/raito-io/cli/base/util/error"
 	"reflect"
 	"strings"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/jinzhu/copier"
+	"github.com/raito-io/cli/base/util/config"
+	error2 "github.com/raito-io/cli/base/util/error"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"

@@ -3,8 +3,9 @@ package data_usage
 import (
 	"encoding/json"
 	"fmt"
-	ap "github.com/raito-io/cli/base/access_provider/exporter"
 	"os"
+
+	ap "github.com/raito-io/cli/base/access_provider/exporter"
 )
 
 type Statement struct {

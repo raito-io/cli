@@ -5,8 +5,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/raito-io/cli/base/access_provider"
-	plugin2 "github.com/raito-io/cli/base/util/plugin"
 	"io"
 	"io/fs"
 	"os"
@@ -19,9 +17,11 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
+	plugin2 "github.com/raito-io/cli/base/util/plugin"
 )
 
 const LATEST = "latest"

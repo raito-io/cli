@@ -2,13 +2,13 @@ package data_access
 
 import (
 	"fmt"
-	"github.com/raito-io/cli/internal/file"
 	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/connect"
 )
@@ -43,6 +43,7 @@ func RetrieveDataAccessListForDataSource(config *AccessSyncConfig, since int64) 
 
 	cn := strings.Replace(config.ConnectorName, "/", "-", -1)
 	filePath, err := filepath.Abs(file.CreateUniqueFileName(cn+"-as", "json"))
+
 	if err != nil {
 		return "", err
 	}

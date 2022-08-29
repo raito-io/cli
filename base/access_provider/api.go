@@ -5,7 +5,6 @@ import (
 	"github.com/raito-io/cli/base/util/config"
 	error2 "github.com/raito-io/cli/base/util/error"
 
-	//nolint:gosec
 	"net/rpc"
 )
 

@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	baseconfig "github.com/raito-io/cli/base/util/config"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	dspc "github.com/raito-io/cli/base/data_source"
 	dupc "github.com/raito-io/cli/base/data_usage"
 	ispc "github.com/raito-io/cli/base/identity_store"
+	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/access_provider"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/data_access"

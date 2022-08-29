@@ -1,9 +1,9 @@
 package url
 
 import (
-	"github.com/raito-io/cli/base/util/url"
 	"strings"
 
+	"github.com/raito-io/cli/base/util/url"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
 )

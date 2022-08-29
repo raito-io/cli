@@ -8,13 +8,13 @@ type AccessProviderImport struct {
 }
 
 type AccessProvider struct {
-	Id          string   `yaml:"id" json:"id"`
-	Name        string   `yaml:"name" json:"name"`
-	Description string   `yaml:"description" json:"description"`
-	NamingHint  string   `yaml:"namingHint" json:"namingHint"`
-	Access      []Access `yaml:"access" json:"access"`
-	Action      Action   `yaml:"action" json:"action"`
-	Delete      bool     `yaml:"delete" json:"delete"`
+	Id          string    `yaml:"id" json:"id"`
+	Name        string    `yaml:"name" json:"name"`
+	Description string    `yaml:"description" json:"description"`
+	NamingHint  string    `yaml:"namingHint" json:"namingHint"`
+	Access      []*Access `yaml:"access" json:"access"`
+	Action      Action    `yaml:"action" json:"action"`
+	Delete      bool      `yaml:"delete" json:"delete"`
 }
 
 type Access struct {

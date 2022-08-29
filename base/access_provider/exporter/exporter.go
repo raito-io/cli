@@ -66,7 +66,7 @@ func (d *accessProviderFileCreator) AddAccessProviders(dataAccessList []AccessPr
 		return nil
 	}
 
-	for _, da := range dataAccessList { //nolint
+	for _, da := range dataAccessList {
 		var err error
 
 		if d.dataAccessCount > 0 {

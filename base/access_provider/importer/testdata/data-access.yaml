@@ -8,8 +8,9 @@ accessProviders:
     access:
       - namingHint: Blahkes
         who:
-          - bart
-          - dieter
+          users:
+            - bart
+            - dieter
         what:
           - dataObject:
               type: table

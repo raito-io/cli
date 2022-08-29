@@ -1,6 +1,10 @@
 package importer
 
-import "github.com/raito-io/cli/base/data_source"
+import (
+	"encoding/json"
+	"github.com/raito-io/cli/base/data_source"
+	"strings"
+)
 
 type AccessProviderImport struct {
 	LastCalculated  int64            `yaml:"lastCalculated" json:"lastCalculated"`
@@ -18,6 +22,7 @@ type AccessProvider struct {
 }
 
 type Access struct {
+	Id         string     `yaml:"id" json:"id"`
 	NamingHint string     `yaml:"namingHint" json:"namingHint"`
 	Who        WhoItem    `yaml:"who" json:"who"`
 	What       []WhatItem `yaml:"what" json:"what"`
@@ -45,3 +50,46 @@ const (
 	Mask
 	Filtered
 )
+
+var actionMap = map[string]Action{
+	"promise":  Promise,
+	"grant":    Grant,
+	"deny":     Deny,
+	"mask":     Mask,
+	"filtered": Filtered,
+}
+var actionNames = [...]string{"promise", "grant", "deny", "mask", "filtered"}
+
+func (a *Action) MarshalYAML() (interface{}, error) {
+	s := actionNames[*a]
+
+	return s, nil
+}
+
+func (a *Action) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+
+	*a = actionMap[strings.ToLower(s)]
+
+	return nil
+}
+
+func (a *Action) MarshalJSON() ([]byte, error) {
+	s := actionNames[*a]
+
+	return json.Marshal(s)
+}
+
+func (a *Action) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	*a = actionMap[strings.ToLower(s)]
+
+	return nil
+}

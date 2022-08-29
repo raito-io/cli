@@ -36,6 +36,7 @@ func validateParsedAccessFile(t *testing.T, parsed *AccessProviderImport, err er
 	assert.Equal(t, "blah", ap.Name)
 	assert.Equal(t, "Lots of blah", ap.Description)
 	assert.Equal(t, "Blah_", ap.NamingHint)
+	assert.Equal(t, Mask, ap.Action)
 	assert.Equal(t, 1, len(ap.Access))
 
 	a := ap.Access[0]

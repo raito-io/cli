@@ -5,6 +5,7 @@ accessProviders:
     name: blah
     description: Lots of blah
     namingHint: Blah_
+    action: Mask
     access:
       - namingHint: Blahkes
         who:

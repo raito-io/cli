@@ -51,6 +51,7 @@ type DataSourceSyncResult struct {
 
 type DataObjectType struct {
 	Name        string                     `json:"name"`
+	Type        string                     `json:"type"`
 	Label       string                     `json:"label"`
 	Icon        string                     `json:"icon"`
 	Permissions []DataObjectTypePermission `json:"permissions"`

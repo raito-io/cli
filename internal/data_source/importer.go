@@ -6,11 +6,13 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/spf13/viper"
+
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
+	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/spf13/viper"
 )
 
 type DataSourceImportConfig struct {
@@ -20,44 +22,41 @@ type DataSourceImportConfig struct {
 	ReplaceTags     bool
 }
 
-type DataSourceImportResult struct {
-	DataObjectsAdded   int `json:"dataObjectsAdded"`
-	DataObjectsUpdated int `json:"dataObjectsUpdated"`
-	DataObjectsRemoved int `json:"dataObjectsRemoved"`
-}
-
 type DataSourceImporter interface {
-	TriggerImport() (*DataSourceImportResult, error)
+	TriggerImport(jobId string) (job.JobStatus, error)
 }
 
 type dataSourceImporter struct {
-	config *DataSourceImportConfig
-	log    hclog.Logger
+	config        *DataSourceImportConfig
+	log           hclog.Logger
+	statusUpdater func(status job.JobStatus)
 }
 
-func NewDataSourceImporter(config *DataSourceImportConfig) DataSourceImporter {
+func NewDataSourceImporter(config *DataSourceImportConfig, statusUpdater func(status job.JobStatus)) DataSourceImporter {
 	logger := config.Logger.With("datasource", config.DataSourceId, "file", config.TargetFile)
-	dsI := dataSourceImporter{config, logger}
+	dsI := dataSourceImporter{config, logger, statusUpdater}
 
 	return &dsI
 }
 
-func (d *dataSourceImporter) TriggerImport() (*DataSourceImportResult, error) {
+func (d *dataSourceImporter) TriggerImport(jobId string) (job.JobStatus, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
-		return d.doImport(d.config.TargetFile)
+		return d.doImport(jobId, d.config.TargetFile)
 	} else {
 		key, err := d.upload()
 		if err != nil {
-			return nil, err
+			return job.Failed, err
 		}
 
-		return d.doImport(key)
+		return d.doImport(jobId, key)
 	}
 }
 
 func (d *dataSourceImporter) upload() (string, error) {
+	d.statusUpdater(job.DataUpload)
+
 	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
 	if err != nil {
 		return "", fmt.Errorf("error while uploading data source import files to Raito: %s", err.Error())
@@ -66,22 +65,22 @@ func (d *dataSourceImporter) upload() (string, error) {
 	return key, nil
 }
 
-func (d *dataSourceImporter) doImport(fileKey string) (*DataSourceImportResult, error) {
+func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, error) {
 	start := time.Now()
 
-	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataSource", "variables":{}, "query": "mutation ImportDataSource {
-        importDataSource(input: {
-          dataSource: \"%s\",
-          deleteUntouched: %t,
-          replaceTags: %t,  
-          fileKey: \"%s\"
+	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataSourceRequest", "variables":{}, "query": "mutation ImportDataSourceRequest {
+      importDataSourceRequest(input: {
+        jobId: \"%s\",
+          importSettings: {
+            dataSource: \"%s\",
+            deleteUntouched: %t,
+            replaceTags: %t,  
+            fileKey: \"%s\"
+          }
         }) {
-          dataObjectsAdded
-          dataObjectsUpdated
-          dataObjectsRemoved
-          errors
+          jobStatus
         }
-    }" }"`, d.config.DataSourceId, d.config.DeleteUntouched, d.config.ReplaceTags, fileKey)
+    }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, d.config.ReplaceTags, fileKey)
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
@@ -89,16 +88,19 @@ func (d *dataSourceImporter) doImport(fileKey string) (*DataSourceImportResult, 
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while executing import: %s", err.Error())
+		return job.Failed, fmt.Errorf("error while executing import: %s", err.Error())
 	}
 
-	ret := &res.ImportDataSource
+	ret := res.Response.Status
 
 	d.log.Info(fmt.Sprintf("Done executing import in %s", time.Since(start).Round(time.Millisecond)))
 
 	return ret, nil
 }
 
+type QueryResponse struct {
+	Status job.JobStatus `json:"jobStatus"`
+}
 type Response struct {
-	ImportDataSource DataSourceImportResult `json:"importDataSource"`
+	Response QueryResponse `json:"importDataSourceRequest"`
 }

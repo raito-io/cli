@@ -4,31 +4,28 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	dapc "github.com/raito-io/cli/base/access_provider"
-	dspc "github.com/raito-io/cli/base/data_source"
-	dupc "github.com/raito-io/cli/base/data_usage"
-	ispc "github.com/raito-io/cli/base/identity_store"
-	baseconfig "github.com/raito-io/cli/base/util/config"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
 	"github.com/raito-io/cli/internal/access_provider"
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/raito-io/cli/internal/data_access"
 	"github.com/raito-io/cli/internal/data_source"
 	"github.com/raito-io/cli/internal/data_usage"
-	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/identity_store"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-var accessRightsLastUpdated int64 = 0
+type task interface {
+	StartSyncAndQueueJob(c plugin.PluginClient) (job.JobStatus, error)
+	ProcessResults(results interface{}) error
+	GetResultObject() interface{}
+}
 
 func initRunCommand(rootCmd *cobra.Command) {
 	var cmd = &cobra.Command{
@@ -124,8 +121,7 @@ func runSync(baseLogger hclog.Logger, otherArgs []string) error {
 }
 
 func execute(targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
-	syncFunc func(c plugin.PluginClient, cfg target.BaseTargetConfig) error,
-	cfg *target.BaseTargetConfig, c plugin.PluginClient) error {
+	syncTask task, cfg *target.BaseTargetConfig, c plugin.PluginClient) error {
 	switch {
 	case skipSync:
 		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
@@ -143,7 +139,7 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 		cfg.Logger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
 		job.AddJobEvent(cfg, jobID, syncType, constants.Started)
 
-		err := syncFunc(c, *cfg)
+		status, err := syncTask.StartSyncAndQueueJob(c)
 		if err != nil {
 			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
 			job.AddJobEvent(cfg, jobID, syncType, constants.Failed)
@@ -151,10 +147,50 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 			return err
 		}
 
-		job.AddJobEvent(cfg, jobID, syncType, constants.Completed)
+		if status == job.Queued {
+			cfg.Logger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
+		}
+
+		syncResult := syncTask.GetResultObject()
+		_, err = waitForJobToComplete(jobID, syncType, syncResult, cfg)
+
+		if err != nil {
+			return err
+		}
+
+		err = syncTask.ProcessResults(syncResult)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func waitForJobToComplete(jobID string, syncType string, syncResult interface{}, cfg *target.BaseTargetConfig) (*job.JobStatus, error) {
+	status := job.Queued
+
+	i := 0
+
+	for status.IsRunning() {
+		time.Sleep(1 * time.Second)
+		updatedStatus, err := job.GetTaskStatus(cfg, jobID, syncType, syncResult)
+
+		if err != nil {
+			return nil, err
+		} else if updatedStatus == nil {
+			return nil, fmt.Errorf("received invalid job status")
+		}
+		status = *updatedStatus
+		cfg.Logger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, status.String()))
+		i += 1
+	}
+
+	return &status, nil
+}
+
+func updateJobStatus(status job.JobStatus, jobId, jobType string, cfg *target.BaseTargetConfig) {
+	job.AddJobEvent(cfg, jobId, jobType, status.String())
 }
 
 func runTargetSync(targetConfig *target.BaseTargetConfig) error {
@@ -171,27 +207,23 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 
 	jobID, _ := job.StartJob(targetConfig)
 
-	err = execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, "data source metadata", targetConfig.SkipDataSourceSync, syncDataSource, targetConfig, client)
+	err = dataSourceSync(targetConfig, jobID, client)
 	if err != nil {
-		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
-	err = execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, "identity store", targetConfig.SkipIdentityStoreSync, syncIdentityStore, targetConfig, client)
+	err = identityStoreSync(targetConfig, jobID, client)
 	if err != nil {
-		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
-	err = execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, "data access", targetConfig.SkipDataAccessSync, syncDataAccess, targetConfig, client)
+	err = dataAccessSync(targetConfig, jobID, client)
 	if err != nil {
-		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
-	err = execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, "data usage", targetConfig.SkipDataUsageSync, syncDataUsage, targetConfig, client)
+	err = dataUsageSync(targetConfig, jobID, client)
 	if err != nil {
-		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
@@ -202,252 +234,50 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	return nil
 }
 
-func syncDataSource(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
-	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
+func dataUsageSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
+	dataUsageSyncTask := &data_usage.DataUsageSync{TargetConfig: targetConfig, JobId: jobID, StatusUpdater: func(status job.JobStatus) { updateJobStatus(status, jobID, constants.DataUsageSync, targetConfig) }}
 
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
+	err := execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, "data usage", targetConfig.SkipDataUsageSync, dataUsageSyncTask, targetConfig, client)
 	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
-
-	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
-
-	if targetConfig.DeleteTempFiles {
-		defer os.RemoveAll(targetFile)
-	}
-
-	syncerConfig := dspc.DataSourceSyncConfig{
-		ConfigMap:    baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
-		TargetFile:   targetFile,
-		DataSourceId: targetConfig.DataSourceId,
-	}
-
-	dss, err := client.GetDataSourceSyncer()
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Info("Fetching data source metadata configuration")
-	md := dss.GetMetaData()
-
-	targetConfig.Logger.Info("Updating data source metadata configuration")
-	err = data_source.SetMetaData(targetConfig, md)
-
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Info("Gathering metadata from the data source")
-	res := dss.SyncDataSource(&syncerConfig)
-
-	if res.Error != nil {
-		return err
-	}
-
-	importerConfig := data_source.DataSourceImportConfig{
-		BaseTargetConfig: targetConfig,
-		TargetFile:       targetFile,
-		DeleteUntouched:  targetConfig.DeleteUntouched,
-		ReplaceTags:      targetConfig.ReplaceTags,
-	}
-	dsImporter := data_source.NewDataSourceImporter(&importerConfig)
-
-	targetConfig.Logger.Info("Importing metadata into Raito")
-	dsResult, err := dsImporter.TriggerImport()
-
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced data source. Added: %d - Removed: %d - Updated: %d", dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
 
 	return nil
 }
 
-func syncIdentityStore(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
-	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
+func dataAccessSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
+	dataAccessSyncTask := &access_provider.DataAccessSync{TargetConfig: targetConfig, JobId: jobID, StatusUpdater: func(status job.JobStatus) { updateJobStatus(status, jobID, constants.DataAccessSync, targetConfig) }}
 
-	userFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-user", "json"))
+	err := execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, "data access", targetConfig.SkipDataAccessSync, dataAccessSyncTask, targetConfig, client)
 	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
-
-	groupFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-group", "json"))
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as user target file", userFile))
-	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as groups target file", groupFile))
-
-	if targetConfig.DeleteTempFiles {
-		defer os.RemoveAll(userFile)
-		defer os.RemoveAll(groupFile)
-	}
-
-	syncerConfig := ispc.IdentityStoreSyncConfig{
-		ConfigMap: baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
-		UserFile:  userFile,
-		GroupFile: groupFile,
-	}
-
-	iss, err := client.GetIdentityStoreSyncer()
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Info("Gathering users and groups")
-	result := iss.SyncIdentityStore(&syncerConfig)
-
-	if result.Error != nil {
-		return *(result.Error)
-	}
-
-	importerConfig := identity_store.IdentityStoreImportConfig{
-		BaseTargetConfig: targetConfig,
-		UserFile:         userFile,
-		GroupFile:        groupFile,
-		DeleteUntouched:  targetConfig.DeleteUntouched,
-		ReplaceGroups:    targetConfig.ReplaceGroups,
-		ReplaceTags:      targetConfig.ReplaceTags,
-	}
-	isImporter := identity_store.NewIdentityStoreImporter(&importerConfig)
-
-	targetConfig.Logger.Info("Importing users and groups into Raito")
-	isResult, err := isImporter.TriggerImport()
-
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced users and groups. Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d", isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
 
 	return nil
 }
 
-func syncDataAccess(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
-	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
+func identityStoreSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
+	identityStoreSyncTask := &identity_store.IdentityStoreSync{TargetConfig: targetConfig, JobId: jobID, StatusUpdater: func(status job.JobStatus) { updateJobStatus(status, jobID, constants.IdentitySync, targetConfig) }}
 
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
+	err := execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, "identity store", targetConfig.SkipIdentityStoreSync, identityStoreSyncTask, targetConfig, client)
 	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
-
-	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
-
-	if targetConfig.DeleteTempFiles {
-		defer os.RemoveAll(targetFile)
-	}
-
-	config := data_access.AccessSyncConfig{
-		BaseTargetConfig: targetConfig,
-	}
-
-	targetConfig.Logger.Info("Fetching access providers for this data source from Raito")
-	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, accessRightsLastUpdated)
-
-	if err != nil {
-		return err
-	}
-
-	// TODO read this from the file
-	//accessRightsLastUpdated = dar.LastCalculated
-
-	syncerConfig := dapc.AccessSyncConfig{
-		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
-		Prefix:     "",
-		TargetFile: targetFile,
-		SourceFile: dar,
-	}
-
-	das, err := client.GetAccessSyncer()
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
-	res := das.SyncAccess(&syncerConfig)
-
-	if res.Error != nil {
-		return err
-	}
-
-	importerConfig := access_provider.AccessProviderImportConfig{
-		BaseTargetConfig: targetConfig,
-		TargetFile:       targetFile,
-		DeleteUntouched:  targetConfig.DeleteUntouched,
-	}
-	daImporter := access_provider.NewAccessProviderImporter(&importerConfig)
-
-	daResult, err := daImporter.TriggerImport()
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
 
 	return nil
 }
 
-func syncDataUsage(client plugin.PluginClient, targetConfig target.BaseTargetConfig) error {
-	cn := strings.Replace(targetConfig.ConnectorName, "/", "-", -1)
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-du", "json"))
+func dataSourceSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
+	dataSourceSyncTask := &data_source.DataSourceSync{TargetConfig: targetConfig, JobId: jobID, StatusUpdater: func(status job.JobStatus) { updateJobStatus(status, jobID, constants.DataSourceSync, targetConfig) }}
 
+	err := execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, "data source metadata", targetConfig.SkipDataSourceSync, dataSourceSyncTask, targetConfig, client)
 	if err != nil {
+		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
-
-	targetConfig.Logger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
-
-	if targetConfig.DeleteTempFiles {
-		defer os.RemoveAll(targetFile)
-	}
-
-	syncerConfig := dupc.DataUsageSyncConfig{
-		ConfigMap:  baseconfig.ConfigMap{Parameters: targetConfig.Parameters},
-		TargetFile: targetFile,
-	}
-
-	dus, err := client.GetDataUsageSyncer()
-	if err != nil {
-		return err
-	}
-
-	importerConfig := data_usage.DataUsageImportConfig{
-		BaseTargetConfig: targetConfig,
-		TargetFile:       targetFile,
-	}
-	duImporter := data_usage.NewDataUsageImporter(&importerConfig)
-
-	targetConfig.Logger.Info("Fetching last synchronization date")
-
-	lastUsed, err := duImporter.GetLastUsage()
-
-	if err != nil || lastUsed == nil {
-		hclog.L().Warn(fmt.Sprintf("error retrieving last usage for data source %s, last used: %s", importerConfig.DataSourceId, lastUsed))
-		timeValue := time.Unix(int64(0), 0)
-		lastUsed = &timeValue
-	}
-
-	lastUsedValue := *lastUsed
-	syncerConfig.ConfigMap.Parameters["lastUsed"] = lastUsedValue.Format(time.RFC3339)
-
-	targetConfig.Logger.Info("Fetching usage data from the data source")
-
-	res := dus.SyncDataUsage(&syncerConfig)
-	if res.Error != nil {
-		return err
-	}
-
-	targetConfig.Logger.Info("Importing usage data into Raito")
-
-	duResult, err := duImporter.TriggerImport()
-	if err != nil {
-		return err
-	}
-
-	targetConfig.Logger.Info(fmt.Sprintf("Successfully synced data usage. %d statements added, %d failed",
-		duResult.StatementsAdded, duResult.StatementsFailed))
 
 	return nil
 }

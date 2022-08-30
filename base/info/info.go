@@ -1,13 +1,13 @@
 package info
 
 import (
-	"github.com/raito-io/cli/common/api"
+	"github.com/raito-io/cli/base/util/plugin"
 )
 
 type InfoImpl struct {
-	Info api.PluginInfo
+	Info plugin.PluginInfo
 }
 
-func (i *InfoImpl) PluginInfo() api.PluginInfo {
+func (i *InfoImpl) PluginInfo() plugin.PluginInfo {
 	return i.Info
 }

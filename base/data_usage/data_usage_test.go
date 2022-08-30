@@ -2,6 +2,7 @@ package data_usage
 
 import (
 	"encoding/json"
+	"github.com/raito-io/cli/base/access_provider/exporter"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -9,9 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
-	"github.com/raito-io/cli/common/api/data_usage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +21,7 @@ func init() {
 func TestDataUsageFileCreator(t *testing.T) {
 	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile.Name())
-	config := data_usage.DataUsageSyncConfig{
+	config := DataUsageSyncConfig{
 		TargetFile: tempFile.Name(),
 	}
 	dufc, err := NewDataUsageFileCreator(&config)
@@ -33,8 +32,8 @@ func TestDataUsageFileCreator(t *testing.T) {
 
 	dus = append(dus, Statement{
 		ExternalId: "transaction1",
-		AccessedDataObjects: []access_provider.Access{
-			{DataObjectReference: &data_source.DataObjectReference{"schema1.table1.column1", "column"},
+		AccessedDataObjects: []exporter.WhatItem{
+			{DataObject: &data_source.DataObjectReference{"schema1.table1.column1", "column"},
 				Permissions: []string{"SELECT"}},
 		},
 		Success:   true,
@@ -48,12 +47,12 @@ func TestDataUsageFileCreator(t *testing.T) {
 	})
 	dus = append(dus, Statement{
 		ExternalId: "transaction2",
-		AccessedDataObjects: []access_provider.Access{
-			{DataObjectReference: &data_source.DataObjectReference{"schema1.table2.column3", "column"},
+		AccessedDataObjects: []exporter.WhatItem{
+			{DataObject: &data_source.DataObjectReference{"schema1.table2.column3", "column"},
 				Permissions: []string{"ALTER"}},
-			{DataObjectReference: &data_source.DataObjectReference{"schema1.table2.column5", "column"},
+			{DataObject: &data_source.DataObjectReference{"schema1.table2.column5", "column"},
 				Permissions: []string{"ALTER"}},
-			{DataObjectReference: &data_source.DataObjectReference{"schema1.table2.column7", "column"},
+			{DataObject: &data_source.DataObjectReference{"schema1.table2.column7", "column"},
 				Permissions: []string{"ALTER"}},
 		},
 		Success:   false,
@@ -66,8 +65,8 @@ func TestDataUsageFileCreator(t *testing.T) {
 	})
 	dus = append(dus, Statement{
 		ExternalId: "transaction3",
-		AccessedDataObjects: []access_provider.Access{
-			{DataObjectReference: &data_source.DataObjectReference{"schema3", "schema"},
+		AccessedDataObjects: []exporter.WhatItem{
+			{DataObject: &data_source.DataObjectReference{"schema3", "schema"},
 				Permissions: []string{"GRANT"}},
 		},
 		Success:   true,
@@ -97,7 +96,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 
 	assert.Equal(t, "transaction1", dusr[0].ExternalId)
 	assert.Equal(t, []string{"SELECT"}, dusr[0].AccessedDataObjects[0].Permissions)
-	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema1.table1.column1", Type: "column"}, dusr[0].AccessedDataObjects[0].DataObjectReference)
+	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema1.table1.column1", Type: "column"}, dusr[0].AccessedDataObjects[0].DataObject)
 	assert.Equal(t, true, dusr[0].Success)
 	assert.Equal(t, "Alice", dusr[0].User)
 	assert.Equal(t, int64(1654073198000), dusr[0].StartTime)
@@ -109,9 +108,9 @@ func TestDataUsageFileCreator(t *testing.T) {
 	assert.Equal(t, []string{"ALTER"}, dusr[1].AccessedDataObjects[0].Permissions)
 	assert.Equal(t, []string{"ALTER"}, dusr[1].AccessedDataObjects[1].Permissions)
 	assert.Equal(t, []string{"ALTER"}, dusr[1].AccessedDataObjects[2].Permissions)
-	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema1.table2.column3", Type: "column"}, dusr[1].AccessedDataObjects[0].DataObjectReference)
-	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema1.table2.column5", Type: "column"}, dusr[1].AccessedDataObjects[1].DataObjectReference)
-	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema1.table2.column7", Type: "column"}, dusr[1].AccessedDataObjects[2].DataObjectReference)
+	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema1.table2.column3", Type: "column"}, dusr[1].AccessedDataObjects[0].DataObject)
+	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema1.table2.column5", Type: "column"}, dusr[1].AccessedDataObjects[1].DataObject)
+	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema1.table2.column7", Type: "column"}, dusr[1].AccessedDataObjects[2].DataObject)
 	assert.Equal(t, false, dusr[1].Success)
 	assert.Equal(t, "Alice", dusr[1].User)
 	assert.Equal(t, int64(1654073199000), dusr[1].StartTime)
@@ -121,7 +120,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 
 	assert.Equal(t, "transaction3", dusr[2].ExternalId)
 	assert.Equal(t, []string{"GRANT"}, dusr[2].AccessedDataObjects[0].Permissions)
-	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema3", Type: "schema"}, dusr[2].AccessedDataObjects[0].DataObjectReference)
+	assert.Equal(t, &data_source.DataObjectReference{FullName: "schema3", Type: "schema"}, dusr[2].AccessedDataObjects[0].DataObject)
 	assert.Equal(t, true, dusr[2].Success)
 	assert.Equal(t, "Bob", dusr[2].User)
 	assert.Equal(t, int64(1654073200000), dusr[2].StartTime)

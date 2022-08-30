@@ -1,12 +1,11 @@
-// Package data_source contains the API for the data source syncer.
 package data_source
 
 import (
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/raito-io/cli/common/api"
-	"github.com/raito-io/cli/common/util/config"
+	"github.com/raito-io/cli/base/util/config"
+	error2 "github.com/raito-io/cli/base/util/error"
 )
 
 const (
@@ -46,7 +45,7 @@ type DataSourceSyncConfig struct {
 // DataSourceSyncResult represents the result from the data source sync process.
 // A potential error is also modeled in here so specific errors remain intact when passed over RPC.
 type DataSourceSyncResult struct {
-	Error *api.ErrorResult
+	Error *error2.ErrorResult
 }
 
 type DataObjectType struct {
@@ -103,7 +102,7 @@ func (g *dataSourceSyncerRPC) SyncDataSource(config *DataSourceSyncConfig) DataS
 
 	err := g.client.Call("Plugin.SyncDataSource", config, &resp)
 	if err != nil && resp.Error == nil {
-		resp.Error = api.ToErrorResult(err)
+		resp.Error = error2.ToErrorResult(err)
 	}
 
 	return resp

@@ -17,14 +17,12 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/raito-io/cli/common/api"
-	"github.com/raito-io/cli/common/api/data_access"
-	"github.com/raito-io/cli/common/api/data_source"
-	"github.com/raito-io/cli/common/api/data_usage"
-	"github.com/raito-io/cli/common/api/identity_store"
+	"github.com/raito-io/cli/base/access_provider"
+	"github.com/raito-io/cli/base/data_source"
+	"github.com/raito-io/cli/base/data_usage"
+	"github.com/raito-io/cli/base/identity_store"
+	plugin2 "github.com/raito-io/cli/base/util/plugin"
 )
-
-// TODO add cancel and async (done context) support
 
 const LATEST = "latest"
 
@@ -37,9 +35,9 @@ var globalPluginFolder string
 var pluginMap = map[string]plugin.Plugin{
 	"identityStoreSyncer": &identity_store.IdentityStoreSyncerPlugin{},
 	"dataSourceSyncer":    &data_source.DataSourceSyncerPlugin{},
-	"dataAccessSyncer":    &data_access.DataAccessSyncerPlugin{},
+	"accessSyncer":        &access_provider.AccessSyncerPlugin{},
 	"dataUsageSyncer":     &data_usage.DataUsageSyncerPlugin{},
-	"info":                &api.InfoPlugin{},
+	"info":                &plugin2.InfoPlugin{},
 }
 
 func init() {
@@ -60,9 +58,9 @@ type PluginClient interface {
 	Close()
 	GetDataSourceSyncer() (data_source.DataSourceSyncer, error)
 	GetIdentityStoreSyncer() (identity_store.IdentityStoreSyncer, error)
-	GetDataAccessSyncer() (data_access.DataAccessSyncer, error)
+	GetAccessSyncer() (access_provider.AccessSyncer, error)
 	GetDataUsageSyncer() (data_usage.DataUsageSyncer, error)
-	GetInfo() (api.Info, error)
+	GetInfo() (plugin2.Info, error)
 }
 
 func NewPluginClient(connector string, version string, logger hclog.Logger) (PluginClient, error) {
@@ -264,14 +262,14 @@ func getLatestVersionFromFiles(matches []string) (string, string) {
 }
 
 func getLatestVersion(matches []string) string {
-	versions := make([]api.Version, 0, len(matches))
+	versions := make([]plugin2.Version, 0, len(matches))
 
 	for _, match := range matches {
 		if match == "latest" {
 			return match
 		}
 
-		versions = append(versions, api.ParseVersion(match))
+		versions = append(versions, plugin2.ParseVersion(match))
 	}
 
 	sort.SliceStable(versions, func(i, j int) bool {
@@ -328,7 +326,7 @@ func parsePluginRequest(connector string, version string) (*pluginRequest, error
 
 	version = strings.ToLower(version)
 	if version != LATEST {
-		if !versionRegexp.MatchString(version) {
+		if !validateVersion(version) {
 			return nil, errors.New("the connector version should either be empty, 'latest' or in the format X.Y.Z")
 		}
 	}
@@ -342,6 +340,10 @@ func parsePluginRequest(connector string, version string) (*pluginRequest, error
 
 func validateName(name string) bool {
 	return nameRegexp.MatchString(name)
+}
+
+func validateVersion(version string) bool {
+	return versionRegexp.MatchString(version)
 }
 
 type pluginClientImpl struct {
@@ -378,16 +380,16 @@ func (c pluginClientImpl) GetIdentityStoreSyncer() (identity_store.IdentityStore
 	}
 }
 
-func (c pluginClientImpl) GetDataAccessSyncer() (data_access.DataAccessSyncer, error) {
-	raw, err := c.getPlugin(data_access.DataAccessSyncerName)
+func (c pluginClientImpl) GetAccessSyncer() (access_provider.AccessSyncer, error) {
+	raw, err := c.getPlugin(access_provider.AccessSyncerName)
 	if err != nil {
 		return nil, err
 	}
 
-	if syncer, ok := raw.(data_access.DataAccessSyncer); ok {
+	if syncer, ok := raw.(access_provider.AccessSyncer); ok {
 		return syncer, nil
 	} else {
-		return nil, fmt.Errorf("found plugin doesn't correctly implement the DataAccessSyncer interface")
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the AccessSyncer interface")
 	}
 }
 
@@ -404,13 +406,13 @@ func (c pluginClientImpl) GetDataUsageSyncer() (data_usage.DataUsageSyncer, erro
 	}
 }
 
-func (c pluginClientImpl) GetInfo() (api.Info, error) {
-	raw, err := c.getPlugin(api.InfoName)
+func (c pluginClientImpl) GetInfo() (plugin2.Info, error) {
+	raw, err := c.getPlugin(plugin2.InfoName)
 	if err != nil {
 		return nil, err
 	}
 
-	if info, ok := raw.(api.Info); ok {
+	if info, ok := raw.(plugin2.Info); ok {
 		return info, nil
 	} else {
 		return nil, fmt.Errorf("found plugin doesn't correctly implement the Info interface")

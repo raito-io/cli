@@ -3,15 +3,12 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
-	"io"
-	"os"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	dapc "github.com/raito-io/cli/common/api/data_access"
-	"github.com/raito-io/cli/common/util/config"
+	"github.com/raito-io/cli/base/access_provider"
+	"github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/raito-io/cli/internal/data_access"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/spf13/cobra"
@@ -70,40 +67,19 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 	}
 	defer client.Close()
 
-	config := dapc.DataAccessSyncConfig{
-		ConfigMap: config.ConfigMap{Parameters: targetConfig.Parameters},
-		Prefix:    "R",
-		RunImport: false,
-	}
-
-	af, err := os.Open(accessFile)
+	as, err := client.GetAccessSyncer()
 	if err != nil {
-		targetConfig.Logger.Error(fmt.Sprintf("Error while opening data access file %q: %s", accessFile, err.Error()))
+		targetConfig.Logger.Error(fmt.Sprintf("The plugin (%s) does not implement the AccessSyncer interface", targetConfig.ConnectorName))
 		return err
 	}
 
-	buf, err := io.ReadAll(af)
-	if err != nil {
-		targetConfig.Logger.Error(fmt.Sprintf("Error while reading data access file %q: %s", accessFile, err.Error()))
-		return err
-	}
-
-	dar, err := data_access.ParseDataAccess(buf)
-	if err != nil {
-		targetConfig.Logger.Error(fmt.Sprintf("Error while parsing data access file %q: %s", accessFile, err.Error()))
-		return err
-	}
-	config.DataAccess = dar
-
-	das, err := client.GetDataAccessSyncer()
-	if err != nil {
-		targetConfig.Logger.Error(fmt.Sprintf("The plugin (%s) does not implement the DataAccessSyncer interface", targetConfig.ConnectorName))
-		return err
-	}
-
-	res := das.SyncDataAccess(&config)
+	res := as.SyncAccess(&access_provider.AccessSyncConfig{
+		ConfigMap:  config.ConfigMap{Parameters: targetConfig.Parameters},
+		Prefix:     "R",
+		SourceFile: accessFile,
+	})
 	if res.Error != nil {
-		target.HandleTargetError(res.Error, targetConfig, "sychronizing data access information to the data source")
+		target.HandleTargetError(res.Error, targetConfig, "synchronizing access information to the data source")
 		return err
 	}
 

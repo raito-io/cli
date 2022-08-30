@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/raito-io/cli/common/api/data_source"
+	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target"
 )

@@ -1,10 +1,10 @@
 package base
 
 import (
-	"github.com/raito-io/cli/common/api"
-	"github.com/raito-io/cli/common/api/data_access"
-	"github.com/raito-io/cli/common/api/data_source"
-	"github.com/raito-io/cli/common/api/identity_store"
+	"github.com/raito-io/cli/base/access_provider"
+	"github.com/raito-io/cli/base/data_source"
+	"github.com/raito-io/cli/base/identity_store"
+	"github.com/raito-io/cli/base/util/plugin"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -34,16 +34,16 @@ func TestRegisterDataSourceService(t *testing.T) {
 	assert.NotNil(t, pluginMap[data_source.DataSourceSyncerName])
 }
 
-func TestRegisterDataAccessService(t *testing.T) {
+func TestRegisterAccessSyncService(t *testing.T) {
 	Logger()
-	dasi := dataAccessPlugin{}
+	dasi := accessSyncPlugin{}
 	isi := infoPlugin{}
 	pluginMap, err := buildPluginMap(&dasi, &isi)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
 	assert.Equal(t, 2, len(pluginMap))
-	assert.NotNil(t, pluginMap[data_access.DataAccessSyncerName])
+	assert.NotNil(t, pluginMap[access_provider.AccessSyncerName])
 }
 
 func TestRegisterComboService(t *testing.T) {
@@ -55,7 +55,7 @@ func TestRegisterComboService(t *testing.T) {
 	assert.NotNil(t, pluginMap)
 	assert.Equal(t, 3, len(pluginMap))
 	assert.NotNil(t, pluginMap[data_source.DataSourceSyncerName])
-	assert.NotNil(t, pluginMap[api.InfoName])
+	assert.NotNil(t, pluginMap[plugin.InfoName])
 	assert.NotNil(t, pluginMap[identity_store.IdentityStoreSyncerName])
 }
 
@@ -81,8 +81,8 @@ func TestRegisterDoubleDataSourceService(t *testing.T) {
 
 func TestRegisterDoubleDataAccessService(t *testing.T) {
 	Logger()
-	das1 := dataAccessPlugin{}
-	das2 := dataAccessPlugin{}
+	das1 := accessSyncPlugin{}
+	das2 := accessSyncPlugin{}
 	isi := infoPlugin{}
 	pluginMap, err := buildPluginMap(&das1, &das2, &isi)
 
@@ -101,7 +101,7 @@ func TestRegisterNoServices(t *testing.T) {
 
 func TestRegisterIgnoreNoService(t *testing.T) {
 	Logger()
-	das1 := dataAccessPlugin{}
+	das1 := accessSyncPlugin{}
 	a := another{}
 	isi := infoPlugin{}
 	pluginMap, err := buildPluginMap(&a, &das1, &isi)
@@ -113,7 +113,7 @@ func TestRegisterIgnoreNoService(t *testing.T) {
 
 func TestRegisterNoInfoPlugin(t *testing.T) {
 	Logger()
-	das1 := dataAccessPlugin{}
+	das1 := accessSyncPlugin{}
 	pluginMap, err := buildPluginMap(&das1)
 
 	assert.NotNil(t, err)
@@ -136,8 +136,8 @@ func (s *combo) GetMetaData() data_source.MetaData {
 	return data_source.MetaData{}
 }
 
-func (s *combo) PluginInfo() api.PluginInfo {
-	return api.PluginInfo{}
+func (s *combo) PluginInfo() plugin.PluginInfo {
+	return plugin.PluginInfo{}
 }
 
 type identityStoryPlugin struct{}
@@ -156,14 +156,14 @@ func (s *dataSourcePlugin) GetMetaData() data_source.MetaData {
 	return data_source.MetaData{}
 }
 
-type dataAccessPlugin struct{}
+type accessSyncPlugin struct{}
 
-func (s *dataAccessPlugin) SyncDataAccess(config *data_access.DataAccessSyncConfig) data_access.DataAccessSyncResult {
-	return data_access.DataAccessSyncResult{}
+func (s *accessSyncPlugin) SyncAccess(config *access_provider.AccessSyncConfig) access_provider.AccessSyncResult {
+	return access_provider.AccessSyncResult{}
 }
 
 type infoPlugin struct{}
 
-func (s *infoPlugin) PluginInfo() api.PluginInfo {
-	return api.PluginInfo{}
+func (s *infoPlugin) PluginInfo() plugin.PluginInfo {
+	return plugin.PluginInfo{}
 }

@@ -148,7 +148,7 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 		}
 
 		if status == job.Queued {
-			cfg.Logger.Info(fmt.Sprintf("Wait for server to start processing %s...", syncTypeLabel))
+			cfg.Logger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
 		}
 
 		syncResult := syncTask.GetResultObject()
@@ -179,7 +179,7 @@ func waitForJobToComplete(jobID string, syncType string, syncResult interface{},
 		if err != nil {
 			return nil, err
 		} else if updatedStatus == nil {
-			return nil, fmt.Errorf("received in valid job status")
+			return nil, fmt.Errorf("received invalid job status")
 		}
 		status = *updatedStatus
 		cfg.Logger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, status.String()))

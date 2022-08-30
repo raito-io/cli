@@ -2,8 +2,9 @@ package importer
 
 import (
 	"encoding/json"
-	"github.com/raito-io/cli/base/data_source"
 	"strings"
+
+	"github.com/raito-io/cli/base/data_source"
 )
 
 type AccessProviderImport struct {

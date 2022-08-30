@@ -10,8 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-
-	"github.com/raito-io/cli/common/api/identity_store"
 )
 
 // Group represents a user group in the format that is suitable to be imported into a Raito identity store.
@@ -45,7 +43,7 @@ type IdentityStoreFileCreator interface {
 }
 
 type identityStoreImporter struct {
-	config *identity_store.IdentityStoreSyncConfig
+	config *IdentityStoreSyncConfig
 
 	usersFile  *os.File
 	groupsFile *os.File
@@ -55,7 +53,7 @@ type identityStoreImporter struct {
 
 // NewIdentityStoreFileCreator creates a new IdentityStoreFileCreator based on the configuration coming from
 // the Raito CLI.
-func NewIdentityStoreFileCreator(config *identity_store.IdentityStoreSyncConfig) (IdentityStoreFileCreator, error) {
+func NewIdentityStoreFileCreator(config *IdentityStoreSyncConfig) (IdentityStoreFileCreator, error) {
 	isI := identityStoreImporter{
 		config: config,
 	}

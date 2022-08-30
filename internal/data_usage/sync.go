@@ -9,8 +9,8 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 
-	dupc "github.com/raito-io/cli/common/api/data_usage"
-	baseconfig "github.com/raito-io/cli/common/util/config"
+	dupc "github.com/raito-io/cli/base/data_usage"
+	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"

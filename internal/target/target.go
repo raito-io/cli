@@ -7,8 +7,8 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/jinzhu/copier"
-	"github.com/raito-io/cli/common/api"
-	"github.com/raito-io/cli/common/util/config"
+	"github.com/raito-io/cli/base/util/config"
+	error2 "github.com/raito-io/cli/base/util/error"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
@@ -48,8 +48,8 @@ func RunTargets(baseLogger hclog.Logger, otherArgs []string, runTarget func(tCon
 }
 
 func HandleTargetError(err error, config *BaseTargetConfig, during string) {
-	if errorResult, ok := err.(api.ErrorResult); ok {
-		if errorResult.ErrorCode == api.BadInputParameterError || errorResult.ErrorCode == api.MissingInputParameterError {
+	if errorResult, ok := err.(error2.ErrorResult); ok {
+		if errorResult.ErrorCode == error2.BadInputParameterError || errorResult.ErrorCode == error2.MissingInputParameterError {
 			config.Logger.Error(fmt.Sprintf("Error during %s: %s. Execute command 'info <connector>' to print out the expected parameters for the connector.", during, errorResult.ErrorMessage))
 			return
 		}

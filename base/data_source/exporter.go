@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/raito-io/cli/common/api/data_source"
 )
 
 // DataObject represents a data object in the format that is suitable to be imported into a Raito data source.
@@ -28,8 +26,8 @@ type DataObject struct {
 
 // DataObjectReference represents the reference to a DataObject suitable for e.g. defining the What in Access Provider import
 type DataObjectReference struct {
-	FullName string `json:"fullName"`
-	Type     string `json:"type"`
+	FullName string `json:"fullName" yaml:"fullName"`
+	Type     string `json:"type" yaml:"type"`
 }
 
 // DataSourceFileCreator describes the interface for easily creating the data object import files
@@ -43,7 +41,7 @@ type DataSourceFileCreator interface {
 }
 
 type dataSourceFileCreator struct {
-	config *data_source.DataSourceSyncConfig
+	config *DataSourceSyncConfig
 
 	targetFile        *os.File
 	dataObjectCount   int
@@ -52,7 +50,7 @@ type dataSourceFileCreator struct {
 
 // NewDataSourceFileCreator creates a new DataSourceFileCreator based on the configuration coming from
 // the Raito CLI.
-func NewDataSourceFileCreator(config *data_source.DataSourceSyncConfig) (DataSourceFileCreator, error) {
+func NewDataSourceFileCreator(config *DataSourceSyncConfig) (DataSourceFileCreator, error) {
 	dsI := dataSourceFileCreator{
 		config:            config,
 		dataSourceDetails: newDataSourceDetails(config.DataSourceId),

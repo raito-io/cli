@@ -47,3 +47,22 @@ func SliceDifference(a, b []interface{}) []interface{} {
 
 	return diff
 }
+
+// StringSliceMerge merges multiple slices of strings together and removes duplicates
+func StringSliceMerge(slices ...[]string) []string {
+	uniqueMap := map[string]bool{}
+
+	for _, s := range slices {
+		for _, v := range s {
+			uniqueMap[v] = true
+		}
+	}
+
+	result := make([]string, 0, len(uniqueMap))
+
+	for key := range uniqueMap {
+		result = append(result, key)
+	}
+
+	return result
+}

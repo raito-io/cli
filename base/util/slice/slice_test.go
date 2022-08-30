@@ -71,6 +71,17 @@ func TestSliceDifference(t *testing.T) {
 	assert.Equal(t, 1, len(diff))
 }
 
+func TestStringSliceMerge(t *testing.T) {
+	merged := StringSliceMerge([]string{"aaa", "bbb"}, []string{"ccc"})
+	assert.Equal(t, 3, len(merged))
+
+	merged = StringSliceMerge([]string{"aaa", "bbb"}, []string{"bbb"})
+	assert.Equal(t, 2, len(merged))
+
+	merged = StringSliceMerge([]string{"aaa", "bbb"}, nil)
+	assert.Equal(t, 2, len(merged))
+}
+
 type G struct {
 	F1 string
 	F2 string

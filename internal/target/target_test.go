@@ -3,13 +3,13 @@ package target
 import (
 	"bytes"
 	"fmt"
+	config2 "github.com/raito-io/cli/base/util/config"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/jinzhu/copier"
-	config2 "github.com/raito-io/cli/common/util/config"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"

@@ -3,7 +3,7 @@ package url
 import (
 	"strings"
 
-	"github.com/raito-io/cli/common/util/url"
+	"github.com/raito-io/cli/base/util/url"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
 )

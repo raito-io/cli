@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	ispc "github.com/raito-io/cli/common/api/identity_store"
-	baseconfig "github.com/raito-io/cli/common/util/config"
+	ispc "github.com/raito-io/cli/base/identity_store"
+	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"

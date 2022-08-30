@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/raito-io/cli/common/api/data_source"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +19,7 @@ func init() {
 func TestDataSourceFileCreator(t *testing.T) {
 	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile.Name())
-	config := data_source.DataSourceSyncConfig{
+	config := DataSourceSyncConfig{
 		TargetFile:   tempFile.Name(),
 		DataSourceId: "myDataSource",
 	}
@@ -110,7 +109,7 @@ func TestDataSourceFileCreator(t *testing.T) {
 func TestDataSourceDetails(t *testing.T) {
 	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile.Name())
-	config := data_source.DataSourceSyncConfig{
+	config := DataSourceSyncConfig{
 		TargetFile:   tempFile.Name(),
 		DataSourceId: "myDataSource",
 	}

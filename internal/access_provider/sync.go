@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	dapc "github.com/raito-io/cli/common/api/data_access"
-	baseconfig "github.com/raito-io/cli/common/util/config"
+	dapc "github.com/raito-io/cli/base/access_provider"
+	baseconfig "github.com/raito-io/cli/base/util/config"
+
 	"github.com/raito-io/cli/internal/data_access"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
@@ -43,40 +44,34 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 		defer os.RemoveAll(targetFile)
 	}
 
-	config := data_access.DataAccessConfig{
+	config := data_access.AccessSyncConfig{
 		BaseTargetConfig: *s.TargetConfig,
 	}
 
-	s.StatusUpdater(job.DataRetrieve)
 	s.TargetConfig.Logger.Info("Fetching access providers for this data source from Raito")
-	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, accessRightsLastUpdated, true)
+	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, accessRightsLastUpdated)
 
 	if err != nil {
 		return job.Failed, err
 	}
 
-	if dar == nil {
-		s.TargetConfig.Logger.Info("No changes in the access providers recorded since previous sync. Skipping.", "datasource", config.DataSourceId)
-		return job.Failed, nil
-	}
+	// TODO read this from the file
+	//accessRightsLastUpdated = dar.LastCalculated
 
-	accessRightsLastUpdated = dar.LastCalculated
-
-	syncerConfig := dapc.DataAccessSyncConfig{
+	syncerConfig := dapc.AccessSyncConfig{
 		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		Prefix:     "",
 		TargetFile: targetFile,
-		RunImport:  true, // signal syncer to also run raito import
+		SourceFile: dar,
 	}
-	syncerConfig.DataAccess = dar
 
-	das, err := client.GetDataAccessSyncer()
+	das, err := client.GetAccessSyncer()
 	if err != nil {
 		return job.Failed, err
 	}
 
 	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
-	res := das.SyncDataAccess(&syncerConfig)
+	res := das.SyncAccess(&syncerConfig)
 
 	if res.Error != nil {
 		return job.Failed, err
@@ -87,6 +82,7 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 		TargetFile:       targetFile,
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
 	}
+
 	daImporter := NewAccessProviderImporter(&importerConfig, s.StatusUpdater)
 
 	status, err := daImporter.TriggerImport(s.JobId)

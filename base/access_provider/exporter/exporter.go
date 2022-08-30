@@ -1,10 +1,10 @@
-// Package access_provider provides the tooling to build the Raito access provider import file.
+// Package exporter provides the tooling to build the file to export access providers from the data source to be imported into Raito.
 // Simply use the NewAccessProviderFileCreator function by passing in the config coming from the CLI
 // to create the necessary file(s).
 // The returned AccessProviderFileCreator can then be used (using the AddAccessProvider function)
 // to write AccessProvider to the file.
 // Make sure to call the Close function on the creator at the end (tip: use defer).
-package access_provider
+package exporter
 
 import (
 	"bytes"
@@ -12,48 +12,19 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/raito-io/cli/base/data_source"
-	"github.com/raito-io/cli/common/api/data_access"
-)
-
-// AccessProvider describes data access in the format that is suitable to be imported into Raito.x
-type AccessProvider struct {
-	ExternalId        string   `json:"externalId"`
-	NotInternalizable bool     `json:"notInternalizable"`
-	Name              string   `json:"name"`
-	NamingHint        string   `json:"namingHint"`
-	Users             []string `json:"users"`
-	Groups            []string `json:"groups"`
-	AccessObjects     []Access `json:"accessObjects"`
-	Action            Action   `json:"action"`
-	Policy            string   `json:"policy"`
-}
-
-type Access struct {
-	DataObjectReference *data_source.DataObjectReference `json:"dataObjectReference"`
-	Permissions         []string                         `json:"permissions"`
-}
-
-type Action int
-
-const (
-	Promise Action = iota
-	Grant
-	Deny
-	Mask
-	Filtered
+	"github.com/raito-io/cli/base/access_provider"
 )
 
 // AccessProviderFileCreator describes the interface for easily creating the access object import files
 // to be imported by the Raito CLI.
 type AccessProviderFileCreator interface {
-	AddAccessProvider(dataAccessList []AccessProvider) error
+	AddAccessProviders(dataAccessList []AccessProvider) error
 	Close()
 	GetAccessProviderCount() int
 }
 
 type accessProviderFileCreator struct {
-	config *data_access.DataAccessSyncConfig
+	config *access_provider.AccessSyncConfig
 
 	targetFile      *os.File
 	dataAccessCount int
@@ -61,7 +32,7 @@ type accessProviderFileCreator struct {
 
 // NewAccessProviderFileCreator creates a new AccessProviderFileCreator based on the configuration coming from
 // the Raito CLI.
-func NewAccessProviderFileCreator(config *data_access.DataAccessSyncConfig) (AccessProviderFileCreator, error) {
+func NewAccessProviderFileCreator(config *access_provider.AccessSyncConfig) (AccessProviderFileCreator, error) {
 	dsI := accessProviderFileCreator{
 		config: config,
 	}
@@ -87,15 +58,15 @@ func (d *accessProviderFileCreator) Close() {
 	d.targetFile.Close()
 }
 
-// AddDataAccess adds the slice of data access elements to the import file.
+// AddAccessProviders adds the slice of data access elements to the import file.
 // It returns an error when writing one of the objects fails (it will not process the other data objects after that).
 // It returns nil if everything went well.
-func (d *accessProviderFileCreator) AddAccessProvider(dataAccessList []AccessProvider) error {
+func (d *accessProviderFileCreator) AddAccessProviders(dataAccessList []AccessProvider) error {
 	if len(dataAccessList) == 0 {
 		return nil
 	}
 
-	for _, da := range dataAccessList { //nolint
+	for _, da := range dataAccessList {
 		var err error
 
 		if d.dataAccessCount > 0 {

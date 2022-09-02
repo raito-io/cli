@@ -77,7 +77,7 @@ func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.Job
           }
         }) {
           subtask {
-            subTask
+            subtaskId
             status            
           }
          }
@@ -93,7 +93,7 @@ func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.Job
 	}
 
 	retStatus := res.Response.Subtask.Status
-	subtaskId := res.Response.Subtask.Subtask
+	subtaskId := res.Response.Subtask.SubtaskId
 
 	d.log.Info(fmt.Sprintf("Done submitting import in %s", time.Since(start).Round(time.Millisecond)))
 
@@ -101,8 +101,8 @@ func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.Job
 }
 
 type subtaskResponse struct {
-	Status  job.JobStatus `json:"status"`
-	Subtask string        `json:"subTask"`
+	Status    job.JobStatus `json:"status"`
+	SubtaskId string        `json:"subtaskId"`
 }
 
 type QueryResponse struct {

@@ -171,14 +171,13 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 			job.AddTaskEvent(cfg, jobID, syncType, job.Failed)
 			return err
 		}
+
+		job.AddTaskEvent(cfg, jobID, syncType, job.Completed)
 	}
-
-	job.AddTaskEvent(cfg, jobID, syncType, job.Completed)
-
 	return nil
 }
 
-func waitForJobToComplete(jobID string, syncType string, subTask string, syncResult interface{}, cfg *target.BaseTargetConfig, currentStatus job.JobStatus) (*job.Subtask, error) {
+func waitForJobToComplete(jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *target.BaseTargetConfig, currentStatus job.JobStatus) (*job.Subtask, error) {
 	i := 0
 
 	var subtask *job.Subtask
@@ -189,7 +188,7 @@ func waitForJobToComplete(jobID string, syncType string, subTask string, syncRes
 			time.Sleep(1 * time.Second)
 		}
 
-		subtask, err = job.GetSubtask(cfg, jobID, syncType, subTask, syncResult)
+		subtask, err = job.GetSubtask(cfg, jobID, syncType, subtaskId, syncResult)
 
 		if err != nil {
 			return nil, err

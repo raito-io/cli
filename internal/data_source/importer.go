@@ -80,7 +80,7 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, str
         }) {
           subtask {
             status
-            subTask
+            subtaskId
           }
         }
     }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, d.config.ReplaceTags, fileKey)
@@ -98,12 +98,12 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, str
 
 	subtask := res.Response.Subtask
 
-	return subtask.Status, subtask.Subtask, nil
+	return subtask.Status, subtask.SubtaskId, nil
 }
 
 type subtaskResponse struct {
-	Status  job.JobStatus `json:"status"`
-	Subtask string        `json:"subTask"`
+	Status    job.JobStatus `json:"status"`
+	SubtaskId string        `json:"subtaskId"`
 }
 
 type QueryResponse struct {

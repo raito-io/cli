@@ -56,7 +56,7 @@ func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status Jo
 
 func AddSubtaskEvent(cfg *target.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus) {
 	gqlQuery := fmt.Sprintf(`{ "query":"mutation addSubtaskEvent {
-        addSubtaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", jobType: \"%s\", subTask: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
+        addSubtaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", jobType: \"%s\", subtaskId: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
 		jobID, cfg.DataSourceId, jobType, subtask, status.String(), time.Now().Format(time.RFC3339))
 
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
@@ -67,12 +67,12 @@ func AddSubtaskEvent(cfg *target.BaseTargetConfig, jobID, jobType, subtask strin
 	}
 }
 
-func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subTaskId string, responseResult interface{}) (*Subtask, error) {
+func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, responseResult interface{}) (*Subtask, error) {
 	gqlQuery := fmt.Sprintf(`{ "query": "query getJobSubtask {
-        jobSubtask(jobId: \"%s\", jobType: \"%s\", subTask: \"%s\") {
+        jobSubtask(jobId: \"%s\", jobType: \"%s\", subtaskId: \"%s\") {
             jobId
             jobType
-            subTask
+            subtaskId
             status
             lastUpdate
             errors
@@ -108,7 +108,7 @@ func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subTaskId string, 
                   warnings
               }
             }
-        }}"}`, jobID, jobType, subTaskId)
+        }}"}`, jobID, jobType, subtaskId)
 
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
@@ -130,6 +130,7 @@ type Response struct {
 type Subtask struct {
 	JobID      string      `json:"jobId"`
 	JobType    string      `json:"jobType"`
+	SubtaskId  string      `json:"subtaskId"`
 	Status     JobStatus   `json:"status"`
 	LastUpdate time.Time   `json:"lastUpdate"`
 	Result     interface{} `json:"result"`

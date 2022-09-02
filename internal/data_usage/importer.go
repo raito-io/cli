@@ -79,7 +79,7 @@ func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatu
         }
       }) {
         subtask {
-            subTask
+            subtaskId
             status            
           }
       }
@@ -93,7 +93,7 @@ func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatu
 		return job.Failed, "", fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
 	}
 
-	return res.Response.Subtask.Status, res.Response.Subtask.Subtask, nil
+	return res.Response.Subtask.Status, res.Response.Subtask.SubtaskId, nil
 }
 
 func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
@@ -119,8 +119,8 @@ func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
 }
 
 type subtaskResponse struct {
-	Status  job.JobStatus `json:"status"`
-	Subtask string        `json:"subTask"`
+	Status    job.JobStatus `json:"status"`
+	SubtaskId string        `json:"subtaskId"`
 }
 
 type QueryResponse struct {

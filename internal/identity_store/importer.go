@@ -89,7 +89,7 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
         }) {
           subtask {
             status
-            subTask
+            subtaskId
           }
         }
     }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, i.config.ReplaceTags, userKey, groupKey)
@@ -107,12 +107,12 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
 
 	i.log.Info(fmt.Sprintf("Executed import request in %s", time.Since(start).Round(time.Millisecond)))
 
-	return subtask.Status, subtask.Subtask, nil
+	return subtask.Status, subtask.SubtaskId, nil
 }
 
 type subtaskResponse struct {
-	Status  job.JobStatus `json:"status"`
-	Subtask string        `json:"subTask"`
+	Status    job.JobStatus `json:"status"`
+	SubtaskId string        `json:"subtaskId"`
 }
 
 type QueryResponse struct {

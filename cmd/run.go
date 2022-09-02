@@ -174,6 +174,7 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 
 		job.AddTaskEvent(cfg, jobID, syncType, job.Completed)
 	}
+
 	return nil
 }
 

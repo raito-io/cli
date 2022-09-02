@@ -23,7 +23,7 @@ type DataSourceImportConfig struct {
 }
 
 type DataSourceImporter interface {
-	TriggerImport(jobId string) (job.JobStatus, error)
+	TriggerImport(jobId string) (job.JobStatus, string, error)
 }
 
 type dataSourceImporter struct {
@@ -39,7 +39,7 @@ func NewDataSourceImporter(config *DataSourceImportConfig, statusUpdater func(st
 	return &dsI
 }
 
-func (d *dataSourceImporter) TriggerImport(jobId string) (job.JobStatus, error) {
+func (d *dataSourceImporter) TriggerImport(jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
@@ -47,7 +47,7 @@ func (d *dataSourceImporter) TriggerImport(jobId string) (job.JobStatus, error) 
 	} else {
 		key, err := d.upload()
 		if err != nil {
-			return job.Failed, err
+			return job.Failed, "", err
 		}
 
 		return d.doImport(jobId, key)
@@ -65,7 +65,7 @@ func (d *dataSourceImporter) upload() (string, error) {
 	return key, nil
 }
 
-func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, error) {
+func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, string, error) {
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataSourceRequest", "variables":{}, "query": "mutation ImportDataSourceRequest {
@@ -78,7 +78,10 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, err
             fileKey: \"%s\"
           }
         }) {
-          jobStatus
+          subtask {
+            status
+            subTask
+          }
         }
     }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, d.config.ReplaceTags, fileKey)
 
@@ -88,19 +91,25 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, err
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
 
 	if err != nil {
-		return job.Failed, fmt.Errorf("error while executing import: %s", err.Error())
+		return job.Failed, "", fmt.Errorf("error while executing import: %s", err.Error())
 	}
 
-	ret := res.Response.Status
+	d.log.Info(fmt.Sprintf("Submitted import in %s", time.Since(start).Round(time.Millisecond)))
 
-	d.log.Info(fmt.Sprintf("Done executing import in %s", time.Since(start).Round(time.Millisecond)))
+	subtask := res.Response.Subtask
 
-	return ret, nil
+	return subtask.Status, subtask.Subtask, nil
+}
+
+type subtaskResponse struct {
+	Status  job.JobStatus `json:"status"`
+	Subtask string        `json:"subTask"`
 }
 
 type QueryResponse struct {
-	Status job.JobStatus `json:"jobStatus"`
+	Subtask subtaskResponse `json:"subtask"`
 }
+
 type Response struct {
 	Response QueryResponse `json:"importDataSourceRequest"`
 }

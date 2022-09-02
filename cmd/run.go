@@ -22,7 +22,7 @@ import (
 )
 
 type task interface {
-	StartSyncAndQueueJob(c plugin.PluginClient) (job.JobStatus, error)
+	StartSyncAndQueueJob(c plugin.PluginClient) (job.JobStatus, string, error)
 	ProcessResults(results interface{}) error
 	GetResultObject() interface{}
 }
@@ -124,10 +124,10 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 	syncTask task, cfg *target.BaseTargetConfig, c plugin.PluginClient) error {
 	switch {
 	case skipSync:
-		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
+		job.AddTaskEvent(cfg, jobID, syncType, job.Skipped)
 		cfg.Logger.Info("Skipping sync of " + syncTypeLabel)
 	case targetID == "":
-		job.AddJobEvent(cfg, jobID, syncType, constants.Skipped)
+		job.AddTaskEvent(cfg, jobID, syncType, job.Skipped)
 
 		idField := "data-source-id"
 		if syncType == constants.IdentitySync {
@@ -137,63 +137,83 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 		cfg.Logger.Info("No " + idField + " argument found. Skipping syncing of " + syncTypeLabel)
 	default:
 		cfg.Logger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
-		job.AddJobEvent(cfg, jobID, syncType, constants.Started)
 
-		status, err := syncTask.StartSyncAndQueueJob(c)
+		job.AddTaskEvent(cfg, jobID, syncType, job.Started)
+
+		status, subtaskId, err := syncTask.StartSyncAndQueueJob(c)
 		if err != nil {
 			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
-			job.AddJobEvent(cfg, jobID, syncType, constants.Failed)
+			job.AddTaskEvent(cfg, jobID, syncType, job.Failed)
 
 			return err
 		}
+
+		job.AddTaskEvent(cfg, jobID, syncType, status)
 
 		if status == job.Queued {
 			cfg.Logger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
 		}
 
 		syncResult := syncTask.GetResultObject()
-		_, err = waitForJobToComplete(jobID, syncType, syncResult, cfg)
+		subtask, err := waitForJobToComplete(jobID, syncType, subtaskId, syncResult, cfg, status)
 
 		if err != nil {
 			return err
+		}
+
+		if subtask.Status == job.Failed {
+			job.AddTaskEvent(cfg, jobID, syncType, job.Failed)
+			return fmt.Errorf("%s", strings.Join(subtask.Errors, ", "))
 		}
 
 		err = syncTask.ProcessResults(syncResult)
 		if err != nil {
+			job.AddTaskEvent(cfg, jobID, syncType, job.Failed)
 			return err
 		}
 	}
 
+	job.AddTaskEvent(cfg, jobID, syncType, job.Completed)
+
 	return nil
 }
 
-func waitForJobToComplete(jobID string, syncType string, syncResult interface{}, cfg *target.BaseTargetConfig) (*job.JobStatus, error) {
-	status := job.Queued
-
+func waitForJobToComplete(jobID string, syncType string, subTask string, syncResult interface{}, cfg *target.BaseTargetConfig, currentStatus job.JobStatus) (*job.Subtask, error) {
 	i := 0
 
-	for status.IsRunning() {
-		time.Sleep(1 * time.Second)
-		updatedStatus, err := job.GetTaskStatus(cfg, jobID, syncType, syncResult)
+	var subtask *job.Subtask
+	var err error
+
+	for currentStatus.IsRunning() || i == 0 {
+		if currentStatus.IsRunning() {
+			time.Sleep(1 * time.Second)
+		}
+
+		subtask, err = job.GetSubtask(cfg, jobID, syncType, subTask, syncResult)
 
 		if err != nil {
 			return nil, err
-		} else if updatedStatus == nil {
+		} else if subtask == nil {
 			return nil, fmt.Errorf("received invalid job status")
 		}
-		status = *updatedStatus
-		cfg.Logger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, status.String()))
+
+		if currentStatus != subtask.Status {
+			cfg.Logger.Info("Update task status to %s", subtask.Status.String())
+		}
+
+		currentStatus = subtask.Status
+		cfg.Logger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, currentStatus.String()))
 		i += 1
 	}
 
-	return &status, nil
+	return subtask, nil
 }
 
 func updateJobStatus(status job.JobStatus, jobId, jobType string, cfg *target.BaseTargetConfig) {
-	job.AddJobEvent(cfg, jobId, jobType, status.String())
+	job.AddTaskEvent(cfg, jobId, jobType, status)
 }
 
-func runTargetSync(targetConfig *target.BaseTargetConfig) error {
+func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 	targetConfig.Logger.Info("Executing target...")
 
 	start := time.Now()
@@ -206,6 +226,16 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 	defer client.Close()
 
 	jobID, _ := job.StartJob(targetConfig)
+	targetConfig.Logger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobID))
+	job.UpdateJobEvent(targetConfig, jobID, job.InProgress)
+
+	defer func() {
+		if syncError == nil {
+			job.UpdateJobEvent(targetConfig, jobID, job.Completed)
+		} else {
+			job.UpdateJobEvent(targetConfig, jobID, job.Failed)
+		}
+	}()
 
 	err = dataSourceSync(targetConfig, jobID, client)
 	if err != nil {
@@ -229,8 +259,6 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) error {
 
 	targetConfig.Logger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
 
-	job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Completed)
-
 	return nil
 }
 
@@ -239,7 +267,6 @@ func dataUsageSync(targetConfig *target.BaseTargetConfig, jobID string, client p
 
 	err := execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, "data usage", targetConfig.SkipDataUsageSync, dataUsageSyncTask, targetConfig, client)
 	if err != nil {
-		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
@@ -251,7 +278,6 @@ func dataAccessSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 
 	err := execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, "data access", targetConfig.SkipDataAccessSync, dataAccessSyncTask, targetConfig, client)
 	if err != nil {
-		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
@@ -263,7 +289,6 @@ func identityStoreSync(targetConfig *target.BaseTargetConfig, jobID string, clie
 
 	err := execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, "identity store", targetConfig.SkipIdentityStoreSync, identityStoreSyncTask, targetConfig, client)
 	if err != nil {
-		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 
@@ -275,7 +300,6 @@ func dataSourceSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 
 	err := execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, "data source metadata", targetConfig.SkipDataSourceSync, dataSourceSyncTask, targetConfig, client)
 	if err != nil {
-		job.AddJobEvent(targetConfig, jobID, constants.Job, constants.Failed)
 		return err
 	}
 

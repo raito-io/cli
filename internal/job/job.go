@@ -12,56 +12,77 @@ import (
 )
 
 func StartJob(cfg *target.BaseTargetConfig) (string, error) {
-	if isRaitoCloudEnabled(cfg) {
-		gqlQuery := fmt.Sprintf(`{ "query": "mutation createJob {
-        createJob(input: { dataSourceId: \"%s\", eventTime: \"%s\" }) { jobId } }" }"`,
-			cfg.DataSourceId, time.Now().Format(time.RFC3339))
+	gqlQuery := fmt.Sprintf(`{ "query": "mutation createJob {
+        createJob(input: { dataSourceId: \"%s\", identityStoreId: \"%s\", eventTime: \"%s\" }) { jobId } }" }"`,
+		cfg.DataSourceId, cfg.IdentityStoreId, time.Now().Format(time.RFC3339))
 
-		gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
-		resp := Response{}
-		_, err := graphql.ExecuteGraphQL(gqlQuery, cfg, &resp)
+	resp := Response{}
+	_, err := graphql.ExecuteGraphQL(gqlQuery, cfg, &resp)
 
-		if err != nil {
-			return "", fmt.Errorf("error while executing import: %s", err.Error())
-		}
-
-		return *resp.Job.JobID, nil
+	if err != nil {
+		return "", fmt.Errorf("error while executing import: %s", err.Error())
 	}
 
-	return "offline-job", nil
+	return *resp.Job.JobID, nil
 }
 
-func AddJobEvent(cfg *target.BaseTargetConfig, jobID, jobType, status string) {
-	if isRaitoCloudEnabled(cfg) {
-		gqlQuery := fmt.Sprintf(`{ "query":"mutation createJobEvent {
-        createJobEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", jobType: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
-			jobID, cfg.DataSourceId, jobType, status, time.Now().Format(time.RFC3339))
+func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus) {
+	gqlQuery := fmt.Sprintf(`{ "query":"mutation updateJob {
+        updateJob(id: \"%s\", input: { dataSourceId: \"%s\", identityStoreId: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
+		jobID, cfg.DataSourceId, cfg.IdentityStoreId, status.String(), time.Now().Format(time.RFC3339))
 
-		gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
-		err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, cfg)
-		if err != nil {
-			cfg.Logger.Debug("job update failed: %s", err.Error())
-		}
+	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, cfg)
+	if err != nil {
+		cfg.Logger.Debug("job update failed: %s", err.Error())
 	}
 }
 
-func GetTaskStatus(cfg *target.BaseTargetConfig, jobID, jobType string, responseResult interface{}) (*JobStatus, error) {
-	if isRaitoCloudEnabled(cfg) {
-		gqlQuery := fmt.Sprintf(`{ "query": "query getJobTask {
-        jobTask(jobId: \"%s\", jobType: \"%s\") {
+func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus) {
+	gqlQuery := fmt.Sprintf(`{ "query":"mutation addTaskEvent {
+        addTaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", jobType: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
+		jobID, cfg.DataSourceId, jobType, status.String(), time.Now().Format(time.RFC3339))
+
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+
+	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, cfg)
+	if err != nil {
+		cfg.Logger.Debug("job update failed: %s", err.Error())
+	}
+}
+
+func AddSubtaskEvent(cfg *target.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus) {
+	gqlQuery := fmt.Sprintf(`{ "query":"mutation addSubtaskEvent {
+        addSubtaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", jobType: \"%s\", subTask: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
+		jobID, cfg.DataSourceId, jobType, subtask, status.String(), time.Now().Format(time.RFC3339))
+
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+
+	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, cfg)
+	if err != nil {
+		cfg.Logger.Debug("job update failed: %s", err.Error())
+	}
+}
+
+func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subTaskId string, responseResult interface{}) (*Subtask, error) {
+	gqlQuery := fmt.Sprintf(`{ "query": "query getJobSubtask {
+        jobSubtask(jobId: \"%s\", jobType: \"%s\", subTask: \"%s\") {
             jobId
             jobType
+            subTask
             status
             lastUpdate
+            errors
             result {
             __typename
               ... on DataSourceImportResult {
                   dataObjectsAdded
                   dataObjectsRemoved
                   dataObjectsUpdated
-                  errors
+                  warnings
               }
               ... on IdentityStoreImportResult {
                   groupsAdded
@@ -70,13 +91,13 @@ func GetTaskStatus(cfg *target.BaseTargetConfig, jobID, jobType string, response
                   usersAdded
                   usersRemoved
                   usersUpdated
-                  errors
+                  warnings
               }
               ... on AccessProviderImportResult {
                   accessAdded
                   accessRemoved
                   accessUpdated
-                  errors
+                  warnings
               }
               ... on DataUsageImportResult {
                   edgesCreatedOrUpdated
@@ -84,41 +105,39 @@ func GetTaskStatus(cfg *target.BaseTargetConfig, jobID, jobType string, response
                   statementsAdded
                   statementsFailed
                   statementsSkipped
-                  errors
+                  warnings
               }
             }
-        }}"}`, jobID, jobType)
+        }}"}`, jobID, jobType, subTaskId)
 
-		gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
-		response := TaskStatusResponse{Task{Result: responseResult}}
-		_, err := graphql.ExecuteGraphQL(gqlQuery, cfg, &response)
+	response := SubtaskResponse{Subtask{Result: responseResult}}
+	_, err := graphql.ExecuteGraphQL(gqlQuery, cfg, &response)
 
-		if err != nil {
-			cfg.Logger.Debug("failed to load Task information: %s", err.Error())
-			return nil, err
-		}
-
-		return &response.TaskResponse.Status, nil
+	if err != nil {
+		cfg.Logger.Debug("failed to load Subtask information: %s", err.Error())
+		return nil, err
 	}
 
-	return nil, nil
+	return &response.SubtaskResponse, nil
 }
 
 type Response struct {
 	Job Job `json:"createJob"`
 }
 
-type Task struct {
+type Subtask struct {
 	JobID      string      `json:"jobId"`
 	JobType    string      `json:"jobType"`
 	Status     JobStatus   `json:"status"`
 	LastUpdate time.Time   `json:"lastUpdate"`
 	Result     interface{} `json:"result"`
+	Errors     []string    `json:"errors"`
 }
 
-type TaskStatusResponse struct {
-	TaskResponse Task `json:"jobTask"`
+type SubtaskResponse struct {
+	SubtaskResponse Subtask `json:"jobSubtask"`
 }
 
 type Job struct {
@@ -129,6 +148,7 @@ type JobStatus int
 
 const (
 	Started JobStatus = iota
+	InProgress
 	DataRetrieve
 	DataUpload
 	Queued
@@ -140,6 +160,7 @@ const (
 
 var AllJobStatus = []JobStatus{
 	Started,
+	InProgress,
 	DataRetrieve,
 	DataUpload,
 	Queued,
@@ -149,9 +170,10 @@ var AllJobStatus = []JobStatus{
 	Skipped,
 }
 
-var jobStatusNames = [...]string{"STARTED", "DATA_RETRIEVE", "DATA_UPLOAD", "QUEUED", "DATA_PROCESSING", "COMPLETED", "FAILED", "SKIPPED"}
+var jobStatusNames = [...]string{"STARTED", "IN_PROGRESS", "DATA_RETRIEVE", "DATA_UPLOAD", "QUEUED", "DATA_PROCESSING", "COMPLETED", "FAILED", "SKIPPED"}
 var jobStatusNameMap = map[string]JobStatus{
 	"STARTED":         Started,
+	"IN_PROGRESS":     InProgress,
 	"DATA_RETRIEVE":   DataRetrieve,
 	"DATA_UPLOAD":     DataUpload,
 	"QUEUED":          Queued,
@@ -163,7 +185,7 @@ var jobStatusNameMap = map[string]JobStatus{
 
 func (e JobStatus) IsValid() bool {
 	switch e {
-	case Started, DataRetrieve, DataUpload, Queued, DataProcessing, Completed, Failed, Skipped:
+	case Started, InProgress, DataRetrieve, DataUpload, Queued, DataProcessing, Completed, Failed, Skipped:
 		return true
 	default:
 		return false
@@ -172,7 +194,7 @@ func (e JobStatus) IsValid() bool {
 
 func (e JobStatus) IsRunning() bool {
 	switch e {
-	case Started, DataRetrieve, DataUpload, Queued, DataProcessing:
+	case Started, InProgress, DataRetrieve, DataUpload, Queued, DataProcessing:
 		return true
 	case Completed, Failed, Skipped:
 		return false

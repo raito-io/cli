@@ -25,7 +25,7 @@ type IdentityStoreImportConfig struct {
 }
 
 type IdentityStoreImporter interface {
-	TriggerImport(jobId string) (job.JobStatus, error)
+	TriggerImport(jobId string) (job.JobStatus, string, error)
 }
 
 type identityStoreImporter struct {
@@ -41,7 +41,7 @@ func NewIdentityStoreImporter(config *IdentityStoreImportConfig, statusUpdater f
 	return &isI
 }
 
-func (i *identityStoreImporter) TriggerImport(jobId string) (job.JobStatus, error) {
+func (i *identityStoreImporter) TriggerImport(jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
@@ -49,7 +49,7 @@ func (i *identityStoreImporter) TriggerImport(jobId string) (job.JobStatus, erro
 	} else {
 		userKey, groupKey, err := i.upload()
 		if err != nil {
-			return job.Failed, err
+			return job.Failed, "", err
 		}
 
 		return i.doImport(jobId, userKey, groupKey)
@@ -72,7 +72,7 @@ func (i *identityStoreImporter) upload() (string, string, error) {
 	return userKey, groupKey, nil
 }
 
-func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey string) (job.JobStatus, error) {
+func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey string) (job.JobStatus, string, error) {
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportIdentityRequest", "variables":{}, "query": "mutation ImportIdentityRequest {
@@ -87,7 +87,10 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
             groupsFileKey: \"%s\"
           }
         }) {
-          jobStatus
+          subtask {
+            status
+            subTask
+          }
         }
     }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, i.config.ReplaceTags, userKey, groupKey)
 
@@ -97,18 +100,23 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseTargetConfig, &res)
 
 	if err != nil {
-		return job.Failed, fmt.Errorf("error while executing identity store import: %s", err.Error())
+		return job.Failed, "", fmt.Errorf("error while executing identity store import: %s", err.Error())
 	}
 
-	ret := res.Respose.Status
+	subtask := res.Respose.Subtask
 
 	i.log.Info(fmt.Sprintf("Executed import request in %s", time.Since(start).Round(time.Millisecond)))
 
-	return ret, nil
+	return subtask.Status, subtask.Subtask, nil
+}
+
+type subtaskResponse struct {
+	Status  job.JobStatus `json:"status"`
+	Subtask string        `json:"subTask"`
 }
 
 type QueryResponse struct {
-	Status job.JobStatus `json:"jobStatus"`
+	Subtask subtaskResponse `json:"subtask"`
 }
 
 type Response struct {

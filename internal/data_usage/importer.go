@@ -26,7 +26,7 @@ type DataSourceLastUsed struct {
 }
 
 type DataUsageImporter interface {
-	TriggerImport(jobId string) (job.JobStatus, error)
+	TriggerImport(jobId string) (job.JobStatus, string, error)
 	GetLastUsage() (*time.Time, error)
 }
 
@@ -43,7 +43,7 @@ func NewDataUsageImporter(config *DataUsageImportConfig, statusUpdater func(stat
 	return &duI
 }
 
-func (d *dataUsageImporter) TriggerImport(jobId string) (job.JobStatus, error) {
+func (d *dataUsageImporter) TriggerImport(jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
@@ -51,7 +51,7 @@ func (d *dataUsageImporter) TriggerImport(jobId string) (job.JobStatus, error) {
 	} else {
 		key, err := d.upload()
 		if err != nil {
-			return job.Failed, err
+			return job.Failed, "", err
 		}
 
 		return d.doImport(jobId, key)
@@ -69,7 +69,7 @@ func (d *dataUsageImporter) upload() (string, error) {
 	return key, nil
 }
 
-func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatus, error) {
+func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatus, string, error) {
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataUsageRequest", "variables":{}, "query": "mutation ImportDataUsageRequest {
       importDataUsageRequest(input: {
         jobId: \"%s\",
@@ -78,7 +78,10 @@ func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatu
           fileKey: \"%s\"
         }
       }) {
-        jobStatus
+        subtask {
+            subTask
+            status            
+          }
       }
     }" }"`, jobId, d.config.DataSourceId, fileKey)
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
@@ -87,18 +90,16 @@ func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatu
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
 
 	if err != nil {
-		return job.Failed, fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
+		return job.Failed, "", fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
 	}
 
-	ret := res.Response.Status
-
-	return ret, nil
+	return res.Response.Subtask.Status, res.Response.Subtask.Subtask, nil
 }
 
 func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
 	gqlQuery := fmt.Sprintf(`{"variables":{}, "query": "query {dataSource(id:\"%s\") {id usageLastUsed}}" }`, d.config.DataSourceId)
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
-	res := LastUsedReponse{}
+	res := LastUsedResponse{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
 
 	if err != nil {
@@ -117,14 +118,19 @@ func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
 	return &finalResult, nil
 }
 
+type subtaskResponse struct {
+	Status  job.JobStatus `json:"status"`
+	Subtask string        `json:"subTask"`
+}
+
 type QueryResponse struct {
-	Status job.JobStatus `json:"jobStatus"`
+	Subtask subtaskResponse `json:"subtask"`
 }
 
 type Response struct {
 	Response QueryResponse `json:"importDataUsageRequest"`
 }
 
-type LastUsedReponse struct {
+type LastUsedResponse struct {
 	DataSourceInfo DataSourceLastUsed `json:"dataSource"`
 }

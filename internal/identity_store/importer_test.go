@@ -16,7 +16,7 @@ import (
 	"github.com/raito-io/cli/internal/util/url"
 )
 
-const GoodImportResult = "{ \"data\": { \"importIdentityRequest\": { \"jobStatus\": \"QUEUED\" } } }"
+const GoodImportResult = "{ \"data\": { \"importIdentityRequest\": { \"jobStatus\": \"QUEUED\", \"subTask\": \"ImportSync\" } } }"
 const FaultyImportResult = ":::"
 const ImportResultWithErrors = "{ \"errors\": [ { \"message\": \"twisted error\" } ], \"data\": { \"importIdentityStore\": { \"usersAdded\": 1, \"usersUpdated\": 2, \"usersRemoved\": 3, \"groupsAdded\": 4, \"groupsUpdated\": 5, \"groupsRemoved\": 6 } } }"
 
@@ -37,15 +37,15 @@ func TestIdentityStoreImport(t *testing.T) {
 	defer os.Remove(f2.Name())
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport("someJobId")
+	status, subtaskId, err := (*isi).TriggerImport("someJobId")
 
 	assert.Nil(t, err)
-	assert.NotNil(t, res)
 	assert.True(t, correctContent)
 	assert.True(t, gotSignedURL)
 	assert.True(t, didUpload)
 	assert.True(t, calledImport)
-	assert.Equal(t, job.Queued, res)
+	assert.Equal(t, job.Queued, status)
+	assert.Equal(t, "ImportSync", subtaskId)
 }
 
 func TestIdentityStoreImportFailUploadUrl(t *testing.T) {
@@ -63,12 +63,12 @@ func TestIdentityStoreImportFailUploadUrl(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport("SomeJobID")
+	status, _, err := (*isi).TriggerImport("someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "uploading")
 	assert.Contains(t, err.Error(), "upload URL")
-	assert.Equal(t, job.Failed, res)
+	assert.Equal(t, job.Failed, status)
 }
 
 func TestIdentityStoreImportFailUpload(t *testing.T) {
@@ -86,12 +86,12 @@ func TestIdentityStoreImportFailUpload(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport("SomeJobID")
+	status, _, err := (*isi).TriggerImport("someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "uploading")
 	assert.Contains(t, err.Error(), "executing upload")
-	assert.Equal(t, job.Failed, res)
+	assert.Equal(t, job.Failed, status)
 }
 
 func TestIdentityStoreImportFailImport(t *testing.T) {
@@ -109,12 +109,12 @@ func TestIdentityStoreImportFailImport(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport("SomeJobID")
+	status, _, err := (*isi).TriggerImport("someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "import")
 	assert.Contains(t, strings.ToLower(err.Error()), "graphql")
-	assert.Equal(t, job.Failed, res)
+	assert.Equal(t, job.Failed, status)
 }
 
 func TestIdentityStoreImportFaultyResponse(t *testing.T) {
@@ -132,11 +132,11 @@ func TestIdentityStoreImportFaultyResponse(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport("SomeJobID")
+	status, _, err := (*isi).TriggerImport("someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "invalid character")
-	assert.Equal(t, job.Failed, res)
+	assert.Equal(t, job.Failed, status)
 }
 
 func TestIdentityStoreImportWithErrors(t *testing.T) {
@@ -154,11 +154,11 @@ func TestIdentityStoreImportWithErrors(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
 
-	res, err := (*isi).TriggerImport("SomeJobID")
+	status, _, err := (*isi).TriggerImport("someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "twisted")
-	assert.Equal(t, job.Failed, res)
+	assert.Equal(t, job.Failed, status)
 }
 
 func UploadServer(fail bool, didUpload *bool, correctContent *bool) *httptest.Server {

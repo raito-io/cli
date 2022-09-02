@@ -29,14 +29,16 @@ type DataUsageImportResult struct {
 	StatementsSkipped     int `json:"statementsSkipped"`
 	EdgesCreatedOrUpdated int `json:"edgesCreatedOrUpdated"`
 	EdgesRemoved          int `json:"edgesRemoved"`
+
+	Warnings []string `json:"warnings"`
 }
 
-func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, error) {
+func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-du", "json"))
 
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
@@ -52,7 +54,7 @@ func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.Jo
 
 	dus, err := client.GetDataUsageSyncer()
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	importerConfig := DataUsageImportConfig{
@@ -78,26 +80,36 @@ func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.Jo
 
 	res := dus.SyncDataUsage(&syncerConfig)
 	if res.Error != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Info("Importing usage data into Raito")
 
-	status, err := duImporter.TriggerImport(s.JobId)
+	status, subtaskId, err := duImporter.TriggerImport(s.JobId)
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+	if status == job.Queued {
+		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+	}
 	s.TargetConfig.Logger.Debug("Current status: %s", status.String())
 
-	return status, nil
+	return status, subtaskId, nil
 }
 
 func (s *DataUsageSync) ProcessResults(results interface{}) error {
 	if duResult, ok := results.(*DataUsageImportResult); ok {
-		s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced data usage. %d statements added, %d failed",
-			duResult.StatementsAdded, duResult.StatementsFailed))
+		if len(duResult.Warnings) > 0 {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced data usage with %d warnings (see below). %d statements added, %d failed", duResult.StatementsAdded, duResult.StatementsFailed))
+			for _, warning := range duResult.Warnings {
+				s.TargetConfig.Logger.Warn(warning)
+			}
+		} else {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced data usage. %d statements added, %d failed",
+				duResult.StatementsAdded, duResult.StatementsFailed))
+		}
+
 		return nil
 	}
 

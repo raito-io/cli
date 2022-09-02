@@ -103,6 +103,7 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	if status == job.Queued {
 		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
 	}
+
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
@@ -157,6 +158,7 @@ func (s *DataAccessSync) ProcessResults(results interface{}) error {
 	if daResult, ok := results.(*AccessProviderImportResult); ok {
 		if len(daResult.Warnings) > 0 {
 			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced access providers with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(daResult.Warnings), daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+
 			for _, warning := range daResult.Warnings {
 				s.TargetConfig.Logger.Warn(warning)
 			}

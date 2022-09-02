@@ -93,6 +93,7 @@ func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.Jo
 	if status == job.Queued {
 		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
 	}
+
 	s.TargetConfig.Logger.Debug("Current status: %s", status.String())
 
 	return status, subtaskId, nil
@@ -100,8 +101,9 @@ func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.Jo
 
 func (s *DataUsageSync) ProcessResults(results interface{}) error {
 	if duResult, ok := results.(*DataUsageImportResult); ok {
-		if len(duResult.Warnings) > 0 {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced data usage with %d warnings (see below). %d statements added, %d failed", duResult.StatementsAdded, duResult.StatementsFailed))
+		if duResult != nil && len(duResult.Warnings) > 0 {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced data usage with %d warnings (see below). %d statements added, %d failed", len(duResult.Warnings), duResult.StatementsAdded, duResult.StatementsFailed))
+
 			for _, warning := range duResult.Warnings {
 				s.TargetConfig.Logger.Warn(warning)
 			}

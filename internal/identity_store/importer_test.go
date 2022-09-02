@@ -16,7 +16,7 @@ import (
 	"github.com/raito-io/cli/internal/util/url"
 )
 
-const GoodImportResult = "{ \"data\": { \"importIdentityRequest\": { \"jobStatus\": \"QUEUED\", \"subTask\": \"ImportSync\" } } }"
+const GoodImportResult = "{ \"data\": { \"importIdentityRequest\": { \"subtask\" : {\"status\": \"QUEUED\", \"subTask\": \"ImportSync\" } } } }"
 const FaultyImportResult = ":::"
 const ImportResultWithErrors = "{ \"errors\": [ { \"message\": \"twisted error\" } ], \"data\": { \"importIdentityStore\": { \"usersAdded\": 1, \"usersUpdated\": 2, \"usersRemoved\": 3, \"groupsAdded\": 4, \"groupsUpdated\": 5, \"groupsRemoved\": 6 } } }"
 

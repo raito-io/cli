@@ -228,7 +228,3 @@ func (e JobStatus) MarshalJSON() ([]byte, error) {
 
 	return buffer.Bytes(), nil
 }
-
-func isRaitoCloudEnabled(cfg *target.BaseTargetConfig) bool {
-	return cfg.ApiUser != "" && cfg.ApiSecret != ""
-}

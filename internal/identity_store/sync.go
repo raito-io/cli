@@ -90,6 +90,7 @@ func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (jo
 	if status == job.Queued {
 		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
 	}
+
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
@@ -97,8 +98,10 @@ func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (jo
 
 func (s *IdentityStoreSync) ProcessResults(results interface{}) error {
 	if isResult, ok := results.(*IdentityStoreImportResult); ok {
-		if len(isResult.Warnings) > 0 {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced users and groups with %d warnings (see below). Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d", isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
+		if isResult != nil && len(isResult.Warnings) > 0 {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced users and groups with %d warnings (see below). Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d",
+				len(isResult.Warnings), isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
+
 			for _, warning := range isResult.Warnings {
 				s.TargetConfig.Logger.Warn(warning)
 			}

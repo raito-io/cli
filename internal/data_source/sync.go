@@ -88,6 +88,7 @@ func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	if status == job.Queued {
 		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
 	}
+
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status))
 
 	return status, subtaskId, nil
@@ -95,8 +96,9 @@ func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 
 func (s *DataSourceSync) ProcessResults(results interface{}) error {
 	if dsResult, ok := results.(*DataSourceImportResult); ok {
-		if len(dsResult.Warnings) > 0 {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced data source with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
+		if dsResult.Warnings != nil && len(dsResult.Warnings) > 0 {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced data source with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(dsResult.Warnings), dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
+
 			for _, warning := range dsResult.Warnings {
 				s.TargetConfig.Logger.Warn(warning)
 			}

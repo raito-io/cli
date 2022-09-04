@@ -27,19 +27,21 @@ type IdentityStoreImportResult struct {
 	GroupsAdded   int `json:"groupsAdded"`
 	GroupsUpdated int `json:"groupsUpdated"`
 	GroupsRemoved int `json:"groupsRemoved"`
+
+	Warnings []string `json:"warnings"`
 }
 
-func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, error) {
+func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	userFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-user", "json"))
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	groupFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-group", "json"))
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as user target file", userFile))
@@ -58,14 +60,14 @@ func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (jo
 
 	iss, err := client.GetIdentityStoreSyncer()
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Info("Gathering users and groups")
 	result := iss.SyncIdentityStore(&syncerConfig)
 
 	if result.Error != nil {
-		return job.Failed, *(result.Error)
+		return job.Failed, "", *(result.Error)
 	}
 
 	importerConfig := IdentityStoreImportConfig{
@@ -79,21 +81,34 @@ func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (jo
 	isImporter := NewIdentityStoreImporter(&importerConfig, s.StatusUpdater)
 
 	s.TargetConfig.Logger.Info("Importing users and groups into Raito")
-	status, err := isImporter.TriggerImport(s.JobId)
+	status, subtaskId, err := isImporter.TriggerImport(s.JobId)
 
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+	if status == job.Queued {
+		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+	}
+
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
-	return status, nil
+	return status, subtaskId, nil
 }
 
 func (s *IdentityStoreSync) ProcessResults(results interface{}) error {
 	if isResult, ok := results.(*IdentityStoreImportResult); ok {
-		s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced users and groups. Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d", isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
+		if isResult != nil && len(isResult.Warnings) > 0 {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced users and groups with %d warnings (see below). Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d",
+				len(isResult.Warnings), isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
+
+			for _, warning := range isResult.Warnings {
+				s.TargetConfig.Logger.Warn(warning)
+			}
+		} else {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced users and groups. Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d", isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
+		}
+
 		return nil
 	}
 

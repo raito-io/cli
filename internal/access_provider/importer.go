@@ -22,7 +22,7 @@ type AccessProviderImportConfig struct {
 }
 
 type AccessProviderImporter interface {
-	TriggerImport(jobId string) (job.JobStatus, error)
+	TriggerImport(jobId string) (job.JobStatus, string, error)
 }
 
 type accessProviderImporter struct {
@@ -38,7 +38,7 @@ func NewAccessProviderImporter(config *AccessProviderImportConfig, statusUpdater
 	return &dsI
 }
 
-func (d *accessProviderImporter) TriggerImport(jobId string) (job.JobStatus, error) {
+func (d *accessProviderImporter) TriggerImport(jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
@@ -46,7 +46,7 @@ func (d *accessProviderImporter) TriggerImport(jobId string) (job.JobStatus, err
 	} else {
 		key, err := d.upload()
 		if err != nil {
-			return job.Failed, err
+			return job.Failed, "", err
 		}
 
 		return d.doImport(jobId, key)
@@ -64,7 +64,7 @@ func (d *accessProviderImporter) upload() (string, error) {
 	return key, nil
 }
 
-func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.JobStatus, error) {
+func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.JobStatus, string, error) {
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportAccessProvidersRequest", "variables":{}, "query": "mutation ImportAccessProvidersRequest {
@@ -76,7 +76,10 @@ func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.Job
             fileKey: \"%s\"
           }
         }) {
-          jobStatus
+          subtask {
+            subtaskId
+            status            
+          }
          }
     }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, fileKey)
 
@@ -86,20 +89,26 @@ func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.Job
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
 
 	if err != nil {
-		return job.Failed, fmt.Errorf("error while executing import: %s", err.Error())
+		return job.Failed, "", fmt.Errorf("error while executing import: %s", err.Error())
 	}
 
-	ret := res.Response.Status
+	retStatus := res.Response.Subtask.Status
+	subtaskId := res.Response.Subtask.SubtaskId
 
-	d.log.Info(fmt.Sprintf("Done executing import in %s", time.Since(start).Round(time.Millisecond)))
+	d.log.Info(fmt.Sprintf("Done submitting import in %s", time.Since(start).Round(time.Millisecond)))
 
-	return ret, nil
+	return retStatus, subtaskId, nil
 }
 
-type QueueResponse struct {
-	Status job.JobStatus `json:"jobStatus"`
+type subtaskResponse struct {
+	Status    job.JobStatus `json:"status"`
+	SubtaskId string        `json:"subtaskId"`
+}
+
+type QueryResponse struct {
+	Subtask subtaskResponse `json:"subtask"`
 }
 
 type Response struct {
-	Response QueueResponse `json:"importAccessProvidersRequest"`
+	Response QueryResponse `json:"importAccessProvidersRequest"`
 }

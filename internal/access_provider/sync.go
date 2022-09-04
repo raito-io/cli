@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-hclog"
+
 	dapc "github.com/raito-io/cli/base/access_provider"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/data_access"
@@ -22,6 +23,8 @@ type AccessProviderImportResult struct {
 	AccessAdded   int `json:"accessAdded"`
 	AccessUpdated int `json:"accessUpdated"`
 	AccessRemoved int `json:"accessRemoved"`
+
+	Warnings []string `json:"warnings"`
 }
 
 var accessLastCalculated = map[string]int64{}
@@ -32,12 +35,12 @@ type DataAccessSync struct {
 	StatusUpdater func(status job.JobStatus)
 }
 
-func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, error) {
+func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
@@ -53,15 +56,16 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	lastUpdated := accessLastCalculated[s.TargetConfig.DataSourceId]
 
 	s.TargetConfig.Logger.Info("Fetching access providers for this data source from Raito")
+	s.StatusUpdater(job.DataRetrieve)
 	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, lastUpdated)
 
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	err = s.updateLastCalculated(dar)
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	syncerConfig := dapc.AccessSyncConfig{
@@ -73,14 +77,14 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 
 	das, err := client.GetAccessSyncer()
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
 	res := das.SyncAccess(&syncerConfig)
 
 	if res.Error != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	importerConfig := AccessProviderImportConfig{
@@ -91,15 +95,18 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 
 	daImporter := NewAccessProviderImporter(&importerConfig, s.StatusUpdater)
 
-	status, err := daImporter.TriggerImport(s.JobId)
+	status, subtaskId, err := daImporter.TriggerImport(s.JobId)
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+	if status == job.Queued {
+		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+	}
+
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
-	return status, nil
+	return status, subtaskId, nil
 }
 
 func (s *DataAccessSync) updateLastCalculated(filePath string) error {
@@ -149,7 +156,16 @@ func findLastCalculated(filePath string, logger hclog.Logger) (int64, error) {
 
 func (s *DataAccessSync) ProcessResults(results interface{}) error {
 	if daResult, ok := results.(*AccessProviderImportResult); ok {
-		s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+		if len(daResult.Warnings) > 0 {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced access providers with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(daResult.Warnings), daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+
+			for _, warning := range daResult.Warnings {
+				s.TargetConfig.Logger.Warn(warning)
+			}
+		} else {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+		}
+
 		return nil
 	}
 

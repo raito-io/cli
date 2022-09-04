@@ -18,6 +18,8 @@ type DataSourceImportResult struct {
 	DataObjectsAdded   int `json:"dataObjectsAdded"`
 	DataObjectsUpdated int `json:"dataObjectsUpdated"`
 	DataObjectsRemoved int `json:"dataObjectsRemoved"`
+
+	Warnings []string `json:"warnings"`
 }
 
 type DataSourceSync struct {
@@ -26,12 +28,12 @@ type DataSourceSync struct {
 	StatusUpdater func(status job.JobStatus)
 }
 
-func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, error) {
+func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
@@ -48,7 +50,7 @@ func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 
 	dss, err := client.GetDataSourceSyncer()
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Info("Fetching data source metadata configuration")
@@ -58,14 +60,14 @@ func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	err = SetMetaData(*s.TargetConfig, md)
 
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Info("Gathering metadata from the data source")
 	res := dss.SyncDataSource(&syncerConfig)
 
 	if res.Error != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
 	importerConfig := DataSourceImportConfig{
@@ -77,21 +79,33 @@ func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	dsImporter := NewDataSourceImporter(&importerConfig, s.StatusUpdater)
 
 	s.TargetConfig.Logger.Info("Importing metadata into Raito")
-	status, err := dsImporter.TriggerImport(s.JobId)
+	status, subtaskId, err := dsImporter.TriggerImport(s.JobId)
 
 	if err != nil {
-		return job.Failed, err
+		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+	if status == job.Queued {
+		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+	}
+
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status))
 
-	return status, nil
+	return status, subtaskId, nil
 }
 
 func (s *DataSourceSync) ProcessResults(results interface{}) error {
 	if dsResult, ok := results.(*DataSourceImportResult); ok {
-		s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced data source. Added: %d - Removed: %d - Updated: %d", dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
+		if dsResult.Warnings != nil && len(dsResult.Warnings) > 0 {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced data source with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(dsResult.Warnings), dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
+
+			for _, warning := range dsResult.Warnings {
+				s.TargetConfig.Logger.Warn(warning)
+			}
+		} else {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced data source. Added: %d - Removed: %d - Updated: %d", dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
+		}
+
 		return nil
 	}
 

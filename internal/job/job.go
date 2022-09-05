@@ -43,8 +43,8 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 
 func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus) {
 	gqlQuery := fmt.Sprintf(`{ "query":"mutation addTaskEvent {
-        addTaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", jobType: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
-		jobID, cfg.DataSourceId, jobType, status.String(), time.Now().Format(time.RFC3339))
+        addTaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", identityStoreId: \"%s\", jobType: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
+		jobID, cfg.DataSourceId, cfg.IdentityStoreId, jobType, status.String(), time.Now().Format(time.RFC3339))
 
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
@@ -56,8 +56,8 @@ func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status Jo
 
 func AddSubtaskEvent(cfg *target.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus) {
 	gqlQuery := fmt.Sprintf(`{ "query":"mutation addSubtaskEvent {
-        addSubtaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", jobType: \"%s\", subtaskId: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
-		jobID, cfg.DataSourceId, jobType, subtask, status.String(), time.Now().Format(time.RFC3339))
+        addSubtaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", identityStoreId: \"%s\", jobType: \"%s\", subtaskId: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
+		jobID, cfg.DataSourceId, cfg.IdentityStoreId, jobType, subtask, status.String(), time.Now().Format(time.RFC3339))
 
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 

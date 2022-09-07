@@ -18,9 +18,8 @@ import (
 )
 
 type DataUsageSync struct {
-	TargetConfig  *target.BaseTargetConfig
-	JobId         string
-	StatusUpdater func(status job.JobStatus)
+	TargetConfig *target.BaseTargetConfig
+	JobId        string
 }
 
 type DataUsageImportResult struct {
@@ -33,7 +32,7 @@ type DataUsageImportResult struct {
 	Warnings []string `json:"warnings"`
 }
 
-func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, string, error) {
+func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater *job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-du", "json"))
 
@@ -61,7 +60,7 @@ func (s *DataUsageSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.Jo
 		BaseTargetConfig: *s.TargetConfig,
 		TargetFile:       targetFile,
 	}
-	duImporter := NewDataUsageImporter(&importerConfig, s.StatusUpdater)
+	duImporter := NewDataUsageImporter(&importerConfig, statusUpdater)
 
 	s.TargetConfig.Logger.Info("Fetching last synchronization date")
 

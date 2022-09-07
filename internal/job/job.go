@@ -11,6 +11,21 @@ import (
 	"github.com/raito-io/cli/internal/target"
 )
 
+type TaskEventUpdater struct {
+	Cfg            *target.BaseTargetConfig
+	JobId          string
+	JobType        string
+	dataReceivedId *int64
+}
+
+func (u *TaskEventUpdater) AddTaskEvent(status JobStatus) {
+	AddTaskEvent(u.Cfg, u.JobId, u.JobType, status, u.dataReceivedId)
+}
+
+func (u *TaskEventUpdater) SetDataReceivedId(dataReceivedId int64) {
+	u.dataReceivedId = &dataReceivedId
+}
+
 func StartJob(cfg *target.BaseTargetConfig) (string, error) {
 	gqlQuery := fmt.Sprintf(`{ "query": "mutation createJob {
         createJob(input: { dataSourceId: \"%s\", identityStoreId: \"%s\", eventTime: \"%s\" }) { jobId } }" }"`,
@@ -41,10 +56,15 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 	}
 }
 
-func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus) {
+func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus, dataReceivedId *int64) {
 	gqlQuery := fmt.Sprintf(`{ "query":"mutation addTaskEvent {
-        addTaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", identityStoreId: \"%s\", jobType: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
+        addTaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", identityStoreId: \"%s\", jobType: \"%s\", status: %s, eventTime: \"%s\"`,
 		jobID, cfg.DataSourceId, cfg.IdentityStoreId, jobType, status.String(), time.Now().Format(time.RFC3339))
+
+	if dataReceivedId != nil {
+		gqlQuery += fmt.Sprintf(", receivedDataId: %d", *dataReceivedId)
+	}
+	gqlQuery += `}) {jobId } }" }"`
 
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 

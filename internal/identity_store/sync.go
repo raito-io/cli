@@ -15,9 +15,8 @@ import (
 )
 
 type IdentityStoreSync struct {
-	TargetConfig  *target.BaseTargetConfig
-	JobId         string
-	StatusUpdater func(status job.JobStatus)
+	TargetConfig *target.BaseTargetConfig
+	JobId        string
 }
 
 type IdentityStoreImportResult struct {
@@ -31,7 +30,7 @@ type IdentityStoreImportResult struct {
 	Warnings []string `json:"warnings"`
 }
 
-func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, string, error) {
+func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater *job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	userFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-user", "json"))
@@ -78,7 +77,7 @@ func (s *IdentityStoreSync) StartSyncAndQueueJob(client plugin.PluginClient) (jo
 		ReplaceGroups:    s.TargetConfig.ReplaceGroups,
 		ReplaceTags:      s.TargetConfig.ReplaceTags,
 	}
-	isImporter := NewIdentityStoreImporter(&importerConfig, s.StatusUpdater)
+	isImporter := NewIdentityStoreImporter(&importerConfig, statusUpdater)
 
 	s.TargetConfig.Logger.Info("Importing users and groups into Raito")
 	status, subtaskId, err := isImporter.TriggerImport(s.JobId)

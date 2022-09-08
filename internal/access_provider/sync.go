@@ -10,6 +10,7 @@ import (
 
 	dapc "github.com/raito-io/cli/base/access_provider"
 	baseconfig "github.com/raito-io/cli/base/util/config"
+	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/data_access"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
@@ -51,44 +52,10 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, status
 		defer os.RemoveAll(targetFile)
 	}
 
-	config := data_access.AccessSyncConfig{
-		BaseTargetConfig: *s.TargetConfig,
-	}
-
-	lastUpdated := accessLastCalculated[s.TargetConfig.DataSourceId]
-
-	s.TargetConfig.Logger.Info("Fetching access providers for this data source from Raito")
 	statusUpdater.AddTaskEvent(job.DataRetrieve)
-	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, lastUpdated)
 
+	err = s.accessSync(client, statusUpdater, targetFile)
 	if err != nil {
-		return job.Failed, "", err
-	}
-
-	darInformation, err := s.readDataAccessRetrieveInformation(dar)
-	if err != nil {
-		return job.Failed, "", err
-	}
-
-	s.updateLastCalculated(darInformation)
-	statusUpdater.SetDataReceivedId(darInformation.FileBuildTime)
-
-	syncerConfig := dapc.AccessSyncConfig{
-		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		Prefix:     "",
-		TargetFile: targetFile,
-		SourceFile: dar,
-	}
-
-	das, err := client.GetAccessSyncer()
-	if err != nil {
-		return job.Failed, "", err
-	}
-
-	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
-	res := das.SyncAccess(&syncerConfig)
-
-	if res.Error != nil {
 		return job.Failed, "", err
 	}
 
@@ -112,6 +79,65 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, status
 	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
+}
+
+func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater *job.TaskEventUpdater, targetFile string) (returnErr error) {
+	subTaskUpdater := statusUpdater.GetSubtaskEventUpdater(constants.SubtaskAccessSync)
+
+	defer func() {
+		if returnErr != nil {
+			subTaskUpdater.AddSubtaskEvent(job.Failed)
+		} else {
+			subTaskUpdater.AddSubtaskEvent(job.Completed)
+		}
+	}()
+
+	subTaskUpdater.AddSubtaskEvent(job.Started)
+
+	config := data_access.AccessSyncConfig{
+		BaseTargetConfig: *s.TargetConfig,
+	}
+
+	lastUpdated := accessLastCalculated[s.TargetConfig.DataSourceId]
+
+	s.TargetConfig.Logger.Info("Fetching access providers for this data source from Raito")
+	subTaskUpdater.AddSubtaskEvent(job.DataRetrieve)
+	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, lastUpdated)
+
+	if err != nil {
+		return err
+	}
+
+	subTaskUpdater.AddSubtaskEvent(job.InProgress)
+
+	darInformation, err := s.readDataAccessRetrieveInformation(dar)
+	if err != nil {
+		return err
+	}
+
+	subTaskUpdater.SetReceivedDataId(darInformation.FileBuildTime)
+	s.updateLastCalculated(darInformation)
+
+	syncerConfig := dapc.AccessSyncConfig{
+		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:     "",
+		TargetFile: targetFile,
+		SourceFile: dar,
+	}
+
+	das, err := client.GetAccessSyncer()
+	if err != nil {
+		return err
+	}
+
+	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
+	res := das.SyncAccess(&syncerConfig)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
 }
 
 func (s *DataAccessSync) readDataAccessRetrieveInformation(filePath string) (*dataAccessRetrieveInformation, error) {

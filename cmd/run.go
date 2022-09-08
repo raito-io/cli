@@ -204,7 +204,7 @@ func waitForJobToComplete(jobID string, syncType string, subtaskId string, syncR
 		}
 
 		if currentStatus != subtask.Status {
-			cfg.Logger.Info("Update task status to %s", subtask.Status.String())
+			cfg.Logger.Info(fmt.Sprintf("Update task status to %s", subtask.Status.String()))
 		}
 
 		currentStatus = subtask.Status

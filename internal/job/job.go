@@ -31,19 +31,19 @@ func (u *TaskEventUpdater) GetSubtaskEventUpdater(subtask string) SubtaskEventUp
 }
 
 type SubtaskEventUpdater struct {
-	Cfg            *target.BaseTargetConfig
-	JobId          string
-	JobType        string
-	Subtask        string
-	receivedDateId *int64
+	Cfg          *target.BaseTargetConfig
+	JobId        string
+	JobType      string
+	Subtask      string
+	receivedDate *int64
 }
 
 func (u *SubtaskEventUpdater) AddSubtaskEvent(status JobStatus) {
-	AddSubtaskEvent(u.Cfg, u.JobId, u.JobType, u.Subtask, status, u.receivedDateId)
+	AddSubtaskEvent(u.Cfg, u.JobId, u.JobType, u.Subtask, status, u.receivedDate)
 }
 
-func (u *SubtaskEventUpdater) SetReceivedDataId(receivedDataId int64) {
-	u.receivedDateId = &receivedDataId
+func (u *SubtaskEventUpdater) SetReceivedDate(receivedDate int64) {
+	u.receivedDate = &receivedDate
 }
 
 func StartJob(cfg *target.BaseTargetConfig) (string, error) {
@@ -89,13 +89,13 @@ func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status Jo
 	}
 }
 
-func AddSubtaskEvent(cfg *target.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus, receivedDataId *int64) {
+func AddSubtaskEvent(cfg *target.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus, receivedDate *int64) {
 	gqlQuery := fmt.Sprintf(`{ "query":"mutation addSubtaskEvent {
         addSubtaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", identityStoreId: \"%s\", jobType: \"%s\", subtaskId: \"%s\", status: %s, eventTime: \"%s\"`,
 		jobID, cfg.DataSourceId, cfg.IdentityStoreId, jobType, subtask, status.String(), time.Now().Format(time.RFC3339))
 
-	if receivedDataId != nil {
-		gqlQuery += fmt.Sprintf(", receivedDataId: %d", *receivedDataId)
+	if receivedDate != nil {
+		gqlQuery += fmt.Sprintf(", receivedData: %d", *receivedDate)
 	}
 
 	gqlQuery += `}) { jobId } }" }"`

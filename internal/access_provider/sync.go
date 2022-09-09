@@ -115,7 +115,7 @@ func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater *j
 		return err
 	}
 
-	subTaskUpdater.SetReceivedDataId(darInformation.FileBuildTime)
+	subTaskUpdater.SetReceivedDate(darInformation.FileBuildTime)
 	s.updateLastCalculated(darInformation)
 
 	syncerConfig := dapc.AccessSyncConfig{
@@ -152,7 +152,6 @@ func (s *DataAccessSync) readDataAccessRetrieveInformation(filePath string) (*da
 	err = yaml.NewDecoder(file).Decode(darInf)
 
 	return darInf, err
-
 }
 
 func (s *DataAccessSync) updateLastCalculated(information *dataAccessRetrieveInformation) {

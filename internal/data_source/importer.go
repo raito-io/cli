@@ -29,10 +29,10 @@ type DataSourceImporter interface {
 type dataSourceImporter struct {
 	config        *DataSourceImportConfig
 	log           hclog.Logger
-	statusUpdater func(status job.JobStatus)
+	statusUpdater *job.TaskEventUpdater
 }
 
-func NewDataSourceImporter(config *DataSourceImportConfig, statusUpdater func(status job.JobStatus)) DataSourceImporter {
+func NewDataSourceImporter(config *DataSourceImportConfig, statusUpdater *job.TaskEventUpdater) DataSourceImporter {
 	logger := config.Logger.With("datasource", config.DataSourceId, "file", config.TargetFile)
 	dsI := dataSourceImporter{config, logger, statusUpdater}
 
@@ -55,7 +55,7 @@ func (d *dataSourceImporter) TriggerImport(jobId string) (job.JobStatus, string,
 }
 
 func (d *dataSourceImporter) upload() (string, error) {
-	d.statusUpdater(job.DataUpload)
+	d.statusUpdater.AddTaskEvent(job.DataUpload)
 
 	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
 	if err != nil {

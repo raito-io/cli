@@ -33,10 +33,10 @@ type DataUsageImporter interface {
 type dataUsageImporter struct {
 	config        *DataUsageImportConfig
 	log           hclog.Logger
-	statusUpdater func(status job.JobStatus)
+	statusUpdater *job.TaskEventUpdater
 }
 
-func NewDataUsageImporter(config *DataUsageImportConfig, statusUpdater func(status job.JobStatus)) DataUsageImporter {
+func NewDataUsageImporter(config *DataUsageImportConfig, statusUpdater *job.TaskEventUpdater) DataUsageImporter {
 	logger := config.Logger.With("data-usage", config.DataSourceId, "file", config.TargetFile)
 	duI := dataUsageImporter{config, logger, statusUpdater}
 
@@ -59,7 +59,7 @@ func (d *dataUsageImporter) TriggerImport(jobId string) (job.JobStatus, string, 
 }
 
 func (d *dataUsageImporter) upload() (string, error) {
-	d.statusUpdater(job.DataUpload)
+	d.statusUpdater.AddTaskEvent(job.DataUpload)
 	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
 
 	if err != nil {

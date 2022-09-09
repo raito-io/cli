@@ -22,7 +22,7 @@ import (
 )
 
 type task interface {
-	StartSyncAndQueueJob(c plugin.PluginClient) (job.JobStatus, string, error)
+	StartSyncAndQueueJob(c plugin.PluginClient, statusUpdater *job.TaskEventUpdater) (job.JobStatus, string, error)
 	ProcessResults(results interface{}) error
 	GetResultObject() interface{}
 }
@@ -122,12 +122,18 @@ func runSync(baseLogger hclog.Logger, otherArgs []string) error {
 
 func execute(targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
 	syncTask task, cfg *target.BaseTargetConfig, c plugin.PluginClient) error {
+	taskEventUpdater := job.TaskEventUpdater{
+		Cfg:     cfg,
+		JobId:   jobID,
+		JobType: syncType,
+	}
+
 	switch {
 	case skipSync:
-		job.AddTaskEvent(cfg, jobID, syncType, job.Skipped)
+		taskEventUpdater.AddTaskEvent(job.Skipped)
 		cfg.Logger.Info("Skipping sync of " + syncTypeLabel)
 	case targetID == "":
-		job.AddTaskEvent(cfg, jobID, syncType, job.Skipped)
+		taskEventUpdater.AddTaskEvent(job.Skipped)
 
 		idField := "data-source-id"
 		if syncType == constants.IdentitySync {
@@ -138,17 +144,17 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 	default:
 		cfg.Logger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
 
-		job.AddTaskEvent(cfg, jobID, syncType, job.Started)
+		taskEventUpdater.AddTaskEvent(job.Started)
 
-		status, subtaskId, err := syncTask.StartSyncAndQueueJob(c)
+		status, subtaskId, err := syncTask.StartSyncAndQueueJob(c, &taskEventUpdater)
 		if err != nil {
 			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
-			job.AddTaskEvent(cfg, jobID, syncType, job.Failed)
+			taskEventUpdater.AddTaskEvent(job.Failed)
 
 			return err
 		}
 
-		job.AddTaskEvent(cfg, jobID, syncType, status)
+		taskEventUpdater.AddTaskEvent(status)
 
 		if status == job.Queued {
 			cfg.Logger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
@@ -162,17 +168,17 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 		}
 
 		if subtask.Status == job.Failed {
-			job.AddTaskEvent(cfg, jobID, syncType, job.Failed)
+			taskEventUpdater.AddTaskEvent(job.Failed)
 			return fmt.Errorf("%s", strings.Join(subtask.Errors, ", "))
 		}
 
 		err = syncTask.ProcessResults(syncResult)
 		if err != nil {
-			job.AddTaskEvent(cfg, jobID, syncType, job.Failed)
+			taskEventUpdater.AddTaskEvent(job.Failed)
 			return err
 		}
 
-		job.AddTaskEvent(cfg, jobID, syncType, job.Completed)
+		taskEventUpdater.AddTaskEvent(job.Completed)
 	}
 
 	return nil
@@ -207,10 +213,6 @@ func waitForJobToComplete(jobID string, syncType string, subtaskId string, syncR
 	}
 
 	return subtask, nil
-}
-
-func updateJobStatus(status job.JobStatus, jobId, jobType string, cfg *target.BaseTargetConfig) {
-	job.AddTaskEvent(cfg, jobId, jobType, status)
 }
 
 func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
@@ -263,7 +265,7 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 }
 
 func dataUsageSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
-	dataUsageSyncTask := &data_usage.DataUsageSync{TargetConfig: targetConfig, JobId: jobID, StatusUpdater: func(status job.JobStatus) { updateJobStatus(status, jobID, constants.DataUsageSync, targetConfig) }}
+	dataUsageSyncTask := &data_usage.DataUsageSync{TargetConfig: targetConfig, JobId: jobID}
 
 	err := execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, "data usage", targetConfig.SkipDataUsageSync, dataUsageSyncTask, targetConfig, client)
 	if err != nil {
@@ -274,7 +276,7 @@ func dataUsageSync(targetConfig *target.BaseTargetConfig, jobID string, client p
 }
 
 func dataAccessSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
-	dataAccessSyncTask := &access_provider.DataAccessSync{TargetConfig: targetConfig, JobId: jobID, StatusUpdater: func(status job.JobStatus) { updateJobStatus(status, jobID, constants.DataAccessSync, targetConfig) }}
+	dataAccessSyncTask := &access_provider.DataAccessSync{TargetConfig: targetConfig, JobId: jobID}
 
 	err := execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, "data access", targetConfig.SkipDataAccessSync, dataAccessSyncTask, targetConfig, client)
 	if err != nil {
@@ -285,7 +287,7 @@ func dataAccessSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 }
 
 func identityStoreSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
-	identityStoreSyncTask := &identity_store.IdentityStoreSync{TargetConfig: targetConfig, JobId: jobID, StatusUpdater: func(status job.JobStatus) { updateJobStatus(status, jobID, constants.IdentitySync, targetConfig) }}
+	identityStoreSyncTask := &identity_store.IdentityStoreSync{TargetConfig: targetConfig, JobId: jobID}
 
 	err := execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, "identity store", targetConfig.SkipIdentityStoreSync, identityStoreSyncTask, targetConfig, client)
 	if err != nil {
@@ -296,7 +298,7 @@ func identityStoreSync(targetConfig *target.BaseTargetConfig, jobID string, clie
 }
 
 func dataSourceSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
-	dataSourceSyncTask := &data_source.DataSourceSync{TargetConfig: targetConfig, JobId: jobID, StatusUpdater: func(status job.JobStatus) { updateJobStatus(status, jobID, constants.DataSourceSync, targetConfig) }}
+	dataSourceSyncTask := &data_source.DataSourceSync{TargetConfig: targetConfig, JobId: jobID}
 
 	err := execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, "data source metadata", targetConfig.SkipDataSourceSync, dataSourceSyncTask, targetConfig, client)
 	if err != nil {

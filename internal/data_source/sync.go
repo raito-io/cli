@@ -23,12 +23,11 @@ type DataSourceImportResult struct {
 }
 
 type DataSourceSync struct {
-	TargetConfig  *target.BaseTargetConfig
-	JobId         string
-	StatusUpdater func(status job.JobStatus)
+	TargetConfig *target.BaseTargetConfig
+	JobId        string
 }
 
-func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, string, error) {
+func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater *job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
@@ -76,7 +75,7 @@ func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
 		ReplaceTags:      s.TargetConfig.ReplaceTags,
 	}
-	dsImporter := NewDataSourceImporter(&importerConfig, s.StatusUpdater)
+	dsImporter := NewDataSourceImporter(&importerConfig, statusUpdater)
 
 	s.TargetConfig.Logger.Info("Importing metadata into Raito")
 	status, subtaskId, err := dsImporter.TriggerImport(s.JobId)

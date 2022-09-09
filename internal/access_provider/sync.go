@@ -1,17 +1,16 @@
 package access_provider
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
-	"github.com/hashicorp/go-hclog"
+	"gopkg.in/yaml.v2"
 
 	dapc "github.com/raito-io/cli/base/access_provider"
 	baseconfig "github.com/raito-io/cli/base/util/config"
+	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/data_access"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
@@ -30,12 +29,16 @@ type AccessProviderImportResult struct {
 var accessLastCalculated = map[string]int64{}
 
 type DataAccessSync struct {
-	TargetConfig  *target.BaseTargetConfig
-	JobId         string
-	StatusUpdater func(status job.JobStatus)
+	TargetConfig *target.BaseTargetConfig
+	JobId        string
 }
 
-func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.JobStatus, string, error) {
+type dataAccessRetrieveInformation struct {
+	LastCalculated int64 `yaml:"lastCalculated" json:"lastCalculated"`
+	FileBuildTime  int64 `yaml:"fileBuildTime" json:"fileBuildTime"`
+}
+
+func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater *job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
@@ -49,41 +52,10 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 		defer os.RemoveAll(targetFile)
 	}
 
-	config := data_access.AccessSyncConfig{
-		BaseTargetConfig: *s.TargetConfig,
-	}
+	statusUpdater.AddTaskEvent(job.DataRetrieve)
 
-	lastUpdated := accessLastCalculated[s.TargetConfig.DataSourceId]
-
-	s.TargetConfig.Logger.Info("Fetching access providers for this data source from Raito")
-	s.StatusUpdater(job.DataRetrieve)
-	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, lastUpdated)
-
+	err = s.accessSync(client, statusUpdater, targetFile)
 	if err != nil {
-		return job.Failed, "", err
-	}
-
-	err = s.updateLastCalculated(dar)
-	if err != nil {
-		return job.Failed, "", err
-	}
-
-	syncerConfig := dapc.AccessSyncConfig{
-		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		Prefix:     "",
-		TargetFile: targetFile,
-		SourceFile: dar,
-	}
-
-	das, err := client.GetAccessSyncer()
-	if err != nil {
-		return job.Failed, "", err
-	}
-
-	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
-	res := das.SyncAccess(&syncerConfig)
-
-	if res.Error != nil {
 		return job.Failed, "", err
 	}
 
@@ -93,7 +65,7 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
 	}
 
-	daImporter := NewAccessProviderImporter(&importerConfig, s.StatusUpdater)
+	daImporter := NewAccessProviderImporter(&importerConfig, statusUpdater)
 
 	status, subtaskId, err := daImporter.TriggerImport(s.JobId)
 	if err != nil {
@@ -109,49 +81,81 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 	return status, subtaskId, nil
 }
 
-func (s *DataAccessSync) updateLastCalculated(filePath string) error {
-	time, err := findLastCalculated(filePath, s.TargetConfig.Logger)
+func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater *job.TaskEventUpdater, targetFile string) (returnErr error) {
+	subTaskUpdater := statusUpdater.GetSubtaskEventUpdater(constants.SubtaskAccessSync)
+
+	defer func() {
+		if returnErr != nil {
+			subTaskUpdater.AddSubtaskEvent(job.Failed)
+		} else {
+			subTaskUpdater.AddSubtaskEvent(job.Completed)
+		}
+	}()
+
+	subTaskUpdater.AddSubtaskEvent(job.Started)
+
+	config := data_access.AccessSyncConfig{
+		BaseTargetConfig: *s.TargetConfig,
+	}
+
+	lastUpdated := accessLastCalculated[s.TargetConfig.DataSourceId]
+
+	s.TargetConfig.Logger.Info("Fetching access providers for this data source from Raito")
+	subTaskUpdater.AddSubtaskEvent(job.DataRetrieve)
+	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, lastUpdated)
+
 	if err != nil {
 		return err
 	}
-	accessLastCalculated[s.TargetConfig.DataSourceId] = time
+
+	subTaskUpdater.AddSubtaskEvent(job.InProgress)
+
+	darInformation, err := s.readDataAccessRetrieveInformation(dar)
+	if err != nil {
+		return err
+	}
+
+	subTaskUpdater.SetReceivedDate(darInformation.FileBuildTime)
+	s.updateLastCalculated(darInformation)
+
+	syncerConfig := dapc.AccessSyncConfig{
+		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:     "",
+		TargetFile: targetFile,
+		SourceFile: dar,
+	}
+
+	das, err := client.GetAccessSyncer()
+	if err != nil {
+		return err
+	}
+
+	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
+	res := das.SyncAccess(&syncerConfig)
+
+	if res.Error != nil {
+		return res.Error
+	}
 
 	return nil
 }
 
-func findLastCalculated(filePath string, logger hclog.Logger) (int64, error) {
+func (s *DataAccessSync) readDataAccessRetrieveInformation(filePath string) (*dataAccessRetrieveInformation, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return 0, fmt.Errorf("error while reading temporary file %q: %s", filePath, err.Error())
+		return nil, err
 	}
+
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	lineNr := 0
-	searchString := "lastCalculated:"
+	darInf := &dataAccessRetrieveInformation{}
+	err = yaml.NewDecoder(file).Decode(darInf)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		if index := strings.Index(line, searchString); index >= 0 {
-			timeString := strings.TrimSpace(line[index+len(searchString):])
-			time, err := strconv.Atoi(timeString)
+	return darInf, err
+}
 
-			if err != nil {
-				return 0, fmt.Errorf("unable to parse lastCalculated field in %q: %s", filePath, err.Error())
-			}
-
-			return int64(time), nil
-		}
-
-		lineNr++
-
-		if lineNr == 10 {
-			logger.Info(fmt.Sprintf("Didn't find 'lastCalculated' field in first 10 lines of %q. Giving up.", filePath))
-			return 0, nil
-		}
-	}
-
-	return 0, nil
+func (s *DataAccessSync) updateLastCalculated(information *dataAccessRetrieveInformation) {
+	accessLastCalculated[s.TargetConfig.DataSourceId] = information.LastCalculated
 }
 
 func (s *DataAccessSync) ProcessResults(results interface{}) error {

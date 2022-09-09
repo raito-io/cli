@@ -30,11 +30,11 @@ type Access struct {
 }
 
 type WhoItem struct {
-	Users                  []string `yaml:"users" json:"users"`
-	Groups                 []string `yaml:"groups" json:"groups"`
-	AccessProviders        []string `yaml:"accessProviders" json:"accessProviders"`
-	UsersInGroups          []string `yaml:"usersInGroups" json:"usersInGroups"`
-	UsersInAccessProviders []string `yaml:"usersInAccessProviders" json:"usersInAccessProviders"`
+	Users          []string `yaml:"users" json:"users"`
+	Groups         []string `yaml:"groups" json:"groups"`
+	InheritFrom    []string `yaml:"inheritFrom" json:"inheritFrom"`
+	UsersInGroups  []string `yaml:"usersInGroups" json:"usersInGroups"`
+	UsersInherited []string `yaml:"usersInherited" json:"usersInherited"`
 }
 
 type WhatItem struct {

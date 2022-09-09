@@ -95,7 +95,7 @@ func AddSubtaskEvent(cfg *target.BaseTargetConfig, jobID, jobType, subtask strin
 		jobID, cfg.DataSourceId, cfg.IdentityStoreId, jobType, subtask, status.String(), time.Now().Format(time.RFC3339))
 
 	if receivedDate != nil {
-		gqlQuery += fmt.Sprintf(", receivedData: %d", *receivedDate)
+		gqlQuery += fmt.Sprintf(", receivedDate: %d", *receivedDate)
 	}
 
 	gqlQuery += `}) { jobId } }" }"`

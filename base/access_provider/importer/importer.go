@@ -12,7 +12,7 @@ import (
 	"github.com/raito-io/cli/base/access_provider"
 )
 
-func ParseAccessProviderImportFile(config *access_provider.AccessSyncExportConfig) (*AccessProviderImport, error) {
+func ParseAccessProviderImportFile(config *access_provider.AccessSyncFromTarget) (*AccessProviderImport, error) {
 	var ret AccessProviderImport
 
 	af, err := os.Open(config.SourceFile)
@@ -43,22 +43,21 @@ func ParseAccessProviderImportFile(config *access_provider.AccessSyncExportConfi
 }
 
 type AccessProviderNameTranslationFileCreator interface {
-	AddAccessProviderNameTranslation(accesProviderNameTranslations ...AccessProviderNameTranslation) error
-	AddAccessProvidersNameTranslations(accesProviderNameTranslations []AccessProviderNameTranslation) error
+	AddAccessProviderActualName(accessProviderActualName ...AccessProviderActualNameTranslation) error
 	Close()
 	GetAccessProviderCount() int
 }
 
 type accessProviderNameTranslationFileCreator struct {
-	config *access_provider.AccessSyncExportConfig
+	config *access_provider.AccessSyncFromTarget
 
-	targetFile      *os.File
-	dataAccessCount int
+	actualNameTargetFile *os.File
+	dataAccessCount      int
 }
 
 // NewAccessProviderFileCreator creates a new AccessProviderFileCreator based on the configuration coming from
 // the Raito CLI.
-func NewAccessProviderFileCreator(config *access_provider.AccessSyncExportConfig) (AccessProviderNameTranslationFileCreator, error) {
+func NewAccessProviderFileCreator(config *access_provider.AccessSyncFromTarget) (AccessProviderNameTranslationFileCreator, error) {
 	dsI := accessProviderNameTranslationFileCreator{
 		config: config,
 	}
@@ -68,7 +67,7 @@ func NewAccessProviderFileCreator(config *access_provider.AccessSyncExportConfig
 		return nil, err
 	}
 
-	_, err = dsI.targetFile.WriteString("[")
+	_, err = dsI.actualNameTargetFile.WriteString("[")
 	if err != nil {
 		return nil, err
 	}
@@ -76,31 +75,27 @@ func NewAccessProviderFileCreator(config *access_provider.AccessSyncExportConfig
 	return &dsI, nil
 }
 
-func (d *accessProviderNameTranslationFileCreator) AddAccessProviderNameTranslation(accesProviderNameTranslations ...AccessProviderNameTranslation) error {
-	return d.AddAccessProvidersNameTranslations(accesProviderNameTranslations)
-}
-
-func (d *accessProviderNameTranslationFileCreator) AddAccessProvidersNameTranslations(accesProviderNameTranslations []AccessProviderNameTranslation) error {
-	if len(accesProviderNameTranslations) == 0 {
+func (d *accessProviderNameTranslationFileCreator) AddAccessProviderActualName(accessProviderActualName ...AccessProviderActualNameTranslation) error {
+	if len(accessProviderActualName) == 0 {
 		return nil
 	}
 
-	for _, dant := range accesProviderNameTranslations {
+	for _, dant := range accessProviderActualName {
 		doBuf, err := json.Marshal(dant)
 		if err != nil {
 			return fmt.Errorf("error while serializing data object with ID %q and roleName %q", dant.AccessProviderId, dant.AccessProviderActualName)
 		}
 
 		if d.dataAccessCount > 0 {
-			d.targetFile.WriteString(",") //nolint:errcheck
+			d.actualNameTargetFile.WriteString(",") //nolint:errcheck
 		}
 
-		d.targetFile.WriteString("\n") //nolint:errcheck
-		_, err = d.targetFile.Write(doBuf)
+		d.actualNameTargetFile.WriteString("\n") //nolint:errcheck
+		_, err = d.actualNameTargetFile.Write(doBuf)
 
 		// Only looking at writing errors at the end, supposing if one fails, all would fail
 		if err != nil {
-			return fmt.Errorf("error while writing to temp file %q", d.targetFile.Name())
+			return fmt.Errorf("error while writing to temp file %q", d.actualNameTargetFile.Name())
 		}
 		d.dataAccessCount++
 	}
@@ -109,8 +104,8 @@ func (d *accessProviderNameTranslationFileCreator) AddAccessProvidersNameTransla
 }
 
 func (d *accessProviderNameTranslationFileCreator) Close() {
-	d.targetFile.WriteString("\n]") //nolint:errcheck
-	d.targetFile.Close()
+	d.actualNameTargetFile.WriteString("\n]") //nolint:errcheck
+	d.actualNameTargetFile.Close()
 }
 
 func (d *accessProviderNameTranslationFileCreator) GetAccessProviderCount() int {
@@ -122,7 +117,7 @@ func (d *accessProviderNameTranslationFileCreator) createTargetFile() error {
 	if err != nil {
 		return fmt.Errorf("error creating temporary file for data source importer: %s", err.Error())
 	}
-	d.targetFile = f
+	d.actualNameTargetFile = f
 
 	return nil
 }

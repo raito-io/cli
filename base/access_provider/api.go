@@ -9,8 +9,8 @@ import (
 	"net/rpc"
 )
 
-// AccessSyncExportConfig contains all necessary configuration parameters to export Data from Raito into DS
-type AccessSyncExportConfig struct {
+// AccessSyncFromTarget contains all necessary configuration parameters to export Data from Raito into DS
+type AccessSyncFromTarget struct {
 	config.ConfigMap
 	// SourceFile points to the file containing the access controls that need to be pushed to the data source.
 	SourceFile string
@@ -19,10 +19,10 @@ type AccessSyncExportConfig struct {
 	Prefix     string
 }
 
-// AccessSyncImportConfig contains all necessary configuration parameters to import Data from Raito into DS
-type AccessSyncImportConfig struct {
+// AccessSyncToTarget contains all necessary configuration parameters to import Data from Raito into DS
+type AccessSyncToTarget struct {
 	config.ConfigMap
-	// TargetFile points to the file where the plugin needs to export the access controls to that are read from the data source.
+	// TargetFile points to the file where the plugin needs to export the access control naming.
 	TargetFile string
 	Prefix     string
 }
@@ -36,8 +36,8 @@ type AccessSyncResult struct {
 // AccessSyncer interface needs to be implemented by any plugin that wants to sync access controls between Raito and the data source.
 // This sync can be in the 2 directions or in just 1 depending on the parameters set in AccessSyncConfig.
 type AccessSyncer interface {
-	SyncImportAccess(config *AccessSyncImportConfig) AccessSyncResult
-	SyncExportAccess(config *AccessSyncExportConfig) AccessSyncResult
+	SyncToTarget(config *AccessSyncToTarget) AccessSyncResult
+	SyncFromTarget(config *AccessSyncFromTarget) AccessSyncResult
 }
 
 // AccessSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -61,10 +61,10 @@ const AccessSyncerName = "accessSyncer"
 
 type accessSyncerRPC struct{ client *rpc.Client }
 
-func (g *accessSyncerRPC) SyncImportAccess(config *AccessSyncImportConfig) AccessSyncResult {
+func (g *accessSyncerRPC) SyncToTarget(config *AccessSyncToTarget) AccessSyncResult {
 	var resp AccessSyncResult
 
-	err := g.client.Call("Plugin.SyncImportAccess", config, &resp)
+	err := g.client.Call("Plugin.SyncToTarget", config, &resp)
 	if err != nil && resp.Error == nil {
 		resp.Error = error2.ToErrorResult(err)
 	}
@@ -72,10 +72,10 @@ func (g *accessSyncerRPC) SyncImportAccess(config *AccessSyncImportConfig) Acces
 	return resp
 }
 
-func (g *accessSyncerRPC) SyncExportAccess(config *AccessSyncExportConfig) AccessSyncResult {
+func (g *accessSyncerRPC) SyncFromTarget(config *AccessSyncFromTarget) AccessSyncResult {
 	var resp AccessSyncResult
 
-	err := g.client.Call("Plugin.SyncExportAccess", config, &resp)
+	err := g.client.Call("Plugin.SyncFromTarget", config, &resp)
 	if err != nil && resp.Error == nil {
 		resp.Error = error2.ToErrorResult(err)
 	}
@@ -87,12 +87,12 @@ type accessSyncerRPCServer struct {
 	Impl AccessSyncer
 }
 
-func (s *accessSyncerRPCServer) SyncImportAccess(config *AccessSyncImportConfig, resp *AccessSyncResult) error {
-	*resp = s.Impl.SyncImportAccess(config)
+func (s *accessSyncerRPCServer) SyncToTarget(config *AccessSyncToTarget, resp *AccessSyncResult) error {
+	*resp = s.Impl.SyncToTarget(config)
 	return nil
 }
 
-func (s *accessSyncerRPCServer) SyncExportAccess(config *AccessSyncExportConfig, resp *AccessSyncResult) error {
-	*resp = s.Impl.SyncExportAccess(config)
+func (s *accessSyncerRPCServer) SyncFromTarget(config *AccessSyncFromTarget, resp *AccessSyncResult) error {
+	*resp = s.Impl.SyncFromTarget(config)
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/raito-io/cli/internal/graphql"
+	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 )
 
@@ -19,6 +20,16 @@ type TaskEventUpdater interface {
 type SubtaskEventUpdater interface {
 	AddSubtaskEvent(status JobStatus)
 	SetReceivedDate(receivedDate int64)
+}
+
+type Task interface {
+	GetParts() []TaskPart
+}
+
+type TaskPart interface {
+	StartSyncAndQueueTaskPart(c plugin.PluginClient, statusUpdater TaskEventUpdater) (JobStatus, string, error)
+	ProcessResults(results interface{}) error
+	GetResultObject() interface{}
 }
 
 type taskEventUpdater struct {

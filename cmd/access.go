@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const defaultAccessFile = "access.yml"
@@ -73,7 +74,7 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 		return err
 	}
 
-	res := as.SyncAccess(&access_provider.AccessSyncConfig{
+	res := as.SyncExportAccess(&access_provider.AccessSyncExportConfig{
 		ConfigMap:  config.ConfigMap{Parameters: targetConfig.Parameters},
 		Prefix:     "R",
 		SourceFile: accessFile,

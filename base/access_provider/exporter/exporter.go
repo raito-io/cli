@@ -24,7 +24,7 @@ type AccessProviderFileCreator interface {
 }
 
 type accessProviderFileCreator struct {
-	config *access_provider.AccessSyncConfig
+	config *access_provider.AccessSyncImportConfig
 
 	targetFile      *os.File
 	dataAccessCount int
@@ -32,7 +32,7 @@ type accessProviderFileCreator struct {
 
 // NewAccessProviderFileCreator creates a new AccessProviderFileCreator based on the configuration coming from
 // the Raito CLI.
-func NewAccessProviderFileCreator(config *access_provider.AccessSyncConfig) (AccessProviderFileCreator, error) {
+func NewAccessProviderFileCreator(config *access_provider.AccessSyncImportConfig) (AccessProviderFileCreator, error) {
 	dsI := accessProviderFileCreator{
 		config: config,
 	}

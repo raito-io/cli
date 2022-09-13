@@ -42,6 +42,11 @@ type WhatItem struct {
 	Permissions []string                         `yaml:"permissions" json:"permissions"`
 }
 
+type AccessProviderNameTranslation struct {
+	AccessProviderId         string `yaml:"accessProviderId" json:"accessProviderId"`
+	AccessProviderActualName string `yaml:"accessProviderActualName" json:"accessProviderActualName"`
+}
+
 type Action int
 
 const (

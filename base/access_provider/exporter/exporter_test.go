@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
-	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -21,7 +22,7 @@ func init() {
 func TestAccessProviderFileCreator(t *testing.T) {
 	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile.Name())
-	config := access_provider.AccessSyncConfig{
+	config := access_provider.AccessSyncImportConfig{
 		TargetFile: tempFile.Name(),
 	}
 	apfc, err := NewAccessProviderFileCreator(&config)

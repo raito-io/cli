@@ -39,6 +39,17 @@ type dataAccessRetrieveInformation struct {
 }
 
 func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+	// Export Access providers to DS
+	err := s.exportAccessProviderToDataSource(client, statusUpdater)
+	if err != nil {
+		return job.Failed, "", err
+	}
+
+	// Import Access providers from DS
+	return s.importAccessProviderToDataSource(client, statusUpdater)
+}
+
+func (s *DataAccessSync) importAccessProviderToDataSource(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
@@ -52,9 +63,7 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, status
 		defer os.RemoveAll(targetFile)
 	}
 
-	statusUpdater.AddTaskEvent(job.DataRetrieve)
-
-	err = s.accessSync(client, statusUpdater, targetFile)
+	err = s.accessSyncImport(client, targetFile)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -81,7 +90,27 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, status
 	return status, subtaskId, nil
 }
 
-func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (returnErr error) {
+func (s *DataAccessSync) exportAccessProviderToDataSource(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) error {
+	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
+
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da-naming", "json"))
+	if err != nil {
+		return err
+	}
+
+	if s.TargetConfig.DeleteTempFiles {
+		defer os.RemoveAll(targetFile)
+	}
+
+	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as actual access name target file", targetFile))
+
+	statusUpdater.AddTaskEvent(job.DataRetrieve)
+
+	return s.accessSyncExport(client, statusUpdater, targetFile)
+}
+
+// Export data from Raito to DS
+func (s *DataAccessSync) accessSyncExport(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (returnErr error) {
 	subTaskUpdater := statusUpdater.GetSubtaskEventUpdater(constants.SubtaskAccessSync)
 
 	defer func() {
@@ -118,11 +147,11 @@ func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater jo
 	subTaskUpdater.SetReceivedDate(darInformation.FileBuildTime)
 	s.updateLastCalculated(darInformation)
 
-	syncerConfig := dapc.AccessSyncConfig{
+	syncerConfig := dapc.AccessSyncExportConfig{
 		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		Prefix:     "",
-		TargetFile: targetFile,
 		SourceFile: dar,
+		TargetFile: targetFile,
 	}
 
 	das, err := client.GetAccessSyncer()
@@ -131,7 +160,30 @@ func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater jo
 	}
 
 	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
-	res := das.SyncAccess(&syncerConfig)
+	res := das.SyncExportAccess(&syncerConfig)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
+// Import data from Raito to DS
+func (s *DataAccessSync) accessSyncImport(client plugin.PluginClient, targetFile string) (returnErr error) {
+	syncerConfig := dapc.AccessSyncImportConfig{
+		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:     "",
+		TargetFile: targetFile,
+	}
+
+	das, err := client.GetAccessSyncer()
+	if err != nil {
+		return err
+	}
+
+	s.TargetConfig.Logger.Info("Synchronizing access providers between data source and the Raito")
+	res := das.SyncImportAccess(&syncerConfig)
 
 	if res.Error != nil {
 		return res.Error

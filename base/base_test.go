@@ -1,12 +1,14 @@
 package base
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/base/util/plugin"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestRegisterIdentityStoreService(t *testing.T) {
@@ -158,7 +160,11 @@ func (s *dataSourcePlugin) GetMetaData() data_source.MetaData {
 
 type accessSyncPlugin struct{}
 
-func (s *accessSyncPlugin) SyncAccess(config *access_provider.AccessSyncConfig) access_provider.AccessSyncResult {
+func (s *accessSyncPlugin) SyncImportAccess(config *access_provider.AccessSyncImportConfig) access_provider.AccessSyncResult {
+	return access_provider.AccessSyncResult{}
+}
+
+func (s *accessSyncPlugin) SyncExportAccess(config *access_provider.AccessSyncExportConfig) access_provider.AccessSyncResult {
 	return access_provider.AccessSyncResult{}
 }
 

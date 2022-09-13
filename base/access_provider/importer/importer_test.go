@@ -2,13 +2,15 @@ package importer
 
 import (
 	"fmt"
-	"github.com/raito-io/cli/base/access_provider"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/raito-io/cli/base/access_provider"
 )
 
 func TestParseImportFileYaml(t *testing.T) {
-	config := &access_provider.AccessSyncConfig{
+	config := &access_provider.AccessSyncExportConfig{
 		SourceFile: "./testdata/data-access.yaml",
 	}
 	parsed, err := ParseAccessProviderImportFile(config)
@@ -16,7 +18,7 @@ func TestParseImportFileYaml(t *testing.T) {
 }
 
 func TestParseImportFileJSON(t *testing.T) {
-	config := &access_provider.AccessSyncConfig{
+	config := &access_provider.AccessSyncExportConfig{
 		SourceFile: "./testdata/data-access.json",
 	}
 	parsed, err := ParseAccessProviderImportFile(config)

@@ -31,10 +31,10 @@ type IdentityStoreImporter interface {
 type identityStoreImporter struct {
 	config        *IdentityStoreImportConfig
 	log           hclog.Logger
-	statusUpdater *job.TaskEventUpdater
+	statusUpdater job.TaskEventUpdater
 }
 
-func NewIdentityStoreImporter(config *IdentityStoreImportConfig, statusUpdater *job.TaskEventUpdater) IdentityStoreImporter {
+func NewIdentityStoreImporter(config *IdentityStoreImportConfig, statusUpdater job.TaskEventUpdater) IdentityStoreImporter {
 	logger := config.Logger.With("identitystore", config.IdentityStoreId, "userfile", config.UserFile, "groupfile", config.GroupFile)
 	isI := identityStoreImporter{config, logger, statusUpdater}
 

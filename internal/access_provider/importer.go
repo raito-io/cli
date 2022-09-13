@@ -28,10 +28,10 @@ type AccessProviderImporter interface {
 type accessProviderImporter struct {
 	config        *AccessProviderImportConfig
 	log           hclog.Logger
-	statusUpdater *job.TaskEventUpdater
+	statusUpdater job.TaskEventUpdater
 }
 
-func NewAccessProviderImporter(config *AccessProviderImportConfig, statusUpdater *job.TaskEventUpdater) AccessProviderImporter {
+func NewAccessProviderImporter(config *AccessProviderImportConfig, statusUpdater job.TaskEventUpdater) AccessProviderImporter {
 	logger := config.Logger.With("AccessProvider", config.DataSourceId, "file", config.TargetFile)
 	dsI := accessProviderImporter{config, logger, statusUpdater}
 

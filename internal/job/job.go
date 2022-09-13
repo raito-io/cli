@@ -11,18 +11,32 @@ import (
 	"github.com/raito-io/cli/internal/target"
 )
 
-type TaskEventUpdater struct {
+type TaskEventUpdater interface {
+	AddTaskEvent(status JobStatus)
+	GetSubtaskEventUpdater(subtask string) SubtaskEventUpdater
+}
+
+type SubtaskEventUpdater interface {
+	AddSubtaskEvent(status JobStatus)
+	SetReceivedDate(receivedDate int64)
+}
+
+type taskEventUpdater struct {
 	Cfg     *target.BaseTargetConfig
 	JobId   string
 	JobType string
 }
 
-func (u *TaskEventUpdater) AddTaskEvent(status JobStatus) {
+func NewTaskEventUpdater(cfg *target.BaseTargetConfig, jobId, jobType string) TaskEventUpdater {
+	return &taskEventUpdater{cfg, jobId, jobType}
+}
+
+func (u *taskEventUpdater) AddTaskEvent(status JobStatus) {
 	AddTaskEvent(u.Cfg, u.JobId, u.JobType, status)
 }
 
-func (u *TaskEventUpdater) GetSubtaskEventUpdater(subtask string) SubtaskEventUpdater {
-	return SubtaskEventUpdater{
+func (u *taskEventUpdater) GetSubtaskEventUpdater(subtask string) SubtaskEventUpdater {
+	return &subtaskEventUpdater{
 		Cfg:     u.Cfg,
 		JobId:   u.JobId,
 		JobType: u.JobType,
@@ -30,7 +44,7 @@ func (u *TaskEventUpdater) GetSubtaskEventUpdater(subtask string) SubtaskEventUp
 	}
 }
 
-type SubtaskEventUpdater struct {
+type subtaskEventUpdater struct {
 	Cfg          *target.BaseTargetConfig
 	JobId        string
 	JobType      string
@@ -38,11 +52,11 @@ type SubtaskEventUpdater struct {
 	receivedDate *int64
 }
 
-func (u *SubtaskEventUpdater) AddSubtaskEvent(status JobStatus) {
+func (u *subtaskEventUpdater) AddSubtaskEvent(status JobStatus) {
 	AddSubtaskEvent(u.Cfg, u.JobId, u.JobType, u.Subtask, status, u.receivedDate)
 }
 
-func (u *SubtaskEventUpdater) SetReceivedDate(receivedDate int64) {
+func (u *subtaskEventUpdater) SetReceivedDate(receivedDate int64) {
 	u.receivedDate = &receivedDate
 }
 

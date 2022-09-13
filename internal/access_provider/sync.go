@@ -38,7 +38,7 @@ type dataAccessRetrieveInformation struct {
 	FileBuildTime  int64 `yaml:"fileBuildTime" json:"fileBuildTime"`
 }
 
-func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater *job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
@@ -81,7 +81,7 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, status
 	return status, subtaskId, nil
 }
 
-func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater *job.TaskEventUpdater, targetFile string) (returnErr error) {
+func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (returnErr error) {
 	subTaskUpdater := statusUpdater.GetSubtaskEventUpdater(constants.SubtaskAccessSync)
 
 	defer func() {

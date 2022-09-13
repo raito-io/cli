@@ -22,7 +22,7 @@ import (
 )
 
 type task interface {
-	StartSyncAndQueueJob(c plugin.PluginClient, statusUpdater *job.TaskEventUpdater) (job.JobStatus, string, error)
+	StartSyncAndQueueJob(c plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error)
 	ProcessResults(results interface{}) error
 	GetResultObject() interface{}
 }
@@ -122,11 +122,7 @@ func runSync(baseLogger hclog.Logger, otherArgs []string) error {
 
 func execute(targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
 	syncTask task, cfg *target.BaseTargetConfig, c plugin.PluginClient) error {
-	taskEventUpdater := job.TaskEventUpdater{
-		Cfg:     cfg,
-		JobId:   jobID,
-		JobType: syncType,
-	}
+	taskEventUpdater := job.NewTaskEventUpdater(cfg, jobID, syncType)
 
 	switch {
 	case skipSync:
@@ -146,7 +142,7 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 
 		taskEventUpdater.AddTaskEvent(job.Started)
 
-		status, subtaskId, err := syncTask.StartSyncAndQueueJob(c, &taskEventUpdater)
+		status, subtaskId, err := syncTask.StartSyncAndQueueJob(c, taskEventUpdater)
 		if err != nil {
 			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
 			taskEventUpdater.AddTaskEvent(job.Failed)

@@ -27,7 +27,7 @@ type DataSourceSync struct {
 	JobId        string
 }
 
-func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater *job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *DataSourceSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))

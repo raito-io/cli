@@ -29,10 +29,10 @@ type DataSourceImporter interface {
 type dataSourceImporter struct {
 	config        *DataSourceImportConfig
 	log           hclog.Logger
-	statusUpdater *job.TaskEventUpdater
+	statusUpdater job.TaskEventUpdater
 }
 
-func NewDataSourceImporter(config *DataSourceImportConfig, statusUpdater *job.TaskEventUpdater) DataSourceImporter {
+func NewDataSourceImporter(config *DataSourceImportConfig, statusUpdater job.TaskEventUpdater) DataSourceImporter {
 	logger := config.Logger.With("datasource", config.DataSourceId, "file", config.TargetFile)
 	dsI := dataSourceImporter{config, logger, statusUpdater}
 

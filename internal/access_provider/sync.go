@@ -38,7 +38,24 @@ type dataAccessRetrieveInformation struct {
 	FileBuildTime  int64 `yaml:"fileBuildTime" json:"fileBuildTime"`
 }
 
-func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+type dataAccessExportSubtask struct {
+	TargetConfig *target.BaseTargetConfig
+	JobId        *string
+}
+
+type dataAccessImportSubtask struct {
+	TargetConfig *target.BaseTargetConfig
+	JobId        *string
+}
+
+func (s *DataAccessSync) GetParts() []job.TaskPart {
+	return []job.TaskPart{
+		&dataAccessExportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId},
+		&dataAccessImportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId},
+	}
+}
+
+func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
@@ -52,9 +69,7 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, status
 		defer os.RemoveAll(targetFile)
 	}
 
-	statusUpdater.AddTaskEvent(job.DataRetrieve)
-
-	err = s.accessSync(client, statusUpdater, targetFile)
+	err = s.accessSyncImport(client, targetFile)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -67,7 +82,7 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, status
 
 	daImporter := NewAccessProviderImporter(&importerConfig, statusUpdater)
 
-	status, subtaskId, err := daImporter.TriggerImport(s.JobId)
+	status, subtaskId, err := daImporter.TriggerImport(*s.JobId)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -81,7 +96,77 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient, status
 	return status, subtaskId, nil
 }
 
-func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (returnErr error) {
+func (s *dataAccessImportSubtask) ProcessResults(results interface{}) error {
+	if daResult, ok := results.(*AccessProviderImportResult); ok {
+		if len(daResult.Warnings) > 0 {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced access providers with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(daResult.Warnings), daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+
+			for _, warning := range daResult.Warnings {
+				s.TargetConfig.Logger.Warn(warning)
+			}
+		} else {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("failed to load results")
+}
+
+func (s *dataAccessImportSubtask) GetResultObject() interface{} {
+	return &AccessProviderImportResult{}
+}
+
+// Import data from Raito to DS
+func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, targetFile string) (returnErr error) {
+	syncerConfig := dapc.AccessSyncFromTarget{
+		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:     "",
+		TargetFile: targetFile,
+	}
+
+	das, err := client.GetAccessSyncer()
+	if err != nil {
+		return err
+	}
+
+	s.TargetConfig.Logger.Info("Synchronizing access providers between data source and the Raito")
+	res := das.SyncFromTarget(&syncerConfig)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
+func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
+
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da-feedback", "json"))
+	if err != nil {
+		return job.Failed, "", err
+	}
+
+	if s.TargetConfig.DeleteTempFiles {
+		defer os.RemoveAll(targetFile)
+	}
+
+	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as actual access name target file", targetFile))
+
+	statusUpdater.AddTaskEvent(job.DataRetrieve)
+
+	err = s.accessSyncExport(client, statusUpdater, targetFile)
+	if err != nil {
+		return job.Failed, "", err
+	}
+
+	return job.Completed, "", err
+}
+
+// Export data from Raito to DS
+func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (returnErr error) {
 	subTaskUpdater := statusUpdater.GetSubtaskEventUpdater(constants.SubtaskAccessSync)
 
 	defer func() {
@@ -118,11 +203,11 @@ func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater jo
 	subTaskUpdater.SetReceivedDate(darInformation.FileBuildTime)
 	s.updateLastCalculated(darInformation)
 
-	syncerConfig := dapc.AccessSyncConfig{
-		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		Prefix:     "",
-		TargetFile: targetFile,
-		SourceFile: dar,
+	syncerConfig := dapc.AccessSyncToTarget{
+		ConfigMap:          baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:             "",
+		SourceFile:         dar,
+		FeedbackTargetFile: targetFile,
 	}
 
 	das, err := client.GetAccessSyncer()
@@ -131,7 +216,7 @@ func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater jo
 	}
 
 	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
-	res := das.SyncAccess(&syncerConfig)
+	res := das.SyncToTarget(&syncerConfig)
 
 	if res.Error != nil {
 		return res.Error
@@ -140,7 +225,7 @@ func (s *DataAccessSync) accessSync(client plugin.PluginClient, statusUpdater jo
 	return nil
 }
 
-func (s *DataAccessSync) readDataAccessRetrieveInformation(filePath string) (*dataAccessRetrieveInformation, error) {
+func (s *dataAccessExportSubtask) readDataAccessRetrieveInformation(filePath string) (*dataAccessRetrieveInformation, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -154,28 +239,14 @@ func (s *DataAccessSync) readDataAccessRetrieveInformation(filePath string) (*da
 	return darInf, err
 }
 
-func (s *DataAccessSync) updateLastCalculated(information *dataAccessRetrieveInformation) {
+func (s *dataAccessExportSubtask) updateLastCalculated(information *dataAccessRetrieveInformation) {
 	accessLastCalculated[s.TargetConfig.DataSourceId] = information.LastCalculated
 }
 
-func (s *DataAccessSync) ProcessResults(results interface{}) error {
-	if daResult, ok := results.(*AccessProviderImportResult); ok {
-		if len(daResult.Warnings) > 0 {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced access providers with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(daResult.Warnings), daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
-
-			for _, warning := range daResult.Warnings {
-				s.TargetConfig.Logger.Warn(warning)
-			}
-		} else {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
-		}
-
-		return nil
-	}
-
-	return fmt.Errorf("failed to load results")
+func (s *dataAccessExportSubtask) ProcessResults(results interface{}) error {
+	return nil
 }
 
-func (s *DataAccessSync) GetResultObject() interface{} {
-	return &AccessProviderImportResult{}
+func (s *dataAccessExportSubtask) GetResultObject() interface{} {
+	return nil
 }

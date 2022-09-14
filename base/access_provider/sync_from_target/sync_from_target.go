@@ -1,10 +1,10 @@
-// Package exporter provides the tooling to build the file to export access providers from the data source to be imported into Raito.
+// Package sync_from_target provides the tooling to build the file to export access providers from the data source to be imported into Raito.
 // Simply use the NewAccessProviderFileCreator function by passing in the config coming from the CLI
 // to create the necessary file(s).
 // The returned AccessProviderFileCreator can then be used (using the AddAccessProvider function)
 // to write AccessProvider to the file.
 // Make sure to call the Close function on the creator at the end (tip: use defer).
-package exporter
+package sync_from_target
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ type AccessProviderFileCreator interface {
 }
 
 type accessProviderFileCreator struct {
-	config *access_provider.AccessSyncConfig
+	config *access_provider.AccessSyncFromTarget
 
 	targetFile      *os.File
 	dataAccessCount int
@@ -32,7 +32,7 @@ type accessProviderFileCreator struct {
 
 // NewAccessProviderFileCreator creates a new AccessProviderFileCreator based on the configuration coming from
 // the Raito CLI.
-func NewAccessProviderFileCreator(config *access_provider.AccessSyncConfig) (AccessProviderFileCreator, error) {
+func NewAccessProviderFileCreator(config *access_provider.AccessSyncFromTarget) (AccessProviderFileCreator, error) {
 	dsI := accessProviderFileCreator{
 		config: config,
 	}

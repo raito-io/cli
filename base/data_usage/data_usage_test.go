@@ -2,7 +2,6 @@ package data_usage
 
 import (
 	"encoding/json"
-	"github.com/raito-io/cli/base/access_provider/exporter"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -10,8 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/raito-io/cli/base/data_source"
+	"github.com/raito-io/cli/base/access_provider/sync_from_target"
+
 	"github.com/stretchr/testify/assert"
+
+	"github.com/raito-io/cli/base/data_source"
 )
 
 func init() {
@@ -32,7 +34,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 
 	dus = append(dus, Statement{
 		ExternalId: "transaction1",
-		AccessedDataObjects: []exporter.WhatItem{
+		AccessedDataObjects: []sync_from_target.WhatItem{
 			{DataObject: &data_source.DataObjectReference{"schema1.table1.column1", "column"},
 				Permissions: []string{"SELECT"}},
 		},
@@ -47,7 +49,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 	})
 	dus = append(dus, Statement{
 		ExternalId: "transaction2",
-		AccessedDataObjects: []exporter.WhatItem{
+		AccessedDataObjects: []sync_from_target.WhatItem{
 			{DataObject: &data_source.DataObjectReference{"schema1.table2.column3", "column"},
 				Permissions: []string{"ALTER"}},
 			{DataObject: &data_source.DataObjectReference{"schema1.table2.column5", "column"},
@@ -65,7 +67,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 	})
 	dus = append(dus, Statement{
 		ExternalId: "transaction3",
-		AccessedDataObjects: []exporter.WhatItem{
+		AccessedDataObjects: []sync_from_target.WhatItem{
 			{DataObject: &data_source.DataObjectReference{"schema3", "schema"},
 				Permissions: []string{"GRANT"}},
 		},

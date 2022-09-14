@@ -1,4 +1,4 @@
-package importer
+package sync_to_target
 
 import (
 	"encoding/json"
@@ -40,6 +40,16 @@ type WhoItem struct {
 type WhatItem struct {
 	DataObject  *data_source.DataObjectReference `yaml:"dataObject" json:"dataObject"`
 	Permissions []string                         `yaml:"permissions" json:"permissions"`
+}
+
+type AccessSyncFeedbackInformation struct {
+	AccessId   string `yaml:"accessId" json:"accessId"`
+	ActualName string `yaml:"actualName" json:"actualName"`
+}
+
+type accessProviderFeedbackInformation struct {
+	ExternalId            string                          `json:"externalId"`
+	AccessFeedbackObjects []AccessSyncFeedbackInformation `json:"access"`
 }
 
 type Action int

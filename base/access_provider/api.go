@@ -14,9 +14,9 @@ type AccessSyncToTarget struct {
 	config.ConfigMap
 	// SourceFile points to the file containing the access controls that need to be pushed to the data source.
 	SourceFile string
-	// TargetFile points to the file where the plugin needs to export the access controls to that are read from the data source.
-	TargetFile string
-	Prefix     string
+	// ActualNamesTargetFile points to the file where the plugin needs to export the access controls to that are read from the data source.
+	ActualNamesTargetFile string
+	Prefix                string
 }
 
 // AccessSyncFromTarget contains all necessary configuration parameters to import Data from Raito into DS

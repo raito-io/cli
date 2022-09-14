@@ -113,7 +113,7 @@ func (d *accessProviderNameTranslationFileCreator) GetAccessProviderCount() int 
 }
 
 func (d *accessProviderNameTranslationFileCreator) createTargetFile() error {
-	f, err := os.Create(d.config.TargetFile)
+	f, err := os.Create(d.config.ActualNamesTargetFile)
 	if err != nil {
 		return fmt.Errorf("error creating temporary file for data source importer: %s", err.Error())
 	}

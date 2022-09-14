@@ -204,10 +204,10 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 	s.updateLastCalculated(darInformation)
 
 	syncerConfig := dapc.AccessSyncToTarget{
-		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		Prefix:     "",
-		SourceFile: dar,
-		TargetFile: targetFile,
+		ConfigMap:             baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:                "",
+		SourceFile:            dar,
+		ActualNamesTargetFile: targetFile,
 	}
 
 	das, err := client.GetAccessSyncer()

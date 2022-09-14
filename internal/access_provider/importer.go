@@ -85,7 +85,7 @@ func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.Job
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
-	res := Response{}
+	res := ImportResponse{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
 
 	if err != nil {
@@ -109,6 +109,6 @@ type QueryResponse struct {
 	Subtask subtaskResponse `json:"subtask"`
 }
 
-type Response struct {
+type ImportResponse struct {
 	Response QueryResponse `json:"importAccessProvidersRequest"`
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func TestParseImportFileYaml(t *testing.T) {
-	config := &access_provider.AccessSyncFromTarget{
+	config := &access_provider.AccessSyncToTarget{
 		SourceFile: "./testdata/data-access.yaml",
 	}
 	parsed, err := ParseAccessProviderImportFile(config)
@@ -18,7 +18,7 @@ func TestParseImportFileYaml(t *testing.T) {
 }
 
 func TestParseImportFileJSON(t *testing.T) {
-	config := &access_provider.AccessSyncFromTarget{
+	config := &access_provider.AccessSyncToTarget{
 		SourceFile: "./testdata/data-access.json",
 	}
 	parsed, err := ParseAccessProviderImportFile(config)

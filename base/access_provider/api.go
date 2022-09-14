@@ -9,8 +9,8 @@ import (
 	"net/rpc"
 )
 
-// AccessSyncFromTarget contains all necessary configuration parameters to export Data from Raito into DS
-type AccessSyncFromTarget struct {
+// AccessSyncToTarget contains all necessary configuration parameters to export Data from Raito into DS
+type AccessSyncToTarget struct {
 	config.ConfigMap
 	// SourceFile points to the file containing the access controls that need to be pushed to the data source.
 	SourceFile string
@@ -19,8 +19,8 @@ type AccessSyncFromTarget struct {
 	Prefix     string
 }
 
-// AccessSyncToTarget contains all necessary configuration parameters to import Data from Raito into DS
-type AccessSyncToTarget struct {
+// AccessSyncFromTarget contains all necessary configuration parameters to import Data from Raito into DS
+type AccessSyncFromTarget struct {
 	config.ConfigMap
 	// TargetFile points to the file where the plugin needs to export the access control naming.
 	TargetFile string
@@ -36,8 +36,8 @@ type AccessSyncResult struct {
 // AccessSyncer interface needs to be implemented by any plugin that wants to sync access controls between Raito and the data source.
 // This sync can be in the 2 directions or in just 1 depending on the parameters set in AccessSyncConfig.
 type AccessSyncer interface {
-	SyncToTarget(config *AccessSyncToTarget) AccessSyncResult
 	SyncFromTarget(config *AccessSyncFromTarget) AccessSyncResult
+	SyncToTarget(config *AccessSyncToTarget) AccessSyncResult
 }
 
 // AccessSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -61,10 +61,10 @@ const AccessSyncerName = "accessSyncer"
 
 type accessSyncerRPC struct{ client *rpc.Client }
 
-func (g *accessSyncerRPC) SyncToTarget(config *AccessSyncToTarget) AccessSyncResult {
+func (g *accessSyncerRPC) SyncFromTarget(config *AccessSyncFromTarget) AccessSyncResult {
 	var resp AccessSyncResult
 
-	err := g.client.Call("Plugin.SyncToTarget", config, &resp)
+	err := g.client.Call("Plugin.SyncFromTarget", config, &resp)
 	if err != nil && resp.Error == nil {
 		resp.Error = error2.ToErrorResult(err)
 	}
@@ -72,10 +72,10 @@ func (g *accessSyncerRPC) SyncToTarget(config *AccessSyncToTarget) AccessSyncRes
 	return resp
 }
 
-func (g *accessSyncerRPC) SyncFromTarget(config *AccessSyncFromTarget) AccessSyncResult {
+func (g *accessSyncerRPC) SyncToTarget(config *AccessSyncToTarget) AccessSyncResult {
 	var resp AccessSyncResult
 
-	err := g.client.Call("Plugin.SyncFromTarget", config, &resp)
+	err := g.client.Call("Plugin.SyncToTarget", config, &resp)
 	if err != nil && resp.Error == nil {
 		resp.Error = error2.ToErrorResult(err)
 	}

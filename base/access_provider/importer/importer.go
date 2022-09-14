@@ -12,7 +12,7 @@ import (
 	"github.com/raito-io/cli/base/access_provider"
 )
 
-func ParseAccessProviderImportFile(config *access_provider.AccessSyncFromTarget) (*AccessProviderImport, error) {
+func ParseAccessProviderImportFile(config *access_provider.AccessSyncToTarget) (*AccessProviderImport, error) {
 	var ret AccessProviderImport
 
 	af, err := os.Open(config.SourceFile)
@@ -49,7 +49,7 @@ type AccessProviderNameTranslationFileCreator interface {
 }
 
 type accessProviderNameTranslationFileCreator struct {
-	config *access_provider.AccessSyncFromTarget
+	config *access_provider.AccessSyncToTarget
 
 	actualNameTargetFile *os.File
 	dataAccessCount      int
@@ -57,7 +57,7 @@ type accessProviderNameTranslationFileCreator struct {
 
 // NewAccessProviderFileCreator creates a new AccessProviderFileCreator based on the configuration coming from
 // the Raito CLI.
-func NewAccessProviderFileCreator(config *access_provider.AccessSyncFromTarget) (AccessProviderNameTranslationFileCreator, error) {
+func NewAccessProviderFileCreator(config *access_provider.AccessSyncToTarget) (AccessProviderNameTranslationFileCreator, error) {
 	dsI := accessProviderNameTranslationFileCreator{
 		config: config,
 	}

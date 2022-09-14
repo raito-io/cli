@@ -120,7 +120,7 @@ func (s *dataAccessImportSubtask) GetResultObject() interface{} {
 
 // Import data from Raito to DS
 func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, targetFile string) (returnErr error) {
-	syncerConfig := dapc.AccessSyncToTarget{
+	syncerConfig := dapc.AccessSyncFromTarget{
 		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		Prefix:     "",
 		TargetFile: targetFile,
@@ -132,7 +132,7 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 	}
 
 	s.TargetConfig.Logger.Info("Synchronizing access providers between data source and the Raito")
-	res := das.SyncToTarget(&syncerConfig)
+	res := das.SyncFromTarget(&syncerConfig)
 
 	if res.Error != nil {
 		return res.Error
@@ -203,7 +203,7 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 	subTaskUpdater.SetReceivedDate(darInformation.FileBuildTime)
 	s.updateLastCalculated(darInformation)
 
-	syncerConfig := dapc.AccessSyncFromTarget{
+	syncerConfig := dapc.AccessSyncToTarget{
 		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		Prefix:     "",
 		SourceFile: dar,
@@ -216,7 +216,7 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 	}
 
 	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
-	res := das.SyncFromTarget(&syncerConfig)
+	res := das.SyncToTarget(&syncerConfig)
 
 	if res.Error != nil {
 		return res.Error

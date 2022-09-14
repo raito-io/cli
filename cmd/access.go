@@ -74,7 +74,7 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 		return err
 	}
 
-	res := as.SyncFromTarget(&access_provider.AccessSyncFromTarget{
+	res := as.SyncToTarget(&access_provider.AccessSyncToTarget{
 		ConfigMap:  config.ConfigMap{Parameters: targetConfig.Parameters},
 		Prefix:     "R",
 		SourceFile: accessFile,

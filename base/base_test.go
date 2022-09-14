@@ -160,11 +160,11 @@ func (s *dataSourcePlugin) GetMetaData() data_source.MetaData {
 
 type accessSyncPlugin struct{}
 
-func (s *accessSyncPlugin) SyncToTarget(config *access_provider.AccessSyncToTarget) access_provider.AccessSyncResult {
+func (s *accessSyncPlugin) SyncFromTarget(config *access_provider.AccessSyncFromTarget) access_provider.AccessSyncResult {
 	return access_provider.AccessSyncResult{}
 }
 
-func (s *accessSyncPlugin) SyncFromTarget(config *access_provider.AccessSyncFromTarget) access_provider.AccessSyncResult {
+func (s *accessSyncPlugin) SyncToTarget(config *access_provider.AccessSyncToTarget) access_provider.AccessSyncResult {
 	return access_provider.AccessSyncResult{}
 }
 

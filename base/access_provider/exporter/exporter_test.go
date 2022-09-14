@@ -22,7 +22,7 @@ func init() {
 func TestAccessProviderFileCreator(t *testing.T) {
 	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile.Name())
-	config := access_provider.AccessSyncToTarget{
+	config := access_provider.AccessSyncFromTarget{
 		TargetFile: tempFile.Name(),
 	}
 	apfc, err := NewAccessProviderFileCreator(&config)

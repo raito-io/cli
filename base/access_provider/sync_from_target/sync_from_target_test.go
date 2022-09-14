@@ -1,4 +1,4 @@
-package exporter
+package sync_from_target
 
 import (
 	"encoding/json"

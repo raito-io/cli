@@ -1,4 +1,4 @@
-package importer
+package sync_to_target
 
 import (
 	"encoding/json"
@@ -42,9 +42,14 @@ type WhatItem struct {
 	Permissions []string                         `yaml:"permissions" json:"permissions"`
 }
 
-type AccessProviderActualNameTranslation struct {
-	AccessProviderId         string `yaml:"accessProviderId" json:"accessProviderId"`
-	AccessProviderActualName string `yaml:"accessProviderActualName" json:"accessProviderActualName"`
+type AccessSyncFeedbackInformation struct {
+	AccessId   string `yaml:"accessId" json:"accessId"`
+	ActualName string `yaml:"actualName" json:"actualName"`
+}
+
+type accessProviderFeedbackInformation struct {
+	ExternalId            string                          `json:"externalId"`
+	AccessFeedbackObjects []AccessSyncFeedbackInformation `json:"access"`
 }
 
 type Action int

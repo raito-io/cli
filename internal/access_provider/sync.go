@@ -144,7 +144,7 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da-naming", "json"))
+	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da-feedback", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -204,10 +204,10 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 	s.updateLastCalculated(darInformation)
 
 	syncerConfig := dapc.AccessSyncToTarget{
-		ConfigMap:             baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		Prefix:                "",
-		SourceFile:            dar,
-		ActualNamesTargetFile: targetFile,
+		ConfigMap:          baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:             "",
+		SourceFile:         dar,
+		FeedbackTargetFile: targetFile,
 	}
 
 	das, err := client.GetAccessSyncer()

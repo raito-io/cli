@@ -1,4 +1,4 @@
-package importer
+package sync_to_target
 
 import (
 	"fmt"

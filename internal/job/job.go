@@ -173,6 +173,10 @@ func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, 
                   statementsSkipped
                   warnings
               }
+              ... on AccessProviderSyncFeedbackResult {
+                  accessNamesAdded
+                  warnings
+              }
             }
         }}"}`, jobID, jobType, subtaskId)
 

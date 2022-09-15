@@ -26,6 +26,12 @@ type AccessProviderImportResult struct {
 	Warnings []string `json:"warnings"`
 }
 
+type AccessProviderExportFeedbackResult struct {
+	AccessNamesAdded int `json:"accessNamesAdded"`
+
+	Warnings []string `json:"warnings"`
+}
+
 var accessLastCalculated = map[string]int64{}
 
 type DataAccessSync struct {
@@ -157,16 +163,11 @@ func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(client plugin.Plugin
 
 	statusUpdater.AddTaskEvent(job.DataRetrieve)
 
-	err = s.accessSyncExport(client, statusUpdater, targetFile)
-	if err != nil {
-		return job.Failed, "", err
-	}
-
-	return job.Completed, "", err
+	return s.accessSyncExport(client, statusUpdater, targetFile)
 }
 
 // Export data from Raito to DS
-func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (returnErr error) {
+func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (jobStatus job.JobStatus, subTaskId string, returnErr error) {
 	subTaskUpdater := statusUpdater.GetSubtaskEventUpdater(constants.SubtaskAccessSync)
 
 	defer func() {
@@ -190,14 +191,14 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, lastUpdated)
 
 	if err != nil {
-		return err
+		return job.Failed, "", err
 	}
 
 	subTaskUpdater.AddSubtaskEvent(job.InProgress)
 
 	darInformation, err := s.readDataAccessRetrieveInformation(dar)
 	if err != nil {
-		return err
+		return job.Failed, "", err
 	}
 
 	subTaskUpdater.SetReceivedDate(darInformation.FileBuildTime)
@@ -212,17 +213,35 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 
 	das, err := client.GetAccessSyncer()
 	if err != nil {
-		return err
+		return job.Failed, "", err
 	}
 
 	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
 	res := das.SyncToTarget(&syncerConfig)
 
 	if res.Error != nil {
-		return res.Error
+		return job.Failed, "", res.Error
 	}
 
-	return nil
+	feedbackImportConfig := AccessProviderExportFeedbackConfig{
+		BaseTargetConfig: *s.TargetConfig,
+		FeedbackFile:     targetFile,
+	}
+
+	importer := NewAccessProviderFeedbackImporter(&feedbackImportConfig, statusUpdater)
+
+	status, subtaskId, err := importer.TriggerFeedbackImport(*s.JobId)
+	if err != nil {
+		return job.Failed, "", err
+	}
+
+	if status == job.Queued {
+		s.TargetConfig.Logger.Info("Successfully queued feedback import job. Wait until remote processing is done.")
+	}
+
+	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
+
+	return status, subtaskId, nil
 }
 
 func (s *dataAccessExportSubtask) readDataAccessRetrieveInformation(filePath string) (*dataAccessRetrieveInformation, error) {
@@ -244,9 +263,23 @@ func (s *dataAccessExportSubtask) updateLastCalculated(information *dataAccessRe
 }
 
 func (s *dataAccessExportSubtask) ProcessResults(results interface{}) error {
-	return nil
+	if daResult, ok := results.(*AccessProviderExportFeedbackResult); ok {
+		if len(daResult.Warnings) > 0 {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Exported access providers with %d warnings (see below). Added Actual Names: %d", len(daResult.Warnings), daResult.AccessNamesAdded))
+
+			for _, warning := range daResult.Warnings {
+				s.TargetConfig.Logger.Warn(warning)
+			}
+		} else {
+			s.TargetConfig.Logger.Info(fmt.Sprintf("Exported access providers. Added Actual Names: %d", daResult.AccessNamesAdded))
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("failed to load results")
 }
 
 func (s *dataAccessExportSubtask) GetResultObject() interface{} {
-	return nil
+	return &AccessProviderExportFeedbackResult{}
 }

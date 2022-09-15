@@ -158,7 +158,9 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 			return err
 		}
 
-		taskEventUpdater.AddTaskEvent(status)
+		if status != job.Completed {
+			taskEventUpdater.AddTaskEvent(status)
+		}
 
 		if status == job.Queued {
 			cfg.Logger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))

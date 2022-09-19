@@ -8,7 +8,7 @@ import (
 )
 
 func TestValidateConstraints_validConstraints(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		LowerCaseLetters:  true,
 		UpperCaseLetters:  false,
 		Numbers:           false,
@@ -25,7 +25,7 @@ func TestValidateConstraints_validConstraints(t *testing.T) {
 }
 
 func TestValidateConstraints_noAlphabeticCharacters(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		LowerCaseLetters:  false,
 		UpperCaseLetters:  false,
 		Numbers:           true,
@@ -41,7 +41,7 @@ func TestValidateConstraints_noAlphabeticCharacters(t *testing.T) {
 }
 
 func TestNameHintTranslator_Translate_AllowAll(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		LowerCaseLetters:  true,
 		UpperCaseLetters:  true,
 		Numbers:           true,
@@ -62,7 +62,7 @@ func TestNameHintTranslator_Translate_AllowAll(t *testing.T) {
 }
 
 func TestNameHintTranslator_TranslateToSnakeCase_UpperCharacter(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		LowerCaseLetters:  false,
 		UpperCaseLetters:  true,
 		Numbers:           true,
@@ -83,7 +83,7 @@ func TestNameHintTranslator_TranslateToSnakeCase_UpperCharacter(t *testing.T) {
 }
 
 func TestNameHintTranslator_TranslateToSnakeCase_LowerCharacter(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		LowerCaseLetters:  true,
 		UpperCaseLetters:  false,
 		Numbers:           true,
@@ -104,7 +104,7 @@ func TestNameHintTranslator_TranslateToSnakeCase_LowerCharacter(t *testing.T) {
 }
 
 func TestNameHintTranslator_TranslateWithoutSpecialCharacter(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		LowerCaseLetters:  true,
 		UpperCaseLetters:  false,
 		Numbers:           true,
@@ -125,7 +125,7 @@ func TestNameHintTranslator_TranslateWithoutSpecialCharacter(t *testing.T) {
 }
 
 func TestNameHintTranslator_TranslateWithoutSpecialCharacter_lowerCase(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		LowerCaseLetters:  true,
 		UpperCaseLetters:  false,
 		Numbers:           true,
@@ -146,7 +146,7 @@ func TestNameHintTranslator_TranslateWithoutSpecialCharacter_lowerCase(t *testin
 }
 
 func TestNameHintTranslator_TranslateWithoutSpecialCharacter_toCamel(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		LowerCaseLetters:  true,
 		UpperCaseLetters:  true,
 		Numbers:           false,
@@ -166,7 +166,7 @@ func TestNameHintTranslator_TranslateWithoutSpecialCharacter_toCamel(t *testing.
 	executeNameHintTranslatorTest(t, &constraints, testParameters)
 }
 
-func executeNameHintTranslatorTest(t *testing.T, constraints *AllowedCharacters, testParams map[string]string) {
+func executeNameHintTranslatorTest(t *testing.T, constraints *NamingConstraints, testParams map[string]string) {
 	translator, err := NewNameHintTranslator(constraints)
 	assert.NoError(t, err)
 

@@ -14,10 +14,10 @@ type Translator interface {
 }
 
 type nameHintTranslator struct {
-	allowedCharacters *AllowedCharacters
+	allowedCharacters *NamingConstraints
 }
 
-func NewNameHintTranslator(constraints *AllowedCharacters) (Translator, error) {
+func NewNameHintTranslator(constraints *NamingConstraints) (Translator, error) {
 	err := validateConstraints(constraints)
 	if err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func NewNameHintTranslator(constraints *AllowedCharacters) (Translator, error) {
 	return &nameHintTranslator{allowedCharacters: constraints}, nil
 }
 
-func validateConstraints(allowedCharacters *AllowedCharacters) error {
+func validateConstraints(allowedCharacters *NamingConstraints) error {
 	if !allowedCharacters.LowerCaseLetters && !allowedCharacters.UpperCaseLetters {
 		return errors.New("no support for non alphabetic constraints")
 	}
@@ -79,14 +79,14 @@ func (t *nameHintTranslator) Translate(input string) (string, error) {
 		return "", err
 	}
 
-	//Remove consecuative splitCharacters
-	consecuvativeSplitCharRegex, err := t.allowedCharacters.consecutiveSplitCharacter()
-	if err != nil {
-		return "", err
-	}
-
 	if splitChar != 0 {
-		result = consecuvativeSplitCharRegex.ReplaceAllString(result, fmt.Sprintf("%c", splitChar))
+		//Remove consecutive splitCharacters
+		consecutiveSplitCharRegex, err := t.allowedCharacters.consecutiveSplitCharacter()
+		if err != nil {
+			return "", err
+		}
+
+		result = consecutiveSplitCharRegex.ReplaceAllString(result, fmt.Sprintf("%c", splitChar))
 	}
 
 	result = invalidLastCharRegex.ReplaceAllString(result, "")

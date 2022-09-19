@@ -16,7 +16,7 @@ var splitCharacters = map[rune]struct{}{
 	'#': {},
 }
 
-type AllowedCharacters struct {
+type NamingConstraints struct {
 	LowerCaseLetters  bool
 	UpperCaseLetters  bool
 	Numbers           bool
@@ -24,7 +24,7 @@ type AllowedCharacters struct {
 	MaxLength         uint
 }
 
-func (a *AllowedCharacters) nonAllowedCharacterRegex() (*regexp.Regexp, error) {
+func (a *NamingConstraints) nonAllowedCharacterRegex() (*regexp.Regexp, error) {
 	var sb strings.Builder
 
 	sb.WriteString("[^")
@@ -34,7 +34,7 @@ func (a *AllowedCharacters) nonAllowedCharacterRegex() (*regexp.Regexp, error) {
 	return regexp.Compile(sb.String())
 }
 
-func (a *AllowedCharacters) nonAlphaNumericEndRegex() (*regexp.Regexp, error) {
+func (a *NamingConstraints) nonAlphaNumericEndRegex() (*regexp.Regexp, error) {
 	var sb strings.Builder
 
 	sb.WriteString("[^")
@@ -56,7 +56,7 @@ func (a *AllowedCharacters) nonAlphaNumericEndRegex() (*regexp.Regexp, error) {
 	return regexp.Compile(sb.String())
 }
 
-func (a *AllowedCharacters) nonAlphaNumericBeginRegex() (*regexp.Regexp, error) {
+func (a *NamingConstraints) nonAlphaNumericBeginRegex() (*regexp.Regexp, error) {
 	var sb strings.Builder
 
 	sb.WriteString("^[^")
@@ -78,7 +78,7 @@ func (a *AllowedCharacters) nonAlphaNumericBeginRegex() (*regexp.Regexp, error) 
 	return regexp.Compile(sb.String())
 }
 
-func (a *AllowedCharacters) consecutiveSplitCharacter() (*regexp.Regexp, error) {
+func (a *NamingConstraints) consecutiveSplitCharacter() (*regexp.Regexp, error) {
 	var sb strings.Builder
 
 	splitchar := a.splitCharacter()
@@ -92,7 +92,7 @@ func (a *AllowedCharacters) consecutiveSplitCharacter() (*regexp.Regexp, error) 
 	return regexp.Compile(sb.String())
 }
 
-func (a *AllowedCharacters) characterRegex() string {
+func (a *NamingConstraints) characterRegex() string {
 	var sb strings.Builder
 
 	if a.LowerCaseLetters {
@@ -114,7 +114,7 @@ func (a *AllowedCharacters) characterRegex() string {
 	return sb.String()
 }
 
-func (a *AllowedCharacters) splitCharacter() rune {
+func (a *NamingConstraints) splitCharacter() rune {
 	for _, char := range a.SpecialCharacters {
 		if _, found := splitCharacters[char]; found {
 			return char

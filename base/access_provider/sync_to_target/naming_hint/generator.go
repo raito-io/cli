@@ -20,17 +20,32 @@ type UniqueGenerator interface {
 	Generate(ap *sync_to_target.AccessProvider) (map[string]string, error)
 }
 
+// uniqueGenerator implement a Generate method that generates unique names that can be used to create access elements
+// If defined a prefix is used when generating names
+// If the naming hint of an accessProvider is specified the naming hint will be reformed to a name only consisting valid characters
+// After that a validation is executed to check if the valid name should be post fixed with a unique ID.
+// The postfixes start with two splitCharacters and end with a 4 character hexadecimal number. Note that this is the only place that 2 splitCharacters can be used after each other
+// If the accessProviders are provided in ascending order by ID. The algorithm will check if an already existing postfix exist in the actual name. If that is the case the currentpost fix will be used.
+// Later created access providers will end up with a higher post fix if they are reusing the same valid name.
+// Example:
+//
+//		constraints: Uppercase, Numbers, '_', maxLength: 16
+//		- AP{namingHint: "lowerCaseNamingHint"} => "LOWER_CASE"
+//	 	- AP{namingHint: "lowerCaseNaming2"} => "LOWER_CASE__0"
+//	 	- AP{namingHint: "lowerCaseNaming3"} => "LOWER_CASE__1"
+//	 	- AP{namingHint: "UPPER_CASE_HINT", actualName: "UPPER_CASE__3"} => "UPPER_CASE__3
+//	 	- AP{name: "UPPER_CASE_HINT2"} => "UPPER_CASE__4
 type uniqueGenerator struct {
 	logger         hclog.Logger
 	prefix         string
-	constraints    *AllowedCharacters
+	constraints    *NamingConstraints
 	splitCharacter rune
 	translator     Translator
 	existingNames  map[string]uint
 }
 
 // NewUniqueGenerator will create an implementation of the UniqueGenerator interface. The UniqueGenerator will ensure the constraints provided in the first argument
-func NewUniqueGenerator(logger hclog.Logger, prefix string, constraints *AllowedCharacters) (UniqueGenerator, error) {
+func NewUniqueGenerator(logger hclog.Logger, prefix string, constraints *NamingConstraints) (UniqueGenerator, error) {
 	if constraints.splitCharacter() == 0 {
 		return nil, errors.New("no support for UniqueGenerator if no split character is defined")
 	}
@@ -59,6 +74,7 @@ func NewUniqueGenerator(logger hclog.Logger, prefix string, constraints *Allowed
 }
 
 func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[string]string, error) {
+	// Reserve 6 character for post fix ID
 	maxLength := g.constraints.MaxLength - 6
 
 	var nameHinting string
@@ -82,12 +98,13 @@ func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[strin
 
 	for i := range ap.Access {
 		access := ap.Access[i]
-		accessName := access.Id
-		accessElements[accessName] = access
+		accessId := access.Id
+		accessElements[accessId] = access
 
-		accessElementIds[i] = accessName
+		accessElementIds[i] = accessId
 	}
 
+	// Make sure we read out all access elements in creating order
 	sort.Strings(accessElementIds)
 
 	result := make(map[string]string)
@@ -96,10 +113,13 @@ func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[strin
 		access := accessElements[accessId]
 
 		if access.ActualName != nil {
+			// Search for post fix ID
 			originalNameSplit := strings.Split(*access.ActualName, fmt.Sprintf("%[1]c%[1]c", g.splitCharacter))
 			originalName := originalNameSplit[0]
 
-			if originalName == name && len(originalNameSplit) > 1 {
+			if len(originalNameSplit) > 2 {
+				g.logger.Warn(fmt.Sprintf("Current actual name %q does not fit expected name pattern. Rename is required", *access.ActualName))
+			} else if originalName == name && len(originalNameSplit) > 1 {
 				idNumber, err := strconv.ParseInt(originalNameSplit[1], 16, 16)
 
 				if err == nil {

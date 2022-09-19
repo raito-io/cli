@@ -22,7 +22,7 @@ func (m *translatorMock) Translate(input string) (string, error) {
 
 func TestUniqueGenerator_Generate_NoDuplicatedNames(t *testing.T) {
 	//Given
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  false,
 		LowerCaseLetters:  true,
 		SpecialCharacters: "_-!",
@@ -83,7 +83,7 @@ func TestUniqueGenerator_Generate_DuplicatedNames(t *testing.T) {
 	//Given
 	lowerCaseRegex := regexp.MustCompile("[a-z0-9_]+")
 
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  false,
 		LowerCaseLetters:  true,
 		SpecialCharacters: "_-!",
@@ -145,7 +145,7 @@ func TestUniqueGenerator_Generate_DuplicatedNames_uppercase(t *testing.T) {
 	//Given
 	upperCaseRegex := regexp.MustCompile("[A-Z0-9_]+")
 
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  true,
 		LowerCaseLetters:  false,
 		SpecialCharacters: "_-!",
@@ -207,7 +207,7 @@ func TestUniqueGenerator_Generate_LongAndAlreadyExistingNames(t *testing.T) {
 	//Given
 	lowerCaseRegex := regexp.MustCompile("[a-z0-9_]+")
 
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  false,
 		LowerCaseLetters:  true,
 		SpecialCharacters: "_-!",
@@ -265,7 +265,7 @@ func TestUniqueGenerator_Generate_LongAndAlreadyExistingNames(t *testing.T) {
 }
 
 func TestUniqueGenerator_Generate_ActualNamesExist(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  true,
 		LowerCaseLetters:  false,
 		SpecialCharacters: "_-!",
@@ -323,7 +323,7 @@ func TestUniqueGenerator_Generate_ActualNamesExist(t *testing.T) {
 }
 
 func TestUniqueGenerator_Generate_ActualNamesNotEqualToNameHint(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  true,
 		LowerCaseLetters:  false,
 		SpecialCharacters: "_-!",
@@ -359,7 +359,7 @@ func TestUniqueGenerator_Generate_ActualNamesNotEqualToNameHint(t *testing.T) {
 }
 
 func TestUniqueGenerator_Generate_MultipleAccessElements(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  true,
 		LowerCaseLetters:  false,
 		SpecialCharacters: "_-!",
@@ -396,7 +396,7 @@ func TestUniqueGenerator_Generate_MultipleAccessElements(t *testing.T) {
 }
 
 func TestUniqueGenerator_Generate_InvalidActualName(t *testing.T) {
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  true,
 		LowerCaseLetters:  false,
 		SpecialCharacters: "_-!",
@@ -430,7 +430,7 @@ func TestUniqueGenerator_Generate_InvalidActualName(t *testing.T) {
 
 func TestUniqueGeneratorIT_Generate(t *testing.T) {
 	//Given
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  true,
 		LowerCaseLetters:  false,
 		Numbers:           true,
@@ -488,7 +488,7 @@ func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase(t *testing.T) {
 	//Given
 	upperCaseRegex := regexp.MustCompile("[A-Z0-9_]+")
 
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  true,
 		LowerCaseLetters:  false,
 		Numbers:           true,
@@ -546,7 +546,7 @@ func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase(t *testing.T) {
 
 func TestUniqueGeneratorIT_Generate_WithPrefix(t *testing.T) {
 	//Given
-	constraints := AllowedCharacters{
+	constraints := NamingConstraints{
 		UpperCaseLetters:  true,
 		LowerCaseLetters:  false,
 		Numbers:           true,

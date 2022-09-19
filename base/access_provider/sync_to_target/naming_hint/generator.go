@@ -11,6 +11,10 @@ import (
 )
 
 type UniqueGenerator interface {
+
+	// Generate create unique and consistent name that can be used in the target data source to create access elements.
+	// The argument ap is an access provider pointer. Each next ap that is provided to the class should have an ascending ID to guarantee a deterministic ID generation
+	// The output is a map that will point AccessIDs to the unique generate name
 	Generate(ap *sync_to_target.AccessProvider) (map[string]string, error)
 }
 
@@ -21,6 +25,7 @@ type uniqueGenerator struct {
 	existingNames  map[string]uint
 }
 
+// NewUniqueGenerator will create an implementation of the UniqueGenerator interface. The UniqueGenerator will ensure the constraints provided in the first argument
 func NewUniqueGenerator(constraints *AllowedCharacters) (UniqueGenerator, error) {
 	if constraints.splitCharacter() == 0 {
 		return nil, errors.New("no support for UniqueGenerator if no split character is defined")

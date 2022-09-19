@@ -349,6 +349,43 @@ func TestUniqueGenerator_Generate_ActualNamesNotEqualToNameHint(t *testing.T) {
 	assert.Equal(t, "THE_NAME_HINT_TO_USE", output[ap.Access[0].Id])
 }
 
+func TestUniqueGenerator_Generate_MultipleAccessElements(t *testing.T) {
+	constraints := AllowedCharacters{
+		UpperCaseLetters:  true,
+		LowerCaseLetters:  false,
+		SpecialCharacters: "_-!",
+		Numbers:           true,
+		MaxLength:         32,
+	}
+	generator := uniqueGenerator{
+		constraints:    &constraints,
+		splitCharacter: '_',
+		existingNames:  map[string]uint{},
+		translator:     &translatorMock{},
+	}
+
+	ap := &sync_to_target.AccessProvider{
+		Id:         fmt.Sprintf("SomeId"),
+		NamingHint: "THE_NAME_HINT_TO_USE",
+		Access: []*sync_to_target.Access{
+			{
+				Id:         "BD",
+				ActualName: nil,
+			},
+			{
+				Id:         "AB",
+				ActualName: nil,
+			},
+		},
+	}
+
+	output, err := generator.Generate(ap)
+	assert.NoError(t, err)
+	assert.Equal(t, "THE_NAME_HINT_TO_USE", output["AB"])
+	assert.Equal(t, "THE_NAME_HINT_TO_USE__0", output["BD"])
+
+}
+
 func TestUniqueGeneratorIT_Generate(t *testing.T) {
 	//Given
 	constraints := AllowedCharacters{

@@ -42,7 +42,7 @@ func validateParsedAccessFile(t *testing.T, parsed *AccessProviderImport, err er
 	assert.Equal(t, 1, len(ap.Access))
 
 	a := ap.Access[0]
-	assert.Equal(t, "Blahkes", a.NamingHint)
+	assert.Equal(t, "Blahkes", *a.ActualName)
 	assert.Equal(t, 2, len(a.Who.Users))
 	assert.Equal(t, 2, len(a.What))
 	assert.Equal(t, "zzz.yyy.table1", a.What[0].DataObject.FullName)

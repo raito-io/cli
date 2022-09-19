@@ -24,16 +24,6 @@ type AllowedCharacters struct {
 	MaxLength         uint
 }
 
-func (a *AllowedCharacters) allowedCharacterRegex() (*regexp.Regexp, error) {
-	var sb strings.Builder
-
-	sb.WriteString("[")
-	sb.WriteString(a.characterRegex())
-	sb.WriteString("]")
-
-	return regexp.Compile(sb.String())
-}
-
 func (a *AllowedCharacters) nonAllowedCharacterRegex() (*regexp.Regexp, error) {
 	var sb strings.Builder
 

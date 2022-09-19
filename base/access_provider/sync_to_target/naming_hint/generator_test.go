@@ -411,7 +411,7 @@ func TestUniqueGenerator_Generate_InvalidActualName(t *testing.T) {
 		translator:     &translatorMock{},
 	}
 
-	actualNamme := "BD__RTE"
+	actualNamme := "THE_NAME_HINT_TO_USE__RTE"
 	ap := &sync_to_target.AccessProvider{
 		Id:         fmt.Sprintf("SomeId"),
 		NamingHint: "THE_NAME_HINT_TO_USE",

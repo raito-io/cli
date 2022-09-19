@@ -14,7 +14,7 @@ import (
 type translatorMock struct {
 }
 
-var logger hclog.Logger = hclog.L()
+var logger = hclog.L()
 
 func (m *translatorMock) Translate(input string) (string, error) {
 	return input, nil
@@ -568,7 +568,7 @@ func TestUniqueGeneratorIT_Generate_WithPrefix(t *testing.T) {
 					ActualName: nil,
 				},
 			},
-		}: {"AccessId1": "prefix_THE_FIRST_ACCESS_PR"},
+		}: {"AccessId1": "PREFIX_THE_FIRST_ACCESS_PR"},
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID2",
 			NamingHint: "second_access_provider",
@@ -578,7 +578,7 @@ func TestUniqueGeneratorIT_Generate_WithPrefix(t *testing.T) {
 					ActualName: nil,
 				},
 			},
-		}: {"AccessId2": "prefix_SECOND_ACCESS_PROVI"},
+		}: {"AccessId2": "PREFIX_SECOND_ACCESS_PROVI"},
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID3",
 			NamingHint: "and_the_last_access_provider",
@@ -588,7 +588,7 @@ func TestUniqueGeneratorIT_Generate_WithPrefix(t *testing.T) {
 					ActualName: nil,
 				},
 			},
-		}: {"AccessId3": "prefix_AND_THE_LAST_ACCESS"},
+		}: {"AccessId3": "PREFIX_AND_THE_LAST_ACCESS"},
 	}
 
 	//WHEN + THEN

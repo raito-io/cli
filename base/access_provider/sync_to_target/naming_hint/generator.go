@@ -59,7 +59,7 @@ func NewUniqueGenerator(logger hclog.Logger, prefix string, constraints *Allowed
 }
 
 func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[string]string, error) {
-	maxLength := g.constraints.MaxLength - 6 - uint(len(g.prefix))
+	maxLength := g.constraints.MaxLength - 6
 
 	var nameHinting string
 	if ap.NamingHint != "" {
@@ -68,7 +68,7 @@ func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[strin
 		nameHinting = ap.Name
 	}
 
-	name, err := g.translator.Translate(nameHinting)
+	name, err := g.translator.Translate(g.prefix + nameHinting)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +76,6 @@ func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[strin
 	if uint(len(name)) > maxLength {
 		name = name[:maxLength]
 	}
-
-	name = g.prefix + name
 
 	accessElements := make(map[string]*sync_to_target.Access)
 	accessElementIds := make([]string, len(ap.Access))

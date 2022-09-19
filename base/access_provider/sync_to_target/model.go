@@ -24,7 +24,7 @@ type AccessProvider struct {
 
 type Access struct {
 	Id         string     `yaml:"id" json:"id"`
-	NamingHint string     `yaml:"namingHint" json:"namingHint"`
+	ActualName *string    `yaml:"actualName" json:"actualName"`
 	Who        WhoItem    `yaml:"who" json:"who"`
 	What       []WhatItem `yaml:"what" json:"what"`
 }

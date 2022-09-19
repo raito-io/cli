@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
@@ -12,6 +13,8 @@ import (
 
 type translatorMock struct {
 }
+
+var logger hclog.Logger = hclog.L()
 
 func (m *translatorMock) Translate(input string) (string, error) {
 	return input, nil
@@ -27,6 +30,7 @@ func TestUniqueGenerator_Generate_NoDuplicatedNames(t *testing.T) {
 		MaxLength:         32,
 	}
 	generator := uniqueGenerator{
+		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
 		existingNames:  map[string]uint{},
@@ -87,6 +91,7 @@ func TestUniqueGenerator_Generate_DuplicatedNames(t *testing.T) {
 		MaxLength:         32,
 	}
 	generator := uniqueGenerator{
+		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
 		existingNames:  map[string]uint{},
@@ -148,6 +153,7 @@ func TestUniqueGenerator_Generate_DuplicatedNames_uppercase(t *testing.T) {
 		MaxLength:         32,
 	}
 	generator := uniqueGenerator{
+		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
 		existingNames:  map[string]uint{},
@@ -209,6 +215,7 @@ func TestUniqueGenerator_Generate_LongAndAlreadyExistingNames(t *testing.T) {
 		MaxLength:         16,
 	}
 	generator := uniqueGenerator{
+		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
 		existingNames:  map[string]uint{},
@@ -266,6 +273,7 @@ func TestUniqueGenerator_Generate_ActualNamesExist(t *testing.T) {
 		MaxLength:         32,
 	}
 	generator := uniqueGenerator{
+		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
 		existingNames:  map[string]uint{},
@@ -323,6 +331,7 @@ func TestUniqueGenerator_Generate_ActualNamesNotEqualToNameHint(t *testing.T) {
 		MaxLength:         32,
 	}
 	generator := uniqueGenerator{
+		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
 		existingNames:  map[string]uint{},
@@ -358,6 +367,7 @@ func TestUniqueGenerator_Generate_MultipleAccessElements(t *testing.T) {
 		MaxLength:         32,
 	}
 	generator := uniqueGenerator{
+		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
 		existingNames:  map[string]uint{},
@@ -383,7 +393,39 @@ func TestUniqueGenerator_Generate_MultipleAccessElements(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "THE_NAME_HINT_TO_USE", output["AB"])
 	assert.Equal(t, "THE_NAME_HINT_TO_USE__0", output["BD"])
+}
 
+func TestUniqueGenerator_Generate_InvalidActualName(t *testing.T) {
+	constraints := AllowedCharacters{
+		UpperCaseLetters:  true,
+		LowerCaseLetters:  false,
+		SpecialCharacters: "_-!",
+		Numbers:           true,
+		MaxLength:         32,
+	}
+	generator := uniqueGenerator{
+		logger:         logger,
+		constraints:    &constraints,
+		splitCharacter: '_',
+		existingNames:  map[string]uint{},
+		translator:     &translatorMock{},
+	}
+
+	actualNamme := "BD__RTE"
+	ap := &sync_to_target.AccessProvider{
+		Id:         fmt.Sprintf("SomeId"),
+		NamingHint: "THE_NAME_HINT_TO_USE",
+		Access: []*sync_to_target.Access{
+			{
+				Id:         "BD",
+				ActualName: &actualNamme,
+			},
+		},
+	}
+
+	output, err := generator.Generate(ap)
+	assert.NoError(t, err)
+	assert.Equal(t, "THE_NAME_HINT_TO_USE", output["BD"])
 }
 
 func TestUniqueGeneratorIT_Generate(t *testing.T) {
@@ -396,7 +438,7 @@ func TestUniqueGeneratorIT_Generate(t *testing.T) {
 		SpecialCharacters: "_-@#$",
 	}
 
-	generator, err := NewUniqueGenerator(&constraints)
+	generator, err := NewUniqueGenerator(logger, &constraints)
 
 	assert.NoError(t, err)
 
@@ -454,7 +496,7 @@ func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase(t *testing.T) {
 		SpecialCharacters: "_-@#$",
 	}
 
-	generator, err := NewUniqueGenerator(&constraints)
+	generator, err := NewUniqueGenerator(logger, &constraints)
 
 	assert.NoError(t, err)
 

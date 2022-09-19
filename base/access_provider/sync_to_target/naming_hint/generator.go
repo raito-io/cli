@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/go-hclog"
+
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 )
 
@@ -19,6 +21,7 @@ type UniqueGenerator interface {
 }
 
 type uniqueGenerator struct {
+	logger         hclog.Logger
 	constraints    *AllowedCharacters
 	splitCharacter rune
 	translator     Translator
@@ -26,7 +29,7 @@ type uniqueGenerator struct {
 }
 
 // NewUniqueGenerator will create an implementation of the UniqueGenerator interface. The UniqueGenerator will ensure the constraints provided in the first argument
-func NewUniqueGenerator(constraints *AllowedCharacters) (UniqueGenerator, error) {
+func NewUniqueGenerator(logger hclog.Logger, constraints *AllowedCharacters) (UniqueGenerator, error) {
 	if constraints.splitCharacter() == 0 {
 		return nil, errors.New("no support for UniqueGenerator if no split character is defined")
 	}
@@ -45,6 +48,7 @@ func NewUniqueGenerator(constraints *AllowedCharacters) (UniqueGenerator, error)
 	}
 
 	return &uniqueGenerator{
+		logger:         logger,
 		constraints:    constraints,
 		translator:     translator,
 		splitCharacter: constraints.splitCharacter(),
@@ -95,6 +99,8 @@ func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[strin
 					if _, found := g.existingNames[name]; !found || g.existingNames[name] < number {
 						g.existingNames[name] = number
 					}
+				} else {
+					g.logger.Warn("Error while parsing id from actualName. Will ignore actualName")
 				}
 			}
 		}

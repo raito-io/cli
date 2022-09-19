@@ -22,6 +22,7 @@ type UniqueGenerator interface {
 
 type uniqueGenerator struct {
 	logger         hclog.Logger
+	prefix         string
 	constraints    *AllowedCharacters
 	splitCharacter rune
 	translator     Translator
@@ -29,7 +30,7 @@ type uniqueGenerator struct {
 }
 
 // NewUniqueGenerator will create an implementation of the UniqueGenerator interface. The UniqueGenerator will ensure the constraints provided in the first argument
-func NewUniqueGenerator(logger hclog.Logger, constraints *AllowedCharacters) (UniqueGenerator, error) {
+func NewUniqueGenerator(logger hclog.Logger, prefix string, constraints *AllowedCharacters) (UniqueGenerator, error) {
 	if constraints.splitCharacter() == 0 {
 		return nil, errors.New("no support for UniqueGenerator if no split character is defined")
 	}
@@ -49,6 +50,7 @@ func NewUniqueGenerator(logger hclog.Logger, constraints *AllowedCharacters) (Un
 
 	return &uniqueGenerator{
 		logger:         logger,
+		prefix:         prefix,
 		constraints:    constraints,
 		translator:     translator,
 		splitCharacter: constraints.splitCharacter(),
@@ -57,9 +59,16 @@ func NewUniqueGenerator(logger hclog.Logger, constraints *AllowedCharacters) (Un
 }
 
 func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[string]string, error) {
-	maxLength := g.constraints.MaxLength - 6
+	maxLength := g.constraints.MaxLength - 6 - uint(len(g.prefix))
 
-	name, err := g.translator.Translate(ap.NamingHint)
+	var nameHinting string
+	if ap.NamingHint != "" {
+		nameHinting = ap.NamingHint
+	} else {
+		nameHinting = ap.Name
+	}
+
+	name, err := g.translator.Translate(nameHinting)
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +76,8 @@ func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[strin
 	if uint(len(name)) > maxLength {
 		name = name[:maxLength]
 	}
+
+	name = g.prefix + name
 
 	accessElements := make(map[string]*sync_to_target.Access)
 	accessElementIds := make([]string, len(ap.Access))

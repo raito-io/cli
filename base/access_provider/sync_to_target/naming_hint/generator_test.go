@@ -438,7 +438,7 @@ func TestUniqueGeneratorIT_Generate(t *testing.T) {
 		SpecialCharacters: "_-@#$",
 	}
 
-	generator, err := NewUniqueGenerator(logger, &constraints)
+	generator, err := NewUniqueGenerator(logger, "", &constraints)
 
 	assert.NoError(t, err)
 
@@ -496,7 +496,7 @@ func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase(t *testing.T) {
 		SpecialCharacters: "_-@#$",
 	}
 
-	generator, err := NewUniqueGenerator(logger, &constraints)
+	generator, err := NewUniqueGenerator(logger, "", &constraints)
 
 	assert.NoError(t, err)
 
@@ -541,5 +541,61 @@ func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase(t *testing.T) {
 
 		existingNames[name] = struct{}{}
 
+	}
+}
+
+func TestUniqueGeneratorIT_Generate_WithPrefix(t *testing.T) {
+	//Given
+	constraints := AllowedCharacters{
+		UpperCaseLetters:  true,
+		LowerCaseLetters:  false,
+		Numbers:           true,
+		MaxLength:         32,
+		SpecialCharacters: "_-@#$",
+	}
+
+	generator, err := NewUniqueGenerator(logger, "prefix_", &constraints)
+
+	assert.NoError(t, err)
+
+	names := map[*sync_to_target.AccessProvider]map[string]string{
+		&sync_to_target.AccessProvider{
+			Id:         "SomeID",
+			NamingHint: "the_first_access_provider",
+			Access: []*sync_to_target.Access{
+				{
+					Id:         "AccessId1",
+					ActualName: nil,
+				},
+			},
+		}: {"AccessId1": "prefix_THE_FIRST_ACCESS_PR"},
+		&sync_to_target.AccessProvider{
+			Id:         "SomeID2",
+			NamingHint: "second_access_provider",
+			Access: []*sync_to_target.Access{
+				{
+					Id:         "AccessId2",
+					ActualName: nil,
+				},
+			},
+		}: {"AccessId2": "prefix_SECOND_ACCESS_PROVI"},
+		&sync_to_target.AccessProvider{
+			Id:         "SomeID3",
+			NamingHint: "and_the_last_access_provider",
+			Access: []*sync_to_target.Access{
+				{
+					Id:         "AccessId3",
+					ActualName: nil,
+				},
+			},
+		}: {"AccessId3": "prefix_AND_THE_LAST_ACCESS"},
+	}
+
+	//WHEN + THEN
+	for input, expectedOutput := range names {
+		output, err := generator.Generate(input)
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedOutput, output)
 	}
 }

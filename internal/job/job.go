@@ -88,10 +88,16 @@ func StartJob(cfg *target.BaseTargetConfig) (string, error) {
 	return *resp.Job.JobID, nil
 }
 
-func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus) {
+func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus, inputErr error) {
+	var errorStr = ""
+
+	if inputErr != nil {
+		errorStr = fmt.Sprintf(`, errors: [\"%s\"]`, inputErr.Error())
+	}
+
 	gqlQuery := fmt.Sprintf(`{ "query":"mutation updateJob {
-        updateJob(id: \"%s\", input: { dataSourceId: \"%s\", identityStoreId: \"%s\", status: %s, eventTime: \"%s\" }) { jobId } }" }"`,
-		jobID, cfg.DataSourceId, cfg.IdentityStoreId, status.String(), time.Now().Format(time.RFC3339))
+        updateJob(id: \"%s\", input: { dataSourceId: \"%s\", identityStoreId: \"%s\", status: %s, eventTime: \"%s\" %s}) { jobId } }" }"`,
+		jobID, cfg.DataSourceId, cfg.IdentityStoreId, status.String(), time.Now().Format(time.RFC3339), errorStr)
 
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 

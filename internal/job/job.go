@@ -107,6 +107,11 @@ func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, 
                   statementsSkipped
                   warnings
               }
+              ... on AccessProviderExportResult {
+                  fileKey
+                  fileLocation
+                  warnings
+              }
             }
         }}"}`, jobID, jobType, subtaskId)
 

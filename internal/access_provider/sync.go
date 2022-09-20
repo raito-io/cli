@@ -12,7 +12,6 @@ import (
 
 	dapc "github.com/raito-io/cli/base/access_provider"
 	baseconfig "github.com/raito-io/cli/base/util/config"
-	"github.com/raito-io/cli/internal/data_access"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
@@ -49,21 +48,16 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 		defer os.RemoveAll(targetFile)
 	}
 
-	config := data_access.AccessSyncConfig{
-		BaseTargetConfig: *s.TargetConfig,
-	}
-
-	lastUpdated := accessLastCalculated[s.TargetConfig.DataSourceId]
-
 	s.TargetConfig.Logger.Info("Fetching access providers for this data source from Raito")
 	s.StatusUpdater(job.DataRetrieve)
-	dar, err := data_access.RetrieveDataAccessListForDataSource(&config, lastUpdated)
+	daExporter := NewAccessProviderExporter(&AccessProviderExporterConfig{BaseTargetConfig: *s.TargetConfig}, s.StatusUpdater)
+
+	_, dar, err := daExporter.TriggerExport(s.JobId)
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	err = s.updateLastCalculated(dar)
 	if err != nil {
 		return job.Failed, "", err
 	}

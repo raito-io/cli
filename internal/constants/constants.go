@@ -71,5 +71,6 @@ const (
 	DataSourceSync = "DS"
 	DataAccessSync = "DA"
 	DataUsageSync  = "DU"
-	Job            = "JOB"
+
+	SubtaskAccessSync = "AccessSync"
 )

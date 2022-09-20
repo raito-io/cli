@@ -227,8 +227,17 @@ func newIdentityStoreImporter(f1, f2 string) *IdentityStoreImporter {
 		DeleteUntouched: true,
 		ReplaceGroups:   true,
 		ReplaceTags:     true,
-	}, func(status job.JobStatus) {
-		//DO nothing
-	})
+	}, &dummyTaskEventUpdater{})
 	return &isi
+}
+
+type dummyTaskEventUpdater struct {
+}
+
+func (d *dummyTaskEventUpdater) AddTaskEvent(status job.JobStatus) {
+	//do Noting
+}
+
+func (d *dummyTaskEventUpdater) GetSubtaskEventUpdater(subtask string) job.SubtaskEventUpdater {
+	return nil
 }

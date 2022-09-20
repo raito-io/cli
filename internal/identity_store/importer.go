@@ -31,10 +31,10 @@ type IdentityStoreImporter interface {
 type identityStoreImporter struct {
 	config        *IdentityStoreImportConfig
 	log           hclog.Logger
-	statusUpdater func(status job.JobStatus)
+	statusUpdater job.TaskEventUpdater
 }
 
-func NewIdentityStoreImporter(config *IdentityStoreImportConfig, statusUpdater func(status job.JobStatus)) IdentityStoreImporter {
+func NewIdentityStoreImporter(config *IdentityStoreImportConfig, statusUpdater job.TaskEventUpdater) IdentityStoreImporter {
 	logger := config.Logger.With("identitystore", config.IdentityStoreId, "userfile", config.UserFile, "groupfile", config.GroupFile)
 	isI := identityStoreImporter{config, logger, statusUpdater}
 
@@ -57,7 +57,7 @@ func (i *identityStoreImporter) TriggerImport(jobId string) (job.JobStatus, stri
 }
 
 func (i *identityStoreImporter) upload() (string, string, error) {
-	i.statusUpdater(job.DataUpload)
+	i.statusUpdater.AddTaskEvent(job.DataUpload)
 
 	userKey, err := file.UploadFile(i.config.UserFile, &i.config.BaseTargetConfig)
 	if err != nil {

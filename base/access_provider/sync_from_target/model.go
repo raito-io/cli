@@ -1,4 +1,4 @@
-package exporter
+package sync_from_target
 
 import "github.com/raito-io/cli/base/data_source"
 
@@ -14,7 +14,7 @@ type AccessProvider struct {
 }
 
 type Access struct {
-	NamingHint string `yaml:"namingHint" json:"namingHint"`
+	ActualName string `yaml:"actualName" json:"actualName"`
 	// Who represents who has access to the 'what'. Nil means that the 'who' is unknown.
 	Who  *WhoItem   `yaml:"who" json:"who"`
 	What []WhatItem `yaml:"what" json:"what"`

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	ap "github.com/raito-io/cli/base/access_provider/exporter"
+	ap "github.com/raito-io/cli/base/access_provider/sync_from_target"
 )
 
 type Statement struct {

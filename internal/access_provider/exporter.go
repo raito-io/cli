@@ -35,10 +35,10 @@ type AccessProviderExporter interface {
 type accessProviderExporter struct {
 	config        *AccessProviderExporterConfig
 	log           hclog.Logger
-	statusUpdater func(status job.JobStatus)
+	statusUpdater job.TaskEventUpdater
 }
 
-func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdater func(status job.JobStatus)) AccessProviderExporter {
+func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdater job.TaskEventUpdater) AccessProviderExporter {
 	logger := config.Logger.With("AccessProviderExport", config.DataSourceId)
 	dsI := accessProviderExporter{config, logger, statusUpdater}
 

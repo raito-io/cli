@@ -20,13 +20,14 @@ type UniqueGenerator interface {
 	Generate(ap *sync_to_target.AccessProvider) (map[string]string, error)
 }
 
-// uniqueGenerator implement a Generate method that generates unique names that can be used to create access elements
-// If defined a prefix is used when generating names
-// If the naming hint of an accessProvider is specified the naming hint will be reformed to a name only consisting valid characters
-// After that a validation is executed to check if the valid name should be post fixed with a unique ID.
-// The postfixes start with two splitCharacters and end with a 4 character hexadecimal number. Note that this is the only place that 2 splitCharacters can be used after each other
-// If the accessProviders are provided in ascending order by ID. The algorithm will check if an already existing postfix exist in the actual name. If that is the case the currentpost fix will be used.
-// Later created access providers will end up with a higher post fix if they are reusing the same valid name.
+// uniqueNameGenerator implements a Generate method which generates unique names that can be used to create access elements.
+// If defined, a prefix is used when generating the names.
+// If the naming hint of an accessProvider is specified, the naming hint will be reformed to a name only consisting valid characters.
+// After that, a validation is executed to check if the valid name should be post-fixed with a unique ID.
+// The post-fixes start with two splitCharacters and end with a 4 character hexadecimal number. Note that this is the only place that 2 splitCharacters can be used after each other.
+// The algorithm has the prerequisite that accessProviders are provided in ascending order by ID.
+// The algorithm will check if an already existing postfix exists in the actual name. If that is the case, the current post-fix will be used.
+// Later created access providers will end up with a higher post-fix if they are reusing the same valid name.
 // Example:
 //
 //		constraints: Uppercase, Numbers, '_', maxLength: 16
@@ -35,7 +36,7 @@ type UniqueGenerator interface {
 //	 	- AP{namingHint: "lowerCaseNaming3"} => "LOWER_CASE__1"
 //	 	- AP{namingHint: "UPPER_CASE_HINT", actualName: "UPPER_CASE__3"} => "UPPER_CASE__3
 //	 	- AP{name: "UPPER_CASE_HINT2"} => "UPPER_CASE__4
-type uniqueGenerator struct {
+type uniqueNameGenerator struct {
 	logger         hclog.Logger
 	prefix         string
 	constraints    *NamingConstraints
@@ -44,8 +45,8 @@ type uniqueGenerator struct {
 	existingNames  map[string]uint
 }
 
-// NewUniqueGenerator will create an implementation of the UniqueGenerator interface. The UniqueGenerator will ensure the constraints provided in the first argument
-func NewUniqueGenerator(logger hclog.Logger, prefix string, constraints *NamingConstraints) (UniqueGenerator, error) {
+// NewUniqueNameGenerator will create an implementation of the UniqueGenerator interface. The UniqueGenerator will ensure the constraints provided in the first argument
+func NewUniqueNameGenerator(logger hclog.Logger, prefix string, constraints *NamingConstraints) (UniqueGenerator, error) {
 	if constraints.splitCharacter() == 0 {
 		return nil, errors.New("no support for UniqueGenerator if no split character is defined")
 	}
@@ -63,7 +64,7 @@ func NewUniqueGenerator(logger hclog.Logger, prefix string, constraints *NamingC
 		return nil, err
 	}
 
-	return &uniqueGenerator{
+	return &uniqueNameGenerator{
 		logger:         logger,
 		prefix:         prefix,
 		constraints:    constraints,
@@ -73,7 +74,7 @@ func NewUniqueGenerator(logger hclog.Logger, prefix string, constraints *NamingC
 	}, nil
 }
 
-func (g *uniqueGenerator) Generate(ap *sync_to_target.AccessProvider) (map[string]string, error) {
+func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (map[string]string, error) {
 	// Reserve 6 character for post fix ID
 	maxLength := g.constraints.MaxLength - 6
 

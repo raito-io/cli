@@ -29,7 +29,7 @@ func TestUniqueGenerator_Generate_NoDuplicatedNames(t *testing.T) {
 		Numbers:           true,
 		MaxLength:         32,
 	}
-	generator := uniqueGenerator{
+	generator := uniqueNameGenerator{
 		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
@@ -90,7 +90,7 @@ func TestUniqueGenerator_Generate_DuplicatedNames(t *testing.T) {
 		Numbers:           true,
 		MaxLength:         32,
 	}
-	generator := uniqueGenerator{
+	generator := uniqueNameGenerator{
 		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
@@ -152,7 +152,7 @@ func TestUniqueGenerator_Generate_DuplicatedNames_uppercase(t *testing.T) {
 		Numbers:           true,
 		MaxLength:         32,
 	}
-	generator := uniqueGenerator{
+	generator := uniqueNameGenerator{
 		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
@@ -214,7 +214,7 @@ func TestUniqueGenerator_Generate_LongAndAlreadyExistingNames(t *testing.T) {
 		Numbers:           true,
 		MaxLength:         16,
 	}
-	generator := uniqueGenerator{
+	generator := uniqueNameGenerator{
 		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
@@ -272,7 +272,7 @@ func TestUniqueGenerator_Generate_ActualNamesExist(t *testing.T) {
 		Numbers:           true,
 		MaxLength:         32,
 	}
-	generator := uniqueGenerator{
+	generator := uniqueNameGenerator{
 		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
@@ -330,7 +330,7 @@ func TestUniqueGenerator_Generate_ActualNamesNotEqualToNameHint(t *testing.T) {
 		Numbers:           true,
 		MaxLength:         32,
 	}
-	generator := uniqueGenerator{
+	generator := uniqueNameGenerator{
 		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
@@ -366,7 +366,7 @@ func TestUniqueGenerator_Generate_MultipleAccessElements(t *testing.T) {
 		Numbers:           true,
 		MaxLength:         32,
 	}
-	generator := uniqueGenerator{
+	generator := uniqueNameGenerator{
 		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
@@ -403,7 +403,7 @@ func TestUniqueGenerator_Generate_InvalidActualName(t *testing.T) {
 		Numbers:           true,
 		MaxLength:         32,
 	}
-	generator := uniqueGenerator{
+	generator := uniqueNameGenerator{
 		logger:         logger,
 		constraints:    &constraints,
 		splitCharacter: '_',
@@ -438,7 +438,7 @@ func TestUniqueGeneratorIT_Generate(t *testing.T) {
 		SpecialCharacters: "_-@#$",
 	}
 
-	generator, err := NewUniqueGenerator(logger, "", &constraints)
+	generator, err := NewUniqueNameGenerator(logger, "", &constraints)
 
 	assert.NoError(t, err)
 
@@ -496,7 +496,7 @@ func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase(t *testing.T) {
 		SpecialCharacters: "_-@#$",
 	}
 
-	generator, err := NewUniqueGenerator(logger, "", &constraints)
+	generator, err := NewUniqueNameGenerator(logger, "", &constraints)
 
 	assert.NoError(t, err)
 
@@ -554,7 +554,7 @@ func TestUniqueGeneratorIT_Generate_WithPrefix(t *testing.T) {
 		SpecialCharacters: "_-@#$",
 	}
 
-	generator, err := NewUniqueGenerator(logger, "prefix_", &constraints)
+	generator, err := NewUniqueNameGenerator(logger, "prefix_", &constraints)
 
 	assert.NoError(t, err)
 

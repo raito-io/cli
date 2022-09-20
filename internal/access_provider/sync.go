@@ -58,6 +58,8 @@ func (s *DataAccessSync) StartSyncAndQueueJob(client plugin.PluginClient) (job.J
 		return job.Failed, "", err
 	}
 
+	err = s.updateLastCalculated(dar)
+
 	if err != nil {
 		return job.Failed, "", err
 	}

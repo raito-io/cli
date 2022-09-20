@@ -7,7 +7,7 @@ accessProviders:
     namingHint: Blah_
     action: Mask
     access:
-      - namingHint: Blahkes
+      - actualName: Blahkes
         who:
           users:
             - bart

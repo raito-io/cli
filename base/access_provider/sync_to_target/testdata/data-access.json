@@ -9,7 +9,7 @@
       "action": "mask",
       "access": [
         {
-          "namingHint": "Blahkes",
+          "actualName": "Blahkes",
           "who": {
             "users": [ "bart", "dieter" ]
           },

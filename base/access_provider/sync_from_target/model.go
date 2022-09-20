@@ -14,7 +14,7 @@ type AccessProvider struct {
 }
 
 type Access struct {
-	NamingHint string `yaml:"namingHint" json:"namingHint"`
+	ActualName string `yaml:"actualName" json:"actualName"`
 	// Who represents who has access to the 'what'. Nil means that the 'who' is unknown.
 	Who  *WhoItem   `yaml:"who" json:"who"`
 	What []WhatItem `yaml:"what" json:"what"`

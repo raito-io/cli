@@ -82,7 +82,7 @@ func (d *accessProviderExporter) download(url string) (string, error) {
 	}
 	defer file.Close()
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint
 
 	if err != nil {
 		return "", fmt.Errorf("error while fetching access controls for datasource %q: %s", d.config.DataSourceId, err.Error())
@@ -98,11 +98,10 @@ func (d *accessProviderExporter) download(url string) (string, error) {
 		return "", fmt.Errorf("error while reading bytes from export file: %s", err.Error())
 	}
 
+	_, err = file.Write(bytes)
 	if err != nil {
-		return "", fmt.Errorf("error while uploading data source import files to Raito: %s", err.Error())
+		return "", fmt.Errorf("error while writing data to file: %s", err.Error())
 	}
-
-	file.Write(bytes)
 
 	return filePath, nil
 }
@@ -135,6 +134,7 @@ func (d *accessProviderExporter) doExport(jobId string) (job.JobStatus, string, 
 
 	retStatus := res.Response.Subtask.Status
 	subtaskId := res.Response.Subtask.SubtaskId
+
 	d.log.Info(fmt.Sprintf("Done submitting export in %s", time.Since(start).Round(time.Millisecond)))
 
 	return retStatus, subtaskId, nil
@@ -173,9 +173,4 @@ func waitForJobToComplete(jobID string, subtaskId string, syncResult interface{}
 
 type exportResponse struct {
 	Response QueryResponse `json:"exportAccessProvidersRequest"`
-}
-
-type signedURL struct {
-	URL string
-	Key string
 }

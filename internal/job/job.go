@@ -184,6 +184,7 @@ func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, 
                   fileKey
                   fileLocation
                   warnings
+			  }
               ... on AccessProviderSyncFeedbackResult {
                   accessNamesAdded
                   warnings
@@ -192,6 +193,7 @@ func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, 
         }}"}`, jobID, jobType, subtaskId)
 
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\t", "")
 
 	response := SubtaskResponse{Subtask{Result: responseResult}}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, cfg, &response)
@@ -309,4 +311,35 @@ func (e JobStatus) MarshalJSON() ([]byte, error) {
 	buffer.WriteString(`"`)
 
 	return buffer.Bytes(), nil
+}
+
+func WaitForJobToComplete(jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *target.BaseTargetConfig, currentStatus JobStatus) (*Subtask, error) {
+	i := 0
+
+	var subtask *Subtask
+	var err error
+
+	for currentStatus.IsRunning() || i == 0 {
+		if currentStatus.IsRunning() {
+			time.Sleep(1 * time.Second)
+		}
+
+		subtask, err = GetSubtask(cfg, jobID, syncType, subtaskId, syncResult)
+
+		if err != nil {
+			return nil, err
+		} else if subtask == nil {
+			return nil, fmt.Errorf("received invalid job status")
+		}
+
+		if currentStatus != subtask.Status {
+			cfg.Logger.Info(fmt.Sprintf("Update task status to %s", subtask.Status.String()))
+		}
+
+		currentStatus = subtask.Status
+		cfg.Logger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, currentStatus.String()))
+		i += 1
+	}
+
+	return subtask, nil
 }

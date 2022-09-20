@@ -169,7 +169,7 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 		syncResult := taskPart.GetResultObject()
 
 		if syncResult != nil {
-			subtask, err := waitForJobToComplete(jobID, syncType, subtaskId, syncResult, cfg, status)
+			subtask, err := job.WaitForJobToComplete(jobID, syncType, subtaskId, syncResult, cfg, status)
 			if err != nil {
 				taskEventUpdater.AddTaskEvent(job.Failed)
 				return err
@@ -194,37 +194,6 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 	taskEventUpdater.AddTaskEvent(job.Completed)
 
 	return nil
-}
-
-func waitForJobToComplete(jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *target.BaseTargetConfig, currentStatus job.JobStatus) (*job.Subtask, error) {
-	i := 0
-
-	var subtask *job.Subtask
-	var err error
-
-	for currentStatus.IsRunning() || i == 0 {
-		if currentStatus.IsRunning() {
-			time.Sleep(1 * time.Second)
-		}
-
-		subtask, err = job.GetSubtask(cfg, jobID, syncType, subtaskId, syncResult)
-
-		if err != nil {
-			return nil, err
-		} else if subtask == nil {
-			return nil, fmt.Errorf("received invalid job status")
-		}
-
-		if currentStatus != subtask.Status {
-			cfg.Logger.Info(fmt.Sprintf("Update task status to %s", subtask.Status.String()))
-		}
-
-		currentStatus = subtask.Status
-		cfg.Logger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, currentStatus.String()))
-		i += 1
-	}
-
-	return subtask, nil
 }
 
 func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {

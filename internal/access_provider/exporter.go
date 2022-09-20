@@ -53,7 +53,7 @@ func (d *accessProviderExporter) TriggerExport(jobId string) (job.JobStatus, str
 	}
 
 	result := &AccessProviderExportResult{}
-	_, err = waitForJobToComplete(jobId, subTaskId, result, &d.config.BaseTargetConfig, status)
+	_, err = job.WaitForJobToComplete(jobId, constants.DataAccessSync, subTaskId, result, &d.config.BaseTargetConfig, status)
 
 	if err != nil {
 		return job.Failed, "", err
@@ -138,37 +138,6 @@ func (d *accessProviderExporter) doExport(jobId string) (job.JobStatus, string, 
 	d.log.Info(fmt.Sprintf("Done submitting export in %s", time.Since(start).Round(time.Millisecond)))
 
 	return retStatus, subtaskId, nil
-}
-
-func waitForJobToComplete(jobID string, subtaskId string, syncResult interface{}, cfg *target.BaseTargetConfig, currentStatus job.JobStatus) (*job.Subtask, error) {
-	i := 0
-
-	var subtask *job.Subtask
-	var err error
-
-	for currentStatus.IsRunning() || i == 0 {
-		if currentStatus.IsRunning() {
-			time.Sleep(1 * time.Second)
-		}
-
-		subtask, err = job.GetSubtask(cfg, jobID, constants.DataAccessSync, subtaskId, syncResult)
-
-		if err != nil {
-			return nil, err
-		} else if subtask == nil {
-			return nil, fmt.Errorf("received invalid job status")
-		}
-
-		if currentStatus != subtask.Status {
-			cfg.Logger.Info(fmt.Sprintf("Update task status to %s", subtask.Status.String()))
-		}
-
-		currentStatus = subtask.Status
-		cfg.Logger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, currentStatus.String()))
-		i += 1
-	}
-
-	return subtask, nil
 }
 
 type exportResponse struct {

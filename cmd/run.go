@@ -241,13 +241,13 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 
 	jobID, _ := job.StartJob(targetConfig)
 	targetConfig.Logger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobID))
-	job.UpdateJobEvent(targetConfig, jobID, job.InProgress)
+	job.UpdateJobEvent(targetConfig, jobID, job.InProgress, nil)
 
 	defer func() {
 		if syncError == nil {
-			job.UpdateJobEvent(targetConfig, jobID, job.Completed)
+			job.UpdateJobEvent(targetConfig, jobID, job.Completed, nil)
 		} else {
-			job.UpdateJobEvent(targetConfig, jobID, job.Failed)
+			job.UpdateJobEvent(targetConfig, jobID, job.Failed, syncError)
 		}
 	}()
 

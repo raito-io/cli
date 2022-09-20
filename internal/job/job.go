@@ -92,7 +92,8 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 	var errorStr = ""
 
 	if inputErr != nil {
-		errorStr = fmt.Sprintf(`, errors: [\"%s\"]`, inputErr.Error())
+		errorMsg := strings.ReplaceAll(inputErr.Error(), `"`, `\\\"`)
+		errorStr = fmt.Sprintf(`, errors: [\"%s\"]`, errorMsg)
 	}
 
 	gqlQuery := fmt.Sprintf(`{ "query":"mutation updateJob {

@@ -37,9 +37,6 @@ func initAccessCommand(rootCmd *cobra.Command) {
 }
 
 func executeAccessCmd(cmd *cobra.Command, args []string) error {
-	hclog.L().Info("")
-	defer hclog.L().Info("")
-
 	baseLogger := hclog.L().With("iteration", 0)
 
 	return target.RunTargets(baseLogger, cmd.Flags().Args(), runAccessTarget)

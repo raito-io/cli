@@ -18,6 +18,7 @@ type UniqueGenerator interface {
 	// The argument ap is an access provider pointer. Each next ap that is provided to the class should have an ascending ID to guarantee a deterministic ID generation
 	// The output is a map that will point AccessIDs to the unique generate name
 	Generate(ap *sync_to_target.AccessProvider) (map[string]string, error)
+	GenerateOrdered(ap *sync_to_target.AccessProvider) ([]string, error)
 }
 
 // uniqueNameGenerator implements a Generate method which generates unique names that can be used to create access elements.
@@ -74,7 +75,33 @@ func NewUniqueNameGenerator(logger hclog.Logger, prefix string, constraints *Nam
 	}, nil
 }
 
+func (g *uniqueNameGenerator) GenerateOrdered(ap *sync_to_target.AccessProvider) ([]string, error) {
+	generatedResult, err := g.generate(ap, false)
+	if err != nil {
+		return nil, err
+	}
+
+	sortedKeys := make([]string, 0)
+
+	for key := range generatedResult {
+		sortedKeys = append(sortedKeys, key)
+	}
+
+	sort.Strings(sortedKeys)
+
+	result := make([]string, len(generatedResult))
+	for i, key := range sortedKeys {
+		result[i] = generatedResult[key]
+	}
+
+	return result, nil
+}
+
 func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (map[string]string, error) {
+	return g.generate(ap, true)
+}
+
+func (g *uniqueNameGenerator) generate(ap *sync_to_target.AccessProvider, useAccessIds bool) (map[string]string, error) {
 	// Reserve 6 character for post fix ID
 	maxLength := g.constraints.MaxLength - 6
 
@@ -99,7 +126,14 @@ func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (map[s
 
 	for i := range ap.Access {
 		access := ap.Access[i]
-		accessId := access.Id
+		var accessId string
+
+		if useAccessIds {
+			accessId = access.Id
+		} else {
+			accessId = fmt.Sprintf("%08d", i)
+		}
+
 		accessElements[accessId] = access
 
 		accessElementIds[i] = accessId
@@ -150,6 +184,8 @@ func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (map[s
 			result[accessId] = name
 		}
 	}
+
+	g.logger.Info(fmt.Sprintf("Generate unique name for ap %q: %+v", ap.Name, result))
 
 	return result, nil
 }

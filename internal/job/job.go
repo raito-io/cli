@@ -92,7 +92,7 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 	var errorStr = ""
 
 	if inputErr != nil {
-		errorMsg := strings.ReplaceAll(inputErr.Error(), `"`, `\\\"`)
+		errorMsg := strings.ReplaceAll(strings.ReplaceAll(inputErr.Error(), `"`, `\\\"`), "\n", "\\\n")
 		errorStr = fmt.Sprintf(`, errors: [\"%s\"]`, errorMsg)
 	}
 
@@ -104,7 +104,7 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 
 	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, cfg)
 	if err != nil {
-		cfg.Logger.Debug("job update failed: %s", err.Error())
+		cfg.Logger.Debug(fmt.Sprintf("job update failed: %s", err.Error()))
 	}
 }
 

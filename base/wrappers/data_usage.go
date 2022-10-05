@@ -17,7 +17,7 @@ type DataUsageStatementHandler interface {
 
 //go:generate go run github.com/vektra/mockery/v2 --name=DataUsageSyncer --with-expecter --inpackage
 type DataUsageSyncer interface {
-	SyncDataUsage(ctx context.Context, fileCreator DataUsageStatementHandler, configParams config.ConfigMap) error
+	SyncDataUsage(ctx context.Context, fileCreator DataUsageStatementHandler, configParams *config.ConfigMap) error
 }
 
 func DataUsageSync(syncer DataUsageSyncer) *dataUsageSyncFunction {
@@ -50,7 +50,7 @@ func (s *dataUsageSyncFunction) SyncDataUsage(config *data_usage.DataUsageSyncCo
 
 	start := time.Now()
 
-	err = s.syncer.SyncDataUsage(ctx, fileCreator, config.ConfigMap)
+	err = s.syncer.SyncDataUsage(ctx, fileCreator, &config.ConfigMap)
 	if err != nil {
 		logger.Error(err.Error())
 

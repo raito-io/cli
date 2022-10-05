@@ -24,11 +24,11 @@ func (_m *MockDataUsageSyncer) EXPECT() *MockDataUsageSyncer_Expecter {
 }
 
 // SyncDataUsage provides a mock function with given fields: ctx, fileCreator, configParams
-func (_m *MockDataUsageSyncer) SyncDataUsage(ctx context.Context, fileCreator DataUsageStatementHandler, configParams config.ConfigMap) error {
+func (_m *MockDataUsageSyncer) SyncDataUsage(ctx context.Context, fileCreator DataUsageStatementHandler, configParams *config.ConfigMap) error {
 	ret := _m.Called(ctx, fileCreator, configParams)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, DataUsageStatementHandler, config.ConfigMap) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, DataUsageStatementHandler, *config.ConfigMap) error); ok {
 		r0 = rf(ctx, fileCreator, configParams)
 	} else {
 		r0 = ret.Error(0)
@@ -45,14 +45,14 @@ type MockDataUsageSyncer_SyncDataUsage_Call struct {
 // SyncDataUsage is a helper method to define mock.On call
 //   - ctx context.Context
 //   - fileCreator DataUsageStatementHandler
-//   - configParams config.ConfigMap
+//   - configParams *config.ConfigMap
 func (_e *MockDataUsageSyncer_Expecter) SyncDataUsage(ctx interface{}, fileCreator interface{}, configParams interface{}) *MockDataUsageSyncer_SyncDataUsage_Call {
 	return &MockDataUsageSyncer_SyncDataUsage_Call{Call: _e.mock.On("SyncDataUsage", ctx, fileCreator, configParams)}
 }
 
-func (_c *MockDataUsageSyncer_SyncDataUsage_Call) Run(run func(ctx context.Context, fileCreator DataUsageStatementHandler, configParams config.ConfigMap)) *MockDataUsageSyncer_SyncDataUsage_Call {
+func (_c *MockDataUsageSyncer_SyncDataUsage_Call) Run(run func(ctx context.Context, fileCreator DataUsageStatementHandler, configParams *config.ConfigMap)) *MockDataUsageSyncer_SyncDataUsage_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(DataUsageStatementHandler), args[2].(config.ConfigMap))
+		run(args[0].(context.Context), args[1].(DataUsageStatementHandler), args[2].(*config.ConfigMap))
 	})
 	return _c
 }

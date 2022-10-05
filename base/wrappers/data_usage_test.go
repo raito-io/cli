@@ -24,7 +24,7 @@ func TestDataUsageSyncFunction_SyncDataUsage(t *testing.T) {
 	fileCreatorMock.EXPECT().GetStatementCount().Return(0)
 
 	syncerMock := NewMockDataUsageSyncer(t)
-	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(nil)
+	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(nil)
 
 	syncFunction := dataUsageSyncFunction{
 		syncer: syncerMock,
@@ -83,7 +83,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 	fileCreatorMock.EXPECT().Close().Return()
 
 	syncerMock := NewMockDataUsageSyncer(t)
-	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(&error2.ErrorResult{
+	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(&error2.ErrorResult{
 		ErrorMessage: "BOOM!",
 		ErrorCode:    error2.BadInputParameterError,
 	})

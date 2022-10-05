@@ -8,6 +8,8 @@ import (
 	ap "github.com/raito-io/cli/base/access_provider/sync_from_target"
 )
 
+//go:generate go run github.com/vektra/mockery/v2 --name=DataUsageFileCreator --with-expecter
+
 type Statement struct {
 	ExternalId          string        `json:"externalId"`
 	AccessedDataObjects []ap.WhatItem `json:"accessedDataObjects"`

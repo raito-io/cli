@@ -19,11 +19,11 @@ func TestDataUsageSyncFunction_SyncDataUsage(t *testing.T) {
 		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
 	}
 
-	fileCreatorMock := &du_mocks.DataUsageFileCreator{}
+	fileCreatorMock := du_mocks.NewDataUsageFileCreator(t)
 	fileCreatorMock.EXPECT().Close().Return()
 	fileCreatorMock.EXPECT().GetStatementCount().Return(0)
 
-	syncerMock := &MockDataUsageSyncer{}
+	syncerMock := NewMockDataUsageSyncer(t)
 	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(nil)
 
 	syncFunction := dataUsageSyncFunction{
@@ -49,7 +49,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOnFileCreation(t *testing.T) {
 		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
 	}
 
-	syncerMock := &MockDataUsageSyncer{}
+	syncerMock := NewMockDataUsageSyncer(t)
 
 	syncFunction := dataUsageSyncFunction{
 		syncer: syncerMock,
@@ -79,10 +79,10 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
 	}
 
-	fileCreatorMock := &du_mocks.DataUsageFileCreator{}
+	fileCreatorMock := du_mocks.NewDataUsageFileCreator(t)
 	fileCreatorMock.EXPECT().Close().Return()
 
-	syncerMock := &MockDataUsageSyncer{}
+	syncerMock := NewMockDataUsageSyncer(t)
 	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(&error2.ErrorResult{
 		ErrorMessage: "BOOM!",
 		ErrorCode:    error2.BadInputParameterError,
@@ -108,7 +108,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 
 func TestDataUsageSyncWrapper(t *testing.T) {
 	//Given
-	syncerMock := &MockDataUsageSyncer{}
+	syncerMock := NewMockDataUsageSyncer(t)
 
 	//When
 	syncFunction := DataUsageSync(syncerMock)

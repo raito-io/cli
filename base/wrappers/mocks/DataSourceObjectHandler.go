@@ -21,7 +21,7 @@ func (_m *DataSourceObjectHandler) EXPECT() *DataSourceObjectHandler_Expecter {
 }
 
 // AddDataObjects provides a mock function with given fields: dataObjects
-func (_m *DataSourceObjectHandler) AddDataObjects(dataObjects ...data_source.DataObject) error {
+func (_m *DataSourceObjectHandler) AddDataObjects(dataObjects ...*data_source.DataObject) error {
 	_va := make([]interface{}, len(dataObjects))
 	for _i := range dataObjects {
 		_va[_i] = dataObjects[_i]
@@ -31,7 +31,7 @@ func (_m *DataSourceObjectHandler) AddDataObjects(dataObjects ...data_source.Dat
 	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(...data_source.DataObject) error); ok {
+	if rf, ok := ret.Get(0).(func(...*data_source.DataObject) error); ok {
 		r0 = rf(dataObjects...)
 	} else {
 		r0 = ret.Error(0)
@@ -46,18 +46,18 @@ type DataSourceObjectHandler_AddDataObjects_Call struct {
 }
 
 // AddDataObjects is a helper method to define mock.On call
-//   - dataObjects ...data_source.DataObject
+//   - dataObjects ...*data_source.DataObject
 func (_e *DataSourceObjectHandler_Expecter) AddDataObjects(dataObjects ...interface{}) *DataSourceObjectHandler_AddDataObjects_Call {
 	return &DataSourceObjectHandler_AddDataObjects_Call{Call: _e.mock.On("AddDataObjects",
 		append([]interface{}{}, dataObjects...)...)}
 }
 
-func (_c *DataSourceObjectHandler_AddDataObjects_Call) Run(run func(dataObjects ...data_source.DataObject)) *DataSourceObjectHandler_AddDataObjects_Call {
+func (_c *DataSourceObjectHandler_AddDataObjects_Call) Run(run func(dataObjects ...*data_source.DataObject)) *DataSourceObjectHandler_AddDataObjects_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]data_source.DataObject, len(args)-0)
+		variadicArgs := make([]*data_source.DataObject, len(args)-0)
 		for i, a := range args[0:] {
 			if a != nil {
-				variadicArgs[i] = a.(data_source.DataObject)
+				variadicArgs[i] = a.(*data_source.DataObject)
 			}
 		}
 		run(variadicArgs...)

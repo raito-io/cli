@@ -23,3 +23,10 @@ func NewSimpleDataUsageStatementHandler(t mockConstructorTestingTNewDataUsageSta
 
 	return result
 }
+
+type SimpleDataSourceObjectHandler struct {
+	*DataSourceObjectHandler
+	DataObjects []
+}
+
+func NewSimpleDataSourceObjectHandler(t mockConstructorTestingTNewDataSourceObjectHandler) *

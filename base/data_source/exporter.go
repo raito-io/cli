@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+//go:generate go run github.com/vektra/mockery/v2 --name=DataSourceFileCreator --with-expecter
+
 // DataObject represents a data object in the format that is suitable to be imported into a Raito data source.
 type DataObject struct {
 	ExternalId       string                 `json:"externalId"`
@@ -34,7 +36,10 @@ type DataObjectReference struct {
 // to be imported by the Raito CLI.
 // Use GetDataSourceDetails() to access DataSourceDetails setters like SetAvailablePermission()
 type DataSourceFileCreator interface {
-	AddDataObjects(dataObjects []DataObject) error
+	AddDataObjects(dataObjects ...*DataObject) error
+	SetDataSourceName(name string)
+	SetDataSourceFullname(name string)
+	SetDataSourceDescription(desc string)
 	Close()
 	GetDataObjectCount() int
 	GetDataSourceDetails() *DataSourceDetails
@@ -81,8 +86,8 @@ func (d *dataSourceFileCreator) GetDataSourceDetails() *DataSourceDetails {
 	return &d.dataSourceDetails
 }
 
-func (d *dataSourceFileCreator) prependDataSourceDataObject(dataObjects []DataObject) []DataObject {
-	finalDataObjects := []DataObject{d.dataSourceDetails.dataSource}
+func (d *dataSourceFileCreator) prependDataSourceDataObject(dataObjects []*DataObject) []*DataObject {
+	finalDataObjects := []*DataObject{&d.dataSourceDetails.dataSource}
 	finalDataObjects = append(finalDataObjects, dataObjects...)
 
 	return finalDataObjects
@@ -91,7 +96,7 @@ func (d *dataSourceFileCreator) prependDataSourceDataObject(dataObjects []DataOb
 // AddDataObjects adds the slice of data objects to the import file.
 // It returns an error when writing one of the data objects fails (it will not process the other data objects after that).
 // It returns nil if everything went well.
-func (d *dataSourceFileCreator) AddDataObjects(dataObjects []DataObject) error {
+func (d *dataSourceFileCreator) AddDataObjects(dataObjects ...*DataObject) error {
 	if len(dataObjects) == 0 {
 		return nil
 	}
@@ -134,6 +139,18 @@ func (d *dataSourceFileCreator) AddDataObjects(dataObjects []DataObject) error {
 	}
 
 	return nil
+}
+
+func (d *dataSourceFileCreator) SetDataSourceName(name string) {
+	d.dataSourceDetails.SetName(name)
+}
+
+func (d *dataSourceFileCreator) SetDataSourceFullname(name string) {
+	d.dataSourceDetails.SetFullname(name)
+}
+
+func (d *dataSourceFileCreator) SetDataSourceDescription(desc string) {
+	d.dataSourceDetails.SetDescription(desc)
 }
 
 // GetDataObjectCount returns the number of data objects that has been added to the import file.

@@ -27,7 +27,9 @@ jobs:
         with:
           version: v1.48.0
 
-      - run: go test -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt ./...
+      - name: Test
+        run: make test
+
       - uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

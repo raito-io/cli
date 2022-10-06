@@ -28,3 +28,4 @@ raito.yml
 # vendor/
 
 dist/
+coverage.*

@@ -27,8 +27,8 @@ func TestDataSourceFileCreator(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, dsfc)
 
-	dos := make([]DataObject, 0, 3)
-	dos = append(dos, DataObject{
+	dos := make([]*DataObject, 0, 3)
+	dos = append(dos, &DataObject{
 		ExternalId:  "eid1",
 		Name:        "DO1",
 		FullName:    "Data Object 1",
@@ -36,7 +36,7 @@ func TestDataSourceFileCreator(t *testing.T) {
 		Description: "The first data object",
 		Tags:        map[string]interface{}{"k1": "v1", "k2": "v2"},
 	})
-	dos = append(dos, DataObject{
+	dos = append(dos, &DataObject{
 		ExternalId:       "eid2",
 		Name:             "DO2",
 		FullName:         "Data Object 2",
@@ -45,7 +45,7 @@ func TestDataSourceFileCreator(t *testing.T) {
 		ParentExternalId: "eid1",
 		Tags:             map[string]interface{}{"k3": "v3"},
 	})
-	dos = append(dos, DataObject{
+	dos = append(dos, &DataObject{
 		ExternalId:       "eid3",
 		Name:             "DO3",
 		FullName:         "Data Object 3",
@@ -53,7 +53,7 @@ func TestDataSourceFileCreator(t *testing.T) {
 		ParentExternalId: "eid2",
 	})
 
-	err = dsfc.AddDataObjects(dos)
+	err = dsfc.AddDataObjects(dos...)
 	assert.Nil(t, err)
 
 	dsfc.Close()
@@ -117,8 +117,8 @@ func TestDataSourceDetails(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, dsfc)
 
-	dos := make([]DataObject, 0, 1)
-	dos = append(dos, DataObject{
+	dos := make([]*DataObject, 0, 1)
+	dos = append(dos, &DataObject{
 		ExternalId:  "eid1",
 		Name:        "DO1",
 		FullName:    "Data Object 1",
@@ -132,7 +132,7 @@ func TestDataSourceDetails(t *testing.T) {
 	dsfc.GetDataSourceDetails().SetFullname("dsFullName")
 	dsfc.GetDataSourceDetails().SetDescription("dsDesc")
 
-	err = dsfc.AddDataObjects(dos)
+	err = dsfc.AddDataObjects(dos...)
 	assert.Nil(t, err)
 
 	dsfc.Close()

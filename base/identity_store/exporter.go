@@ -12,6 +12,8 @@ import (
 	"os"
 )
 
+//go:generate go run github.com/vektra/mockery/v2 --name=IdentityStoreFileCreator --with-expecter
+
 // Group represents a user group in the format that is suitable to be imported into a Raito identity store.
 type Group struct {
 	ExternalId             string                 `json:"externalId"`
@@ -35,8 +37,8 @@ type User struct {
 // IdentityStoreFileCreator describes the interface for easily creating the user and group import files
 // to be imported by the Raito CLI.
 type IdentityStoreFileCreator interface {
-	AddGroups(groups []Group) error
-	AddUsers(users []User) error
+	AddGroups(groups ...*Group) error
+	AddUsers(users ...*User) error
 	Close()
 	GetUserCount() int
 	GetGroupCount() int
@@ -92,7 +94,7 @@ func (i *identityStoreImporter) Close() {
 // AddGroups adds the slice of groups to the groups import file.
 // It returns an error when writing one of the groups fails (it will not process the other groups after that).
 // It returns nil if everything went well.
-func (i *identityStoreImporter) AddGroups(groups []Group) error {
+func (i *identityStoreImporter) AddGroups(groups ...*Group) error {
 	if len(groups) == 0 {
 		return nil
 	}
@@ -128,7 +130,7 @@ func (i *identityStoreImporter) AddGroups(groups []Group) error {
 // AddUsers adds the slice of users to the users import file.
 // It returns an error when writing one of the users fails (it will not process the other users after that).
 // It returns nil if everything went well.
-func (i *identityStoreImporter) AddUsers(users []User) error {
+func (i *identityStoreImporter) AddUsers(users ...*User) error {
 	if len(users) == 0 {
 		return nil
 	}

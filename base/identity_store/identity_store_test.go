@@ -2,13 +2,14 @@ package identity_store
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -28,8 +29,8 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, isfc)
 
-	users := make([]User, 0, 3)
-	users = append(users, User{
+	users := make([]*User, 0, 3)
+	users = append(users, &User{
 		ExternalId:       "ueid1",
 		Name:             "User 1",
 		UserName:         "u1",
@@ -37,7 +38,7 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 		GroupExternalIds: []string{"geid1"},
 		Tags:             map[string]interface{}{"k1": "v1", "k2": "v2"},
 	})
-	users = append(users, User{
+	users = append(users, &User{
 		ExternalId:       "ueid2",
 		Name:             "User 2",
 		UserName:         "u2",
@@ -45,17 +46,17 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 		GroupExternalIds: []string{"geid1", "geid2"},
 		Tags:             map[string]interface{}{"k3": "v3"},
 	})
-	users = append(users, User{
+	users = append(users, &User{
 		ExternalId: "ueid3",
 		Name:       "User 3",
 		UserName:   "u3",
 	})
 
-	err = isfc.AddUsers(users)
+	err = isfc.AddUsers(users...)
 	assert.Nil(t, err)
 
-	groups := make([]Group, 0, 2)
-	groups = append(groups, Group{
+	groups := make([]*Group, 0, 2)
+	groups = append(groups, &Group{
 		ExternalId:             "geid1",
 		Name:                   "g1",
 		DisplayName:            "Group1",
@@ -63,14 +64,14 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 		ParentGroupExternalIds: []string{"geid2"},
 		Tags:                   map[string]interface{}{"gk1": "gv1", "gk2": "gv2"},
 	})
-	groups = append(groups, Group{
+	groups = append(groups, &Group{
 		ExternalId:  "geid2",
 		Name:        "g2",
 		DisplayName: "Group2",
 		Tags:        map[string]interface{}{"gk3": "gv3"},
 	})
 
-	err = isfc.AddGroups(groups)
+	err = isfc.AddGroups(groups...)
 	assert.Nil(t, err)
 
 	isfc.Close()

@@ -73,9 +73,15 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 		hclog.L().Debug(fmt.Sprintf("Found %d targets to run.", len(targetList)))
 
 		for _, targetObj := range targetList {
-			target, ok := targetObj.(map[interface{}]interface{})
+			targetRaw, ok := targetObj.(map[string]interface{})
 			if !ok {
+				hclog.L().Debug(fmt.Sprintf("Target not correctly parsed, target object is: %v", targetObj))
 				break
+			}
+
+			target := map[interface{}]interface{}{}
+			for k, v := range targetRaw {
+				target[k] = v
 			}
 
 			tConfig, err := buildTargetConfigFromMap(baseLogger, target)

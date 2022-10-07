@@ -200,7 +200,12 @@ func findGitHubToken(pluginRequest *pluginRequest) (string, error) {
 	repos := viper.Get(constants.Repositories)
 	if repoList, ok := repos.([]interface{}); ok {
 		for _, repoObj := range repoList {
-			if repo, ok := repoObj.(map[interface{}]interface{}); ok {
+			if repoRaw, ok := repoObj.(map[string]interface{}); ok {
+				repo := map[interface{}]interface{}{}
+				for k, v := range repoRaw {
+					repo[k] = v
+				}
+
 				repoName := repo[constants.NameFlag]
 				if repoName == pluginRequest.Group {
 					if v, f := repo[constants.GitHubToken]; f {

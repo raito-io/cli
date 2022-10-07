@@ -3,10 +3,11 @@ package target
 import (
 	"bytes"
 	"fmt"
-	config2 "github.com/raito-io/cli/base/util/config"
 	"os"
 	"strings"
 	"testing"
+
+	config2 "github.com/raito-io/cli/base/util/config"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/jinzhu/copier"
@@ -335,13 +336,13 @@ func TestRunSingleTarget(t *testing.T) {
 func TestRunMultipleTargets(t *testing.T) {
 	clearViper()
 
-	t1 := map[interface{}]interface{}{
+	t1 := map[string]interface{}{
 		constants.ConnectorNameFlag: "c1",
 		constants.NameFlag:          "cn1",
 		"api-secret":                "secret1",
 		"other-stuff":               "ok",
 	}
-	t2 := map[interface{}]interface{}{
+	t2 := map[string]interface{}{
 		constants.ConnectorNameFlag: "c2",
 		"api-secret":                "secret2",
 	}
@@ -372,11 +373,11 @@ func TestRunMultipleTargets(t *testing.T) {
 func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	clearViper()
 
-	t1 := map[interface{}]interface{}{
+	t1 := map[string]interface{}{
 		constants.ConnectorNameFlag: "c1",
 		constants.NameFlag:          "name1",
 	}
-	t2 := map[interface{}]interface{}{
+	t2 := map[string]interface{}{
 		constants.ConnectorNameFlag: "c2",
 	}
 

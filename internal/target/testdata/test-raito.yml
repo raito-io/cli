@@ -1,0 +1,38 @@
+repositories:
+  - name: raito-io
+    token: "{{GHA_TOKEN}}"
+
+api-user: testbot@raito.io
+api-secret: "{{API_SECRET}}"
+domain: testbotdomain
+
+targets:
+  - name: snowflake1
+    connector-name: raito-io/cli-plugin-snowflake
+    data-source-id: SnowflakeDataSource
+    identity-store-id: SnowflakeIdentityStore
+
+    # Specifying the Snowflake specific config parameters
+    sf-account: somewhere.eu-central-1
+    sf-user: raito
+    sf-password: "{{SNOWFLAKE_PASSWORD}}"
+    sf-role: ACCOUNTADMIN
+    sf-create-future-grants: false
+    sf-excluded-databases: SNOWFLAKE,SNOWFLAKE_SAMPLE_DATA,SHARED_WEATHERSOURCE
+    sf-excluded-schemas: PUBLIC,INFORMATION_SCHEMA
+
+    skip-identity-store-sync: true
+    skip-data-source-sync: true
+    skip-data-access-sync: false
+    skip-data-usage-sync: true
+  - name: bigquery1
+    connector-name: raito-io/cli-plugin-bigquery
+    connector-version: latest
+    data-source-id: BigQueryDataSource
+    identity-store-id: GcpIdentityStore
+
+  - name: s3-test
+    connector-name: raito-io/cli-plugin-aws-s3
+    connector-version: latest
+    data-source-id: GlobalS3DataSource
+    identity-store-id: AwsIdentityStore

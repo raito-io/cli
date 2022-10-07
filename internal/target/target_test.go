@@ -451,3 +451,65 @@ func TestLogTarget(t *testing.T) {
 
 	hclog.SetDefault(old)
 }
+
+func TestRunFromConfigFile(t *testing.T) {
+	clearViper()
+	viper.AddConfigPath("./testdata")
+	viper.AddConfigPath("./internal/target/testdata")
+	viper.SetConfigType("yaml")
+	viper.SetConfigName("test-raito")
+
+	err := viper.ReadInConfig()
+	assert.Nil(t, err)
+
+	repositories := viper.Get(constants.Repositories).([]interface{})
+	assert.NotNil(t, repositories)
+	assert.Equal(t, 1, len(repositories))
+
+	assert.Equal(t, "testbot@raito.io", viper.Get(constants.ApiUserFlag))
+	assert.Equal(t, "{{API_SECRET}}", viper.Get(constants.ApiSecretFlag))
+	assert.Equal(t, "testbotdomain", viper.Get(constants.DomainFlag))
+
+	repo := repositories[0].(map[string]interface{})
+	assert.Equal(t, repo[constants.NameFlag], "raito-io")
+	assert.Equal(t, repo[constants.GitHubToken], "{{GHA_TOKEN}}")
+
+	targets := viper.Get(constants.Targets).([]interface{})
+	assert.NotNil(t, targets)
+	assert.Equal(t, 3, len(targets))
+
+	for _, targetRaw := range targets {
+		target := targetRaw.(map[string]interface{})
+		targetParsed := false
+		if target[constants.NameFlag] == "snowflake1" {
+			targetParsed = true
+			assert.Equal(t, "raito-io/cli-plugin-snowflake", target[constants.ConnectorNameFlag])
+			assert.Equal(t, "SnowflakeDataSource", target[constants.DataSourceIdFlag])
+			assert.Equal(t, "SnowflakeIdentityStore", target[constants.IdentityStoreIdFlag])
+			assert.Equal(t, "somewhere.eu-central-1", target["sf-account"])
+			assert.Equal(t, "raito", target["sf-user"])
+			assert.Equal(t, "{{SNOWFLAKE_PASSWORD}}", target["sf-password"])
+			assert.Equal(t, "ACCOUNTADMIN", target["sf-role"])
+			assert.Equal(t, false, target["sf-create-future-grants"])
+			assert.Equal(t, "SNOWFLAKE,SNOWFLAKE_SAMPLE_DATA,SHARED_WEATHERSOURCE", target["sf-excluded-databases"])
+			assert.Equal(t, "PUBLIC,INFORMATION_SCHEMA", target["sf-excluded-schemas"])
+			assert.Equal(t, true, target[constants.SkipIdentityStoreSyncFlag])
+			assert.Equal(t, true, target[constants.SkipDataSourceSyncFlag])
+			assert.Equal(t, false, target[constants.SkipDataAccessSyncFlag])
+			assert.Equal(t, true, target[constants.SkipDataUsageSyncFlag])
+		} else if target[constants.NameFlag] == "bigquery1" {
+			targetParsed = true
+			assert.Equal(t, "raito-io/cli-plugin-bigquery", target[constants.ConnectorNameFlag])
+			assert.Equal(t, "latest", target[constants.ConnectorVersionFlag])
+			assert.Equal(t, "BigQueryDataSource", target[constants.DataSourceIdFlag])
+			assert.Equal(t, "GcpIdentityStore", target[constants.IdentityStoreIdFlag])
+		} else if target[constants.NameFlag] == "s3-test" {
+			targetParsed = true
+			assert.Equal(t, "raito-io/cli-plugin-aws-s3", target[constants.ConnectorNameFlag])
+			assert.Equal(t, "latest", target[constants.ConnectorVersionFlag])
+			assert.Equal(t, "GlobalS3DataSource", target[constants.DataSourceIdFlag])
+			assert.Equal(t, "AwsIdentityStore", target[constants.IdentityStoreIdFlag])
+		}
+		assert.True(t, targetParsed)
+	}
+}

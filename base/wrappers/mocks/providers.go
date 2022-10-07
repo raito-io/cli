@@ -3,6 +3,7 @@ package mocks
 import (
 	"github.com/stretchr/testify/mock"
 
+	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
 )
@@ -56,6 +57,48 @@ func NewSimpleIdentityStoreIdentityHandler(t mockConstructorTestingTNewIdentityS
 		result.EXPECT().AddUsers(arguments...).Run(addUsers).Return(nil).Maybe()
 		result.EXPECT().AddGroups(arguments...).Run(addGroups).Return(nil).Maybe()
 	}
+
+	return result
+}
+
+type SimpleDataSourceObjectHandler struct {
+	*DataSourceObjectHandler
+	DataObjects           []data_source.DataObject
+	DataSourceName        string
+	DataSourceFullName    string
+	DataSourceDescription string
+}
+
+func NewSimpleDataSourceObjectHandler(t mockConstructorTestingTNewDataSourceObjectHandler, maxDataObjectsPerCall int) *SimpleDataSourceObjectHandler {
+	result := &SimpleDataSourceObjectHandler{
+		DataSourceObjectHandler: NewDataSourceObjectHandler(t),
+		DataObjects:             make([]data_source.DataObject, 0),
+	}
+
+	arguments := make([]interface{}, 0)
+
+	addDataObject := func(dataObjects ...*data_source.DataObject) {
+		for _, do := range dataObjects {
+			result.DataObjects = append(result.DataObjects, *do)
+		}
+	}
+
+	for i := 0; i < maxDataObjectsPerCall; i++ {
+		arguments = append(arguments, mock.Anything)
+		result.EXPECT().AddDataObjects(arguments...).Run(addDataObject).Return(nil).Maybe()
+	}
+
+	result.EXPECT().SetDataSourceName(mock.AnythingOfType("string")).Run(func(name string) {
+		result.DataSourceName = name
+	}).Return().Maybe()
+
+	result.EXPECT().SetDataSourceFullname(mock.AnythingOfType("string")).Run(func(name string) {
+		result.DataSourceFullName = name
+	}).Return().Maybe()
+
+	result.EXPECT().SetDataSourceDescription(mock.AnythingOfType("string")).Run(func(desc string) {
+		result.DataSourceDescription = desc
+	}).Return().Maybe()
 
 	return result
 }

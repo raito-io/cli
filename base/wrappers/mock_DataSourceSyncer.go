@@ -7,6 +7,8 @@ import (
 
 	config "github.com/raito-io/cli/base/util/config"
 
+	data_source "github.com/raito-io/cli/base/data_source"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -21,6 +23,42 @@ type MockDataSourceSyncer_Expecter struct {
 
 func (_m *MockDataSourceSyncer) EXPECT() *MockDataSourceSyncer_Expecter {
 	return &MockDataSourceSyncer_Expecter{mock: &_m.Mock}
+}
+
+// GetMetaData provides a mock function with given fields:
+func (_m *MockDataSourceSyncer) GetMetaData() data_source.MetaData {
+	ret := _m.Called()
+
+	var r0 data_source.MetaData
+	if rf, ok := ret.Get(0).(func() data_source.MetaData); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(data_source.MetaData)
+	}
+
+	return r0
+}
+
+// MockDataSourceSyncer_GetMetaData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMetaData'
+type MockDataSourceSyncer_GetMetaData_Call struct {
+	*mock.Call
+}
+
+// GetMetaData is a helper method to define mock.On call
+func (_e *MockDataSourceSyncer_Expecter) GetMetaData() *MockDataSourceSyncer_GetMetaData_Call {
+	return &MockDataSourceSyncer_GetMetaData_Call{Call: _e.mock.On("GetMetaData")}
+}
+
+func (_c *MockDataSourceSyncer_GetMetaData_Call) Run(run func()) *MockDataSourceSyncer_GetMetaData_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockDataSourceSyncer_GetMetaData_Call) Return(_a0 data_source.MetaData) *MockDataSourceSyncer_GetMetaData_Call {
+	_c.Call.Return(_a0)
+	return _c
 }
 
 // SyncDataSource provides a mock function with given fields: ctx, dataSourceHandler, configParams

@@ -37,7 +37,7 @@ type fillerStruct struct {
 
 func TestFillStruct(t *testing.T) {
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name":  "blah",
 		"another one": 666,
 		"another 2":   5.5,
@@ -59,7 +59,7 @@ func TestFillStructWithEnvironmentVariables(t *testing.T) {
 	os.Setenv("RAITO_TEST_OK", "true")
 
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name":  "{{RAITO_TEST_FIELDNAME}}",
 		"another one": "{{RAITO_TEST_ANOTHERONE}}",
 		"another 2":   "{{RAITO_TEST_ANOTHERTWO}}",
@@ -81,7 +81,7 @@ func TestFillStructWithEnvironmentVariablesNotSet(t *testing.T) {
 	os.Setenv("RAITO_TEST_OK", "true")
 
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name":  "{{RAITO_TEST_FIELDNAME}}",
 		"another one": "{{RAITO_TEST_ANOTHERONE}}",
 		"another 2":   "{{RAITO_TEST_ANOTHERTWO}}",
@@ -100,7 +100,7 @@ func TestFillStructWithEnvironmentVariablesWrongType(t *testing.T) {
 	os.Setenv("RAITO_TEST_OK", "true")
 
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name":  "{{RAITO_TEST_FIELDNAME}}",
 		"another one": "{{RAITO_TEST_ANOTHERONE}}",
 		"another 2":   "{{RAITO_TEST_ANOTHERTWO}}",
@@ -114,7 +114,7 @@ func TestFillStructWithEnvironmentVariablesWrongType(t *testing.T) {
 
 func TestFillStructWrongType(t *testing.T) {
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name": 666,
 	})
 
@@ -123,7 +123,7 @@ func TestFillStructWrongType(t *testing.T) {
 
 func TestFillStructCannotSet(t *testing.T) {
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"cannotSet": "should return error",
 	})
 
@@ -147,7 +147,7 @@ var targets1 = []interface{}{
 
 func TestBuildTargetConfigFromMapError(t *testing.T) {
 	clearViper()
-	data := map[interface{}]interface{}{
+	data := map[string]interface{}{
 		"connector-name": 666,
 	}
 	config, err := buildTargetConfigFromMap(hclog.L(), data)
@@ -155,7 +155,7 @@ func TestBuildTargetConfigFromMapError(t *testing.T) {
 	assert.Nil(t, config)
 }
 
-var baseConfigMap = map[interface{}]interface{}{
+var baseConfigMap = map[string]interface{}{
 	"connector-name":           "c1",
 	"connector-version":        "0.1.0",
 	"name":                     "cn1",
@@ -196,7 +196,7 @@ func TestBuildTargetConfigFromMap(t *testing.T) {
 
 func TestBuildTargetConfigFromMapNoName(t *testing.T) {
 	clearViper()
-	var noNameConfigMap = make(map[interface{}]interface{})
+	var noNameConfigMap = make(map[string]interface{})
 	copier.Copy(&noNameConfigMap, &baseConfigMap)
 	delete(noNameConfigMap, "name")
 	config, err := buildTargetConfigFromMap(hclog.L(), noNameConfigMap)
@@ -233,7 +233,7 @@ func TestBuildTargetConfigFromMapLocalRaitoData(t *testing.T) {
 func TestBuildTargetConfigFromMapGlobalRaitoData(t *testing.T) {
 	clearViper()
 	// Create the target map
-	withoutRaitoStuff := make(map[interface{}]interface{})
+	withoutRaitoStuff := make(map[string]interface{})
 	// Copy from the original map to the target map
 	for key, value := range baseConfigMap {
 		if key != "api-user" && key != "api-secret" && key != "domain" {

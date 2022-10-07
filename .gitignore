@@ -5,8 +5,7 @@ completions
 *.json
 coverage.txt
 access.yml
-raito-access.yml
-raito.yml
+raito*.yml
 
 .idea
 .DS_Store

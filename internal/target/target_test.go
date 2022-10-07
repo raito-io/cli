@@ -3,10 +3,11 @@ package target
 import (
 	"bytes"
 	"fmt"
-	config2 "github.com/raito-io/cli/base/util/config"
 	"os"
 	"strings"
 	"testing"
+
+	config2 "github.com/raito-io/cli/base/util/config"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/jinzhu/copier"
@@ -36,7 +37,7 @@ type fillerStruct struct {
 
 func TestFillStruct(t *testing.T) {
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name":  "blah",
 		"another one": 666,
 		"another 2":   5.5,
@@ -58,7 +59,7 @@ func TestFillStructWithEnvironmentVariables(t *testing.T) {
 	os.Setenv("RAITO_TEST_OK", "true")
 
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name":  "{{RAITO_TEST_FIELDNAME}}",
 		"another one": "{{RAITO_TEST_ANOTHERONE}}",
 		"another 2":   "{{RAITO_TEST_ANOTHERTWO}}",
@@ -80,7 +81,7 @@ func TestFillStructWithEnvironmentVariablesNotSet(t *testing.T) {
 	os.Setenv("RAITO_TEST_OK", "true")
 
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name":  "{{RAITO_TEST_FIELDNAME}}",
 		"another one": "{{RAITO_TEST_ANOTHERONE}}",
 		"another 2":   "{{RAITO_TEST_ANOTHERTWO}}",
@@ -99,7 +100,7 @@ func TestFillStructWithEnvironmentVariablesWrongType(t *testing.T) {
 	os.Setenv("RAITO_TEST_OK", "true")
 
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name":  "{{RAITO_TEST_FIELDNAME}}",
 		"another one": "{{RAITO_TEST_ANOTHERONE}}",
 		"another 2":   "{{RAITO_TEST_ANOTHERTWO}}",
@@ -113,7 +114,7 @@ func TestFillStructWithEnvironmentVariablesWrongType(t *testing.T) {
 
 func TestFillStructWrongType(t *testing.T) {
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"field-name": 666,
 	})
 
@@ -122,7 +123,7 @@ func TestFillStructWrongType(t *testing.T) {
 
 func TestFillStructCannotSet(t *testing.T) {
 	fs := fillerStruct{}
-	err := fillStruct(&fs, map[interface{}]interface{}{
+	err := fillStruct(&fs, map[string]interface{}{
 		"cannotSet": "should return error",
 	})
 
@@ -146,7 +147,7 @@ var targets1 = []interface{}{
 
 func TestBuildTargetConfigFromMapError(t *testing.T) {
 	clearViper()
-	data := map[interface{}]interface{}{
+	data := map[string]interface{}{
 		"connector-name": 666,
 	}
 	config, err := buildTargetConfigFromMap(hclog.L(), data)
@@ -154,7 +155,7 @@ func TestBuildTargetConfigFromMapError(t *testing.T) {
 	assert.Nil(t, config)
 }
 
-var baseConfigMap = map[interface{}]interface{}{
+var baseConfigMap = map[string]interface{}{
 	"connector-name":           "c1",
 	"connector-version":        "0.1.0",
 	"name":                     "cn1",
@@ -195,7 +196,7 @@ func TestBuildTargetConfigFromMap(t *testing.T) {
 
 func TestBuildTargetConfigFromMapNoName(t *testing.T) {
 	clearViper()
-	var noNameConfigMap = make(map[interface{}]interface{})
+	var noNameConfigMap = make(map[string]interface{})
 	copier.Copy(&noNameConfigMap, &baseConfigMap)
 	delete(noNameConfigMap, "name")
 	config, err := buildTargetConfigFromMap(hclog.L(), noNameConfigMap)
@@ -232,7 +233,7 @@ func TestBuildTargetConfigFromMapLocalRaitoData(t *testing.T) {
 func TestBuildTargetConfigFromMapGlobalRaitoData(t *testing.T) {
 	clearViper()
 	// Create the target map
-	withoutRaitoStuff := make(map[interface{}]interface{})
+	withoutRaitoStuff := make(map[string]interface{})
 	// Copy from the original map to the target map
 	for key, value := range baseConfigMap {
 		if key != "api-user" && key != "api-secret" && key != "domain" {
@@ -335,13 +336,13 @@ func TestRunSingleTarget(t *testing.T) {
 func TestRunMultipleTargets(t *testing.T) {
 	clearViper()
 
-	t1 := map[interface{}]interface{}{
+	t1 := map[string]interface{}{
 		constants.ConnectorNameFlag: "c1",
 		constants.NameFlag:          "cn1",
 		"api-secret":                "secret1",
 		"other-stuff":               "ok",
 	}
-	t2 := map[interface{}]interface{}{
+	t2 := map[string]interface{}{
 		constants.ConnectorNameFlag: "c2",
 		"api-secret":                "secret2",
 	}
@@ -372,11 +373,11 @@ func TestRunMultipleTargets(t *testing.T) {
 func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	clearViper()
 
-	t1 := map[interface{}]interface{}{
+	t1 := map[string]interface{}{
 		constants.ConnectorNameFlag: "c1",
 		constants.NameFlag:          "name1",
 	}
-	t2 := map[interface{}]interface{}{
+	t2 := map[string]interface{}{
 		constants.ConnectorNameFlag: "c2",
 	}
 
@@ -449,4 +450,66 @@ func TestLogTarget(t *testing.T) {
 	assert.Contains(t, str, "**censured**")
 
 	hclog.SetDefault(old)
+}
+
+func TestRunFromConfigFile(t *testing.T) {
+	clearViper()
+	viper.AddConfigPath("./testdata")
+	viper.AddConfigPath("./internal/target/testdata")
+	viper.SetConfigType("yaml")
+	viper.SetConfigName("test-raito")
+
+	err := viper.ReadInConfig()
+	assert.Nil(t, err)
+
+	repositories := viper.Get(constants.Repositories).([]interface{})
+	assert.NotNil(t, repositories)
+	assert.Equal(t, 1, len(repositories))
+
+	assert.Equal(t, "testbot@raito.io", viper.Get(constants.ApiUserFlag))
+	assert.Equal(t, "{{API_SECRET}}", viper.Get(constants.ApiSecretFlag))
+	assert.Equal(t, "testbotdomain", viper.Get(constants.DomainFlag))
+
+	repo := repositories[0].(map[string]interface{})
+	assert.Equal(t, repo[constants.NameFlag], "raito-io")
+	assert.Equal(t, repo[constants.GitHubToken], "{{GHA_TOKEN}}")
+
+	targets := viper.Get(constants.Targets).([]interface{})
+	assert.NotNil(t, targets)
+	assert.Equal(t, 3, len(targets))
+
+	for _, targetRaw := range targets {
+		target := targetRaw.(map[string]interface{})
+		targetParsed := false
+		if target[constants.NameFlag] == "snowflake1" {
+			targetParsed = true
+			assert.Equal(t, "raito-io/cli-plugin-snowflake", target[constants.ConnectorNameFlag])
+			assert.Equal(t, "SnowflakeDataSource", target[constants.DataSourceIdFlag])
+			assert.Equal(t, "SnowflakeIdentityStore", target[constants.IdentityStoreIdFlag])
+			assert.Equal(t, "somewhere.eu-central-1", target["sf-account"])
+			assert.Equal(t, "raito", target["sf-user"])
+			assert.Equal(t, "{{SNOWFLAKE_PASSWORD}}", target["sf-password"])
+			assert.Equal(t, "ACCOUNTADMIN", target["sf-role"])
+			assert.Equal(t, false, target["sf-create-future-grants"])
+			assert.Equal(t, "SNOWFLAKE,SNOWFLAKE_SAMPLE_DATA,SHARED_WEATHERSOURCE", target["sf-excluded-databases"])
+			assert.Equal(t, "PUBLIC,INFORMATION_SCHEMA", target["sf-excluded-schemas"])
+			assert.Equal(t, true, target[constants.SkipIdentityStoreSyncFlag])
+			assert.Equal(t, true, target[constants.SkipDataSourceSyncFlag])
+			assert.Equal(t, false, target[constants.SkipDataAccessSyncFlag])
+			assert.Equal(t, true, target[constants.SkipDataUsageSyncFlag])
+		} else if target[constants.NameFlag] == "bigquery1" {
+			targetParsed = true
+			assert.Equal(t, "raito-io/cli-plugin-bigquery", target[constants.ConnectorNameFlag])
+			assert.Equal(t, "latest", target[constants.ConnectorVersionFlag])
+			assert.Equal(t, "BigQueryDataSource", target[constants.DataSourceIdFlag])
+			assert.Equal(t, "GcpIdentityStore", target[constants.IdentityStoreIdFlag])
+		} else if target[constants.NameFlag] == "s3-test" {
+			targetParsed = true
+			assert.Equal(t, "raito-io/cli-plugin-aws-s3", target[constants.ConnectorNameFlag])
+			assert.Equal(t, "latest", target[constants.ConnectorVersionFlag])
+			assert.Equal(t, "GlobalS3DataSource", target[constants.DataSourceIdFlag])
+			assert.Equal(t, "AwsIdentityStore", target[constants.IdentityStoreIdFlag])
+		}
+		assert.True(t, targetParsed)
+	}
 }

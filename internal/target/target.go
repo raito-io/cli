@@ -73,8 +73,9 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 		hclog.L().Debug(fmt.Sprintf("Found %d targets to run.", len(targetList)))
 
 		for _, targetObj := range targetList {
-			target, ok := targetObj.(map[interface{}]interface{})
+			target, ok := targetObj.(map[string]interface{})
 			if !ok {
+				hclog.L().Debug(fmt.Sprintf("Target not correctly parsed, target object is: %v", targetObj))
 				break
 			}
 
@@ -108,7 +109,7 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 	return nil
 }
 
-func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[interface{}]interface{}) (*BaseTargetConfig, error) {
+func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[string]interface{}) (*BaseTargetConfig, error) {
 	tConfig := BaseTargetConfig{}
 	err := fillStruct(&tConfig, target)
 
@@ -118,14 +119,12 @@ func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[interface{}]in
 	tConfig.Parameters = make(map[string]interface{})
 
 	for k, v := range target {
-		if ks, ok := k.(string); ok {
-			if _, f := constants.KnownFlags[ks]; !f {
-				cv, err := iconfig.HandleField(v, reflect.String)
-				if err != nil {
-					return nil, err
-				}
-				tConfig.Parameters[ks] = cv
+		if _, f := constants.KnownFlags[k]; !f {
+			cv, err := iconfig.HandleField(v, reflect.String)
+			if err != nil {
+				return nil, err
 			}
+			tConfig.Parameters[k] = cv
 		}
 	}
 
@@ -269,13 +268,11 @@ func logTargetConfig(config *BaseTargetConfig) {
 	hclog.L().Debug(fmt.Sprintf("Using target config (censured): %+v", cc))
 }
 
-func fillStruct(o interface{}, m map[interface{}]interface{}) error {
+func fillStruct(o interface{}, m map[string]interface{}) error {
 	for k, v := range m {
-		if ks, ok := k.(string); ok {
-			err := setField(o, ks, v)
-			if err != nil {
-				return err
-			}
+		err := setField(o, k, v)
+		if err != nil {
+			return err
 		}
 	}
 

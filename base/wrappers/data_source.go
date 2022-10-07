@@ -40,7 +40,7 @@ func (s *dataSourceSyncFunction) SyncDataSource(config *data_source.DataSourceSy
 	ctx := context.Background()
 
 	logger.Info("Starting data source synchronisation")
-	logger.Debug("Creating file for storing data usage")
+	logger.Debug("Creating file for storing data source")
 
 	fileCreator, err := s.fileCreatorFactory(config)
 	if err != nil {

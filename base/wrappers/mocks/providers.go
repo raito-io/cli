@@ -101,5 +101,4 @@ func NewSimpleDataSourceObjectHandler(t mockConstructorTestingTNewDataSourceObje
 	}).Return().Maybe()
 
 	return result
-
 }

@@ -1,0 +1,362 @@
+package role_based
+
+import (
+	"context"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
+	"github.com/raito-io/cli/base/access_provider/sync_from_target/mocks"
+	"github.com/raito-io/cli/base/access_provider/sync_to_target"
+	mocks2 "github.com/raito-io/cli/base/access_provider/sync_to_target/mocks"
+	"github.com/raito-io/cli/base/access_provider/sync_to_target/naming_hint"
+	"github.com/raito-io/cli/base/util/config"
+)
+
+func TestAccessProviderRoleSyncFunction_SyncAccessProviderFromTarget(t *testing.T) {
+	//Given
+	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+
+	accessProviderFileCreator := mocks.NewAccessProviderFileCreator(t)
+
+	syncerMock := NewMockAccessProviderRoleSyncer(t)
+	syncerMock.EXPECT().SyncAccessProvidersFromTarget(mock.Anything, accessProviderFileCreator, &configMap).Return(nil).Once()
+
+	syncFunction := accessProviderRoleSyncFunction{
+		syncer: syncerMock,
+	}
+
+	//When
+	err := syncFunction.SyncAccessProvidersFromTarget(context.Background(), accessProviderFileCreator, &configMap)
+
+	//Then
+	assert.NoError(t, err)
+}
+
+func TestAccessProviderRoleSyncFunction_SyncAccessProviderFromTarget_WithError(t *testing.T) {
+	//Given
+	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+
+	accessProviderFileCreator := mocks.NewAccessProviderFileCreator(t)
+
+	syncerMock := NewMockAccessProviderRoleSyncer(t)
+	syncerMock.EXPECT().SyncAccessProvidersFromTarget(mock.Anything, accessProviderFileCreator, &configMap).Return(fmt.Errorf("boom")).Once()
+
+	syncFunction := accessProviderRoleSyncFunction{
+		syncer: syncerMock,
+	}
+
+	//When
+	err := syncFunction.SyncAccessProvidersFromTarget(context.Background(), accessProviderFileCreator, &configMap)
+
+	//Then
+	assert.Error(t, err)
+}
+
+func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
+	//Given
+	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+
+	accessProvidersImport := sync_to_target.AccessProviderImport{
+		LastCalculated: time.Now().Unix(),
+		AccessProviders: []sync_to_target.AccessProvider{
+			{
+				Access: []*sync_to_target.Access{
+					{
+						Id: "AccessId1",
+					},
+					{
+						Id: "AccessId2",
+					},
+				},
+				Id:          "AP1",
+				Description: "Descr",
+				Delete:      false,
+				Name:        "Ap1",
+				NamingHint:  "NameHint1",
+				Action:      sync_to_target.Grant,
+			},
+			{
+				Access: []*sync_to_target.Access{
+					{
+						Id: "AccessId3",
+					},
+				},
+				Id:          "AP2",
+				Description: "Descr2",
+				Delete:      false,
+				Name:        "Ap2",
+				NamingHint:  "NameHint2",
+				Action:      sync_to_target.Grant,
+			},
+		},
+	}
+
+	syncerMock := NewMockAccessProviderRoleSyncer(t)
+	syncerMock.EXPECT().SyncAccessAsCodeToTarget(mock.Anything, mock.Anything, &configMap).Return(nil).Once()
+
+	syncFunction := accessProviderRoleSyncFunction{
+		syncer: syncerMock,
+		namingConstraints: naming_hint.NamingConstraints{
+			UpperCaseLetters:  true,
+			Numbers:           true,
+			SpecialCharacters: "_",
+			MaxLength:         24,
+		},
+	}
+
+	//when
+	err := syncFunction.SyncAccessAsCodeToTarget(context.Background(), &accessProvidersImport, "R", &configMap)
+
+	//Then
+	assert.NoError(t, err)
+	syncerMock.AssertCalled(t, "SyncAccessAsCodeToTarget", mock.Anything,
+		map[string]sync_to_target.EnrichedAccess{
+			"R_NAME_HINT1": {
+				AccessProvider: &accessProvidersImport.AccessProviders[0],
+				Access:         accessProvidersImport.AccessProviders[0].Access[0],
+			},
+			"R_NAME_HINT1__0": {
+				AccessProvider: &accessProvidersImport.AccessProviders[0],
+				Access:         accessProvidersImport.AccessProviders[0].Access[1],
+			},
+			"R_NAME_HINT2": {
+				AccessProvider: &accessProvidersImport.AccessProviders[1],
+				Access:         accessProvidersImport.AccessProviders[1].Access[0],
+			},
+		}, &configMap,
+	)
+}
+
+func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget_NameGeneratorFactoryError(t *testing.T) {
+	//Given
+	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+
+	accessProvidersImport := sync_to_target.AccessProviderImport{
+		LastCalculated: time.Now().Unix(),
+		AccessProviders: []sync_to_target.AccessProvider{
+			{
+				Access: []*sync_to_target.Access{
+					{
+						Id: "AccessId1",
+					},
+					{
+						Id: "AccessId2",
+					},
+				},
+				Id:          "AP1",
+				Description: "Descr",
+				Delete:      false,
+				Name:        "Ap1",
+				NamingHint:  "NameHint1",
+				Action:      sync_to_target.Grant,
+			},
+			{
+				Access: []*sync_to_target.Access{
+					{
+						Id: "AccessId3",
+					},
+				},
+				Id:          "AP2",
+				Description: "Descr2",
+				Delete:      false,
+				Name:        "Ap2",
+				NamingHint:  "NameHint2",
+				Action:      sync_to_target.Grant,
+			},
+		},
+	}
+
+	syncerMock := NewMockAccessProviderRoleSyncer(t)
+
+	syncFunction := accessProviderRoleSyncFunction{
+		syncer: syncerMock,
+		namingConstraints: naming_hint.NamingConstraints{
+			UpperCaseLetters:  true,
+			Numbers:           true,
+			SpecialCharacters: "",
+			MaxLength:         24,
+		},
+	}
+
+	//when
+	err := syncFunction.SyncAccessAsCodeToTarget(context.Background(), &accessProvidersImport, "R", &configMap)
+
+	//Then
+	assert.Error(t, err)
+	syncerMock.AssertNotCalled(t, "SyncAccessAsCodeToTarget")
+}
+
+func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T) {
+	//Given
+	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+
+	accessFeedBackFileCreator := mocks2.NewSyncFeedbackFileCreator(t)
+
+	actualName1 := "ActualName1"
+
+	accessProvidersImport := sync_to_target.AccessProviderImport{
+		LastCalculated: time.Now().Unix(),
+		AccessProviders: []sync_to_target.AccessProvider{
+			{
+				Access: []*sync_to_target.Access{
+					{
+						Id: "AccessId1",
+					},
+					{
+						Id: "AccessId2",
+					},
+				},
+				Id:          "AP1",
+				Description: "Descr",
+				Delete:      false,
+				Name:        "Ap1",
+				NamingHint:  "NameHint1",
+				Action:      sync_to_target.Grant,
+			},
+			{
+				Access: []*sync_to_target.Access{
+					{
+						Id: "AccessId3",
+					},
+				},
+				Id:          "AP2",
+				Description: "Descr2",
+				Delete:      false,
+				Name:        "Ap2",
+				NamingHint:  "NameHint2",
+				Action:      sync_to_target.Grant,
+			},
+			{
+				Access: []*sync_to_target.Access{
+					{
+						Id:         "SomeAccessToDelete",
+						ActualName: &actualName1,
+					},
+				},
+				Id:          "AP3",
+				Description: "Descr3",
+				Delete:      true,
+				Name:        "Ap3",
+				NamingHint:  "NameHint3",
+				Action:      sync_to_target.Grant,
+			},
+			{
+				Access: []*sync_to_target.Access{
+					{
+						Id: "AnotherAccessToDelete",
+					},
+				},
+				Id:          "AP4",
+				Description: "Descr4",
+				Delete:      true,
+				Name:        "Ap4",
+				NamingHint:  "NameHint4",
+				Action:      sync_to_target.Grant,
+			},
+		},
+	}
+
+	syncerMock := NewMockAccessProviderRoleSyncer(t)
+	syncerMock.EXPECT().SyncAccessProvidersToTarget(mock.Anything, []string{actualName1}, mock.Anything, accessFeedBackFileCreator, &configMap).Return(nil).Once()
+
+	syncer := accessProviderRoleSyncFunction{
+		syncer: syncerMock,
+		namingConstraints: naming_hint.NamingConstraints{
+			UpperCaseLetters:  true,
+			Numbers:           true,
+			SpecialCharacters: "_",
+			MaxLength:         24,
+		},
+	}
+
+	//When
+	err := syncer.SyncAccessProviderToTarget(context.Background(), &accessProvidersImport, accessFeedBackFileCreator, &configMap)
+
+	//Then
+	assert.NoError(t, err)
+	syncerMock.AssertCalled(t, "SyncAccessProvidersToTarget", mock.Anything,
+		[]string{actualName1},
+		map[string]sync_to_target.EnrichedAccess{
+			"NAME_HINT1": {
+				AccessProvider: &accessProvidersImport.AccessProviders[0],
+				Access:         accessProvidersImport.AccessProviders[0].Access[0],
+			},
+			"NAME_HINT1__0": {
+				AccessProvider: &accessProvidersImport.AccessProviders[0],
+				Access:         accessProvidersImport.AccessProviders[0].Access[1],
+			},
+			"NAME_HINT2": {
+				AccessProvider: &accessProvidersImport.AccessProviders[1],
+				Access:         accessProvidersImport.AccessProviders[1].Access[0],
+			},
+		},
+		accessFeedBackFileCreator, &configMap,
+	)
+}
+
+func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget_ErrorOnNameGeneratorFactory(t *testing.T) {
+	//Given
+	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+
+	accessFeedBackFileCreator := mocks2.NewSyncFeedbackFileCreator(t)
+
+	accessProvidersImport := sync_to_target.AccessProviderImport{
+		LastCalculated: time.Now().Unix(),
+		AccessProviders: []sync_to_target.AccessProvider{
+			{
+				Access: []*sync_to_target.Access{
+					{
+						Id: "AccessId1",
+					},
+					{
+						Id: "AccessId2",
+					},
+				},
+				Id:          "AP1",
+				Description: "Descr",
+				Delete:      false,
+				Name:        "Ap1",
+				NamingHint:  "NameHint1",
+				Action:      sync_to_target.Grant,
+			},
+		},
+	}
+
+	syncerMock := NewMockAccessProviderRoleSyncer(t)
+
+	syncer := accessProviderRoleSyncFunction{
+		syncer: syncerMock,
+		namingConstraints: naming_hint.NamingConstraints{
+			UpperCaseLetters:  true,
+			Numbers:           true,
+			SpecialCharacters: "",
+			MaxLength:         24,
+		},
+	}
+
+	//When
+	err := syncer.SyncAccessProviderToTarget(context.Background(), &accessProvidersImport, accessFeedBackFileCreator, &configMap)
+
+	//Then
+	assert.Error(t, err)
+	syncerMock.AssertNotCalled(t, "SyncAccessProvidersToTarget")
+}
+
+func TestAccessProviderRoleSync(t *testing.T) {
+	//Given
+	syncerMock := NewMockAccessProviderRoleSyncer(t)
+	nameConstraints := naming_hint.NamingConstraints{
+		UpperCaseLetters: true,
+	}
+
+	//When
+	syncer := AccessProviderRoleSync(syncerMock, nameConstraints)
+
+	//Then
+	actualSyncer := syncer.Syncer.(*accessProviderRoleSyncFunction)
+	assert.Equal(t, syncerMock, actualSyncer.syncer)
+}

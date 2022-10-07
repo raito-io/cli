@@ -36,6 +36,8 @@ func (p *accessProviderFileParser) ParseAccessProviders() (*AccessProviderImport
 		return nil, err
 	}
 
+	defer af.Close()
+
 	buf, err := io.ReadAll(af)
 	if err != nil {
 		hclog.L().Error(fmt.Sprintf("Error while reading access file %q: %s", p.SourceFile, err.Error()))

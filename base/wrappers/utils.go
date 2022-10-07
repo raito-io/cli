@@ -1,7 +1,6 @@
 package wrappers
 
 import (
-	"strings"
 	"time"
 
 	"github.com/raito-io/cli/base"
@@ -15,14 +14,4 @@ func timedExecution(f func() error) (time.Duration, error) {
 	sec := time.Since(start).Round(time.Millisecond)
 
 	return sec, err
-}
-
-func find(s []string, q string) bool {
-	for _, r := range s {
-		if strings.EqualFold(r, q) {
-			return true
-		}
-	}
-
-	return false
 }

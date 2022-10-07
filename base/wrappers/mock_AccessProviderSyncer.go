@@ -25,13 +25,13 @@ func (_m *MockAccessProviderSyncer) EXPECT() *MockAccessProviderSyncer_Expecter 
 	return &MockAccessProviderSyncer_Expecter{mock: &_m.Mock}
 }
 
-// SyncAccessAsCodeToTarget provides a mock function with given fields: ctx, accesses, configMap
-func (_m *MockAccessProviderSyncer) SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, configMap *config.ConfigMap) error {
-	ret := _m.Called(ctx, accesses, configMap)
+// SyncAccessAsCodeToTarget provides a mock function with given fields: ctx, accessProviders, prefix, configMap
+func (_m *MockAccessProviderSyncer) SyncAccessAsCodeToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, prefix string, configMap *config.ConfigMap) error {
+	ret := _m.Called(ctx, accessProviders, prefix, configMap)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, map[string]sync_to_target.EnrichedAccess, *config.ConfigMap) error); ok {
-		r0 = rf(ctx, accesses, configMap)
+	if rf, ok := ret.Get(0).(func(context.Context, *sync_to_target.AccessProviderImport, string, *config.ConfigMap) error); ok {
+		r0 = rf(ctx, accessProviders, prefix, configMap)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -46,15 +46,16 @@ type MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call struct {
 
 // SyncAccessAsCodeToTarget is a helper method to define mock.On call
 //   - ctx context.Context
-//   - accesses map[string]sync_to_target.EnrichedAccess
+//   - accessProviders *sync_to_target.AccessProviderImport
+//   - prefix string
 //   - configMap *config.ConfigMap
-func (_e *MockAccessProviderSyncer_Expecter) SyncAccessAsCodeToTarget(ctx interface{}, accesses interface{}, configMap interface{}) *MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call {
-	return &MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call{Call: _e.mock.On("SyncAccessAsCodeToTarget", ctx, accesses, configMap)}
+func (_e *MockAccessProviderSyncer_Expecter) SyncAccessAsCodeToTarget(ctx interface{}, accessProviders interface{}, prefix interface{}, configMap interface{}) *MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call {
+	return &MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call{Call: _e.mock.On("SyncAccessAsCodeToTarget", ctx, accessProviders, prefix, configMap)}
 }
 
-func (_c *MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call) Run(run func(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, configMap *config.ConfigMap)) *MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call {
+func (_c *MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call) Run(run func(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, prefix string, configMap *config.ConfigMap)) *MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(map[string]sync_to_target.EnrichedAccess), args[2].(*config.ConfigMap))
+		run(args[0].(context.Context), args[1].(*sync_to_target.AccessProviderImport), args[2].(string), args[3].(*config.ConfigMap))
 	})
 	return _c
 }
@@ -64,52 +65,13 @@ func (_c *MockAccessProviderSyncer_SyncAccessAsCodeToTarget_Call) Return(_a0 err
 	return _c
 }
 
-// SyncAccessProviderFromTarget provides a mock function with given fields: ctx, accessProviderHandler, configMap
-func (_m *MockAccessProviderSyncer) SyncAccessProviderFromTarget(ctx context.Context, accessProviderHandler AccessProviderHandler, configMap *config.ConfigMap) error {
-	ret := _m.Called(ctx, accessProviderHandler, configMap)
+// SyncAccessProviderToTarget provides a mock function with given fields: ctx, accessProviders, accessProviderFeedbackHandler, configMap
+func (_m *MockAccessProviderSyncer) SyncAccessProviderToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, accessProviderFeedbackHandler AccessProviderFeedbackHandler, configMap *config.ConfigMap) error {
+	ret := _m.Called(ctx, accessProviders, accessProviderFeedbackHandler, configMap)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, AccessProviderHandler, *config.ConfigMap) error); ok {
-		r0 = rf(ctx, accessProviderHandler, configMap)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockAccessProviderSyncer_SyncAccessProviderFromTarget_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SyncAccessProviderFromTarget'
-type MockAccessProviderSyncer_SyncAccessProviderFromTarget_Call struct {
-	*mock.Call
-}
-
-// SyncAccessProviderFromTarget is a helper method to define mock.On call
-//   - ctx context.Context
-//   - accessProviderHandler AccessProviderHandler
-//   - configMap *config.ConfigMap
-func (_e *MockAccessProviderSyncer_Expecter) SyncAccessProviderFromTarget(ctx interface{}, accessProviderHandler interface{}, configMap interface{}) *MockAccessProviderSyncer_SyncAccessProviderFromTarget_Call {
-	return &MockAccessProviderSyncer_SyncAccessProviderFromTarget_Call{Call: _e.mock.On("SyncAccessProviderFromTarget", ctx, accessProviderHandler, configMap)}
-}
-
-func (_c *MockAccessProviderSyncer_SyncAccessProviderFromTarget_Call) Run(run func(ctx context.Context, accessProviderHandler AccessProviderHandler, configMap *config.ConfigMap)) *MockAccessProviderSyncer_SyncAccessProviderFromTarget_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(AccessProviderHandler), args[2].(*config.ConfigMap))
-	})
-	return _c
-}
-
-func (_c *MockAccessProviderSyncer_SyncAccessProviderFromTarget_Call) Return(_a0 error) *MockAccessProviderSyncer_SyncAccessProviderFromTarget_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-// SyncAccessProviderToTarget provides a mock function with given fields: ctx, rolesToRemove, accesses, feedbackHandler, configMap
-func (_m *MockAccessProviderSyncer) SyncAccessProviderToTarget(ctx context.Context, rolesToRemove []string, accesses map[string]sync_to_target.EnrichedAccess, feedbackHandler AccessProviderFeedbackHandler, configMap *config.ConfigMap) error {
-	ret := _m.Called(ctx, rolesToRemove, accesses, feedbackHandler, configMap)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, []string, map[string]sync_to_target.EnrichedAccess, AccessProviderFeedbackHandler, *config.ConfigMap) error); ok {
-		r0 = rf(ctx, rolesToRemove, accesses, feedbackHandler, configMap)
+	if rf, ok := ret.Get(0).(func(context.Context, *sync_to_target.AccessProviderImport, AccessProviderFeedbackHandler, *config.ConfigMap) error); ok {
+		r0 = rf(ctx, accessProviders, accessProviderFeedbackHandler, configMap)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -124,22 +86,60 @@ type MockAccessProviderSyncer_SyncAccessProviderToTarget_Call struct {
 
 // SyncAccessProviderToTarget is a helper method to define mock.On call
 //   - ctx context.Context
-//   - rolesToRemove []string
-//   - accesses map[string]sync_to_target.EnrichedAccess
-//   - feedbackHandler AccessProviderFeedbackHandler
+//   - accessProviders *sync_to_target.AccessProviderImport
+//   - accessProviderFeedbackHandler AccessProviderFeedbackHandler
 //   - configMap *config.ConfigMap
-func (_e *MockAccessProviderSyncer_Expecter) SyncAccessProviderToTarget(ctx interface{}, rolesToRemove interface{}, accesses interface{}, feedbackHandler interface{}, configMap interface{}) *MockAccessProviderSyncer_SyncAccessProviderToTarget_Call {
-	return &MockAccessProviderSyncer_SyncAccessProviderToTarget_Call{Call: _e.mock.On("SyncAccessProviderToTarget", ctx, rolesToRemove, accesses, feedbackHandler, configMap)}
+func (_e *MockAccessProviderSyncer_Expecter) SyncAccessProviderToTarget(ctx interface{}, accessProviders interface{}, accessProviderFeedbackHandler interface{}, configMap interface{}) *MockAccessProviderSyncer_SyncAccessProviderToTarget_Call {
+	return &MockAccessProviderSyncer_SyncAccessProviderToTarget_Call{Call: _e.mock.On("SyncAccessProviderToTarget", ctx, accessProviders, accessProviderFeedbackHandler, configMap)}
 }
 
-func (_c *MockAccessProviderSyncer_SyncAccessProviderToTarget_Call) Run(run func(ctx context.Context, rolesToRemove []string, accesses map[string]sync_to_target.EnrichedAccess, feedbackHandler AccessProviderFeedbackHandler, configMap *config.ConfigMap)) *MockAccessProviderSyncer_SyncAccessProviderToTarget_Call {
+func (_c *MockAccessProviderSyncer_SyncAccessProviderToTarget_Call) Run(run func(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, accessProviderFeedbackHandler AccessProviderFeedbackHandler, configMap *config.ConfigMap)) *MockAccessProviderSyncer_SyncAccessProviderToTarget_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].([]string), args[2].(map[string]sync_to_target.EnrichedAccess), args[3].(AccessProviderFeedbackHandler), args[4].(*config.ConfigMap))
+		run(args[0].(context.Context), args[1].(*sync_to_target.AccessProviderImport), args[2].(AccessProviderFeedbackHandler), args[3].(*config.ConfigMap))
 	})
 	return _c
 }
 
 func (_c *MockAccessProviderSyncer_SyncAccessProviderToTarget_Call) Return(_a0 error) *MockAccessProviderSyncer_SyncAccessProviderToTarget_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+// SyncAccessProvidersFromTarget provides a mock function with given fields: ctx, accessProviderHandler, configMap
+func (_m *MockAccessProviderSyncer) SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler AccessProviderHandler, configMap *config.ConfigMap) error {
+	ret := _m.Called(ctx, accessProviderHandler, configMap)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, AccessProviderHandler, *config.ConfigMap) error); ok {
+		r0 = rf(ctx, accessProviderHandler, configMap)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SyncAccessProvidersFromTarget'
+type MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call struct {
+	*mock.Call
+}
+
+// SyncAccessProvidersFromTarget is a helper method to define mock.On call
+//   - ctx context.Context
+//   - accessProviderHandler AccessProviderHandler
+//   - configMap *config.ConfigMap
+func (_e *MockAccessProviderSyncer_Expecter) SyncAccessProvidersFromTarget(ctx interface{}, accessProviderHandler interface{}, configMap interface{}) *MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call {
+	return &MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call{Call: _e.mock.On("SyncAccessProvidersFromTarget", ctx, accessProviderHandler, configMap)}
+}
+
+func (_c *MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call) Run(run func(ctx context.Context, accessProviderHandler AccessProviderHandler, configMap *config.ConfigMap)) *MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(AccessProviderHandler), args[2].(*config.ConfigMap))
+	})
+	return _c
+}
+
+func (_c *MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call) Return(_a0 error) *MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call {
 	_c.Call.Return(_a0)
 	return _c
 }

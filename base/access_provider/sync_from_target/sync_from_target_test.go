@@ -29,13 +29,13 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, apfc)
 
-	aps := make([]AccessProvider, 0, 3)
+	aps := make([]*AccessProvider, 0, 3)
 	do := data_source.DataObjectReference{
 		FullName: "Data Object 1",
 		Type:     "schema",
 	}
 
-	aps = append(aps, AccessProvider{
+	aps = append(aps, &AccessProvider{
 		ExternalId:        "eid1",
 		NotInternalizable: false,
 		Name:              "AP1",
@@ -56,7 +56,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		},
 	})
 
-	aps = append(aps, AccessProvider{
+	aps = append(aps, &AccessProvider{
 		ExternalId:        "eid2",
 		NotInternalizable: true,
 		Name:              "AP2",
@@ -78,7 +78,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		},
 	})
 
-	err = apfc.AddAccessProviders(aps)
+	err = apfc.AddAccessProviders(aps...)
 	assert.Nil(t, err)
 
 	apfc.Close()

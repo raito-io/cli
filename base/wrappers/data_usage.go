@@ -3,7 +3,6 @@ package wrappers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/util/config"
@@ -48,9 +47,10 @@ func (s *dataUsageSyncFunction) SyncDataUsage(config *data_usage.DataUsageSyncCo
 	}
 	defer fileCreator.Close()
 
-	start := time.Now()
+	sec, err := timedExecution(func() error {
+		return s.syncer.SyncDataUsage(ctx, fileCreator, &config.ConfigMap)
+	})
 
-	err = s.syncer.SyncDataUsage(ctx, fileCreator, &config.ConfigMap)
 	if err != nil {
 		logger.Error(err.Error())
 
@@ -59,7 +59,6 @@ func (s *dataUsageSyncFunction) SyncDataUsage(config *data_usage.DataUsageSyncCo
 		}
 	}
 
-	sec := time.Since(start).Round(time.Millisecond)
 	logger.Info(fmt.Sprintf("Retrieved %d rows and written them to file, for a total time of %s",
 		fileCreator.GetStatementCount(), sec))
 

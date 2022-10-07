@@ -3,6 +3,8 @@ package mocks
 import (
 	"github.com/stretchr/testify/mock"
 
+	"github.com/raito-io/cli/base/access_provider/sync_from_target"
+	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
 )
@@ -55,6 +57,55 @@ func NewSimpleIdentityStoreIdentityHandler(t mockConstructorTestingTNewIdentityS
 		arguments = append(arguments, mock.Anything)
 		result.EXPECT().AddUsers(arguments...).Run(addUsers).Return(nil).Maybe()
 		result.EXPECT().AddGroups(arguments...).Run(addGroups).Return(nil).Maybe()
+	}
+
+	return result
+}
+
+type SimpleAccessProviderHandler struct {
+	*AccessProviderHandler
+	AccessProviders []sync_from_target.AccessProvider
+}
+
+func NewSimpleAccessProviderHandler(t mockConstructorTestingTNewAccessProviderHandler, maxAccessProvidersPerCall int) *SimpleAccessProviderHandler {
+	result := &SimpleAccessProviderHandler{
+		AccessProviderHandler: NewAccessProviderHandler(t),
+		AccessProviders:       make([]sync_from_target.AccessProvider, 0),
+	}
+
+	arguments := make([]interface{}, 0)
+
+	for i := 0; i < maxAccessProvidersPerCall; i++ {
+		arguments = append(arguments, mock.Anything)
+		result.EXPECT().AddAccessProviders(arguments...).Run(func(dataAccessList ...*sync_from_target.AccessProvider) {
+			for _, da := range dataAccessList {
+				result.AccessProviders = append(result.AccessProviders, *da)
+			}
+		}).Return(nil).Maybe()
+	}
+
+	return result
+}
+
+type SimpleAccessProviderFeedbackHandler struct {
+	*AccessProviderFeedbackHandler
+	AccessProviderFeedback map[string][]sync_to_target.AccessSyncFeedbackInformation
+}
+
+func NewSimpleAccessProviderFeedbackHandler(t mockConstructorTestingTNewAccessProviderFeedbackHandler, maxAccessFeedbackInformationObjectsPerCall int) *SimpleAccessProviderFeedbackHandler {
+	result := &SimpleAccessProviderFeedbackHandler{
+		AccessProviderFeedbackHandler: NewAccessProviderFeedbackHandler(t),
+		AccessProviderFeedback:        map[string][]sync_to_target.AccessSyncFeedbackInformation{},
+	}
+
+	arguments := make([]interface{}, 0)
+
+	for i := 0; i < maxAccessFeedbackInformationObjectsPerCall; i++ {
+		arguments = append(arguments, mock.Anything)
+
+		result.EXPECT().AddAccessProviderFeedback(mock.Anything, arguments...).Run(func(accessProviderId string, accessFeedback ...sync_to_target.AccessSyncFeedbackInformation) {
+			result.AccessProviderFeedback[accessProviderId] = accessFeedback
+		}).Return(nil).Maybe()
 	}
 
 	return result

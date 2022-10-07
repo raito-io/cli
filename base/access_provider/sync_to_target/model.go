@@ -52,6 +52,11 @@ type accessProviderFeedbackInformation struct {
 	AccessFeedbackObjects []AccessSyncFeedbackInformation `json:"access"`
 }
 
+type EnrichedAccess struct {
+	Access         *Access
+	AccessProvider *AccessProvider
+}
+
 type Action int
 
 const (

@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/raito-io/cli/base/access_provider/sync_from_target"
+	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
 )
@@ -78,4 +80,73 @@ func TestNewSimpleIdentityStoreIdentityHandler(t *testing.T) {
 
 	mock.AssertNumberOfCalls(t, "AddGroups", 1)
 	mock.AssertNumberOfCalls(t, "AddUsers", 2)
+}
+
+func TestNewSimpleAccessProviderHandler(t *testing.T) {
+	//Given
+	mock := NewSimpleAccessProviderHandler(t, 2)
+
+	accessProviders := []sync_from_target.AccessProvider{
+		{Name: "AP1"}, {Name: "AP2"}, {Name: "AP3"},
+	}
+
+	accessProviderPtrs := make([]*sync_from_target.AccessProvider, len(accessProviders))
+
+	for i := range accessProviders {
+		accessProviderPtrs[i] = &accessProviders[i]
+	}
+
+	//When
+	err := mock.AddAccessProviders(accessProviderPtrs[0])
+
+	//Then
+	assert.NoError(t, err)
+	assert.Len(t, mock.AccessProviders, 1)
+	assert.Equal(t, accessProviders[0], mock.AccessProviders[0])
+
+	//When
+	err = mock.AddAccessProviders(accessProviderPtrs[1:]...)
+
+	//Then
+	assert.NoError(t, err)
+	assert.Len(t, mock.AccessProviders, 3)
+	assert.Equal(t, accessProviders, mock.AccessProviders)
+}
+
+func TestNewSimpleAccessProviderFeedbackHandler(t *testing.T) {
+	//Given
+	mock := NewSimpleAccessProviderFeedbackHandler(t, 2)
+
+	accessProviderFeedbackMap := map[string][]sync_to_target.AccessSyncFeedbackInformation{
+		"AP1": {
+			{
+				AccessId:   "AccessId1",
+				ActualName: "ActualName1",
+			},
+		},
+		"AP2": {
+			{
+				AccessId:   "AccessId2",
+				ActualName: "ActualName2",
+			},
+			{
+				AccessId:   "AccessId3",
+				ActualName: "ActualName3",
+			},
+		},
+	}
+
+	//When
+	err := mock.AddAccessProviderFeedback("AP1", accessProviderFeedbackMap["AP1"]...)
+
+	//Then
+	assert.NoError(t, err)
+
+	//When
+	err = mock.AddAccessProviderFeedback("AP2", accessProviderFeedbackMap["AP2"]...)
+
+	//Then
+	assert.NoError(t, err)
+	assert.Equal(t, accessProviderFeedbackMap, mock.AccessProviderFeedback)
+
 }

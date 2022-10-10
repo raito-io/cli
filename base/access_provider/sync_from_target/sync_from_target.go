@@ -15,10 +15,12 @@ import (
 	"github.com/raito-io/cli/base/access_provider"
 )
 
+//go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderFileCreator --with-expecter
+
 // AccessProviderFileCreator describes the interface for easily creating the access object import files
 // to be imported by the Raito CLI.
 type AccessProviderFileCreator interface {
-	AddAccessProviders(dataAccessList []AccessProvider) error
+	AddAccessProviders(dataAccessList ...*AccessProvider) error
 	Close()
 	GetAccessProviderCount() int
 }
@@ -61,7 +63,7 @@ func (d *accessProviderFileCreator) Close() {
 // AddAccessProviders adds the slice of data access elements to the import file.
 // It returns an error when writing one of the objects fails (it will not process the other data objects after that).
 // It returns nil if everything went well.
-func (d *accessProviderFileCreator) AddAccessProviders(dataAccessList []AccessProvider) error {
+func (d *accessProviderFileCreator) AddAccessProviders(dataAccessList ...*AccessProvider) error {
 	if len(dataAccessList) == 0 {
 		return nil
 	}

@@ -3,7 +3,6 @@ package wrappers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/base/util/config"
@@ -47,16 +46,16 @@ func (s *identityStoreSyncFunction) SyncIdentityStore(config *identity_store.Ide
 	}
 	defer fileCreator.Close()
 
-	start := time.Now()
+	sec, err := timedExecution(func() error {
+		return s.syncer.SyncIdentityStore(ctx, fileCreator, &config.ConfigMap)
+	})
 
-	err = s.syncer.SyncIdentityStore(ctx, fileCreator, &config.ConfigMap)
 	if err != nil {
 		logger.Error(err.Error())
 
 		return mapError(err)
 	}
 
-	sec := time.Since(start).Round(time.Millisecond)
 	logger.Info(fmt.Sprintf("Fetched %d users and %d groups in %s", fileCreator.GetUserCount(), fileCreator.GetGroupCount(), sec))
 
 	return identity_store.IdentityStoreSyncResult{}

@@ -81,7 +81,7 @@ func (a *NamingConstraints) nonAlphaNumericBeginRegex() (*regexp.Regexp, error) 
 func (a *NamingConstraints) consecutiveSplitCharacter() (*regexp.Regexp, error) {
 	var sb strings.Builder
 
-	splitchar := a.splitCharacter()
+	splitchar := a.SplitCharacter()
 	if splitchar == 0 {
 		return nil, nil
 	}
@@ -114,7 +114,7 @@ func (a *NamingConstraints) characterRegex() string {
 	return sb.String()
 }
 
-func (a *NamingConstraints) splitCharacter() rune {
+func (a *NamingConstraints) SplitCharacter() rune {
 	for _, char := range a.SpecialCharacters {
 		if _, found := splitCharacters[char]; found {
 			return char

@@ -48,7 +48,7 @@ type uniqueNameGenerator struct {
 
 // NewUniqueNameGenerator will create an implementation of the UniqueGenerator interface. The UniqueGenerator will ensure the constraints provided in the first argument
 func NewUniqueNameGenerator(logger hclog.Logger, prefix string, constraints *NamingConstraints) (UniqueGenerator, error) {
-	if constraints.splitCharacter() == 0 {
+	if constraints.SplitCharacter() == 0 {
 		return nil, errors.New("no support for UniqueGenerator if no split character is defined")
 	}
 
@@ -70,7 +70,7 @@ func NewUniqueNameGenerator(logger hclog.Logger, prefix string, constraints *Nam
 		prefix:         prefix,
 		constraints:    constraints,
 		translator:     translator,
-		splitCharacter: constraints.splitCharacter(),
+		splitCharacter: constraints.SplitCharacter(),
 		existingNames:  make(map[string]uint),
 	}, nil
 }

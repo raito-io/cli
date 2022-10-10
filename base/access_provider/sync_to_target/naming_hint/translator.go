@@ -36,7 +36,7 @@ func validateConstraints(allowedCharacters *NamingConstraints) error {
 
 func (t *nameHintTranslator) Translate(input string) (string, error) {
 	result := input
-	splitChar := t.allowedCharacters.splitCharacter()
+	splitChar := t.allowedCharacters.SplitCharacter()
 
 	if !t.allowedCharacters.LowerCaseLetters || !t.allowedCharacters.UpperCaseLetters {
 		//Remove invalid casing

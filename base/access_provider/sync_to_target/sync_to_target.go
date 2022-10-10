@@ -14,6 +14,8 @@ import (
 	"github.com/raito-io/cli/base/access_provider"
 )
 
+//go:generate go run github.com/vektra/mockery/v2 --name=SyncFeedbackFileCreator --with-expecter
+
 func ParseAccessProviderImportFile(config *access_provider.AccessSyncToTarget) (*AccessProviderImport, error) {
 	var ret AccessProviderImport
 

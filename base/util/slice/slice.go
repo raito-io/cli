@@ -32,12 +32,12 @@ func StringSliceDifference(a, b []string, caseSensitive bool) []string {
 }
 
 // SliceDifference returns the elements in `a` that aren't in `b`.
-func SliceDifference(a, b []interface{}) []interface{} {
-	mb := make(map[interface{}]struct{}, len(b))
+func SliceDifference[T comparable](a, b []T) []T {
+	mb := make(map[T]struct{}, len(b))
 	for _, x := range b {
 		mb[x] = struct{}{}
 	}
-	var diff []interface{}
+	var diff []T
 
 	for _, x := range a {
 		if _, found := mb[x]; !found {

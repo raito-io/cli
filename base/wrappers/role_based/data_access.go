@@ -15,7 +15,7 @@ import (
 type AccessProviderRoleSyncer interface {
 	SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler wrappers.AccessProviderHandler, configMap *config.ConfigMap) error
 	SyncAccessProvidersToTarget(ctx context.Context, rolesToRemove []string, access map[string]sync_to_target.EnrichedAccess, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
-	SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, configMap *config.ConfigMap) error
+	SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, prefix string, configMap *config.ConfigMap) error
 }
 
 func AccessProviderRoleSync(syncer AccessProviderRoleSyncer, namingConstraints naming_hint.NamingConstraints) *wrappers.DataAccessSyncFunction {
@@ -66,7 +66,7 @@ func (s *accessProviderRoleSyncFunction) SyncAccessAsCodeToTarget(ctx context.Co
 		}
 	}
 
-	return s.syncer.SyncAccessAsCodeToTarget(ctx, apMap, configMap)
+	return s.syncer.SyncAccessAsCodeToTarget(ctx, apMap, prefix, configMap)
 }
 
 func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, accessProviderFeedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error {

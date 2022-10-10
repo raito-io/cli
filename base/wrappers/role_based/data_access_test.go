@@ -96,7 +96,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
 	}
 
 	syncerMock := NewMockAccessProviderRoleSyncer(t)
-	syncerMock.EXPECT().SyncAccessAsCodeToTarget(mock.Anything, mock.Anything, &configMap).Return(nil).Once()
+	syncerMock.EXPECT().SyncAccessAsCodeToTarget(mock.Anything, mock.Anything, "R_", &configMap).Return(nil).Once()
 
 	syncFunction := accessProviderRoleSyncFunction{
 		syncer: syncerMock,
@@ -127,7 +127,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
 				AccessProvider: &accessProvidersImport.AccessProviders[1],
 				Access:         accessProvidersImport.AccessProviders[1].Access[0],
 			},
-		}, &configMap,
+		}, "R_", &configMap,
 	)
 }
 

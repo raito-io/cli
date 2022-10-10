@@ -27,13 +27,13 @@ func (_m *MockAccessProviderRoleSyncer) EXPECT() *MockAccessProviderRoleSyncer_E
 	return &MockAccessProviderRoleSyncer_Expecter{mock: &_m.Mock}
 }
 
-// SyncAccessAsCodeToTarget provides a mock function with given fields: ctx, accesses, configMap
-func (_m *MockAccessProviderRoleSyncer) SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, configMap *config.ConfigMap) error {
-	ret := _m.Called(ctx, accesses, configMap)
+// SyncAccessAsCodeToTarget provides a mock function with given fields: ctx, accesses, prefix, configMap
+func (_m *MockAccessProviderRoleSyncer) SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, prefix string, configMap *config.ConfigMap) error {
+	ret := _m.Called(ctx, accesses, prefix, configMap)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, map[string]sync_to_target.EnrichedAccess, *config.ConfigMap) error); ok {
-		r0 = rf(ctx, accesses, configMap)
+	if rf, ok := ret.Get(0).(func(context.Context, map[string]sync_to_target.EnrichedAccess, string, *config.ConfigMap) error); ok {
+		r0 = rf(ctx, accesses, prefix, configMap)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -49,14 +49,15 @@ type MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call struct {
 // SyncAccessAsCodeToTarget is a helper method to define mock.On call
 //   - ctx context.Context
 //   - accesses map[string]sync_to_target.EnrichedAccess
+//   - prefix string
 //   - configMap *config.ConfigMap
-func (_e *MockAccessProviderRoleSyncer_Expecter) SyncAccessAsCodeToTarget(ctx interface{}, accesses interface{}, configMap interface{}) *MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call {
-	return &MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call{Call: _e.mock.On("SyncAccessAsCodeToTarget", ctx, accesses, configMap)}
+func (_e *MockAccessProviderRoleSyncer_Expecter) SyncAccessAsCodeToTarget(ctx interface{}, accesses interface{}, prefix interface{}, configMap interface{}) *MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call {
+	return &MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call{Call: _e.mock.On("SyncAccessAsCodeToTarget", ctx, accesses, prefix, configMap)}
 }
 
-func (_c *MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call) Run(run func(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, configMap *config.ConfigMap)) *MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call {
+func (_c *MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call) Run(run func(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, prefix string, configMap *config.ConfigMap)) *MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(map[string]sync_to_target.EnrichedAccess), args[2].(*config.ConfigMap))
+		run(args[0].(context.Context), args[1].(map[string]sync_to_target.EnrichedAccess), args[2].(string), args[3].(*config.ConfigMap))
 	})
 	return _c
 }

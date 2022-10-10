@@ -1,9 +1,10 @@
 package slice
 
 import (
-	"github.com/stretchr/testify/assert"
 	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStringSliceDifference(t *testing.T) {
@@ -57,12 +58,12 @@ func TestStringSliceDifferenceCaseInsensitive(t *testing.T) {
 }
 
 func TestSliceDifference(t *testing.T) {
-	a := []interface{}{
+	a := []G{
 		G{"aaa", "bbb"},
 		G{"ccc", "ddd"},
 		G{"eee", "fff"},
 	}
-	b := []interface{}{
+	b := []G{
 		G{"aaa", "bbb"},
 		G{"eee", "fff"},
 	}

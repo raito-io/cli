@@ -1,5 +1,8 @@
 <h1 align="center">
-  <img height="180px" src="https://github.com/raito-io/docs/raw/main/images/Raito_Logo_Vertical_RGB.png" alt="Raito" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://assets.raito.io/icons/logo-vertical-dark@2x.png">
+    <img height="250px" src="https://assets.raito.io/icons/logo-vertical-dark@2x.png">
+  </picture>
 </h1>
 
 <h4 align="center">

@@ -110,7 +110,12 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 }
 
 func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[string]interface{}) (*BaseTargetConfig, error) {
-	tConfig := BaseTargetConfig{}
+	tConfig := BaseTargetConfig{
+		DeleteUntouched: true,
+		DeleteTempFiles: true,
+		ReplaceTags:     true,
+		ReplaceGroups:   true,
+	}
 	err := fillStruct(&tConfig, target)
 
 	if err != nil {
@@ -140,12 +145,6 @@ func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[string]interfa
 	tConfig.SkipDataSourceSync = tConfig.SkipDataSourceSync || viper.GetBool(constants.SkipDataSourceSyncFlag)
 	tConfig.SkipIdentityStoreSync = tConfig.SkipIdentityStoreSync || viper.GetBool(constants.SkipIdentityStoreSyncFlag)
 	tConfig.SkipDataUsageSync = tConfig.SkipDataUsageSync || viper.GetBool(constants.SkipDataUsageSyncFlag)
-
-	// Merge with import parameters
-	tConfig.DeleteUntouched = tConfig.DeleteUntouched || viper.GetBool(constants.DeleteUntouchedFlag)
-	tConfig.ReplaceTags = tConfig.ReplaceTags || viper.GetBool(constants.ReplaceTagsFlag)
-	tConfig.DeleteTempFiles = tConfig.DeleteTempFiles || viper.GetBool(constants.DeleteTempFilesFlag)
-	tConfig.ReplaceGroups = tConfig.ReplaceGroups || viper.GetBool(constants.ReplaceGroupsFlag)
 
 	// If not set in the target, we take the globally set values.
 	if tConfig.ApiSecret == "" {
@@ -223,10 +222,10 @@ func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) *Ba
 		SkipDataAccessSync:    viper.GetBool(constants.SkipDataAccessSyncFlag),
 		SkipDataUsageSync:     viper.GetBool(constants.SkipDataUsageSyncFlag),
 		Logger:                baseLogger.With("target", name),
-		DeleteUntouched:       viper.GetBool(constants.DeleteUntouchedFlag),
-		DeleteTempFiles:       viper.GetBool(constants.DeleteTempFilesFlag),
-		ReplaceTags:           viper.GetBool(constants.ReplaceTagsFlag),
-		ReplaceGroups:         viper.GetBool(constants.ReplaceGroupsFlag),
+		DeleteUntouched:       true,
+		DeleteTempFiles:       true,
+		ReplaceTags:           true,
+		ReplaceGroups:         true,
 	}
 	targetConfig.Parameters = buildParameterMapFromArguments(otherArgs)
 

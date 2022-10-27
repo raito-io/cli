@@ -2,10 +2,10 @@ package identity_store
 
 import (
 	"fmt"
-	"github.com/raito-io/cli/base/identity_store"
 	"strings"
 	"time"
 
+	"github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target"
 )

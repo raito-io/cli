@@ -25,8 +25,8 @@ func (_m *MockDataSourceSyncer) EXPECT() *MockDataSourceSyncer_Expecter {
 	return &MockDataSourceSyncer_Expecter{mock: &_m.Mock}
 }
 
-// GetMetaData provides a mock function with given fields:
-func (_m *MockDataSourceSyncer) GetMetaData() data_source.MetaData {
+// GetDataSourceMetaData provides a mock function with given fields:
+func (_m *MockDataSourceSyncer) GetDataSourceMetaData() data_source.MetaData {
 	ret := _m.Called()
 
 	var r0 data_source.MetaData
@@ -39,24 +39,24 @@ func (_m *MockDataSourceSyncer) GetMetaData() data_source.MetaData {
 	return r0
 }
 
-// MockDataSourceSyncer_GetMetaData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMetaData'
-type MockDataSourceSyncer_GetMetaData_Call struct {
+// MockDataSourceSyncer_GetDataSourceMetaData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDataSourceMetaData'
+type MockDataSourceSyncer_GetDataSourceMetaData_Call struct {
 	*mock.Call
 }
 
-// GetMetaData is a helper method to define mock.On call
-func (_e *MockDataSourceSyncer_Expecter) GetMetaData() *MockDataSourceSyncer_GetMetaData_Call {
-	return &MockDataSourceSyncer_GetMetaData_Call{Call: _e.mock.On("GetMetaData")}
+// GetDataSourceMetaData is a helper method to define mock.On call
+func (_e *MockDataSourceSyncer_Expecter) GetDataSourceMetaData() *MockDataSourceSyncer_GetDataSourceMetaData_Call {
+	return &MockDataSourceSyncer_GetDataSourceMetaData_Call{Call: _e.mock.On("GetDataSourceMetaData")}
 }
 
-func (_c *MockDataSourceSyncer_GetMetaData_Call) Run(run func()) *MockDataSourceSyncer_GetMetaData_Call {
+func (_c *MockDataSourceSyncer_GetDataSourceMetaData_Call) Run(run func()) *MockDataSourceSyncer_GetDataSourceMetaData_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *MockDataSourceSyncer_GetMetaData_Call) Return(_a0 data_source.MetaData) *MockDataSourceSyncer_GetMetaData_Call {
+func (_c *MockDataSourceSyncer_GetDataSourceMetaData_Call) Return(_a0 data_source.MetaData) *MockDataSourceSyncer_GetDataSourceMetaData_Call {
 	_c.Call.Return(_a0)
 	return _c
 }

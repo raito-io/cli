@@ -134,8 +134,12 @@ func (s *combo) SyncDataSource(config *data_source.DataSourceSyncConfig) data_so
 	return data_source.DataSourceSyncResult{}
 }
 
-func (s *combo) GetMetaData() data_source.MetaData {
+func (s *combo) GetDataSourceMetaData() data_source.MetaData {
 	return data_source.MetaData{}
+}
+
+func (s *combo) GetIdentityStoreMetaData() identity_store.MetaData {
+	return identity_store.MetaData{}
 }
 
 func (s *combo) PluginInfo() plugin.PluginInfo {
@@ -148,13 +152,17 @@ func (s *identityStoryPlugin) SyncIdentityStore(config *identity_store.IdentityS
 	return identity_store.IdentityStoreSyncResult{}
 }
 
+func (s *identityStoryPlugin) GetIdentityStoreMetaData() identity_store.MetaData {
+	return identity_store.MetaData{}
+}
+
 type dataSourcePlugin struct{}
 
 func (s *dataSourcePlugin) SyncDataSource(config *data_source.DataSourceSyncConfig) data_source.DataSourceSyncResult {
 	return data_source.DataSourceSyncResult{}
 }
 
-func (s *dataSourcePlugin) GetMetaData() data_source.MetaData {
+func (s *dataSourcePlugin) GetDataSourceMetaData() data_source.MetaData {
 	return data_source.MetaData{}
 }
 

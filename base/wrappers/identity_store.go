@@ -18,6 +18,7 @@ type IdentityStoreIdentityHandler interface {
 //go:generate go run github.com/vektra/mockery/v2 --name=IdentityStoreSyncer --with-expecter --inpackage
 type IdentityStoreSyncer interface {
 	SyncIdentityStore(ctx context.Context, identityHandler IdentityStoreIdentityHandler, configMap *config.ConfigMap) error
+	GetIdentityStoreMetaData() identity_store.MetaData
 }
 
 func IdentityStoreSync(syncer IdentityStoreSyncer) *identityStoreSyncFunction {
@@ -59,6 +60,10 @@ func (s *identityStoreSyncFunction) SyncIdentityStore(config *identity_store.Ide
 	logger.Info(fmt.Sprintf("Fetched %d users and %d groups in %s", fileCreator.GetUserCount(), fileCreator.GetGroupCount(), sec))
 
 	return identity_store.IdentityStoreSyncResult{}
+}
+
+func (s *identityStoreSyncFunction) GetIdentityStoreMetaData() identity_store.MetaData {
+	return s.syncer.GetIdentityStoreMetaData()
 }
 
 func mapError(err error) identity_store.IdentityStoreSyncResult {

@@ -21,7 +21,7 @@ type DataSourceObjectHandler interface {
 //go:generate go run github.com/vektra/mockery/v2 --name=DataSourceSyncer --with-expecter --inpackage
 type DataSourceSyncer interface {
 	SyncDataSource(ctx context.Context, dataSourceHandler DataSourceObjectHandler, configParams *config.ConfigMap) error
-	GetMetaData() data_source.MetaData
+	GetDataSourceMetaData() data_source.MetaData
 }
 
 func DataSourceSync(syncer DataSourceSyncer) *dataSourceSyncFunction {
@@ -66,8 +66,8 @@ func (s *dataSourceSyncFunction) SyncDataSource(config *data_source.DataSourceSy
 	return data_source.DataSourceSyncResult{}
 }
 
-func (s *dataSourceSyncFunction) GetMetaData() data_source.MetaData {
-	return s.syncer.GetMetaData()
+func (s *dataSourceSyncFunction) GetDataSourceMetaData() data_source.MetaData {
+	return s.syncer.GetDataSourceMetaData()
 }
 
 func mapErrorToDataSourceSyncResult(err error) data_source.DataSourceSyncResult {

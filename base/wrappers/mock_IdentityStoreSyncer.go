@@ -7,6 +7,8 @@ import (
 
 	config "github.com/raito-io/cli/base/util/config"
 
+	identity_store "github.com/raito-io/cli/base/identity_store"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -21,6 +23,42 @@ type MockIdentityStoreSyncer_Expecter struct {
 
 func (_m *MockIdentityStoreSyncer) EXPECT() *MockIdentityStoreSyncer_Expecter {
 	return &MockIdentityStoreSyncer_Expecter{mock: &_m.Mock}
+}
+
+// GetIdentityStoreMetaData provides a mock function with given fields:
+func (_m *MockIdentityStoreSyncer) GetIdentityStoreMetaData() identity_store.MetaData {
+	ret := _m.Called()
+
+	var r0 identity_store.MetaData
+	if rf, ok := ret.Get(0).(func() identity_store.MetaData); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(identity_store.MetaData)
+	}
+
+	return r0
+}
+
+// MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetIdentityStoreMetaData'
+type MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call struct {
+	*mock.Call
+}
+
+// GetIdentityStoreMetaData is a helper method to define mock.On call
+func (_e *MockIdentityStoreSyncer_Expecter) GetIdentityStoreMetaData() *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
+	return &MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call{Call: _e.mock.On("GetIdentityStoreMetaData")}
+}
+
+func (_c *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call) Run(run func()) *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call) Return(_a0 identity_store.MetaData) *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
+	_c.Call.Return(_a0)
+	return _c
 }
 
 // SyncIdentityStore provides a mock function with given fields: ctx, identityHandler, configMap

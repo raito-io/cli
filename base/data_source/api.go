@@ -73,7 +73,7 @@ type MetaData struct {
 // DataSourceSyncer interface needs to be implemented by any plugin that wants to import data objects into a Raito data source.
 type DataSourceSyncer interface {
 	SyncDataSource(config *DataSourceSyncConfig) DataSourceSyncResult
-	GetMetaData() MetaData
+	GetDataSourceMetaData() MetaData
 }
 
 // DataSourceSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -108,10 +108,10 @@ func (g *dataSourceSyncerRPC) SyncDataSource(config *DataSourceSyncConfig) DataS
 	return resp
 }
 
-func (g *dataSourceSyncerRPC) GetMetaData() MetaData {
+func (g *dataSourceSyncerRPC) GetDataSourceMetaData() MetaData {
 	var resp MetaData
 
-	err := g.client.Call("Plugin.GetMetaData", new(interface{}), &resp)
+	err := g.client.Call("Plugin.GetDataSourceMetaData", new(interface{}), &resp)
 	if err != nil {
 		return MetaData{}
 	}
@@ -128,7 +128,7 @@ func (s *dataSourceSyncerRPCServer) SyncDataSource(config *DataSourceSyncConfig,
 	return nil
 }
 
-func (s *dataSourceSyncerRPCServer) GetMetaData(args interface{}, resp *MetaData) error {
-	*resp = s.Impl.GetMetaData()
+func (s *dataSourceSyncerRPCServer) GetDataSourceMetaData(args interface{}, resp *MetaData) error {
+	*resp = s.Impl.GetDataSourceMetaData()
 	return nil
 }

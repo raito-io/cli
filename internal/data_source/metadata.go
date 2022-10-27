@@ -18,7 +18,7 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 
 	mdm, err := marshalMetaData(metadata)
 	if err != nil {
-		return fmt.Errorf("error while serializing metadata information: %s", err.Error())
+		return err
 	}
 	md := fixMetaData(mdm)
 
@@ -35,7 +35,7 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 
 	err = graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &config)
 	if err != nil {
-		return fmt.Errorf("error while executing import: %s", err.Error())
+		return fmt.Errorf("error while executing SetDataSourceMetaData: %s", err.Error())
 	}
 
 	logger.Info(fmt.Sprintf("Done setting DataSource metadata in %s", time.Since(start).Round(time.Millisecond)))
@@ -47,7 +47,7 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 func marshalMetaData(md data_source.MetaData) (string, error) {
 	mdb, err := json.Marshal(md)
 	if err != nil {
-		return "", fmt.Errorf("error while serializing metadata information: %s", err.Error())
+		return "", fmt.Errorf("error while serializing data source metadata information: %s", err.Error())
 	}
 
 	return string(mdb), nil

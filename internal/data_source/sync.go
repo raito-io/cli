@@ -56,17 +56,17 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, s
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Info("Fetching data source metadata configuration")
-	md := dss.GetMetaData()
+	s.TargetConfig.Logger.Info("Fetching data source metadata")
+	md := dss.GetDataSourceMetaData()
 
-	s.TargetConfig.Logger.Info("Updating data source metadata configuration")
+	s.TargetConfig.Logger.Info("Updating data source metadata")
 	err = SetMetaData(*s.TargetConfig, md)
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Info("Gathering metadata from the data source")
+	s.TargetConfig.Logger.Info("Gathering data objects from the data source")
 	res := dss.SyncDataSource(&syncerConfig)
 
 	if res.Error != nil {
@@ -81,7 +81,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, s
 	}
 	dsImporter := NewDataSourceImporter(&importerConfig, statusUpdater)
 
-	s.TargetConfig.Logger.Info("Importing metadata into Raito")
+	s.TargetConfig.Logger.Info("Importing data objects into Raito")
 	status, subtaskId, err := dsImporter.TriggerImport(s.JobId)
 
 	if err != nil {

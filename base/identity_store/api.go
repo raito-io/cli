@@ -22,9 +22,15 @@ type IdentityStoreSyncResult struct {
 	Error *error2.ErrorResult
 }
 
+type MetaData struct {
+	Type string `json:"type"`
+	Icon string `json:"icon"`
+}
+
 // IdentityStoreSyncer interface needs to be implemented by any plugin that wants to import users and groups into a Raito identity store.
 type IdentityStoreSyncer interface {
 	SyncIdentityStore(config *IdentityStoreSyncConfig) IdentityStoreSyncResult
+	GetIdentityStoreMetaData() MetaData
 }
 
 // IdentityStoreSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -59,6 +65,17 @@ func (g *identityStoreSyncerRPC) SyncIdentityStore(config *IdentityStoreSyncConf
 	return resp
 }
 
+func (g *identityStoreSyncerRPC) GetIdentityStoreMetaData() MetaData {
+	var resp MetaData
+
+	err := g.client.Call("Plugin.GetIdentityStoreMetaData", new(interface{}), &resp)
+	if err != nil {
+		return MetaData{}
+	}
+
+	return resp
+}
+
 type identityStoreSyncerRPCServer struct {
 	Impl IdentityStoreSyncer
 }
@@ -66,5 +83,10 @@ type identityStoreSyncerRPCServer struct {
 func (s *identityStoreSyncerRPCServer) SyncIdentityStore(config *IdentityStoreSyncConfig, resp *IdentityStoreSyncResult) error {
 	*resp = s.Impl.SyncIdentityStore(config)
 
+	return nil
+}
+
+func (s *identityStoreSyncerRPCServer) GetIdentityStoreMetaData(args interface{}, resp *MetaData) error {
+	*resp = s.Impl.GetIdentityStoreMetaData()
 	return nil
 }

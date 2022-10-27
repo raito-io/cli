@@ -66,6 +66,16 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient
 		return job.Failed, "", err
 	}
 
+	s.TargetConfig.Logger.Info("Fetching identity store metadata")
+	md := iss.GetIdentityStoreMetaData()
+
+	s.TargetConfig.Logger.Info("Updating identity store metadata")
+	err = SetMetaData(*s.TargetConfig, md)
+
+	if err != nil {
+		return job.Failed, "", err
+	}
+
 	s.TargetConfig.Logger.Info("Gathering users and groups")
 	result := iss.SyncIdentityStore(&syncerConfig)
 

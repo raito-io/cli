@@ -20,7 +20,7 @@ func GetRaitoURL() string {
 	} else if env == constants.EnvironmentTest {
 		return "https://api.raito.dev/"
 	} else {
-		return "https://api.raito.io/"
+		return "https://api.raito.cloud/"
 	}
 }
 

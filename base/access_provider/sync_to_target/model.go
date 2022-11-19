@@ -19,13 +19,13 @@ type AccessProvider struct {
 	NamingHint  string    `yaml:"namingHint" json:"namingHint"`
 	Access      []*Access `yaml:"access" json:"access"`
 	Action      Action    `yaml:"action" json:"action"`
+	Who         WhoItem   `yaml:"who" json:"who"`
 	Delete      bool      `yaml:"delete" json:"delete"`
 }
 
 type Access struct {
 	Id         string     `yaml:"id" json:"id"`
 	ActualName *string    `yaml:"actualName" json:"actualName"`
-	Who        WhoItem    `yaml:"who" json:"who"`
 	What       []WhatItem `yaml:"what" json:"what"`
 }
 

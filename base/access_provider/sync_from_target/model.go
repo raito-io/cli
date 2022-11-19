@@ -11,12 +11,12 @@ type AccessProvider struct {
 	Access            []*Access `yaml:"access" json:"access"`
 	Action            Action    `json:"action"`
 	Policy            string    `json:"policy"`
+	Who               *WhoItem  `yaml:"who" json:"who"`
 }
 
 type Access struct {
 	ActualName string `yaml:"actualName" json:"actualName"`
 	// Who represents who has access to the 'what'. Nil means that the 'who' is unknown.
-	Who  *WhoItem   `yaml:"who" json:"who"`
 	What []WhatItem `yaml:"what" json:"what"`
 }
 

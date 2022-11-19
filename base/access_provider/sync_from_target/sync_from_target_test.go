@@ -40,12 +40,12 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		NotInternalizable: false,
 		Name:              "AP1",
 		NamingHint:        "AP1Hint",
+		Who: &WhoItem{
+			Users:  []string{"uid1"},
+			Groups: []string{"gid1"},
+		},
 		Access: []*Access{
 			{
-				Who: &WhoItem{
-					Users:  []string{"uid1"},
-					Groups: []string{"gid1"},
-				},
 				What: []WhatItem{
 					{
 						Permissions: []string{"A", "B"},
@@ -62,12 +62,12 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		Name:              "AP2",
 		NamingHint:        "AP2Hint",
 		Action:            Filtered,
+		Who: &WhoItem{
+			Users:  []string{"uid1", "uid2"},
+			Groups: []string{"gid1", "gid2"},
+		},
 		Access: []*Access{
 			{
-				Who: &WhoItem{
-					Users:  []string{"uid1", "uid2"},
-					Groups: []string{"gid1", "gid2"},
-				},
 				What: []WhatItem{
 					{
 						Permissions: []string{"C"},
@@ -99,10 +99,10 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "AP1", apsr[0].Name)
 	assert.Equal(t, "AP1Hint", apsr[0].NamingHint)
 	assert.Equal(t, Promise, apsr[0].Action)
-	assert.Equal(t, 1, len(apsr[0].Access[0].Who.Users))
-	assert.Equal(t, "uid1", apsr[0].Access[0].Who.Users[0])
-	assert.Equal(t, 1, len(apsr[0].Access[0].Who.Groups))
-	assert.Equal(t, "gid1", apsr[0].Access[0].Who.Groups[0])
+	assert.Equal(t, 1, len(apsr[0].Who.Users))
+	assert.Equal(t, "uid1", apsr[0].Who.Users[0])
+	assert.Equal(t, 1, len(apsr[0].Who.Groups))
+	assert.Equal(t, "gid1", apsr[0].Who.Groups[0])
 	assert.Equal(t, 1, len(apsr[0].Access[0].What))
 	assert.Equal(t, 2, len(apsr[0].Access[0].What[0].Permissions))
 	assert.Equal(t, "A", apsr[0].Access[0].What[0].Permissions[0])
@@ -115,12 +115,12 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "AP2", apsr[1].Name)
 	assert.Equal(t, "AP2Hint", apsr[1].NamingHint)
 	assert.Equal(t, Filtered, apsr[1].Action)
-	assert.Equal(t, 2, len(apsr[1].Access[0].Who.Users))
-	assert.Equal(t, "uid1", apsr[1].Access[0].Who.Users[0])
-	assert.Equal(t, "uid2", apsr[1].Access[0].Who.Users[1])
-	assert.Equal(t, 2, len(apsr[1].Access[0].Who.Groups))
-	assert.Equal(t, "gid1", apsr[1].Access[0].Who.Groups[0])
-	assert.Equal(t, "gid2", apsr[1].Access[0].Who.Groups[1])
+	assert.Equal(t, 2, len(apsr[1].Who.Users))
+	assert.Equal(t, "uid1", apsr[1].Who.Users[0])
+	assert.Equal(t, "uid2", apsr[1].Who.Users[1])
+	assert.Equal(t, 2, len(apsr[1].Who.Groups))
+	assert.Equal(t, "gid1", apsr[1].Who.Groups[0])
+	assert.Equal(t, "gid2", apsr[1].Who.Groups[1])
 	assert.Equal(t, 1, len(apsr[1].Access[0].What))
 	assert.Equal(t, 1, len(apsr[1].Access[0].What[0].Permissions))
 	assert.Equal(t, "C", apsr[1].Access[0].What[0].Permissions[0])

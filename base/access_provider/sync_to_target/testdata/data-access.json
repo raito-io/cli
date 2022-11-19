@@ -7,12 +7,12 @@
       "description": "Lots of blah",
       "namingHint": "Blah_",
       "action": "mask",
+      "who": {
+        "users": [ "bart", "dieter" ]
+      },
       "access": [
         {
           "actualName": "Blahkes",
-          "who": {
-            "users": [ "bart", "dieter" ]
-          },
           "what": [
             {
               "dataObject": {

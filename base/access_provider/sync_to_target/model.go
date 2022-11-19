@@ -8,8 +8,8 @@ import (
 )
 
 type AccessProviderImport struct {
-	LastCalculated  int64            `yaml:"lastCalculated" json:"lastCalculated"`
-	AccessProviders []AccessProvider `yaml:"accessProviders" json:"accessProviders"`
+	LastCalculated  int64             `yaml:"lastCalculated" json:"lastCalculated"`
+	AccessProviders []*AccessProvider `yaml:"accessProviders" json:"accessProviders"`
 }
 
 type AccessProvider struct {

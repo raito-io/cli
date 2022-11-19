@@ -53,7 +53,7 @@ func (s *accessProviderRoleSyncFunction) SyncAccessAsCodeToTarget(ctx context.Co
 	apMap := make(map[string]sync_to_target.EnrichedAccess)
 
 	for apIndex, ap := range apList {
-		roleNames, err := uniqueRoleNameGenerator.GenerateOrdered(&apList[apIndex])
+		roleNames, err := uniqueRoleNameGenerator.GenerateOrdered(apList[apIndex])
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func (s *accessProviderRoleSyncFunction) SyncAccessAsCodeToTarget(ctx context.Co
 			roleName := roleNames[i]
 
 			logger.Info(fmt.Sprintf("Generated rolename %q", roleName))
-			apMap[roleName] = sync_to_target.EnrichedAccess{Access: access, AccessProvider: &apList[apIndex]}
+			apMap[roleName] = sync_to_target.EnrichedAccess{Access: access, AccessProvider: apList[apIndex]}
 		}
 	}
 
@@ -81,7 +81,7 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 	rolesToRemove := make([]string, 0)
 
 	for apIndex, ap := range apList {
-		roleNames, err := uniqueRoleNameGenerator.Generate(&apList[apIndex])
+		roleNames, err := uniqueRoleNameGenerator.Generate(apList[apIndex])
 		if err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 			for _, access := range ap.Access {
 				roleName := roleNames[access.Id]
 				if _, f := apMap[roleName]; !f {
-					apMap[roleName] = sync_to_target.EnrichedAccess{Access: access, AccessProvider: &apList[apIndex]}
+					apMap[roleName] = sync_to_target.EnrichedAccess{Access: access, AccessProvider: apList[apIndex]}
 				}
 			}
 		}

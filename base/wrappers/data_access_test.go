@@ -126,7 +126,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
-		AccessProviders: []sync_to_target.AccessProvider{
+		AccessProviders: []*sync_to_target.AccessProvider{
 			{
 				Access: []*sync_to_target.Access{
 					{
@@ -220,7 +220,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode(t *testing.T) {
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
-		AccessProviders: []sync_to_target.AccessProvider{
+		AccessProviders: []*sync_to_target.AccessProvider{
 			{
 				Access: []*sync_to_target.Access{
 					{
@@ -347,7 +347,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFile
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
-		AccessProviders: []sync_to_target.AccessProvider{
+		AccessProviders: []*sync_to_target.AccessProvider{
 			{
 				Access: []*sync_to_target.Access{
 					{
@@ -419,7 +419,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnSync(t *test
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
-		AccessProviders: []sync_to_target.AccessProvider{
+		AccessProviders: []*sync_to_target.AccessProvider{
 			{
 				Access: []*sync_to_target.Access{
 					{
@@ -485,7 +485,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode_ErrorOnSync(t *testing
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
-		AccessProviders: []sync_to_target.AccessProvider{
+		AccessProviders: []*sync_to_target.AccessProvider{
 			{
 				Access: []*sync_to_target.Access{
 					{

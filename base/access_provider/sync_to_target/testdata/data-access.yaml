@@ -6,12 +6,12 @@ accessProviders:
     description: Lots of blah
     namingHint: Blah_
     action: Mask
+    who:
+      users:
+        - bart
+        - dieter
     access:
       - actualName: Blahkes
-        who:
-          users:
-            - bart
-            - dieter
         what:
           - dataObject:
               type: table

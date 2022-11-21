@@ -62,7 +62,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
-		AccessProviders: []sync_to_target.AccessProvider{
+		AccessProviders: []*sync_to_target.AccessProvider{
 			{
 				Access: []*sync_to_target.Access{
 					{
@@ -116,15 +116,15 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
 	syncerMock.AssertCalled(t, "SyncAccessAsCodeToTarget", mock.Anything,
 		map[string]sync_to_target.EnrichedAccess{
 			"R_NAME_HINT1": {
-				AccessProvider: &accessProvidersImport.AccessProviders[0],
+				AccessProvider: accessProvidersImport.AccessProviders[0],
 				Access:         accessProvidersImport.AccessProviders[0].Access[0],
 			},
 			"R_NAME_HINT1__0": {
-				AccessProvider: &accessProvidersImport.AccessProviders[0],
+				AccessProvider: accessProvidersImport.AccessProviders[0],
 				Access:         accessProvidersImport.AccessProviders[0].Access[1],
 			},
 			"R_NAME_HINT2": {
-				AccessProvider: &accessProvidersImport.AccessProviders[1],
+				AccessProvider: accessProvidersImport.AccessProviders[1],
 				Access:         accessProvidersImport.AccessProviders[1].Access[0],
 			},
 		}, "R_", &configMap,
@@ -137,7 +137,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget_NameGeneratorFa
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
-		AccessProviders: []sync_to_target.AccessProvider{
+		AccessProviders: []*sync_to_target.AccessProvider{
 			{
 				Access: []*sync_to_target.Access{
 					{
@@ -200,7 +200,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
-		AccessProviders: []sync_to_target.AccessProvider{
+		AccessProviders: []*sync_to_target.AccessProvider{
 			{
 				Access: []*sync_to_target.Access{
 					{
@@ -282,15 +282,15 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 		[]string{actualName1},
 		map[string]sync_to_target.EnrichedAccess{
 			"NAME_HINT1": {
-				AccessProvider: &accessProvidersImport.AccessProviders[0],
+				AccessProvider: accessProvidersImport.AccessProviders[0],
 				Access:         accessProvidersImport.AccessProviders[0].Access[0],
 			},
 			"NAME_HINT1__0": {
-				AccessProvider: &accessProvidersImport.AccessProviders[0],
+				AccessProvider: accessProvidersImport.AccessProviders[0],
 				Access:         accessProvidersImport.AccessProviders[0].Access[1],
 			},
 			"NAME_HINT2": {
-				AccessProvider: &accessProvidersImport.AccessProviders[1],
+				AccessProvider: accessProvidersImport.AccessProviders[1],
 				Access:         accessProvidersImport.AccessProviders[1].Access[0],
 			},
 		},
@@ -306,7 +306,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget_ErrorOnNameGe
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
-		AccessProviders: []sync_to_target.AccessProvider{
+		AccessProviders: []*sync_to_target.AccessProvider{
 			{
 				Access: []*sync_to_target.Access{
 					{

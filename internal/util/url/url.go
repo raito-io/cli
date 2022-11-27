@@ -19,6 +19,8 @@ func GetRaitoURL() string {
 		return "http://localhost:8080/"
 	} else if env == constants.EnvironmentTest {
 		return "https://api.raito.dev/"
+	} else if env == constants.EnvironmentStaging {
+		return "https://api.staging.raito.dev/"
 	} else {
 		return "https://api.raito.cloud/"
 	}

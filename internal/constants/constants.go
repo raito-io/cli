@@ -49,9 +49,10 @@ const (
 	NameFlag             = "name"
 
 	// Environments
-	EnvironmentProd = "prod"
-	EnvironmentDev  = "dev"
-	EnvironmentTest = "test"
+	EnvironmentProd    = "prod"
+	EnvironmentDev     = "dev"
+	EnvironmentTest    = "test"
+	EnvironmentStaging = "staging"
 
 	// Import specific flags
 	DeleteUntouchedFlag = "delete-untouched"

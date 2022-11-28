@@ -1,10 +1,11 @@
 package url
 
 import (
+	"testing"
+
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestGetRaitoURL(t *testing.T) {
@@ -13,6 +14,8 @@ func TestGetRaitoURL(t *testing.T) {
 	assert.Equal(t, "http://localhost:8080/", GetRaitoURL())
 	viper.Set(constants.EnvironmentFlag, "test")
 	assert.Equal(t, "https://api.raito.dev/", GetRaitoURL())
+	viper.Set(constants.EnvironmentFlag, "staging")
+	assert.Equal(t, "https://api.staging.raito.dev/", GetRaitoURL())
 	viper.Set(constants.EnvironmentFlag, "blah")
 	assert.Equal(t, "https://api.raito.cloud/", GetRaitoURL())
 }

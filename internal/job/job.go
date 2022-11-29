@@ -72,11 +72,27 @@ func (u *subtaskEventUpdater) SetReceivedDate(receivedDate int64) {
 }
 
 func StartJob(cfg *target.BaseTargetConfig) (string, error) {
-	gqlQuery := fmt.Sprintf(`{ "query": "mutation createJob {
-        createJob(input: { dataSourceId: \"%s\", identityStoreId: \"%s\", eventTime: \"%s\" }) { jobId } }" }"`,
-		cfg.DataSourceId, cfg.IdentityStoreId, time.Now().Format(time.RFC3339))
+	var gqlQueryBuilder strings.Builder
+	gqlQueryBuilder.WriteString(`{ "query": "mutation createJob {
+        createJob(input: { `)
 
-	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+	if cfg.DataSourceId != "" {
+		gqlQueryBuilder.WriteString(`dataSourceId: \"`)
+		gqlQueryBuilder.WriteString(cfg.DataSourceId)
+		gqlQueryBuilder.WriteString(`\", `)
+	}
+
+	if cfg.IdentityStoreId != "" {
+		gqlQueryBuilder.WriteString(`identityStoreId: \"`)
+		gqlQueryBuilder.WriteString(cfg.IdentityStoreId)
+		gqlQueryBuilder.WriteString(`\", `)
+	}
+
+	gqlQueryBuilder.WriteString(`eventTime: \"`)
+	gqlQueryBuilder.WriteString(time.Now().Format(time.RFC3339))
+	gqlQueryBuilder.WriteString(`\"}) { jobId } }" }"`)
+
+	gqlQuery := strings.ReplaceAll(gqlQueryBuilder.String(), "\n", "\\n")
 
 	resp := Response{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, cfg, &resp)
@@ -96,11 +112,33 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 		errorStr = fmt.Sprintf(`, errors: [\"%s\"]`, errorMsg)
 	}
 
-	gqlQuery := fmt.Sprintf(`{ "query":"mutation updateJob {
-        updateJob(id: \"%s\", input: { dataSourceId: \"%s\", identityStoreId: \"%s\", status: %s, eventTime: \"%s\" %s}) { jobId } }" }"`,
-		jobID, cfg.DataSourceId, cfg.IdentityStoreId, status.String(), time.Now().Format(time.RFC3339), errorStr)
+	var gqlQueryBuilder strings.Builder
+	gqlQueryBuilder.WriteString(`{ "query":"mutation updateJob {
+        updateJob(id: \"`)
+	gqlQueryBuilder.WriteString(jobID)
+	gqlQueryBuilder.WriteString(`\", input: { `)
 
-	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+	if cfg.DataSourceId != "" {
+		gqlQueryBuilder.WriteString(`dataSourceId: \"`)
+		gqlQueryBuilder.WriteString(cfg.DataSourceId)
+		gqlQueryBuilder.WriteString(`\", `)
+	}
+
+	if cfg.IdentityStoreId != "" {
+		gqlQueryBuilder.WriteString(`identityStoreId: \"`)
+		gqlQueryBuilder.WriteString(cfg.IdentityStoreId)
+		gqlQueryBuilder.WriteString(`\", `)
+	}
+
+	gqlQueryBuilder.WriteString(`status: `)
+	gqlQueryBuilder.WriteString(status.String())
+	gqlQueryBuilder.WriteString(`, eventTime: \"`)
+	gqlQueryBuilder.WriteString(time.Now().Format(time.RFC3339))
+	gqlQueryBuilder.WriteString(`\" `)
+	gqlQueryBuilder.WriteString(errorStr)
+	gqlQueryBuilder.WriteString(`}) { jobId } }" }"`)
+
+	gqlQuery := strings.ReplaceAll(gqlQueryBuilder.String(), "\n", "\\n")
 
 	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, cfg)
 	if err != nil {
@@ -109,11 +147,33 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 }
 
 func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus) {
-	gqlQuery := fmt.Sprintf(`{ "query":"mutation addTaskEvent {
-        addTaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", identityStoreId: \"%s\", jobType: \"%s\", status: %s, eventTime: \"%s\"}) {jobId } }" }"`,
-		jobID, cfg.DataSourceId, cfg.IdentityStoreId, jobType, status.String(), time.Now().Format(time.RFC3339))
+	var gqlQueryBuilder strings.Builder
+	gqlQueryBuilder.WriteString(`{ "query":"mutation addTaskEvent {
+        addTaskEvent(input: { jobId: \"`)
+	gqlQueryBuilder.WriteString(jobID)
+	gqlQueryBuilder.WriteString(`\", `)
 
-	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+	if cfg.DataSourceId != "" {
+		gqlQueryBuilder.WriteString(`dataSourceId: \"`)
+		gqlQueryBuilder.WriteString(cfg.DataSourceId)
+		gqlQueryBuilder.WriteString(`\", `)
+	}
+
+	if cfg.IdentityStoreId != "" {
+		gqlQueryBuilder.WriteString(`identityStoreId: \"`)
+		gqlQueryBuilder.WriteString(cfg.IdentityStoreId)
+		gqlQueryBuilder.WriteString(`\", `)
+	}
+
+	gqlQueryBuilder.WriteString(`jobType: \"`)
+	gqlQueryBuilder.WriteString(jobType)
+	gqlQueryBuilder.WriteString(`\", status: `)
+	gqlQueryBuilder.WriteString(status.String())
+	gqlQueryBuilder.WriteString(`, eventTime: \"`)
+	gqlQueryBuilder.WriteString(time.Now().Format(time.RFC3339))
+	gqlQueryBuilder.WriteString(`\"}) { jobId } }" }"`)
+
+	gqlQuery := strings.ReplaceAll(gqlQueryBuilder.String(), "\n", "\\n")
 
 	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, cfg)
 	if err != nil {

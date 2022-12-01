@@ -12,6 +12,10 @@ type AccessProvider struct {
 	Action            Action    `json:"action"`
 	Policy            string    `json:"policy"`
 	Who               *WhoItem  `yaml:"who" json:"who"`
+	WhoLocked         bool      `json:"whoLocked"`
+	WhoLockedReason   string    `json:"whoLockedReason"`
+	WhatLocked        bool      `json:"whatLocked"`
+	WhatLockedReason  string    `json:"whatLockedReason"`
 }
 
 type Access struct {

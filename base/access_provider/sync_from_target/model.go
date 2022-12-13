@@ -4,18 +4,26 @@ import "github.com/raito-io/cli/base/data_source"
 
 // AccessProvider describes data access in the format that is suitable to be imported into Raito.x
 type AccessProvider struct {
-	ExternalId        string    `json:"externalId"`
-	NotInternalizable bool      `json:"notInternalizable"`
-	Name              string    `json:"name"`
-	NamingHint        string    `json:"namingHint"`
-	Access            []*Access `yaml:"access" json:"access"`
-	Action            Action    `json:"action"`
-	Policy            string    `json:"policy"`
-	Who               *WhoItem  `yaml:"who" json:"who"`
-	WhoLocked         bool      `json:"whoLocked"`
-	WhoLockedReason   string    `json:"whoLockedReason"`
-	WhatLocked        bool      `json:"whatLocked"`
-	WhatLockedReason  string    `json:"whatLockedReason"`
+	ExternalId string    `json:"externalId"`
+	Name       string    `json:"name"`
+	NamingHint string    `json:"namingHint"`
+	Access     []*Access `yaml:"access" json:"access"`
+	Action     Action    `json:"action"`
+	Policy     string    `json:"policy"`
+	Who        *WhoItem  `yaml:"who" json:"who"`
+
+	// Locking properties
+
+	// NotInternalizable means that the entire access provider is locked
+	NotInternalizable  bool    `json:"notInternalizable"`
+	WhoLocked          *bool   `json:"whoLocked"`
+	WhoLockedReason    *string `json:"whoLockedReason"`
+	WhatLocked         *bool   `json:"whatLocked"`
+	WhatLockedReason   *string `json:"whatLockedReason"`
+	NameLocked         *bool   `json:"nameLocked"`
+	NameLockedReason   *string `json:"nameLockedReason"`
+	DeleteLocked       *bool   `json:"deleteLocked"`
+	DeleteLockedReason *string `json:"deleteLockedReason"`
 }
 
 type Access struct {

@@ -27,7 +27,9 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "SetMetaData", "variables":{}, "query": "mutation SetMetaData {
         setDataSourceMetaData(id: \"%s\", input: %s) {
-          id
+          ... on DataSource {
+            id
+          }
         }
     }" }"`, config.DataSourceId, md)
 

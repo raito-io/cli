@@ -22,6 +22,10 @@ import (
 func downloadAndExtractPluginFromGitHubRepo(pluginRequest *pluginRequest, targetPath string, versionToBeat string, versionToBeatPath string, logger hclog.Logger) (string, error) {
 	asset, err := getGitHubAsset(pluginRequest, logger)
 	if err != nil {
+		if versionToBeat != "" {
+			logger.Info(fmt.Sprintf("Unable to find plugin in GitHub for %q (version %q). Taking existing local version.", pluginRequest.GroupAndName(), pluginRequest.Version))
+			return versionToBeatPath, nil
+		}
 		return "", fmt.Errorf("error looking for plugin to download from Github for %q (version %q): %s", pluginRequest.GroupAndName(), pluginRequest.Version, err.Error())
 	}
 

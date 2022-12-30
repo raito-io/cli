@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
 	"github.com/raito-io/cli/base/util/config"
 	error2 "github.com/raito-io/cli/base/util/error"
@@ -69,19 +70,25 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 		}
 	}
 
+	var errorResult error
+
 	if targetList, ok := targets.([]interface{}); ok {
 		hclog.L().Debug(fmt.Sprintf("Found %d targets to run.", len(targetList)))
 
 		for _, targetObj := range targetList {
 			target, ok := targetObj.(map[string]interface{})
 			if !ok {
-				hclog.L().Debug(fmt.Sprintf("Target not correctly parsed, target object is: %v", targetObj))
+				errorResult = multierror.Append(errorResult, fmt.Errorf("the target definition could not be parsed correctly (%v)", targetObj))
+				hclog.L().Debug(fmt.Sprintf("The target definition could not be parsed correctly (%v)", targetObj))
+
 				break
 			}
 
 			tConfig, err := buildTargetConfigFromMap(baseLogger, target)
 			if err != nil {
+				errorResult = multierror.Append(errorResult, fmt.Errorf("error while parsing target configuration: %s", err.Error()))
 				hclog.L().Error(fmt.Sprintf("error while parsing target configuration: %s", err.Error()))
+
 				continue
 			}
 
@@ -100,13 +107,15 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 
 			err = runTarget(tConfig)
 			if err != nil {
+				errorResult = multierror.Append(errorResult, err)
+
 				// In debug as the error should already be outputted, and we are ignoring it here.
 				tConfig.Logger.Debug("Error while executing target", "error", err.Error())
 			}
 		}
 	}
 
-	return nil
+	return errorResult
 }
 
 func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[string]interface{}) (*BaseTargetConfig, error) {

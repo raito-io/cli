@@ -97,7 +97,7 @@ func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatu
 }
 
 func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
-	gqlQuery := fmt.Sprintf(`{"variables":{}, "query": "query {dataSource(id:\"%s\") {id usageLastUsed}}" }`, d.config.DataSourceId)
+	gqlQuery := fmt.Sprintf(`{"variables":{}, "query": "query {dataSource(id:\"%s\") { ... on DataSource {id usageLastUsed }}}" }`, d.config.DataSourceId)
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 	res := LastUsedResponse{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)

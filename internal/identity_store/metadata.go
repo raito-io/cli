@@ -18,8 +18,8 @@ func SetMetaData(config target.BaseTargetConfig, metadata identity_store.MetaDat
         setIdentityStoreMetaData(id: \"%s\", input: {
           type: \"%s\",
           icon: \"%s\"
-        }) {
-          id
+        }) {    
+          ... on IdentityStore { id }
         }
     }" }"`, config.IdentityStoreId, metadata.Type, metadata.Icon)
 

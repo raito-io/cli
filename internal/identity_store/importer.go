@@ -97,7 +97,7 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
 	res := Response{}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseTargetConfig, &res)
+	_, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseConfig, &res)
 
 	if err != nil {
 		return job.Failed, "", fmt.Errorf("error while executing identity store import: %s", err.Error())

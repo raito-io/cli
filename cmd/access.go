@@ -39,7 +39,12 @@ func initAccessCommand(rootCmd *cobra.Command) {
 func executeAccessCmd(cmd *cobra.Command, args []string) error {
 	baseLogger := hclog.L().With("iteration", 0)
 
-	return target.RunTargets(baseLogger, cmd.Flags().Args(), runAccessTarget)
+	config, err := target.BuildBaseConfigFromFlags(baseLogger, cmd.Flags().Args())
+	if err != nil {
+		return err
+	}
+
+	return target.RunTargets(config, runAccessTarget)
 }
 
 func runAccessTarget(targetConfig *target.BaseTargetConfig) error {

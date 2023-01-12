@@ -33,7 +33,7 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
-	err = graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &config)
+	err = graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &config.BaseConfig)
 	if err != nil {
 		return fmt.Errorf("error while executing SetDataSourceMetaData: %s", err.Error())
 	}

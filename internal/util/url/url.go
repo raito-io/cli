@@ -3,9 +3,10 @@ package url
 import (
 	"strings"
 
+	"github.com/spf13/viper"
+
 	"github.com/raito-io/cli/base/util/url"
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/spf13/viper"
 )
 
 var TestURL = ""

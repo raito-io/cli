@@ -109,24 +109,32 @@ func (d *accessProviderExporter) download(url string) (string, error) {
 func (d *accessProviderExporter) doExport(jobId string) (job.JobStatus, string, error) {
 	start := time.Now()
 
+	filter := ""
+
+	if d.config.ModifiedAfter != nil {
+		filter = fmt.Sprintf(`, filter : {
+					modifiedAfter: \"%s\"
+			    }`, d.config.ModifiedAfter.Format(time.RFC3339))
+	}
+
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ExportAccessProvidersRequest", "variables":{}, "query": "query ExportAccessProvidersRequest {
         exportAccessProvidersRequest(input: {
           jobId: \"%s\",
           exportSettings: {
             dataSource: \"%s\"
           }
-        }) {
+        }%s) {
           subtask {
             subtaskId
             status            
           }
          }
-    }" }"`, jobId, d.config.DataSourceId)
+    }" }"`, jobId, d.config.DataSourceId, filter)
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
 	res := exportResponse{}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
+	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseConfig, &res)
 
 	if err != nil {
 		return job.Failed, "", fmt.Errorf("error while executing export: %s", err.Error())

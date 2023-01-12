@@ -8,9 +8,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/raito-io/cli/internal/target"
 	url2 "github.com/raito-io/cli/internal/util/url"
-	"github.com/stretchr/testify/assert"
 )
 
 type dataObject struct {
@@ -46,11 +47,11 @@ func TestGraphQL(t *testing.T) {
 
 	url2.TestURL = testServer.URL
 
-	config := target.BaseTargetConfig{
-		Domain:    "TestRaito",
-		ApiUser:   "Userke",
-		ApiSecret: "SecretStuff",
-		Logger:    hclog.Default(),
+	config := target.BaseConfig{
+		Domain:     "TestRaito",
+		ApiUser:    "Userke",
+		ApiSecret:  "SecretStuff",
+		BaseLogger: hclog.Default(),
 	}
 
 	data := dataObject{}
@@ -79,8 +80,8 @@ func TestGraphQLError(t *testing.T) {
 
 	url2.TestURL = testServer.URL
 
-	config := target.BaseTargetConfig{
-		Logger: hclog.Default(),
+	config := target.BaseConfig{
+		BaseLogger: hclog.Default(),
 	}
 
 	data := dataObject{}
@@ -93,8 +94,8 @@ func TestGraphQLError(t *testing.T) {
 func TestGraphQLIllegalURL(t *testing.T) {
 	url2.TestURL = "//\nbadbadbad"
 
-	config := target.BaseTargetConfig{
-		Logger: hclog.Default(),
+	config := target.BaseConfig{
+		BaseLogger: hclog.Default(),
 	}
 
 	data := dataObject{}
@@ -138,11 +139,11 @@ func TestGraphQLServerError(t *testing.T) {
 
 	url2.TestURL = testServer.URL
 
-	config := target.BaseTargetConfig{
-		Domain:    "TestRaito",
-		ApiUser:   "Userke",
-		ApiSecret: "SecretStuff",
-		Logger:    hclog.Default(),
+	config := target.BaseConfig{
+		Domain:     "TestRaito",
+		ApiUser:    "Userke",
+		ApiSecret:  "SecretStuff",
+		BaseLogger: hclog.Default(),
 	}
 
 	data := dataObject{}
@@ -195,11 +196,11 @@ func TestGraphQLWithoutResponse(t *testing.T) {
 
 	url2.TestURL = testServer.URL
 
-	config := target.BaseTargetConfig{
-		Domain:    "TestRaito",
-		ApiUser:   "Userke",
-		ApiSecret: "SecretStuff",
-		Logger:    hclog.Default(),
+	config := target.BaseConfig{
+		Domain:     "TestRaito",
+		ApiUser:    "Userke",
+		ApiSecret:  "SecretStuff",
+		BaseLogger: hclog.Default(),
 	}
 
 	err := ExecuteGraphQLWithoutResponse("{ \"operationName\": \"nastyOperation\" }", &config)
@@ -221,8 +222,8 @@ func TestGraphQLErrorWithoutResponse(t *testing.T) {
 
 	url2.TestURL = testServer.URL
 
-	config := target.BaseTargetConfig{
-		Logger: hclog.Default(),
+	config := target.BaseConfig{
+		BaseLogger: hclog.Default(),
 	}
 
 	err := ExecuteGraphQLWithoutResponse("{ \"operationName\": \"nastyOperation\" }", &config)
@@ -233,8 +234,8 @@ func TestGraphQLErrorWithoutResponse(t *testing.T) {
 func TestGraphQLIllegalURLWithoutReponse(t *testing.T) {
 	url2.TestURL = "//\nbadbadbad"
 
-	config := target.BaseTargetConfig{
-		Logger: hclog.Default(),
+	config := target.BaseConfig{
+		BaseLogger: hclog.Default(),
 	}
 
 	err := ExecuteGraphQLWithoutResponse("{ \"operationName\": \"nastyOperation\" }", &config)
@@ -276,11 +277,11 @@ func TestGraphQLServerErrorWithoutResponse(t *testing.T) {
 
 	url2.TestURL = testServer.URL
 
-	config := target.BaseTargetConfig{
-		Domain:    "TestRaito",
-		ApiUser:   "Userke",
-		ApiSecret: "SecretStuff",
-		Logger:    hclog.Default(),
+	config := target.BaseConfig{
+		Domain:     "TestRaito",
+		ApiUser:    "Userke",
+		ApiSecret:  "SecretStuff",
+		BaseLogger: hclog.Default(),
 	}
 
 	err := ExecuteGraphQLWithoutResponse("{ \"operationName\": \"nastyOperation\" }", &config)

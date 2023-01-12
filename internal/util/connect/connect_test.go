@@ -1,14 +1,16 @@
 package connect
 
 import (
-	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/target"
-	url2 "github.com/raito-io/cli/internal/util/url"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/hashicorp/go-hclog"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/raito-io/cli/internal/target"
+	url2 "github.com/raito-io/cli/internal/util/url"
 )
 
 func TestDoGet(t *testing.T) {
@@ -26,11 +28,11 @@ func TestDoGet(t *testing.T) {
 
 	url2.TestURL = testServer.URL
 
-	config := target.BaseTargetConfig{
-		Domain:    "TestRaito",
-		ApiUser:   "Userke",
-		ApiSecret: "SecretStuff",
-		Logger:    hclog.Default(),
+	config := target.BaseConfig{
+		Domain:     "TestRaito",
+		ApiUser:    "Userke",
+		ApiSecret:  "SecretStuff",
+		BaseLogger: hclog.Default(),
 	}
 
 	res, err := DoGetToRaito("the/path", &config)
@@ -60,11 +62,11 @@ func TestDoPost(t *testing.T) {
 
 	url2.TestURL = testServer.URL
 
-	config := target.BaseTargetConfig{
-		Domain:    "TestRaito",
-		ApiUser:   "Userke",
-		ApiSecret: "SecretStuff",
-		Logger:    hclog.Default(),
+	config := target.BaseConfig{
+		Domain:     "TestRaito",
+		ApiUser:    "Userke",
+		ApiSecret:  "SecretStuff",
+		BaseLogger: hclog.Default(),
 	}
 
 	res, err := DoPostToRaito("the/path", "The body", "application/json", &config)
@@ -78,8 +80,8 @@ func TestDoPost(t *testing.T) {
 }
 
 func TestDoPostIllegalURL(t *testing.T) {
-	config := target.BaseTargetConfig{
-		Logger: hclog.Default(),
+	config := target.BaseConfig{
+		BaseLogger: hclog.Default(),
 	}
 	res, err := doPost("\\we\nird", "illegal path", "The body", "application/json", &config)
 	assert.NotNil(t, err)
@@ -87,8 +89,8 @@ func TestDoPostIllegalURL(t *testing.T) {
 }
 
 func TestDoGetIllegalURL(t *testing.T) {
-	config := target.BaseTargetConfig{
-		Logger: hclog.Default(),
+	config := target.BaseConfig{
+		BaseLogger: hclog.Default(),
 	}
 	res, err := doGet("\\we\nird", "illegal path", &config)
 	assert.NotNil(t, err)
@@ -102,8 +104,8 @@ func TestDoGetClosed(t *testing.T) {
 	url := testServer.URL
 	testServer.Close()
 
-	config := target.BaseTargetConfig{
-		Logger: hclog.Default(),
+	config := target.BaseConfig{
+		BaseLogger: hclog.Default(),
 	}
 
 	res, err := doGet(url, "the/path", &config)
@@ -118,8 +120,8 @@ func TestDoPostClosed(t *testing.T) {
 	url := testServer.URL
 	testServer.Close()
 
-	config := target.BaseTargetConfig{
-		Logger: hclog.Default(),
+	config := target.BaseConfig{
+		BaseLogger: hclog.Default(),
 	}
 
 	res, err := doPost(url, "the/path", "", "", &config)

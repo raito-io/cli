@@ -88,7 +88,7 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, str
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
 	res := Response{}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
+	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseConfig, &res)
 
 	if err != nil {
 		return job.Failed, "", fmt.Errorf("error while executing import: %s", err.Error())

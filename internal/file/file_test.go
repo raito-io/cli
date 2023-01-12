@@ -2,16 +2,18 @@ package file
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/target"
-	"github.com/raito-io/cli/internal/util/url"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/go-hclog"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/util/url"
 )
 
 func TestCreateUniqueFileName(t *testing.T) {
@@ -55,10 +57,13 @@ func TestFileUpload(t *testing.T) {
 	url.TestURL = getUrlTestServer.URL
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
-		Logger:    hclog.L(),
-		Domain:    "mydomain",
-		ApiUser:   "api-user",
-		ApiSecret: "api-secret",
+		Logger: hclog.L(),
+		BaseConfig: target.BaseConfig{
+			Domain:     "mydomain",
+			ApiUser:    "api-user",
+			ApiSecret:  "api-secret",
+			BaseLogger: hclog.L(),
+		},
 	})
 
 	assert.Nil(t, err)
@@ -89,6 +94,9 @@ func TestFileUploadNotFound(t *testing.T) {
 
 	res, err := UploadFile("testdata/doesntexist.txt", &target.BaseTargetConfig{
 		Logger: hclog.L(),
+		BaseConfig: target.BaseConfig{
+			BaseLogger: hclog.L(),
+		},
 	})
 
 	assert.NotNil(t, err)
@@ -114,6 +122,9 @@ func TestFileUploadErrorUploading(t *testing.T) {
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		Logger: hclog.L(),
+		BaseConfig: target.BaseConfig{
+			BaseLogger: hclog.L(),
+		},
 	})
 
 	assert.NotNil(t, err)
@@ -133,6 +144,9 @@ func TestFileUploadGetUrlFailed(t *testing.T) {
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		Logger: hclog.L(),
+		BaseConfig: target.BaseConfig{
+			BaseLogger: hclog.L(),
+		},
 	})
 
 	assert.NotNil(t, err)
@@ -151,6 +165,9 @@ func TestFileUploadGetUrlIllegalResult(t *testing.T) {
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		Logger: hclog.L(),
+		BaseConfig: target.BaseConfig{
+			BaseLogger: hclog.L(),
+		},
 	})
 
 	assert.NotNil(t, err)
@@ -169,6 +186,9 @@ func TestFileUploadGetUrlIllegalUrl(t *testing.T) {
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		Logger: hclog.L(),
+		BaseConfig: target.BaseConfig{
+			BaseLogger: hclog.L(),
+		},
 	})
 
 	assert.NotNil(t, err)
@@ -187,6 +207,9 @@ func TestFileUploadGetUrlNonExistingUrl(t *testing.T) {
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		Logger: hclog.L(),
+		BaseConfig: target.BaseConfig{
+			BaseLogger: hclog.L(),
+		},
 	})
 
 	assert.NotNil(t, err)
@@ -198,6 +221,9 @@ func TestFileUploadNonExistingUrl(t *testing.T) {
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		Logger: hclog.L(),
+		BaseConfig: target.BaseConfig{
+			BaseLogger: hclog.L(),
+		},
 	})
 
 	assert.NotNil(t, err)

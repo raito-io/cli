@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/hashicorp/go-multierror"
+
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/connect"
 )
@@ -19,13 +20,13 @@ type Error struct {
 	Message string `json:"message"`
 }
 
-func ExecuteGraphQLWithoutResponse(gql string, config *target.BaseTargetConfig) error {
+func ExecuteGraphQLWithoutResponse(gql string, config *target.BaseConfig) error {
 	_, err := ExecuteGraphQL(gql, config, struct{}{})
 
 	return err
 }
 
-func ExecuteGraphQL(gql string, config *target.BaseTargetConfig, resultObject interface{}) (*GraphqlResponse, error) {
+func ExecuteGraphQL(gql string, config *target.BaseConfig, resultObject interface{}) (*GraphqlResponse, error) {
 	rawResponse, err := executeGraphQL(gql, config)
 
 	if err != nil {
@@ -51,7 +52,7 @@ func ExecuteGraphQL(gql string, config *target.BaseTargetConfig, resultObject in
 	return &response, nil
 }
 
-func executeGraphQL(gql string, config *target.BaseTargetConfig) ([]byte, error) {
+func executeGraphQL(gql string, config *target.BaseConfig) ([]byte, error) {
 	resp, err := connect.DoPostToRaito("query", gql, "application/json", config)
 
 	if err != nil {

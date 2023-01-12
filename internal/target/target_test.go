@@ -11,9 +11,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/jinzhu/copier"
-	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/raito-io/cli/internal/constants"
 )
 
 func TestToCamelCase(t *testing.T) {
@@ -150,7 +151,10 @@ func TestBuildTargetConfigFromMapError(t *testing.T) {
 	data := map[string]interface{}{
 		"connector-name": 666,
 	}
-	config, err := buildTargetConfigFromMap(hclog.L(), data)
+
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+
+	config, err := buildTargetConfigFromMap(baseconfig, data)
 	assert.NotNil(t, err)
 	assert.Nil(t, config)
 }
@@ -174,7 +178,8 @@ var baseConfigMap = map[string]interface{}{
 
 func TestBuildTargetConfigFromMap(t *testing.T) {
 	clearViper()
-	config, err := buildTargetConfigFromMap(hclog.L(), baseConfigMap)
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap)
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1", config.ConnectorName)
@@ -199,7 +204,8 @@ func TestBuildTargetConfigFromMapNoName(t *testing.T) {
 	var noNameConfigMap = make(map[string]interface{})
 	copier.Copy(&noNameConfigMap, &baseConfigMap)
 	delete(noNameConfigMap, "name")
-	config, err := buildTargetConfigFromMap(hclog.L(), noNameConfigMap)
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	config, err := buildTargetConfigFromMap(baseconfig, noNameConfigMap)
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1", config.ConnectorName)
@@ -209,7 +215,8 @@ func TestBuildTargetConfigFromMapNoName(t *testing.T) {
 func TestBuildTargetConfigFromMapOverride(t *testing.T) {
 	clearViper()
 	viper.Set("skip-data-source-sync", true)
-	config, err := buildTargetConfigFromMap(hclog.L(), baseConfigMap)
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap)
 	assert.Nil(t, err)
 
 	assert.Equal(t, true, config.SkipIdentityStoreSync)
@@ -222,7 +229,8 @@ func TestBuildTargetConfigFromMapLocalRaitoData(t *testing.T) {
 	viper.Set("api-user", "uuuu")
 	viper.Set("domain", "dddd")
 	viper.Set("api-secret", "ssss")
-	config, err := buildTargetConfigFromMap(hclog.L(), baseConfigMap)
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap)
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1user", config.ApiUser)
@@ -243,7 +251,8 @@ func TestBuildTargetConfigFromMapGlobalRaitoData(t *testing.T) {
 	viper.Set("api-user", "uuuu")
 	viper.Set("api-secret", "ssss")
 	viper.Set("domain", "dddd")
-	config, err := buildTargetConfigFromMap(hclog.L(), withoutRaitoStuff)
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	config, err := buildTargetConfigFromMap(baseconfig, withoutRaitoStuff)
 	assert.Nil(t, err)
 
 	assert.Equal(t, "uuuu", config.ApiUser)
@@ -272,7 +281,8 @@ func TestBuildTargetConfigFromFlags(t *testing.T) {
 	viper.Set("skip-data-source-sync", true)
 	viper.Set("skip-data-access-sync", true)
 
-	config := buildTargetConfigFromFlags(hclog.L(), []string{"--custom1", "ok"})
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{"--custom1", "ok"})
+	config := buildTargetConfigFromFlags(baseconfig)
 	assert.NotNil(t, config)
 
 	assert.Equal(t, "conn1", config.ConnectorName)
@@ -294,7 +304,8 @@ func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
 
 	viper.Set(constants.ConnectorNameFlag, "conn1")
 
-	config := buildTargetConfigFromFlags(hclog.L(), []string{})
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	config := buildTargetConfigFromFlags(baseconfig)
 	assert.NotNil(t, config)
 
 	assert.Equal(t, "conn1", config.ConnectorName)
@@ -325,7 +336,8 @@ func TestRunSingleTarget(t *testing.T) {
 	viper.Set("skip-data-access-sync", true)
 
 	runs := 0
-	RunTargets(hclog.L(), []string{}, func(tConfig *BaseTargetConfig) error {
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
 		assert.Equal(t, "name1", tConfig.Name)
 		runs++
 		return nil
@@ -353,7 +365,8 @@ func TestRunMultipleTargets(t *testing.T) {
 	viper.Set("targets", targets)
 
 	runs := 0
-	RunTargets(hclog.L(), []string{}, func(tConfig *BaseTargetConfig) error {
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
 		if runs == 0 {
 			assert.Equal(t, "c1", tConfig.ConnectorName)
 			assert.Equal(t, "cn1", tConfig.Name)
@@ -389,7 +402,8 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	viper.Set("only-targets", "name1")
 
 	runs := 0
-	RunTargets(hclog.L(), []string{}, func(tConfig *BaseTargetConfig) error {
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
 		assert.Equal(t, "c1", tConfig.ConnectorName)
 		assert.Equal(t, "name1", tConfig.Name)
 		runs++
@@ -400,7 +414,8 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	viper.Set("only-targets", "c2")
 
 	runs = 0
-	RunTargets(hclog.L(), []string{}, func(tConfig *BaseTargetConfig) error {
+	baseconfig, _ = BuildBaseConfigFromFlags(hclog.L(), []string{})
+	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
 		assert.Equal(t, "c2", tConfig.ConnectorName)
 		assert.Equal(t, "c2", tConfig.Name)
 		runs++
@@ -430,14 +445,16 @@ func TestLogTarget(t *testing.T) {
 	hclog.SetDefault(intercept)
 
 	config := BaseTargetConfig{
-		ApiSecret: "mylittlesecret",
-		ConfigMap: config2.ConfigMap{
-			Parameters: map[string]interface{}{
-				"password": "anothersecret",
-				"normal":   "readible",
+		BaseConfig: BaseConfig{
+			ApiSecret: "mylittlesecret",
+			ConfigMap: config2.ConfigMap{
+				Parameters: map[string]interface{}{
+					"password": "anothersecret",
+					"normal":   "readible",
+				},
 			},
+			ApiUser: "theuser",
 		},
-		ApiUser: "theuser",
 	}
 	logTargetConfig(&config)
 

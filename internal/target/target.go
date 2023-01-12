@@ -4,47 +4,65 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
+	"github.com/spf13/viper"
+
 	"github.com/raito-io/cli/base/util/config"
 	error2 "github.com/raito-io/cli/base/util/error"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/spf13/viper"
 )
 
-type BaseTargetConfig struct {
+type BaseConfig struct {
 	config.ConfigMap
-	ConnectorName         string
-	ConnectorVersion      string
-	Name                  string
-	DataSourceId          string
-	IdentityStoreId       string
-	ApiUser               string
-	ApiSecret             string
-	Domain                string
+	ApiUser    string
+	ApiSecret  string
+	Domain     string
+	BaseLogger hclog.Logger
+}
+
+type BaseTargetConfig struct {
+	BaseConfig
+	ConnectorName    string
+	ConnectorVersion string
+	Name             string
+	DataSourceId     string
+	IdentityStoreId  string
+
 	SkipIdentityStoreSync bool
 	SkipDataSourceSync    bool
 	SkipDataAccessSync    bool
 	SkipDataUsageSync     bool
-	Logger                hclog.Logger
+
+	ModifiedAfter *time.Time
 
 	DeleteUntouched bool
 	ReplaceTags     bool
 	DeleteTempFiles bool
 	ReplaceGroups   bool
+
+	Logger hclog.Logger
 }
 
-func RunTargets(baseLogger hclog.Logger, otherArgs []string, runTarget func(tConfig *BaseTargetConfig) error) error {
+func RunTargets(baseConfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig) error, opFns ...func(*Options)) error {
+	options := createOptions(opFns...)
+
 	if viper.GetString(constants.ConnectorNameFlag) != "" {
-		targetConfig := buildTargetConfigFromFlags(baseLogger, otherArgs)
+		targetConfig := buildTargetConfigFromFlags(baseConfig)
+
+		if !options.SyncDataSourceId(targetConfig.DataSourceId) {
+			return nil
+		}
+
 		logTargetConfig(targetConfig)
 
-		return runTarget(targetConfig)
+		return runTarget(options.TargetOptions(targetConfig))
 	} else {
-		return runMultipleTargets(baseLogger, runTarget)
+		return runMultipleTargets(baseConfig, runTarget, &options)
 	}
 }
 
@@ -59,7 +77,7 @@ func HandleTargetError(err error, config *BaseTargetConfig, during string) {
 	config.Logger.Error(fmt.Sprintf("Error during %s: %s", during, err.Error()))
 }
 
-func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTargetConfig) error) error {
+func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig) error, options *Options) error {
 	targets := viper.Get(constants.Targets)
 	onlyTargets := make(map[string]struct{})
 
@@ -84,7 +102,7 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 				break
 			}
 
-			tConfig, err := buildTargetConfigFromMap(baseLogger, target)
+			tConfig, err := buildTargetConfigFromMap(baseconfig, target)
 			if err != nil {
 				errorResult = multierror.Append(errorResult, fmt.Errorf("error while parsing target configuration: %s", err.Error()))
 				hclog.L().Error(fmt.Sprintf("error while parsing target configuration: %s", err.Error()))
@@ -95,6 +113,12 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 			if tConfig == nil {
 				continue
 			}
+
+			if !options.SyncDataSourceId(tConfig.DataSourceId) {
+				continue
+			}
+
+			tConfig = options.TargetOptions(tConfig)
 
 			if len(onlyTargets) > 0 {
 				if _, found := onlyTargets[tConfig.Name]; !found {
@@ -118,8 +142,9 @@ func runMultipleTargets(baseLogger hclog.Logger, runTarget func(tConfig *BaseTar
 	return errorResult
 }
 
-func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[string]interface{}) (*BaseTargetConfig, error) {
+func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interface{}) (*BaseTargetConfig, error) {
 	tConfig := BaseTargetConfig{
+		BaseConfig:      *baseconfig,
 		DeleteUntouched: true,
 		DeleteTempFiles: true,
 		ReplaceTags:     true,
@@ -147,7 +172,7 @@ func buildTargetConfigFromMap(baseLogger hclog.Logger, target map[string]interfa
 	}
 
 	// Create a logger to add the target log name to each log message.
-	tConfig.Logger = baseLogger.With("target", tConfig.Name)
+	tConfig.Logger = baseconfig.BaseLogger.With("target", tConfig.Name)
 
 	// Merge with some global parameters
 	tConfig.SkipDataAccessSync = tConfig.SkipDataAccessSync || viper.GetBool(constants.SkipDataAccessSyncFlag)
@@ -208,7 +233,35 @@ func buildParameterMapFromArguments(args []string) map[string]interface{} {
 	return params
 }
 
-func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) *BaseTargetConfig {
+func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*BaseConfig, error) {
+	apiUser, err := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
+	if err != nil {
+		return nil, err
+	}
+
+	apiSecret, err := iconfig.HandleField(viper.GetString(constants.ApiSecretFlag), reflect.String)
+	if err != nil {
+		return nil, err
+	}
+
+	domain, err := iconfig.HandleField(viper.GetString(constants.DomainFlag), reflect.String)
+	if err != nil {
+		return nil, err
+	}
+
+	config := BaseConfig{
+		BaseLogger: baseLogger,
+		ApiUser:    apiUser.(string),
+		ApiSecret:  apiSecret.(string),
+		Domain:     domain.(string),
+	}
+
+	config.Parameters = buildParameterMapFromArguments(otherArgs)
+
+	return &config, nil
+}
+
+func buildTargetConfigFromFlags(baseConfig *BaseConfig) *BaseTargetConfig {
 	connector := viper.GetString(constants.ConnectorNameFlag)
 	version := viper.GetString(constants.ConnectorVersionFlag)
 	name := viper.GetString(constants.NameFlag)
@@ -218,25 +271,22 @@ func buildTargetConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) *Ba
 	}
 
 	targetConfig := BaseTargetConfig{
+		BaseConfig:            *baseConfig,
 		ConnectorName:         connector,
 		ConnectorVersion:      version,
 		Name:                  name,
 		DataSourceId:          viper.GetString(constants.DataSourceIdFlag),
 		IdentityStoreId:       viper.GetString(constants.IdentityStoreIdFlag),
-		ApiUser:               viper.GetString(constants.ApiUserFlag),
-		ApiSecret:             viper.GetString(constants.ApiSecretFlag),
-		Domain:                viper.GetString(constants.DomainFlag),
 		SkipIdentityStoreSync: viper.GetBool(constants.SkipIdentityStoreSyncFlag),
 		SkipDataSourceSync:    viper.GetBool(constants.SkipDataSourceSyncFlag),
 		SkipDataAccessSync:    viper.GetBool(constants.SkipDataAccessSyncFlag),
 		SkipDataUsageSync:     viper.GetBool(constants.SkipDataUsageSyncFlag),
-		Logger:                baseLogger.With("target", name),
+		Logger:                baseConfig.BaseLogger.With("target", name),
 		DeleteUntouched:       true,
 		DeleteTempFiles:       true,
 		ReplaceTags:           true,
 		ReplaceGroups:         true,
 	}
-	targetConfig.Parameters = buildParameterMapFromArguments(otherArgs)
 
 	return &targetConfig
 }
@@ -360,4 +410,54 @@ func toCamelInitCase(s string, initCase bool) string {
 	}
 
 	return n.String()
+}
+
+type Options struct {
+	DataSourceIds map[string]struct{}
+	ConfigOption  func(targetConfig *BaseTargetConfig)
+}
+
+func createOptions(opFns ...func(*Options)) Options {
+	result := Options{}
+	for _, fn := range opFns {
+		fn(&result)
+	}
+
+	return result
+}
+
+func (o *Options) SyncDataSourceId(dataSourceId string) bool {
+	if o.DataSourceIds == nil {
+		return true
+	}
+
+	_, found := o.DataSourceIds[dataSourceId]
+
+	return found
+}
+
+func (o *Options) TargetOptions(targetConfig *BaseTargetConfig) *BaseTargetConfig {
+	if o.ConfigOption != nil {
+		o.ConfigOption(targetConfig)
+	}
+
+	return targetConfig
+}
+
+func WithDataSourceIds(dataSourceIds ...string) func(o *Options) {
+	return func(o *Options) {
+		if o.DataSourceIds == nil {
+			o.DataSourceIds = map[string]struct{}{}
+		}
+
+		for _, dataSourceId := range dataSourceIds {
+			o.DataSourceIds[dataSourceId] = struct{}{}
+		}
+	}
+}
+
+func WithConfigOption(fn func(targetConfig *BaseTargetConfig)) func(o *Options) {
+	return func(o *Options) {
+		o.ConfigOption = fn
+	}
 }

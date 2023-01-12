@@ -2,16 +2,19 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/aws/smithy-go/ptr"
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/internal/access_provider"
+	"github.com/raito-io/cli/internal/clitrigger"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/data_source"
 	"github.com/raito-io/cli/internal/data_usage"
@@ -20,6 +23,8 @@ import (
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 )
+
+var lastAPSync *time.Time
 
 func initRunCommand(rootCmd *cobra.Command) {
 	var cmd = &cobra.Command{
@@ -34,12 +39,14 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.SkipIdentityStoreSyncFlag, false, "If set, the identity store synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipDataAccessSyncFlag, false, "If set, the data access information from Raito will not be synced to the data sources in the target list.")
 	cmd.PersistentFlags().Bool(constants.SkipDataUsageSyncFlag, false, "If set, the data usage information synchronization step to Raito will be skipped for each of the targets.")
+	cmd.PersistentFlags().Bool(constants.DisableWebsocketFlag, false, "If set, raito will not setup a websocket to trigger new syncs.")
 
 	BindFlag(constants.FrequencyFlag, cmd)
 	BindFlag(constants.SkipDataSourceSyncFlag, cmd)
 	BindFlag(constants.SkipIdentityStoreSyncFlag, cmd)
 	BindFlag(constants.SkipDataAccessSyncFlag, cmd)
 	BindFlag(constants.SkipDataUsageSyncFlag, cmd)
+	BindFlag(constants.DisableWebsocketFlag, cmd)
 
 	cmd.FParseErrWhitelist.UnknownFlags = true
 
@@ -49,11 +56,18 @@ func initRunCommand(rootCmd *cobra.Command) {
 func executeRun(cmd *cobra.Command, args []string) {
 	otherArgs := cmd.Flags().Args()
 
+	baseConfig, err := target.BuildBaseConfigFromFlags(hclog.L(), otherArgs)
+	if err != nil {
+		hclog.L().Error(err.Error())
+		os.Exit(1)
+	}
+
 	freq := viper.GetInt(constants.FrequencyFlag)
 	if freq <= 0 {
 		hclog.L().Info("Running synchronization just once.")
 
-		err := executeSingleRun(hclog.L().With("iteration", 0), otherArgs)
+		baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 0)
+		err := executeSingleRun(baseConfig)
 		if err != nil {
 			os.Exit(1)
 		} else {
@@ -64,18 +78,36 @@ func executeRun(cmd *cobra.Command, args []string) {
 		hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
 
 		ticker := time.NewTicker(time.Duration(freq) * time.Minute)
-		quit := make(chan struct{})
+
+		ctx, cancelFn := context.WithCancel(context.Background())
+
 		finished := make(chan struct{})
+		defer close(finished)
+
+		cliTriggerChannel := make(chan clitrigger.TriggerEvent)
+		defer close(cliTriggerChannel)
+
 		go func() {
-			executeSingleRun(hclog.L().With("iteration", 1), otherArgs) //nolint
+			defer ticker.Stop()
+
+			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
+			//executeSingleRun(baseConfig) //nolint
+
+			startListingToCliTriggers(ctx, baseConfig, cliTriggerChannel)
+
 			it := 2
 			for {
 				select {
 				case <-ticker.C:
-					executeSingleRun(hclog.L().With("iteration", it), otherArgs) //nolint
+					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
+					executeSingleRun(baseConfig) //nolint
 					it++
-				case <-quit:
-					ticker.Stop()
+				case cliTrigger := <-cliTriggerChannel:
+					err := handleCliTrigger(baseConfig, &cliTrigger)
+					if err != nil {
+						baseConfig.BaseLogger.Warn("Cli Trigger failed: %s", err.Error())
+					}
+				case <-ctx.Done():
 					finished <- struct{}{}
 					return
 				}
@@ -87,7 +119,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 			text, _ := reader.ReadString('\n')
 			if strings.TrimSpace(strings.ToLower(text)) == "q" {
 				hclog.L().Info("Waiting for the current synchronization run to end ...")
-				quit <- struct{}{}
+				cancelFn()
 				break
 			} else {
 				hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
@@ -99,19 +131,19 @@ func executeRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func executeSingleRun(baseLogger hclog.Logger, otherArgs []string) error {
+func executeSingleRun(baseconfig *target.BaseConfig) error {
 	start := time.Now()
 
-	err := runSync(baseLogger, otherArgs)
+	err := runSync(baseconfig)
 
 	sec := time.Since(start).Round(time.Millisecond)
-	baseLogger.Info(fmt.Sprintf("Finished execution of all targets in %s", sec))
+	baseconfig.BaseLogger.Info(fmt.Sprintf("Finished execution of all targets in %s", sec))
 
 	return err
 }
 
-func runSync(baseLogger hclog.Logger, otherArgs []string) error {
-	return target.RunTargets(baseLogger, otherArgs, runTargetSync)
+func runSync(baseconfig *target.BaseConfig) error {
+	return target.RunTargets(baseconfig, runTargetSync)
 }
 
 func execute(targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
@@ -264,6 +296,8 @@ func dataAccessSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 		return err
 	}
 
+	lastAPSync = ptr.Time(time.Now())
+
 	return nil
 }
 
@@ -287,4 +321,42 @@ func dataSourceSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 	}
 
 	return nil
+}
+
+func handleCliTrigger(baseConfig *target.BaseConfig, triggerEvent *clitrigger.TriggerEvent) error {
+	if triggerEvent.ApUpdate != nil {
+		return handleApUpdateTrigger(baseConfig, triggerEvent.ApUpdate)
+	}
+
+	return nil
+}
+
+func handleApUpdateTrigger(config *target.BaseConfig, apUpdate *clitrigger.ApUpdate) error {
+	return target.RunTargets(config, runTargetSync, target.WithDataSourceIds(apUpdate.DataSourceNames...), target.WithConfigOption(func(targetConfig *target.BaseTargetConfig) {
+		targetConfig.SkipIdentityStoreSync = true
+		targetConfig.SkipDataSourceSync = true
+		targetConfig.SkipDataUsageSync = true
+
+		targetConfig.ModifiedAfter = lastAPSync
+	}))
+}
+
+func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfig, outputChannel chan clitrigger.TriggerEvent) {
+	cliTrigger, err := clitrigger.CreateCliTrigger(baseConfig)
+	if err != nil {
+		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
+		return
+	}
+
+	ch, err := cliTrigger.TriggerChannel(ctx, baseConfig)
+	if err != nil {
+		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
+		return
+	}
+
+	go func() {
+		for i := range ch {
+			outputChannel <- i
+		}
+	}()
 }

@@ -15,10 +15,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	idp "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/hashicorp/go-hclog"
+	"github.com/spf13/viper"
+
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/url"
-	"github.com/spf13/viper"
 )
 
 type userTokens struct {
@@ -34,39 +35,43 @@ var (
 	clientAppId string
 )
 
-func AddToken(r *http.Request, targetConfig *target.BaseTargetConfig) error {
+func AddTokenToHeader(h *http.Header, config *target.BaseConfig) error {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
-		targetConfig.Logger.Debug("Skipping authentication for development environment.")
+		config.BaseLogger.Debug("Skipping authentication for development environment.")
 		return nil
 	}
 
-	tokens, found := tokenMap[targetConfig.ApiUser]
+	tokens, found := tokenMap[config.ApiUser]
 	if !found {
-		tokens = &userTokens{userName: targetConfig.ApiUser}
-		tokenMap[targetConfig.ApiUser] = tokens
+		tokens = &userTokens{userName: config.ApiUser}
+		tokenMap[config.ApiUser] = tokens
 	}
 
-	err := updateTokens(targetConfig, tokens)
+	err := updateTokens(config, tokens)
 	if err != nil {
 		return err
 	}
 
-	r.Header.Add("Authorization", "token "+tokens.idToken)
+	h.Add("Authorization", "token "+tokens.idToken)
 
 	return nil
 }
 
-func updateTokens(targetConfig *target.BaseTargetConfig, tokens *userTokens) error {
-	if checkTokenValidity(targetConfig, tokens) {
-		targetConfig.Logger.Debug(fmt.Sprintf("Token for user %q is still valid", tokens.userName))
+func AddToken(r *http.Request, config *target.BaseConfig) error {
+	return AddTokenToHeader(&r.Header, config)
+}
+
+func updateTokens(config *target.BaseConfig, tokens *userTokens) error {
+	if checkTokenValidity(config, tokens) {
+		config.BaseLogger.Debug(fmt.Sprintf("Token for user %q is still valid", tokens.userName))
 		return nil
 	}
 
-	return fetchTokens(targetConfig, tokens)
+	return fetchTokens(config, tokens)
 }
 
-func checkTokenValidity(targetConfig *target.BaseTargetConfig, tokens *userTokens) bool {
+func checkTokenValidity(config *target.BaseConfig, tokens *userTokens) bool {
 	if tokens.idToken == "" || tokens.refreshToken == "" || tokens.expiration == nil {
 		return false
 	}
@@ -74,31 +79,31 @@ func checkTokenValidity(targetConfig *target.BaseTargetConfig, tokens *userToken
 	// Adding a buffer of 10 seconds
 	now := time.Now().Add(time.Second * 10)
 	if now.After(*tokens.expiration) {
-		targetConfig.Logger.Debug(fmt.Sprintf("Token for user %q is expired", tokens.userName))
+		config.BaseLogger.Debug(fmt.Sprintf("Token for user %q is expired", tokens.userName))
 		return false
 	}
 
 	return true
 }
 
-func fetchTokens(targetConfig *target.BaseTargetConfig, tokens *userTokens) error {
+func fetchTokens(config *target.BaseConfig, tokens *userTokens) error {
 	if tokens.refreshToken != "" {
-		err := refreshTokens(targetConfig, tokens)
+		err := refreshTokens(config, tokens)
 		if err != nil {
-			targetConfig.Logger.Error(fmt.Sprintf("error while trying to refresh tokens: %s. Trying to fetch tokens from scratch", err.Error()))
+			config.BaseLogger.Error(fmt.Sprintf("error while trying to refresh tokens: %s. Trying to fetch tokens from scratch", err.Error()))
 		} else {
 			return nil
 		}
 	}
 
 	// If no refresh token or refreshing failed
-	return fetchNewTokens(targetConfig, tokens)
+	return fetchNewTokens(config, tokens)
 }
 
-func refreshTokens(targetConfig *target.BaseTargetConfig, tokens *userTokens) error {
-	targetConfig.Logger.Debug(fmt.Sprintf("Refreshing tokens for user %q", tokens.userName))
+func refreshTokens(baseConfig *target.BaseConfig, tokens *userTokens) error {
+	baseConfig.BaseLogger.Debug(fmt.Sprintf("Refreshing tokens for user %q", tokens.userName))
 
-	err := fetchClientAppId(targetConfig)
+	err := fetchClientAppId(baseConfig)
 	if err != nil {
 		return fmt.Errorf("error while fetching clientAppId: %s", err.Error())
 	}
@@ -135,10 +140,10 @@ func setTestTokens(tokens *userTokens) error {
 	return nil
 }
 
-func fetchNewTokens(targetConfig *target.BaseTargetConfig, tokens *userTokens) error {
-	targetConfig.Logger.Debug("Fetching new tokens")
+func fetchNewTokens(baseConfig *target.BaseConfig, tokens *userTokens) error {
+	baseConfig.BaseLogger.Debug("Fetching new tokens")
 
-	err := fetchClientAppId(targetConfig)
+	err := fetchClientAppId(baseConfig)
 	if err != nil {
 		return fmt.Errorf("error while fetching clientAppId: %s", err.Error())
 	}
@@ -156,7 +161,7 @@ func fetchNewTokens(targetConfig *target.BaseTargetConfig, tokens *userTokens) e
 	output, err := idpClient.InitiateAuth(context.TODO(), &idp.InitiateAuthInput{
 		AuthFlow:       "USER_PASSWORD_AUTH",
 		ClientId:       &clientAppId,
-		AuthParameters: map[string]string{"USERNAME": targetConfig.ApiUser, "PASSWORD": targetConfig.ApiSecret},
+		AuthParameters: map[string]string{"USERNAME": baseConfig.ApiUser, "PASSWORD": baseConfig.ApiSecret},
 	})
 
 	if err != nil {
@@ -187,12 +192,12 @@ func handleAuthOutput(output *idp.InitiateAuthOutput, tokens *userTokens) error 
 	}
 }
 
-func fetchClientAppId(targetConfig *target.BaseTargetConfig) error {
+func fetchClientAppId(baseConfig *target.BaseConfig) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	if clientAppId == "" {
-		domain := targetConfig.Domain
+		domain := baseConfig.Domain
 
 		if domain == "" {
 			return fmt.Errorf("no domain specified")
@@ -239,7 +244,7 @@ func fetchClientAppId(targetConfig *target.BaseTargetConfig) error {
 		}
 
 		clientAppId = org.ClientAppId
-		targetConfig.Logger.Info(fmt.Sprintf("Received clientAppId %q for domain %q", clientAppId, domain))
+		baseConfig.BaseLogger.Info(fmt.Sprintf("Received clientAppId %q for domain %q", clientAppId, domain))
 	}
 
 	return nil

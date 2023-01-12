@@ -43,6 +43,7 @@ const (
 	DataSourceIdFlag          = "data-source-id"
 	IdentityStoreIdFlag       = "identity-store-id"
 	OnlyTargetsFlag           = "only-targets"
+	DisableWebsocketFlag      = "disable-websocket"
 
 	ConnectorNameFlag    = "connector-name"
 	ConnectorVersionFlag = "connector-version"

@@ -78,7 +78,7 @@ func UploadFile(file string, config *target.BaseTargetConfig) (string, error) {
 // It returns the upload URL and the file key to use to pass to the Raito backend to use it.
 // Returns two empty strings if something went wrong (error logged)
 func getUploadURL(config *target.BaseTargetConfig) (string, string, error) {
-	resp, err := connect.DoGetToRaito("file/upload/signed-url", config)
+	resp, err := connect.DoGetToRaito("file/upload/signed-url", &config.BaseConfig)
 	if err != nil {
 		return "", "", fmt.Errorf("error while trying to get a signed upload URL: %s", err.Error())
 	}

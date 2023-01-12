@@ -86,7 +86,7 @@ func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.Job
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
 	res := ImportResponse{}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseTargetConfig, &res)
+	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseConfig, &res)
 
 	if err != nil {
 		return job.Failed, "", fmt.Errorf("error while executing import: %s", err.Error())

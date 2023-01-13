@@ -37,7 +37,7 @@ type dataUsageImporter struct {
 }
 
 func NewDataUsageImporter(config *DataUsageImportConfig, statusUpdater job.TaskEventUpdater) DataUsageImporter {
-	logger := config.Logger.With("data-usage", config.DataSourceId, "file", config.TargetFile)
+	logger := config.TargetLogger.With("data-usage", config.DataSourceId, "file", config.TargetFile)
 	duI := dataUsageImporter{config, logger, statusUpdater}
 
 	return &duI

@@ -33,7 +33,7 @@ type dataSourceImporter struct {
 }
 
 func NewDataSourceImporter(config *DataSourceImportConfig, statusUpdater job.TaskEventUpdater) DataSourceImporter {
-	logger := config.Logger.With("datasource", config.DataSourceId, "file", config.TargetFile)
+	logger := config.TargetLogger.With("datasource", config.DataSourceId, "file", config.TargetFile)
 	dsI := dataSourceImporter{config, logger, statusUpdater}
 
 	return &dsI

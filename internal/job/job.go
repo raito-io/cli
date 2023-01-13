@@ -142,7 +142,7 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 
 	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &cfg.BaseConfig)
 	if err != nil {
-		cfg.Logger.Debug(fmt.Sprintf("job update failed: %s", err.Error()))
+		cfg.TargetLogger.Debug(fmt.Sprintf("job update failed: %s", err.Error()))
 	}
 }
 
@@ -177,7 +177,7 @@ func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status Jo
 
 	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &cfg.BaseConfig)
 	if err != nil {
-		cfg.Logger.Debug("taskEvent update failed: %s", err.Error())
+		cfg.TargetLogger.Debug("taskEvent update failed: %s", err.Error())
 	}
 }
 
@@ -196,7 +196,7 @@ func AddSubtaskEvent(cfg *target.BaseTargetConfig, jobID, jobType, subtask strin
 
 	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &cfg.BaseConfig)
 	if err != nil {
-		cfg.Logger.Debug("subtask event update failed: %s", err.Error())
+		cfg.TargetLogger.Debug("subtask event update failed: %s", err.Error())
 	}
 }
 
@@ -259,7 +259,7 @@ func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, 
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &cfg.BaseConfig, &response)
 
 	if err != nil {
-		cfg.Logger.Debug("failed to load Subtask information: %s", err.Error())
+		cfg.TargetLogger.Debug("failed to load Subtask information: %s", err.Error())
 		return nil, err
 	}
 
@@ -393,11 +393,11 @@ func WaitForJobToComplete(jobID string, syncType string, subtaskId string, syncR
 		}
 
 		if currentStatus != subtask.Status {
-			cfg.Logger.Info(fmt.Sprintf("Update task status to %s", subtask.Status.String()))
+			cfg.TargetLogger.Info(fmt.Sprintf("Update task status to %s", subtask.Status.String()))
 		}
 
 		currentStatus = subtask.Status
-		cfg.Logger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, currentStatus.String()))
+		cfg.TargetLogger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, currentStatus.String()))
 		i += 1
 	}
 

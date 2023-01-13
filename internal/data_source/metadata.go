@@ -13,7 +13,7 @@ import (
 )
 
 func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) error {
-	logger := config.Logger.With("datasource", config.DataSourceId)
+	logger := config.TargetLogger.With("datasource", config.DataSourceId)
 	start := time.Now()
 
 	mdm, err := marshalMetaData(metadata)

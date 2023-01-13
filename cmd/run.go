@@ -153,7 +153,7 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 	switch {
 	case skipSync:
 		taskEventUpdater.AddTaskEvent(job.Skipped)
-		cfg.Logger.Info("Skipping sync of " + syncTypeLabel)
+		cfg.TargetLogger.Info("Skipping sync of " + syncTypeLabel)
 	case targetID == "":
 		taskEventUpdater.AddTaskEvent(job.Skipped)
 
@@ -162,7 +162,7 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 			idField = "identity-store-id"
 		}
 
-		cfg.Logger.Info("No " + idField + " argument found. Skipping syncing of " + syncTypeLabel)
+		cfg.TargetLogger.Info("No " + idField + " argument found. Skipping syncing of " + syncTypeLabel)
 	default:
 		err := sync(cfg, syncTypeLabel, taskEventUpdater, syncTask, c, syncType, jobID)
 		if err != nil {
@@ -174,13 +174,13 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 }
 
 func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, syncTask job.Task, c plugin.PluginClient, syncType string, jobID string) error {
-	cfg.Logger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
+	cfg.TargetLogger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
 
 	taskEventUpdater.AddTaskEvent(job.Started)
 	syncParts := syncTask.GetParts()
 
 	for i, taskPart := range syncParts {
-		cfg.Logger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
+		cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
 
 		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater)
 		if err != nil {
@@ -195,7 +195,7 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 		}
 
 		if status == job.Queued {
-			cfg.Logger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
+			cfg.TargetLogger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
 		}
 
 		syncResult := taskPart.GetResultObject()
@@ -229,19 +229,19 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 }
 
 func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
-	targetConfig.Logger.Info("Executing target...")
+	targetConfig.TargetLogger.Info("Executing target...")
 
 	start := time.Now()
 
-	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.Logger)
+	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)
 	if err != nil {
-		targetConfig.Logger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
+		targetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
 		return err
 	}
 	defer client.Close()
 
 	jobID, _ := job.StartJob(targetConfig)
-	targetConfig.Logger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobID))
+	targetConfig.TargetLogger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobID))
 	job.UpdateJobEvent(targetConfig, jobID, job.InProgress, nil)
 
 	defer func() {
@@ -272,7 +272,7 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 		return err
 	}
 
-	targetConfig.Logger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
+	targetConfig.TargetLogger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
 
 	return nil
 }
@@ -337,6 +337,7 @@ func handleApUpdateTrigger(config *target.BaseConfig, apUpdate *clitrigger.ApUpd
 		targetConfig.SkipDataSourceSync = true
 		targetConfig.SkipDataUsageSync = true
 
+		targetConfig.SkipDataAccessImport = true
 		targetConfig.ModifiedAfter = lastAPSync
 	}))
 }

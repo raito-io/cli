@@ -35,7 +35,7 @@ type identityStoreImporter struct {
 }
 
 func NewIdentityStoreImporter(config *IdentityStoreImportConfig, statusUpdater job.TaskEventUpdater) IdentityStoreImporter {
-	logger := config.Logger.With("identitystore", config.IdentityStoreId, "userfile", config.UserFile, "groupfile", config.GroupFile)
+	logger := config.TargetLogger.With("identitystore", config.IdentityStoreId, "userfile", config.UserFile, "groupfile", config.GroupFile)
 	isI := identityStoreImporter{config, logger, statusUpdater}
 
 	return &isI

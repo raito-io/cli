@@ -39,7 +39,7 @@ type accessProviderExporter struct {
 }
 
 func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdater job.TaskEventUpdater) AccessProviderExporter {
-	logger := config.Logger.With("AccessProviderExport", config.DataSourceId)
+	logger := config.TargetLogger.With("AccessProviderExport", config.DataSourceId)
 	dsI := accessProviderExporter{config, logger, statusUpdater}
 
 	return &dsI

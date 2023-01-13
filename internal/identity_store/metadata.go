@@ -11,7 +11,7 @@ import (
 )
 
 func SetMetaData(config target.BaseTargetConfig, metadata identity_store.MetaData) error {
-	logger := config.Logger.With("identitystore", config.IdentityStoreId)
+	logger := config.TargetLogger.With("identitystore", config.IdentityStoreId)
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "SetMetaData", "variables":{}, "query": "mutation SetMetaData {

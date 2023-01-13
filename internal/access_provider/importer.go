@@ -32,7 +32,7 @@ type accessProviderImporter struct {
 }
 
 func NewAccessProviderImporter(config *AccessProviderImportConfig, statusUpdater job.TaskEventUpdater) AccessProviderImporter {
-	logger := config.Logger.With("AccessProvider", config.DataSourceId, "file", config.TargetFile)
+	logger := config.TargetLogger.With("AccessProvider", config.DataSourceId, "file", config.TargetFile)
 	dsI := accessProviderImporter{config, logger, statusUpdater}
 
 	return &dsI

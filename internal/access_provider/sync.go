@@ -54,10 +54,15 @@ type dataAccessImportSubtask struct {
 }
 
 func (s *DataAccessSync) GetParts() []job.TaskPart {
-	return []job.TaskPart{
+	result := []job.TaskPart{
 		&dataAccessExportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId},
-		&dataAccessImportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId},
 	}
+
+	if !s.TargetConfig.SkipDataAccessImport {
+		result = append(result, &dataAccessImportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId})
+	}
+
+	return result
 }
 
 func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
@@ -68,7 +73,7 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(client plugin.Plugin
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
+	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
 
 	if s.TargetConfig.DeleteTempFiles {
 		defer os.RemoveAll(targetFile)
@@ -93,10 +98,10 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(client plugin.Plugin
 	}
 
 	if status == job.Queued {
-		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+		s.TargetConfig.TargetLogger.Info("Successfully queued import job. Wait until remote processing is done.")
 	}
 
-	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
+	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
 }
@@ -104,13 +109,13 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(client plugin.Plugin
 func (s *dataAccessImportSubtask) ProcessResults(results interface{}) error {
 	if daResult, ok := results.(*AccessProviderImportResult); ok {
 		if len(daResult.Warnings) > 0 {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced access providers with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(daResult.Warnings), daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Synced access providers with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(daResult.Warnings), daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
 
 			for _, warning := range daResult.Warnings {
-				s.TargetConfig.Logger.Warn(warning)
+				s.TargetConfig.TargetLogger.Warn(warning)
 			}
 		} else {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
 		}
 
 		return nil
@@ -136,7 +141,7 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 		return err
 	}
 
-	s.TargetConfig.Logger.Info("Synchronizing access providers between data source and the Raito")
+	s.TargetConfig.TargetLogger.Info("Synchronizing access providers between data source and the Raito")
 	res := das.SyncFromTarget(&syncerConfig)
 
 	if res.Error != nil {
@@ -158,7 +163,7 @@ func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(client plugin.Plugin
 		defer os.RemoveAll(targetFile)
 	}
 
-	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as actual access name target file", targetFile))
+	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as actual access name target file", targetFile))
 
 	statusUpdater.AddTaskEvent(job.DataRetrieve)
 
@@ -179,7 +184,7 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 
 	subTaskUpdater.AddSubtaskEvent(job.Started)
 
-	s.TargetConfig.Logger.Info("Fetching access providers for this data source from Raito")
+	s.TargetConfig.TargetLogger.Info("Fetching access providers for this data source from Raito")
 
 	statusUpdater.AddTaskEvent(job.DataRetrieve)
 
@@ -213,7 +218,7 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Info("Synchronizing access providers between Raito and the data source")
+	s.TargetConfig.TargetLogger.Info("Synchronizing access providers between Raito and the data source")
 	res := das.SyncToTarget(&syncerConfig)
 
 	if res.Error != nil {
@@ -233,10 +238,10 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 	}
 
 	if status == job.Queued {
-		s.TargetConfig.Logger.Info("Successfully queued feedback import job. Wait until remote processing is done.")
+		s.TargetConfig.TargetLogger.Info("Successfully queued feedback import job. Wait until remote processing is done.")
 	}
 
-	s.TargetConfig.Logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
+	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
 }
@@ -262,13 +267,13 @@ func (s *dataAccessExportSubtask) updateLastCalculated(information *dataAccessRe
 func (s *dataAccessExportSubtask) ProcessResults(results interface{}) error {
 	if daResult, ok := results.(*AccessProviderExportFeedbackResult); ok {
 		if len(daResult.Warnings) > 0 {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Exported access providers with %d warnings (see below). Added Actual Names: %d", len(daResult.Warnings), daResult.AccessNamesAdded))
+			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Exported access providers with %d warnings (see below). Added Actual Names: %d", len(daResult.Warnings), daResult.AccessNamesAdded))
 
 			for _, warning := range daResult.Warnings {
-				s.TargetConfig.Logger.Warn(warning)
+				s.TargetConfig.TargetLogger.Warn(warning)
 			}
 		} else {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Exported access providers. Added Actual Names: %d", daResult.AccessNamesAdded))
+			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Exported access providers. Added Actual Names: %d", daResult.AccessNamesAdded))
 		}
 
 		return nil

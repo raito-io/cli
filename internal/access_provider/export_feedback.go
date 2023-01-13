@@ -31,7 +31,7 @@ type accessProviderFeedbackSync struct {
 }
 
 func NewAccessProviderFeedbackImporter(config *AccessProviderExportFeedbackConfig, statusUpdater job.TaskEventUpdater) AccessProviderExportFeedbackSync {
-	logger := config.Logger.With("AccessProvider", config.DataSourceId, "file", config.FeedbackFile)
+	logger := config.TargetLogger.With("AccessProvider", config.DataSourceId, "file", config.FeedbackFile)
 	apI := accessProviderFeedbackSync{config, logger, statusUpdater}
 
 	return &apI

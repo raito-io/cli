@@ -57,7 +57,7 @@ func TestFileUpload(t *testing.T) {
 	url.TestURL = getUrlTestServer.URL
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
-		Logger: hclog.L(),
+		TargetLogger: hclog.L(),
 		BaseConfig: target.BaseConfig{
 			Domain:     "mydomain",
 			ApiUser:    "api-user",
@@ -93,7 +93,7 @@ func TestFileUploadNotFound(t *testing.T) {
 	url.TestURL = getUrlTestServer.URL
 
 	res, err := UploadFile("testdata/doesntexist.txt", &target.BaseTargetConfig{
-		Logger: hclog.L(),
+		TargetLogger: hclog.L(),
 		BaseConfig: target.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -121,7 +121,7 @@ func TestFileUploadErrorUploading(t *testing.T) {
 	url.TestURL = getUrlTestServer.URL
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
-		Logger: hclog.L(),
+		TargetLogger: hclog.L(),
 		BaseConfig: target.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -143,7 +143,7 @@ func TestFileUploadGetUrlFailed(t *testing.T) {
 	url.TestURL = getUrlTestServer.URL
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
-		Logger: hclog.L(),
+		TargetLogger: hclog.L(),
 		BaseConfig: target.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -164,7 +164,7 @@ func TestFileUploadGetUrlIllegalResult(t *testing.T) {
 	url.TestURL = getUrlTestServer.URL
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
-		Logger: hclog.L(),
+		TargetLogger: hclog.L(),
 		BaseConfig: target.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -185,7 +185,7 @@ func TestFileUploadGetUrlIllegalUrl(t *testing.T) {
 	url.TestURL = getUrlTestServer.URL
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
-		Logger: hclog.L(),
+		TargetLogger: hclog.L(),
 		BaseConfig: target.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -206,7 +206,7 @@ func TestFileUploadGetUrlNonExistingUrl(t *testing.T) {
 	url.TestURL = getUrlTestServer.URL
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
-		Logger: hclog.L(),
+		TargetLogger: hclog.L(),
 		BaseConfig: target.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -220,7 +220,7 @@ func TestFileUploadNonExistingUrl(t *testing.T) {
 	url.TestURL = "http://localhost:9999"
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
-		Logger: hclog.L(),
+		TargetLogger: hclog.L(),
 		BaseConfig: target.BaseConfig{
 			BaseLogger: hclog.L(),
 		},

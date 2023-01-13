@@ -69,7 +69,7 @@ func UploadFile(file string, config *target.BaseTargetConfig) (string, error) {
 
 	sec := time.Since(start).Round(time.Millisecond)
 
-	config.Logger.Info(fmt.Sprintf("Successfully uploaded file with key %q (%d bytes) in %s.", key, stat.Size(), sec))
+	config.TargetLogger.Info(fmt.Sprintf("Successfully uploaded file with key %q (%d bytes) in %s.", key, stat.Size(), sec))
 
 	return key, nil
 }

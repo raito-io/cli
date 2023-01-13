@@ -38,14 +38,15 @@ type BaseTargetConfig struct {
 	SkipDataAccessSync    bool
 	SkipDataUsageSync     bool
 
-	ModifiedAfter *time.Time
+	ModifiedAfter        *time.Time
+	SkipDataAccessImport bool
 
 	DeleteUntouched bool
 	ReplaceTags     bool
 	DeleteTempFiles bool
 	ReplaceGroups   bool
 
-	Logger hclog.Logger
+	TargetLogger hclog.Logger
 }
 
 func RunTargets(baseConfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig) error, opFns ...func(*Options)) error {
@@ -69,12 +70,12 @@ func RunTargets(baseConfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig
 func HandleTargetError(err error, config *BaseTargetConfig, during string) {
 	if errorResult, ok := err.(error2.ErrorResult); ok {
 		if errorResult.ErrorCode == error2.BadInputParameterError || errorResult.ErrorCode == error2.MissingInputParameterError {
-			config.Logger.Error(fmt.Sprintf("Error during %s: %s. Execute command 'info <connector>' to print out the expected parameters for the connector.", during, errorResult.ErrorMessage))
+			config.TargetLogger.Error(fmt.Sprintf("Error during %s: %s. Execute command 'info <connector>' to print out the expected parameters for the connector.", during, errorResult.ErrorMessage))
 			return
 		}
 	}
 
-	config.Logger.Error(fmt.Sprintf("Error during %s: %s", during, err.Error()))
+	config.TargetLogger.Error(fmt.Sprintf("Error during %s: %s", during, err.Error()))
 }
 
 func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig) error, options *Options) error {
@@ -122,7 +123,7 @@ func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTarg
 
 			if len(onlyTargets) > 0 {
 				if _, found := onlyTargets[tConfig.Name]; !found {
-					tConfig.Logger.Info("Skipping target", "success")
+					tConfig.TargetLogger.Info("Skipping target", "success")
 					continue
 				}
 			}
@@ -134,7 +135,7 @@ func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTarg
 				errorResult = multierror.Append(errorResult, err)
 
 				// In debug as the error should already be outputted, and we are ignoring it here.
-				tConfig.Logger.Debug("Error while executing target", "error", err.Error())
+				tConfig.TargetLogger.Debug("Error while executing target", "error", err.Error())
 			}
 		}
 	}
@@ -172,7 +173,7 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 	}
 
 	// Create a logger to add the target log name to each log message.
-	tConfig.Logger = baseconfig.BaseLogger.With("target", tConfig.Name)
+	tConfig.TargetLogger = baseconfig.BaseLogger.With("target", tConfig.Name)
 
 	// Merge with some global parameters
 	tConfig.SkipDataAccessSync = tConfig.SkipDataAccessSync || viper.GetBool(constants.SkipDataAccessSyncFlag)
@@ -281,7 +282,7 @@ func buildTargetConfigFromFlags(baseConfig *BaseConfig) *BaseTargetConfig {
 		SkipDataSourceSync:    viper.GetBool(constants.SkipDataSourceSyncFlag),
 		SkipDataAccessSync:    viper.GetBool(constants.SkipDataAccessSyncFlag),
 		SkipDataUsageSync:     viper.GetBool(constants.SkipDataUsageSyncFlag),
-		Logger:                baseConfig.BaseLogger.With("target", name),
+		TargetLogger:          baseConfig.BaseLogger.With("target", name),
 		DeleteUntouched:       true,
 		DeleteTempFiles:       true,
 		ReplaceTags:           true,

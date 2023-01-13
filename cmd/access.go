@@ -63,16 +63,16 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 		accessFile = defaultAccessFile
 	}
 
-	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.Logger)
+	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)
 	if err != nil {
-		targetConfig.Logger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
+		targetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
 		return err
 	}
 	defer client.Close()
 
 	as, err := client.GetAccessSyncer()
 	if err != nil {
-		targetConfig.Logger.Error(fmt.Sprintf("The plugin (%s) does not implement the AccessSyncer interface", targetConfig.ConnectorName))
+		targetConfig.TargetLogger.Error(fmt.Sprintf("The plugin (%s) does not implement the AccessSyncer interface", targetConfig.ConnectorName))
 		return err
 	}
 
@@ -87,7 +87,7 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 	}
 
 	sec := time.Since(start).Round(time.Millisecond)
-	targetConfig.Logger.Info(fmt.Sprintf("Finished execution in %s", sec), "success")
+	targetConfig.TargetLogger.Info(fmt.Sprintf("Finished execution in %s", sec), "success")
 
 	return nil
 }

@@ -68,6 +68,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 		baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 0)
 		err := executeSingleRun(baseConfig)
+
 		if err != nil {
 			os.Exit(1)
 		} else {
@@ -91,7 +92,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 			defer ticker.Stop()
 
 			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
-			//executeSingleRun(baseConfig) //nolint
+			executeSingleRun(baseConfig) //nolint
 
 			startListingToCliTriggers(ctx, baseConfig, cliTriggerChannel)
 

@@ -91,7 +91,6 @@ func triggerChannel(ctx context.Context, c *websocket.Conn) chan TriggerEvent {
 				}
 			}
 		}
-
 	}()
 
 	return resultChannel

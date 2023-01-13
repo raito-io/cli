@@ -17,7 +17,6 @@ type WebsocketCliTrigger struct {
 }
 
 func NewWebsocketCliTrigger(websocketUrl string) *WebsocketCliTrigger {
-
 	return &WebsocketCliTrigger{
 		websocketUrl: websocketUrl,
 	}

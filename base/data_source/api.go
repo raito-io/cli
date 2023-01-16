@@ -26,6 +26,10 @@ const (
 	View       = "view"
 	Column     = "column"
 	Dataset    = "dataset"
+	Bucket     = "bucket"
+	Object     = "object"
+	Folder     = "folder"
+	File       = "file"
 
 	/*
 		The list of global permissions

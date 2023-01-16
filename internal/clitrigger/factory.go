@@ -46,5 +46,5 @@ func createWebsocketTrigger(config *target.BaseConfig) (*WebsocketCliTrigger, er
 		return nil, nil
 	}
 
-	return NewWebsocketCliTrigger(result.CliTriggerUrl.Url), nil
+	return NewWebsocketCliTrigger(config, result.CliTriggerUrl.Url), nil
 }

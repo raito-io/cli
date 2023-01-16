@@ -94,7 +94,13 @@ func executeRun(cmd *cobra.Command, args []string) {
 			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
 			executeSingleRun(baseConfig) //nolint
 
-			startListingToCliTriggers(ctx, baseConfig, cliTriggerChannel)
+			cliTriggerCtx, cliTriggerCancel := context.WithCancel(ctx)
+
+			cliTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig, cliTriggerChannel)
+			defer func() {
+				cliTriggerCancel()
+				cliTrigger.Wait()
+			}()
 
 			it := 2
 			for {
@@ -343,17 +349,17 @@ func handleApUpdateTrigger(config *target.BaseConfig, apUpdate *clitrigger.ApUpd
 	}))
 }
 
-func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfig, outputChannel chan clitrigger.TriggerEvent) {
+func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfig, outputChannel chan clitrigger.TriggerEvent) clitrigger.CliTrigger {
 	cliTrigger, err := clitrigger.CreateCliTrigger(baseConfig)
 	if err != nil {
 		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
-		return
+		return nil
 	}
 
-	ch, err := cliTrigger.TriggerChannel(ctx, baseConfig)
+	ch := cliTrigger.TriggerChannel(ctx)
 	if err != nil {
 		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
-		return
+		return nil
 	}
 
 	go func() {
@@ -361,4 +367,6 @@ func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfi
 			outputChannel <- i
 		}
 	}()
+
+	return cliTrigger
 }

@@ -3,6 +3,7 @@ package clitrigger
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -12,103 +13,178 @@ import (
 	"github.com/raito-io/cli/internal/target"
 )
 
-type WebsocketCliTrigger struct {
+const heartbeatTimeout = time.Minute * 5
+
+type WebsocketClient struct {
+	wg           sync.WaitGroup
+	config       *target.BaseConfig
 	websocketUrl string
 }
 
-func NewWebsocketCliTrigger(websocketUrl string) *WebsocketCliTrigger {
-	return &WebsocketCliTrigger{
+func NewWebsocketClient(config *target.BaseConfig, websocketUrl string) *WebsocketClient {
+	return &WebsocketClient{
+		wg:           sync.WaitGroup{},
+		config:       config,
 		websocketUrl: websocketUrl,
 	}
 }
 
-func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context, config *target.BaseConfig) (chan TriggerEvent, error) {
+func (s *WebsocketClient) Start(ctx context.Context) (<-chan interface{}, error) {
 	options := websocket.DialOptions{
 		HTTPHeader: map[string][]string{},
 	}
 
-	err := auth.AddTokenToHeader(&options.HTTPHeader, config)
+	err := auth.AddTokenToHeader(&options.HTTPHeader, s.config)
 	if err != nil {
 		return nil, err
 	}
 
-	c, _, err := websocket.Dial(ctx, s.websocketUrl, &options)
+	conn, _, err := websocket.Dial(ctx, s.websocketUrl, &options)
 	if err != nil {
 		return nil, err
 	}
 
-	heartbeat(ctx, c, config.BaseLogger)
-
-	return triggerChannel(ctx, c), nil
+	s.heartbeat(ctx, conn)
+	return s.readMessageFromWebsocket(ctx, conn), nil
 }
 
-func heartbeat(ctx context.Context, c *websocket.Conn, logger hclog.Logger) {
+func (s *WebsocketClient) Wait() {
+	s.wg.Wait()
+}
+
+func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *websocket.Conn) <-chan interface{} {
+	ch := make(chan interface{})
+
+	pushToChannel := func(i interface{}) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case ch <- i:
+			return true
+		}
+	}
+
 	go func() {
+		s.wg.Add(1)
+		defer s.wg.Done()
+
+		defer close(ch)
+
+		_, msg, err := conn.Read(ctx)
+
+		if err != nil {
+			if !pushToChannel(err) {
+				return
+			}
+		}
+
+		triggerEvent := TriggerEvent{}
+		err = json.Unmarshal(msg, &triggerEvent)
+
+		if err != nil {
+			if !pushToChannel(err) {
+				return
+			}
+		}
+
+		pushToChannel(triggerEvent)
+	}()
+
+	return ch
+}
+
+func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) {
+	go func() {
+		s.wg.Add(1)
+		defer s.wg.Done()
+
+		defer conn.Close(websocket.StatusNormalClosure, "Closing websocket")
+
 		heartbeatMsg := []byte("{\"message\": \"heartbeat\"}")
 
-		ticker := time.NewTicker(time.Duration(9) * time.Minute)
-		defer ticker.Stop()
+		timer := time.NewTimer(heartbeatTimeout)
+
+		failed := 0
 
 		for {
 			select {
 			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				err := c.Write(ctx, websocket.MessageText, heartbeatMsg)
-				if err != nil {
-					return
-				}
 
-				logger.Debug("Send websocket heartbeat")
+				return
+			case <-timer.C:
+				s.config.BaseLogger.Debug("Send websocket heartbeat")
+				err := conn.Write(ctx, websocket.MessageText, heartbeatMsg)
+				if err != nil {
+					failed += 1
+					s.config.BaseLogger.Warn("Failed to connect with websocket for %d times", failed)
+
+					timer.Reset(time.Duration(2) * time.Second)
+
+					if failed >= 5 {
+						return
+					}
+
+					continue
+				} else {
+					failed = 0
+					timer.Reset(heartbeatTimeout)
+				}
 			}
 		}
 	}()
 }
 
-func triggerChannel(ctx context.Context, c *websocket.Conn) chan TriggerEvent {
-	resultChannel := make(chan TriggerEvent)
+type WebsocketCliTrigger struct {
+	client *WebsocketClient
+	logger hclog.Logger
+}
+
+func NewWebsocketCliTrigger(config *target.BaseConfig, websocketUrl string) *WebsocketCliTrigger {
+	return &WebsocketCliTrigger{
+		client: NewWebsocketClient(config, websocketUrl),
+		logger: config.BaseLogger,
+	}
+}
+
+func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context) <-chan TriggerEvent {
+	outputChannel := make(chan TriggerEvent)
 
 	go func() {
-		defer close(resultChannel)
-
-		internalChannel := make(chan interface{}, 1)
-		defer close(internalChannel)
-
-		defer c.CloseRead(ctx)
-
 		for {
-			go readMessageFromWebsocket(ctx, c, internalChannel)
-
 			select {
 			case <-ctx.Done():
 				return
-			case msg := <-internalChannel:
-				switch m := msg.(type) {
-				case error:
-					return
-				case TriggerEvent:
-					resultChannel <- m
+			default:
+				internalChannel, err := s.client.Start(ctx)
+				if err != nil {
+					if websocket.CloseStatus(err) > 0 {
+						s.logger.Warn("Failed to create websocket. Will try again: %s", err.Error())
+
+						continue
+					} else {
+						s.logger.Error("Failed to create websocket: %s", err.Error())
+
+						return
+					}
+				}
+
+				for msg := range internalChannel {
+					switch m := msg.(type) {
+					case error:
+						s.logger.Warn("Received error on websocket: %s", m.Error())
+
+						break
+					case TriggerEvent:
+						outputChannel <- m
+					}
 				}
 			}
 		}
 	}()
 
-	return resultChannel
+	return outputChannel
 }
 
-func readMessageFromWebsocket(ctx context.Context, c *websocket.Conn, ch chan interface{}) {
-	_, msg, err := c.Read(ctx)
-
-	if err != nil {
-		ch <- err
-	}
-
-	triggerEvent := TriggerEvent{}
-	err = json.Unmarshal(msg, &triggerEvent)
-
-	if err != nil {
-		ch <- err
-	}
-
-	ch <- triggerEvent
+func (s *WebsocketCliTrigger) Wait() {
+	s.client.Wait()
 }

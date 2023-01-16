@@ -2,16 +2,19 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/aws/smithy-go/ptr"
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/internal/access_provider"
+	"github.com/raito-io/cli/internal/clitrigger"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/data_source"
 	"github.com/raito-io/cli/internal/data_usage"
@@ -20,6 +23,8 @@ import (
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 )
+
+var lastAPSync *time.Time
 
 func initRunCommand(rootCmd *cobra.Command) {
 	var cmd = &cobra.Command{
@@ -34,12 +39,14 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.SkipIdentityStoreSyncFlag, false, "If set, the identity store synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipDataAccessSyncFlag, false, "If set, the data access information from Raito will not be synced to the data sources in the target list.")
 	cmd.PersistentFlags().Bool(constants.SkipDataUsageSyncFlag, false, "If set, the data usage information synchronization step to Raito will be skipped for each of the targets.")
+	cmd.PersistentFlags().Bool(constants.DisableWebsocketFlag, false, "If set, raito will not setup a websocket to trigger new syncs. This flag has only effect if frequency is set.")
 
 	BindFlag(constants.FrequencyFlag, cmd)
 	BindFlag(constants.SkipDataSourceSyncFlag, cmd)
 	BindFlag(constants.SkipIdentityStoreSyncFlag, cmd)
 	BindFlag(constants.SkipDataAccessSyncFlag, cmd)
 	BindFlag(constants.SkipDataUsageSyncFlag, cmd)
+	BindFlag(constants.DisableWebsocketFlag, cmd)
 
 	cmd.FParseErrWhitelist.UnknownFlags = true
 
@@ -49,11 +56,19 @@ func initRunCommand(rootCmd *cobra.Command) {
 func executeRun(cmd *cobra.Command, args []string) {
 	otherArgs := cmd.Flags().Args()
 
+	baseConfig, err := target.BuildBaseConfigFromFlags(hclog.L(), otherArgs)
+	if err != nil {
+		hclog.L().Error(err.Error())
+		os.Exit(1)
+	}
+
 	freq := viper.GetInt(constants.FrequencyFlag)
 	if freq <= 0 {
 		hclog.L().Info("Running synchronization just once.")
 
-		err := executeSingleRun(hclog.L().With("iteration", 0), otherArgs)
+		baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 0)
+		err := executeSingleRun(baseConfig)
+
 		if err != nil {
 			os.Exit(1)
 		} else {
@@ -64,18 +79,42 @@ func executeRun(cmd *cobra.Command, args []string) {
 		hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
 
 		ticker := time.NewTicker(time.Duration(freq) * time.Minute)
-		quit := make(chan struct{})
+
+		ctx, cancelFn := context.WithCancel(context.Background())
+
 		finished := make(chan struct{})
+		defer close(finished)
+
+		cliTriggerChannel := make(chan clitrigger.TriggerEvent)
+		defer close(cliTriggerChannel)
+
 		go func() {
-			executeSingleRun(hclog.L().With("iteration", 1), otherArgs) //nolint
+			defer ticker.Stop()
+
+			cliTriggerCtx, cliTriggerCancel := context.WithCancel(ctx)
+			cliTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig, cliTriggerChannel)
+
+			defer func() {
+				cliTriggerCancel()
+				cliTrigger.Wait()
+			}()
+
+			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
+			executeSingleRun(baseConfig) //nolint
+
 			it := 2
 			for {
 				select {
 				case <-ticker.C:
-					executeSingleRun(hclog.L().With("iteration", it), otherArgs) //nolint
+					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
+					executeSingleRun(baseConfig) //nolint
 					it++
-				case <-quit:
-					ticker.Stop()
+				case cliTrigger := <-cliTriggerChannel:
+					err := handleCliTrigger(baseConfig, &cliTrigger)
+					if err != nil {
+						baseConfig.BaseLogger.Warn("Cli Trigger failed: %s", err.Error())
+					}
+				case <-ctx.Done():
 					finished <- struct{}{}
 					return
 				}
@@ -87,7 +126,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 			text, _ := reader.ReadString('\n')
 			if strings.TrimSpace(strings.ToLower(text)) == "q" {
 				hclog.L().Info("Waiting for the current synchronization run to end ...")
-				quit <- struct{}{}
+				cancelFn()
 				break
 			} else {
 				hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
@@ -99,19 +138,19 @@ func executeRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func executeSingleRun(baseLogger hclog.Logger, otherArgs []string) error {
+func executeSingleRun(baseconfig *target.BaseConfig) error {
 	start := time.Now()
 
-	err := runSync(baseLogger, otherArgs)
+	err := runSync(baseconfig)
 
 	sec := time.Since(start).Round(time.Millisecond)
-	baseLogger.Info(fmt.Sprintf("Finished execution of all targets in %s", sec))
+	baseconfig.BaseLogger.Info(fmt.Sprintf("Finished execution of all targets in %s", sec))
 
 	return err
 }
 
-func runSync(baseLogger hclog.Logger, otherArgs []string) error {
-	return target.RunTargets(baseLogger, otherArgs, runTargetSync)
+func runSync(baseconfig *target.BaseConfig) error {
+	return target.RunTargets(baseconfig, runTargetSync)
 }
 
 func execute(targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
@@ -121,7 +160,7 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 	switch {
 	case skipSync:
 		taskEventUpdater.AddTaskEvent(job.Skipped)
-		cfg.Logger.Info("Skipping sync of " + syncTypeLabel)
+		cfg.TargetLogger.Info("Skipping sync of " + syncTypeLabel)
 	case targetID == "":
 		taskEventUpdater.AddTaskEvent(job.Skipped)
 
@@ -130,7 +169,7 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 			idField = "identity-store-id"
 		}
 
-		cfg.Logger.Info("No " + idField + " argument found. Skipping syncing of " + syncTypeLabel)
+		cfg.TargetLogger.Info("No " + idField + " argument found. Skipping syncing of " + syncTypeLabel)
 	default:
 		err := sync(cfg, syncTypeLabel, taskEventUpdater, syncTask, c, syncType, jobID)
 		if err != nil {
@@ -142,13 +181,13 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 }
 
 func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, syncTask job.Task, c plugin.PluginClient, syncType string, jobID string) error {
-	cfg.Logger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
+	cfg.TargetLogger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
 
 	taskEventUpdater.AddTaskEvent(job.Started)
 	syncParts := syncTask.GetParts()
 
 	for i, taskPart := range syncParts {
-		cfg.Logger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
+		cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
 
 		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater)
 		if err != nil {
@@ -163,7 +202,7 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 		}
 
 		if status == job.Queued {
-			cfg.Logger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
+			cfg.TargetLogger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
 		}
 
 		syncResult := taskPart.GetResultObject()
@@ -197,19 +236,19 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 }
 
 func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
-	targetConfig.Logger.Info("Executing target...")
+	targetConfig.TargetLogger.Info("Executing target...")
 
 	start := time.Now()
 
-	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.Logger)
+	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)
 	if err != nil {
-		targetConfig.Logger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
+		targetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
 		return err
 	}
 	defer client.Close()
 
 	jobID, _ := job.StartJob(targetConfig)
-	targetConfig.Logger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobID))
+	targetConfig.TargetLogger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobID))
 	job.UpdateJobEvent(targetConfig, jobID, job.InProgress, nil)
 
 	defer func() {
@@ -240,7 +279,7 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 		return err
 	}
 
-	targetConfig.Logger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
+	targetConfig.TargetLogger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
 
 	return nil
 }
@@ -263,6 +302,8 @@ func dataAccessSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 	if err != nil {
 		return err
 	}
+
+	lastAPSync = ptr.Time(time.Now())
 
 	return nil
 }
@@ -287,4 +328,41 @@ func dataSourceSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 	}
 
 	return nil
+}
+
+func handleCliTrigger(baseConfig *target.BaseConfig, triggerEvent *clitrigger.TriggerEvent) error {
+	if triggerEvent.ApUpdate != nil {
+		return handleApUpdateTrigger(baseConfig, triggerEvent.ApUpdate)
+	}
+
+	return nil
+}
+
+func handleApUpdateTrigger(config *target.BaseConfig, apUpdate *clitrigger.ApUpdate) error {
+	return target.RunTargets(config, runTargetSync, target.WithDataSourceIds(apUpdate.DataSourceNames...), target.WithConfigOption(func(targetConfig *target.BaseTargetConfig) {
+		targetConfig.SkipIdentityStoreSync = true
+		targetConfig.SkipDataSourceSync = true
+		targetConfig.SkipDataUsageSync = true
+
+		targetConfig.SkipDataAccessImport = true
+		targetConfig.ModifiedAfter = lastAPSync
+	}))
+}
+
+func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfig, outputChannel chan clitrigger.TriggerEvent) clitrigger.CliTrigger {
+	cliTrigger, err := clitrigger.CreateCliTrigger(baseConfig)
+	if err != nil {
+		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
+		return nil
+	}
+
+	ch := cliTrigger.TriggerChannel(ctx)
+
+	go func() {
+		for i := range ch {
+			outputChannel <- i
+		}
+	}()
+
+	return cliTrigger
 }

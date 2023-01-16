@@ -217,10 +217,13 @@ func writeTempFiles() (*os.File, *os.File) {
 func newIdentityStoreImporter(f1, f2 string) *IdentityStoreImporter {
 	isi := NewIdentityStoreImporter(&IdentityStoreImportConfig{
 		BaseTargetConfig: target.BaseTargetConfig{
-			Logger:    hclog.L(),
-			Domain:    "mydomain",
-			ApiUser:   "myuser",
-			ApiSecret: "mysecret",
+			TargetLogger: hclog.L(),
+			BaseConfig: target.BaseConfig{
+				Domain:     "mydomain",
+				ApiUser:    "myuser",
+				ApiSecret:  "mysecret",
+				BaseLogger: hclog.L(),
+			},
 		},
 		UserFile:        f1,
 		GroupFile:       f2,

@@ -31,7 +31,7 @@ type accessProviderFeedbackSync struct {
 }
 
 func NewAccessProviderFeedbackImporter(config *AccessProviderExportFeedbackConfig, statusUpdater job.TaskEventUpdater) AccessProviderExportFeedbackSync {
-	logger := config.Logger.With("AccessProvider", config.DataSourceId, "file", config.FeedbackFile)
+	logger := config.TargetLogger.With("AccessProvider", config.DataSourceId, "file", config.FeedbackFile)
 	apI := accessProviderFeedbackSync{config, logger, statusUpdater}
 
 	return &apI
@@ -85,7 +85,7 @@ func (i *accessProviderFeedbackSync) doImport(jobId string, fileKey string) (job
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
 	res := FeedbackResponse{}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseTargetConfig, &res)
+	_, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseConfig, &res)
 
 	if err != nil {
 		return job.Failed, "", fmt.Errorf("error while executing feedback import: %s", err.Error())

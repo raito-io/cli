@@ -11,7 +11,7 @@ import (
 )
 
 func SetMetaData(config target.BaseTargetConfig, metadata identity_store.MetaData) error {
-	logger := config.Logger.With("identitystore", config.IdentityStoreId)
+	logger := config.TargetLogger.With("identitystore", config.IdentityStoreId)
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "SetMetaData", "variables":{}, "query": "mutation SetMetaData {
@@ -25,7 +25,7 @@ func SetMetaData(config target.BaseTargetConfig, metadata identity_store.MetaDat
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 
-	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &config)
+	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &config.BaseConfig)
 	if err != nil {
 		return fmt.Errorf("error while executing SetIdentityStoreMetaData: %s", err.Error())
 	}

@@ -11,9 +11,9 @@ import (
 	"github.com/raito-io/cli/internal/version"
 )
 
-func doPost(host, path, body, contentType string, config *target.BaseTargetConfig) (*http.Response, error) {
+func doPost(host, path, body, contentType string, config *target.BaseConfig) (*http.Response, error) {
 	url := url.CreateRaitoURL(host, path)
-	config.Logger.Debug("Calling HTTP POST", "URL", url)
+	config.BaseLogger.Debug("Calling HTTP POST", "URL", url)
 	req, err := http.NewRequest("POST", url, strings.NewReader(body))
 
 	if err != nil {
@@ -38,13 +38,13 @@ func doPost(host, path, body, contentType string, config *target.BaseTargetConfi
 	return resp, nil
 }
 
-func DoPostToRaito(path, body, contentType string, config *target.BaseTargetConfig) (*http.Response, error) {
+func DoPostToRaito(path, body, contentType string, config *target.BaseConfig) (*http.Response, error) {
 	return doPost(url.GetRaitoURL(), path, body, contentType, config)
 }
 
-func doGet(host, path string, config *target.BaseTargetConfig) (*http.Response, error) {
+func doGet(host, path string, config *target.BaseConfig) (*http.Response, error) {
 	url := url.CreateRaitoURL(host, path)
-	config.Logger.Debug("Calling HTTP GET", "URL", url)
+	config.BaseLogger.Debug("Calling HTTP GET", "URL", url)
 	req, err := http.NewRequest("GET", url, http.NoBody)
 
 	if err != nil {
@@ -67,6 +67,6 @@ func doGet(host, path string, config *target.BaseTargetConfig) (*http.Response, 
 	return resp, nil
 }
 
-func DoGetToRaito(path string, config *target.BaseTargetConfig) (*http.Response, error) {
+func DoGetToRaito(path string, config *target.BaseConfig) (*http.Response, error) {
 	return doGet(url.GetRaitoURL(), path, config)
 }

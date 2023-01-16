@@ -44,7 +44,7 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, st
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
+	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
 
 	if s.TargetConfig.DeleteTempFiles {
 		defer os.RemoveAll(targetFile)
@@ -66,7 +66,7 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, st
 	}
 	duImporter := NewDataUsageImporter(&importerConfig, statusUpdater)
 
-	s.TargetConfig.Logger.Info("Fetching last synchronization date")
+	s.TargetConfig.TargetLogger.Info("Fetching last synchronization date")
 
 	lastUsed, err := duImporter.GetLastUsage()
 
@@ -79,14 +79,14 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, st
 	lastUsedValue := *lastUsed
 	syncerConfig.ConfigMap.Parameters["lastUsed"] = lastUsedValue.Format(time.RFC3339)
 
-	s.TargetConfig.Logger.Info("Fetching usage data from the data source")
+	s.TargetConfig.TargetLogger.Info("Fetching usage data from the data source")
 
 	res := dus.SyncDataUsage(&syncerConfig)
 	if res.Error != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.Logger.Info("Importing usage data into Raito")
+	s.TargetConfig.TargetLogger.Info("Importing usage data into Raito")
 
 	status, subtaskId, err := duImporter.TriggerImport(s.JobId)
 	if err != nil {
@@ -94,10 +94,10 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, st
 	}
 
 	if status == job.Queued {
-		s.TargetConfig.Logger.Info("Successfully queued import job. Wait until remote processing is done.")
+		s.TargetConfig.TargetLogger.Info("Successfully queued import job. Wait until remote processing is done.")
 	}
 
-	s.TargetConfig.Logger.Debug("Current status: %s", status.String())
+	s.TargetConfig.TargetLogger.Debug("Current status: %s", status.String())
 
 	return status, subtaskId, nil
 }
@@ -105,13 +105,13 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, st
 func (s *DataUsageSync) ProcessResults(results interface{}) error {
 	if duResult, ok := results.(*DataUsageImportResult); ok {
 		if duResult != nil && len(duResult.Warnings) > 0 {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Synced data usage with %d warnings (see below). %d statements added, %d failed", len(duResult.Warnings), duResult.StatementsAdded, duResult.StatementsFailed))
+			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Synced data usage with %d warnings (see below). %d statements added, %d failed", len(duResult.Warnings), duResult.StatementsAdded, duResult.StatementsFailed))
 
 			for _, warning := range duResult.Warnings {
-				s.TargetConfig.Logger.Warn(warning)
+				s.TargetConfig.TargetLogger.Warn(warning)
 			}
 		} else {
-			s.TargetConfig.Logger.Info(fmt.Sprintf("Successfully synced data usage. %d statements added, %d failed",
+			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced data usage. %d statements added, %d failed",
 				duResult.StatementsAdded, duResult.StatementsFailed))
 		}
 

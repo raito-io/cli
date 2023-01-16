@@ -45,6 +45,7 @@ func (s *WebsocketClient) Start(ctx context.Context) (<-chan interface{}, error)
 	}
 
 	s.heartbeat(ctx, conn)
+
 	return s.readMessageFromWebsocket(ctx, conn), nil
 }
 
@@ -64,8 +65,9 @@ func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *we
 		}
 	}
 
+	s.wg.Add(1)
+
 	go func() {
-		s.wg.Add(1)
 		defer s.wg.Done()
 
 		defer close(ch)
@@ -94,8 +96,9 @@ func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *we
 }
 
 func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) {
+	s.wg.Add(1)
+
 	go func() {
-		s.wg.Add(1)
 		defer s.wg.Done()
 
 		defer conn.Close(websocket.StatusNormalClosure, "Closing websocket")
@@ -109,10 +112,10 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) {
 		for {
 			select {
 			case <-ctx.Done():
-
 				return
 			case <-timer.C:
 				s.config.BaseLogger.Debug("Send websocket heartbeat")
+
 				err := conn.Write(ctx, websocket.MessageText, heartbeatMsg)
 				if err != nil {
 					failed += 1
@@ -169,13 +172,18 @@ func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context) <-chan Trigger
 				}
 
 				for msg := range internalChannel {
+					receiveErr := false
+
 					switch m := msg.(type) {
 					case error:
 						s.logger.Warn("Received error on websocket: %s", m.Error())
-
-						break
+						receiveErr = true
 					case TriggerEvent:
 						outputChannel <- m
+					}
+
+					if receiveErr {
+						break
 					}
 				}
 			}

@@ -357,10 +357,6 @@ func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfi
 	}
 
 	ch := cliTrigger.TriggerChannel(ctx)
-	if err != nil {
-		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
-		return nil
-	}
 
 	go func() {
 		for i := range ch {

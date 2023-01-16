@@ -91,16 +91,16 @@ func executeRun(cmd *cobra.Command, args []string) {
 		go func() {
 			defer ticker.Stop()
 
-			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
-			executeSingleRun(baseConfig) //nolint
-
 			cliTriggerCtx, cliTriggerCancel := context.WithCancel(ctx)
-
 			cliTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig, cliTriggerChannel)
+
 			defer func() {
 				cliTriggerCancel()
 				cliTrigger.Wait()
 			}()
+
+			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
+			executeSingleRun(baseConfig) //nolint
 
 			it := 2
 			for {

@@ -111,10 +111,12 @@ func (d *accessProviderExporter) doExport(jobId string) (job.JobStatus, string, 
 
 	filter := ""
 
-	if d.config.ModifiedAfter != nil {
-		filter = fmt.Sprintf(`, filter : {
-					modifiedAfter: \"%s\"
-			    }`, d.config.ModifiedAfter.Format(time.RFC3339))
+	if d.config.OnlyOutOfSyncData {
+		filter = `, filter : {
+					status: {
+					   outOfSync: true
+					}
+			    }`
 	}
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ExportAccessProvidersRequest", "variables":{}, "query": "query ExportAccessProvidersRequest {
@@ -132,6 +134,7 @@ func (d *accessProviderExporter) doExport(jobId string) (job.JobStatus, string, 
     }" }"`, jobId, d.config.DataSourceId, filter)
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
+	gqlQuery = strings.Replace(gqlQuery, "\t", "\\t", -1)
 
 	res := exportResponse{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseConfig, &res)

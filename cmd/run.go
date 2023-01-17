@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/smithy-go/ptr"
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -23,8 +22,6 @@ import (
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 )
-
-var lastAPSync *time.Time
 
 func initRunCommand(rootCmd *cobra.Command) {
 	var cmd = &cobra.Command{
@@ -303,8 +300,6 @@ func dataAccessSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 		return err
 	}
 
-	lastAPSync = ptr.Time(time.Now())
-
 	return nil
 }
 
@@ -345,7 +340,7 @@ func handleApUpdateTrigger(config *target.BaseConfig, apUpdate *clitrigger.ApUpd
 		targetConfig.SkipDataUsageSync = true
 
 		targetConfig.SkipDataAccessImport = true
-		targetConfig.ModifiedAfter = lastAPSync
+		targetConfig.OnlyOutOfSyncData = true
 	}))
 }
 

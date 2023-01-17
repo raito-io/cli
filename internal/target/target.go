@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
@@ -38,7 +37,7 @@ type BaseTargetConfig struct {
 	SkipDataAccessSync    bool
 	SkipDataUsageSync     bool
 
-	ModifiedAfter        *time.Time
+	OnlyOutOfSyncData    bool
 	SkipDataAccessImport bool
 
 	DeleteUntouched bool

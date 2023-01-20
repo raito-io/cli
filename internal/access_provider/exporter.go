@@ -53,10 +53,14 @@ func (d *accessProviderExporter) TriggerExport(jobId string) (job.JobStatus, str
 	}
 
 	result := &AccessProviderExportResult{}
-	_, err = job.WaitForJobToComplete(jobId, constants.DataAccessSync, subTaskId, result, &d.config.BaseTargetConfig, status)
+	subtask, err := job.WaitForJobToComplete(jobId, constants.DataAccessSync, subTaskId, result, &d.config.BaseTargetConfig, status)
 
 	if err != nil {
 		return job.Failed, "", err
+	}
+
+	if subtask.Status == job.Failed {
+		return job.Failed, "", fmt.Errorf("export failed on server: [%s]", strings.Join(subtask.Errors, ", "))
 	}
 
 	result.FileLocation, err = d.download(result.FileLocation)

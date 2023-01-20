@@ -64,7 +64,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 		hclog.L().Info("Running synchronization just once.")
 
 		baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 0)
-		err := executeSingleRun(baseConfig)
+		err = executeSingleRun(baseConfig)
 
 		if err != nil {
 			os.Exit(1)

@@ -97,14 +97,19 @@ func executeRun(cmd *cobra.Command, args []string) {
 			}()
 
 			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
-			executeSingleRun(baseConfig) //nolint
+			if runErr := executeSingleRun(baseConfig); err != nil {
+				baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
+			}
 
 			it := 2
 			for {
 				select {
 				case <-ticker.C:
 					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
-					executeSingleRun(baseConfig) //nolint
+					if runErr := executeSingleRun(baseConfig); err != nil {
+						baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
+					}
+
 					it++
 				case cliTrigger := <-cliTriggerChannel:
 					err := handleCliTrigger(baseConfig, &cliTrigger)
@@ -177,7 +182,13 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 	return nil
 }
 
-func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, syncTask job.Task, c plugin.PluginClient, syncType string, jobID string) error {
+func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, syncTask job.Task, c plugin.PluginClient, syncType string, jobID string) (err error) {
+	defer func() {
+		if err != nil {
+			cfg.TargetLogger.Error(fmt.Sprintf("Synchronizing %s failed: %s", syncTypeLabel, err.Error()))
+		}
+	}()
+
 	cfg.TargetLogger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
 
 	taskEventUpdater.AddTaskEvent(job.Started)

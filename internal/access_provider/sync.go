@@ -171,11 +171,12 @@ func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(client plugin.Plugin
 }
 
 // Export data from Raito to DS
-func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (jobStatus job.JobStatus, subTaskId string, returnErr error) {
+func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (_ job.JobStatus, _ string, returnErr error) {
 	subTaskUpdater := statusUpdater.GetSubtaskEventUpdater(constants.SubtaskAccessSync)
 
 	defer func() {
 		if returnErr != nil {
+			s.TargetConfig.TargetLogger.Error(fmt.Sprintf("Access provider sync failed due to error: %s", returnErr.Error()))
 			subTaskUpdater.AddSubtaskEvent(job.Failed)
 		} else {
 			subTaskUpdater.AddSubtaskEvent(job.Completed)

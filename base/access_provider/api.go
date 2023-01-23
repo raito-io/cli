@@ -1,6 +1,9 @@
 package access_provider
 
 import (
+	"fmt"
+
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 
 	"github.com/raito-io/cli/base/util/config"
@@ -33,11 +36,22 @@ type AccessSyncResult struct {
 	Error *error2.ErrorResult
 }
 
+// AccessSyncConfig gives us information on how the CLI can sync access providers
+type AccessSyncConfig struct {
+	// SupportPartialSync if true, syncing only out of sync access providers is allowed
+	SupportPartialSync bool
+
+	// SupportDeleteOnNameSync if true, access providers can be deleted by name only
+	SupportDeleteOnNameSync bool
+}
+
 // AccessSyncer interface needs to be implemented by any plugin that wants to sync access controls between Raito and the data source.
 // This sync can be in the 2 directions or in just 1 depending on the parameters set in AccessSyncConfig.
 type AccessSyncer interface {
 	SyncFromTarget(config *AccessSyncFromTarget) AccessSyncResult
 	SyncToTarget(config *AccessSyncToTarget) AccessSyncResult
+
+	SyncConfig() AccessSyncConfig
 }
 
 // AccessSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -83,6 +97,18 @@ func (g *accessSyncerRPC) SyncToTarget(config *AccessSyncToTarget) AccessSyncRes
 	return resp
 }
 
+func (g *accessSyncerRPC) SyncConfig() AccessSyncConfig {
+	var resp AccessSyncConfig
+
+	err := g.client.Call("Plugin.SyncConfig", new(interface{}), &resp)
+	if err != nil {
+		hclog.L().Warn(fmt.Sprintf("Failed to load sync config from plugin. Will use default settings. %s", err.Error()))
+		return AccessSyncConfig{}
+	}
+
+	return resp
+}
+
 type accessSyncerRPCServer struct {
 	Impl AccessSyncer
 }
@@ -94,5 +120,10 @@ func (s *accessSyncerRPCServer) SyncToTarget(config *AccessSyncToTarget, resp *A
 
 func (s *accessSyncerRPCServer) SyncFromTarget(config *AccessSyncFromTarget, resp *AccessSyncResult) error {
 	*resp = s.Impl.SyncFromTarget(config)
+	return nil
+}
+
+func (s *accessSyncerRPCServer) SyncConfig(args interface{}, resp *AccessSyncConfig) error {
+	*resp = s.Impl.SyncConfig()
 	return nil
 }

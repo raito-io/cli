@@ -3,9 +3,10 @@
 package wrappers
 
 import (
-	context "context"
-
+	access_provider "github.com/raito-io/cli/base/access_provider"
 	config "github.com/raito-io/cli/base/util/config"
+
+	context "context"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -140,6 +141,42 @@ func (_c *MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call) Run(run f
 }
 
 func (_c *MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call) Return(_a0 error) *MockAccessProviderSyncer_SyncAccessProvidersFromTarget_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+// SyncConfig provides a mock function with given fields:
+func (_m *MockAccessProviderSyncer) SyncConfig() access_provider.AccessSyncConfig {
+	ret := _m.Called()
+
+	var r0 access_provider.AccessSyncConfig
+	if rf, ok := ret.Get(0).(func() access_provider.AccessSyncConfig); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(access_provider.AccessSyncConfig)
+	}
+
+	return r0
+}
+
+// MockAccessProviderSyncer_SyncConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SyncConfig'
+type MockAccessProviderSyncer_SyncConfig_Call struct {
+	*mock.Call
+}
+
+// SyncConfig is a helper method to define mock.On call
+func (_e *MockAccessProviderSyncer_Expecter) SyncConfig() *MockAccessProviderSyncer_SyncConfig_Call {
+	return &MockAccessProviderSyncer_SyncConfig_Call{Call: _e.mock.On("SyncConfig")}
+}
+
+func (_c *MockAccessProviderSyncer_SyncConfig_Call) Run(run func()) *MockAccessProviderSyncer_SyncConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockAccessProviderSyncer_SyncConfig_Call) Return(_a0 access_provider.AccessSyncConfig) *MockAccessProviderSyncer_SyncConfig_Call {
 	_c.Call.Return(_a0)
 	return _c
 }

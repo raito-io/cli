@@ -176,6 +176,10 @@ func (s *accessSyncPlugin) SyncToTarget(config *access_provider.AccessSyncToTarg
 	return access_provider.AccessSyncResult{}
 }
 
+func (s *accessSyncPlugin) SyncConfig() access_provider.AccessSyncConfig {
+	return access_provider.AccessSyncConfig{}
+}
+
 type infoPlugin struct{}
 
 func (s *infoPlugin) PluginInfo() plugin.PluginInfo {

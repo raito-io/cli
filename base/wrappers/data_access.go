@@ -27,6 +27,7 @@ type AccessProviderSyncer interface {
 	SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler AccessProviderHandler, configMap *config.ConfigMap) error
 	SyncAccessAsCodeToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, prefix string, configMap *config.ConfigMap) error
 	SyncAccessProviderToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, accessProviderFeedbackHandler AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
+	SyncConfig() access_provider.AccessSyncConfig
 }
 
 func DataAccessSync(syncer AccessProviderSyncer) *DataAccessSyncFunction {
@@ -125,6 +126,10 @@ func (s *DataAccessSyncFunction) SyncToTarget(config *access_provider.AccessSync
 	logger.Info(fmt.Sprintf("Successfully synced access providers to target in %s", sec))
 
 	return access_provider.AccessSyncResult{}
+}
+
+func (s *DataAccessSyncFunction) SyncConfig() access_provider.AccessSyncConfig {
+	return s.Syncer.SyncConfig()
 }
 
 func mapErrorToAccessSyncResult(err error) access_provider.AccessSyncResult {

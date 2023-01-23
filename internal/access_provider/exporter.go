@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 
+	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
@@ -36,11 +37,12 @@ type accessProviderExporter struct {
 	config        *AccessProviderExporterConfig
 	log           hclog.Logger
 	statusUpdater job.TaskEventUpdater
+	syncConfig    access_provider.AccessSyncConfig
 }
 
-func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdater job.TaskEventUpdater) AccessProviderExporter {
+func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdater job.TaskEventUpdater, syncConfig access_provider.AccessSyncConfig) AccessProviderExporter {
 	logger := config.TargetLogger.With("AccessProviderExport", config.DataSourceId)
-	dsI := accessProviderExporter{config, logger, statusUpdater}
+	dsI := accessProviderExporter{config, logger, statusUpdater, syncConfig}
 
 	return &dsI
 }
@@ -115,13 +117,15 @@ func (d *accessProviderExporter) doExport(jobId string) (job.JobStatus, string, 
 
 	filter := ""
 
-	if d.config.OnlyOutOfSyncData {
+	if d.config.OnlyOutOfSyncData && d.syncConfig.SupportPartialSync {
 		filter = `, filter : {
 					status: {
 					   outOfSync: true
 					}
 			    }`
 	}
+
+	//TODO add gql options to support name only delete
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ExportAccessProvidersRequest", "variables":{}, "query": "query ExportAccessProvidersRequest {
         exportAccessProvidersRequest(input: {

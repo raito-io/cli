@@ -185,11 +185,18 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 
 	subTaskUpdater.AddSubtaskEvent(job.Started)
 
+	s.TargetConfig.TargetLogger.Info("Loading plugin")
+
+	das, err := client.GetAccessSyncer()
+	if err != nil {
+		return job.Failed, "", err
+	}
+
 	s.TargetConfig.TargetLogger.Info("Fetching access providers for this data source from Raito")
 
 	statusUpdater.AddTaskEvent(job.DataRetrieve)
 
-	daExporter := NewAccessProviderExporter(&AccessProviderExporterConfig{BaseTargetConfig: *s.TargetConfig}, statusUpdater)
+	daExporter := NewAccessProviderExporter(&AccessProviderExporterConfig{BaseTargetConfig: *s.TargetConfig}, statusUpdater, das.SyncConfig())
 
 	_, dar, err := daExporter.TriggerExport(*s.JobId)
 
@@ -212,11 +219,6 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 		Prefix:             "",
 		SourceFile:         dar,
 		FeedbackTargetFile: targetFile,
-	}
-
-	das, err := client.GetAccessSyncer()
-	if err != nil {
-		return job.Failed, "", err
 	}
 
 	s.TargetConfig.TargetLogger.Info("Synchronizing access providers between Raito and the data source")

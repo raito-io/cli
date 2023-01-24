@@ -41,8 +41,8 @@ type AccessSyncConfig struct {
 	// SupportPartialSync if true, syncing only out of sync access providers is allowed
 	SupportPartialSync bool
 
-	// SupportDeleteOnNameSync if true, access providers can be deleted by name only
-	SupportDeleteOnNameSync bool
+	// ImplicitDeleteInAccessProviderUpdate if true, access providers can be deleted by name only
+	ImplicitDeleteInAccessProviderUpdate bool
 }
 
 // AccessSyncer interface needs to be implemented by any plugin that wants to sync access controls between Raito and the data source.
@@ -126,4 +126,16 @@ func (s *accessSyncerRPCServer) SyncFromTarget(config *AccessSyncFromTarget, res
 func (s *accessSyncerRPCServer) SyncConfig(args interface{}, resp *AccessSyncConfig) error {
 	*resp = s.Impl.SyncConfig()
 	return nil
+}
+
+func WithSupportPartialSync() func(config *AccessSyncConfig) {
+	return func(config *AccessSyncConfig) {
+		config.SupportPartialSync = true
+	}
+}
+
+func WithImplicitDeleteInAccessProviderUpdate() func(config *AccessSyncConfig) {
+	return func(config *AccessSyncConfig) {
+		config.ImplicitDeleteInAccessProviderUpdate = true
+	}
 }

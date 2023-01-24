@@ -27,15 +27,22 @@ type AccessProviderSyncer interface {
 	SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler AccessProviderHandler, configMap *config.ConfigMap) error
 	SyncAccessAsCodeToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, prefix string, configMap *config.ConfigMap) error
 	SyncAccessProviderToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, accessProviderFeedbackHandler AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
-	SyncConfig() access_provider.AccessSyncConfig
 }
 
-func DataAccessSync(syncer AccessProviderSyncer) *DataAccessSyncFunction {
+func DataAccessSync(syncer AccessProviderSyncer, configOpt ...func(config *access_provider.AccessSyncConfig)) *DataAccessSyncFunction {
+	config := access_provider.AccessSyncConfig{}
+
+	for _, fn := range configOpt {
+		fn(&config)
+	}
+
 	return &DataAccessSyncFunction{
 		Syncer:                           syncer,
 		accessFileCreatorFactory:         sync_from_target.NewAccessProviderFileCreator,
 		accessFeedbackFileCreatorFactory: sync_to_target.NewFeedbackFileCreator,
 		accessProviderParserFactory:      sync_to_target.NewAccessProviderFileParser,
+
+		config: config,
 	}
 }
 
@@ -44,6 +51,8 @@ type DataAccessSyncFunction struct {
 	accessFileCreatorFactory         func(config *access_provider.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error)
 	accessFeedbackFileCreatorFactory func(config *access_provider.AccessSyncToTarget) (sync_to_target.SyncFeedbackFileCreator, error)
 	accessProviderParserFactory      func(config *access_provider.AccessSyncToTarget) (sync_to_target.AccessProviderImportFileParser, error)
+
+	config access_provider.AccessSyncConfig
 }
 
 func (s *DataAccessSyncFunction) SyncFromTarget(config *access_provider.AccessSyncFromTarget) access_provider.AccessSyncResult {
@@ -129,7 +138,7 @@ func (s *DataAccessSyncFunction) SyncToTarget(config *access_provider.AccessSync
 }
 
 func (s *DataAccessSyncFunction) SyncConfig() access_provider.AccessSyncConfig {
-	return s.Syncer.SyncConfig()
+	return s.config
 }
 
 func mapErrorToAccessSyncResult(err error) access_provider.AccessSyncResult {

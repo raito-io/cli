@@ -20,29 +20,19 @@ type AccessProviderRoleSyncer interface {
 }
 
 func AccessProviderRoleSync(syncer AccessProviderRoleSyncer, namingConstraints naming_hint.NamingConstraints, configOpt ...func(config *access_provider.AccessSyncConfig)) *wrappers.DataAccessSyncFunction {
-	config := access_provider.AccessSyncConfig{
-		SupportDeleteOnNameSync: true,
-		SupportPartialSync:      true,
-	}
-
-	for _, fn := range configOpt {
-		fn(&config)
-	}
+	configOpt = append([]func(config *access_provider.AccessSyncConfig){access_provider.WithSupportPartialSync(), access_provider.WithImplicitDeleteInAccessProviderUpdate()}, configOpt...)
 
 	roleSync := &accessProviderRoleSyncFunction{
 		syncer:            syncer,
 		namingConstraints: namingConstraints,
-		config:            config,
 	}
 
-	return wrappers.DataAccessSync(roleSync)
+	return wrappers.DataAccessSync(roleSync, configOpt...)
 }
 
 type accessProviderRoleSyncFunction struct {
 	syncer            AccessProviderRoleSyncer
 	namingConstraints naming_hint.NamingConstraints
-
-	config access_provider.AccessSyncConfig
 }
 
 func (s *accessProviderRoleSyncFunction) SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler wrappers.AccessProviderHandler, configMap *config.ConfigMap) error {
@@ -123,8 +113,4 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 	}
 
 	return s.syncer.SyncAccessProvidersToTarget(ctx, rolesToRemove, apMap, accessProviderFeedbackHandler, configMap)
-}
-
-func (s *accessProviderRoleSyncFunction) SyncConfig() access_provider.AccessSyncConfig {
-	return s.config
 }

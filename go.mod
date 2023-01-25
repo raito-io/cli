@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/go-hclog v1.2.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.4.3
-	github.com/hashicorp/go-retryablehttp v0.7.0
+	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/jinzhu/copier v0.3.5
 	github.com/pterm/pterm v0.12.36
 	github.com/spf13/cobra v1.4.0

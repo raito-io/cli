@@ -1,0 +1,46 @@
+# Enable dependabot, a tool to automatically propose dependency updates
+
+# Copyright the Linux Foundation and the CII Best Practices badge contributors
+# SPDX-License-Identifier: MIT
+
+# It's possible to enable dependabot via just GitHub project settings,
+# and we did that for a while. However, when a project does that,
+# it's harder for others (such as OpenSSF Scorecard) to realize or verify
+# that the project has dependabot enabled. Creating this dependabot.yml
+# file makes easier to *verify* that automatic dependency update proposals
+# are happening. This also gives finer-grained control.
+
+# For more information, see:
+# https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  # Keep our GitHub actions up to date.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      # Every weekday
+      interval: 'weekly'
+    labels:
+      - 'deployment'
+      - 'dependencies'
+    pull-request-branch-name:
+      # Separate sections of the branch name with a hyphen
+      # for example, `dependabot-npm_and_yarn-next_js-acorn-6.4.1`
+      separator: '-'
+    reviewers:
+      - '@raito-io/back-end'
+  # Maintain dependencies for npm
+  - package-ecosystem: 'gomod'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    labels:
+      - 'gomod'
+      - 'dependencies'
+    pull-request-branch-name:
+      # Separate sections of the branch name with a hyphen
+      # for example, `dependabot-npm_and_yarn-next_js-acorn-6.4.1`
+      separator: '-'
+    reviewers:
+      - '@raito-io/back-end'

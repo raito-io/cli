@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target/naming_hint"
 	"github.com/raito-io/cli/base/util/config"
@@ -18,13 +19,15 @@ type AccessProviderRoleSyncer interface {
 	SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, prefix string, configMap *config.ConfigMap) error
 }
 
-func AccessProviderRoleSync(syncer AccessProviderRoleSyncer, namingConstraints naming_hint.NamingConstraints) *wrappers.DataAccessSyncFunction {
+func AccessProviderRoleSync(syncer AccessProviderRoleSyncer, namingConstraints naming_hint.NamingConstraints, configOpt ...func(config *access_provider.AccessSyncConfig)) *wrappers.DataAccessSyncFunction {
+	configOpt = append([]func(config *access_provider.AccessSyncConfig){access_provider.WithSupportPartialSync(), access_provider.WithImplicitDeleteInAccessProviderUpdate()}, configOpt...)
+
 	roleSync := &accessProviderRoleSyncFunction{
 		syncer:            syncer,
 		namingConstraints: namingConstraints,
 	}
 
-	return wrappers.DataAccessSync(roleSync)
+	return wrappers.DataAccessSync(roleSync, configOpt...)
 }
 
 type accessProviderRoleSyncFunction struct {

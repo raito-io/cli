@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.9
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.15.3
-	github.com/hashicorp/go-hclog v1.2.0
+	github.com/hashicorp/go-hclog v1.4.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.4.8
 	github.com/hashicorp/go-retryablehttp v0.7.2

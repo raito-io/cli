@@ -3,8 +3,9 @@ package data_source
 import (
 	"testing"
 
-	"github.com/raito-io/cli/base/data_source"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/raito-io/cli/base/data_source"
 )
 
 func TestFixMetaData(t *testing.T) {
@@ -34,7 +35,7 @@ func TestFixMetaData(t *testing.T) {
 					Permissions: []data_source.DataObjectTypePermission{
 						{
 							Permission:        "SELECT",
-							GlobalPermissions: []string{},
+							GlobalPermissions: []data_source.GlobalPermissionLiteral{},
 							Description:       "test",
 						},
 					},

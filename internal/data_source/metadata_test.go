@@ -35,7 +35,7 @@ func TestFixMetaData(t *testing.T) {
 					Permissions: []data_source.DataObjectTypePermission{
 						{
 							Permission:        "SELECT",
-							GlobalPermissions: []data_source.GlobalPermissionLiteral{},
+							GlobalPermissions: data_source.GlobalPermissionSet{},
 							Description:       "test",
 						},
 					},

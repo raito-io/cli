@@ -37,12 +37,11 @@ const (
 type GlobalPermission string
 
 const (
-	readGlobalPermission     GlobalPermission = "read"
-	writeGlobalPermission    GlobalPermission = "write"
-	insertGlobalPermission   GlobalPermission = "insert"
-	updateGlobalPermission   GlobalPermission = "update"
-	deleteGlobalPermission   GlobalPermission = "delete"
-	truncateGlobalPermission GlobalPermission = "truncate"
+	readGlobalPermission   GlobalPermission = "read"
+	writeGlobalPermission  GlobalPermission = "write"
+	insertGlobalPermission GlobalPermission = "insert"
+	updateGlobalPermission GlobalPermission = "update"
+	deleteGlobalPermission GlobalPermission = "delete"
 )
 
 type GlobalPermissionSet map[GlobalPermission]struct{}
@@ -137,18 +136,9 @@ func DeleteGlobalPermission() GlobalPermissionSet {
 	return set
 }
 
-// TruncateGlobalPermission Get rights to delete data
-func TruncateGlobalPermission() GlobalPermissionSet {
-	set := DeleteGlobalPermission()
-	set.Append(truncateGlobalPermission)
-
-	return set
-}
-
 // ReadGlobalPermission Get access to read the data
 func ReadGlobalPermission() GlobalPermissionSet {
 	set := JoinGlobalPermissionsSets(
-		TruncateGlobalPermission(),
 		DeleteGlobalPermission(),
 		UpdateGlobalPermission(),
 		InsertGlobalPermission(),

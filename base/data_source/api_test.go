@@ -39,14 +39,6 @@ func TestDeleteGlobalPermission(t *testing.T) {
 	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{writeGlobalPermission, deleteGlobalPermission})
 }
 
-func TestTruncateGlobalPermission(t *testing.T) {
-	// When
-	permissions := TruncateGlobalPermission()
-
-	// Then
-	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{writeGlobalPermission, deleteGlobalPermission, truncateGlobalPermission})
-}
-
 func TestReadGlobalPermission(t *testing.T) {
 	// When
 	permissions := ReadGlobalPermission()

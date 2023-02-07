@@ -1,9 +1,11 @@
 package data_source
 
 import (
+	"encoding/json"
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
+
 	"github.com/raito-io/cli/base/util/config"
 	error2 "github.com/raito-io/cli/base/util/error"
 )
@@ -30,13 +32,122 @@ const (
 	Object     = "object"
 	Folder     = "folder"
 	File       = "file"
-
-	/*
-		The list of global permissions
-	*/
-	Write = "write"
-	Read  = "read"
 )
+
+type GlobalPermission string
+
+const (
+	readGlobalPermission   GlobalPermission = "read"
+	writeGlobalPermission  GlobalPermission = "write"
+	insertGlobalPermission GlobalPermission = "insert"
+	updateGlobalPermission GlobalPermission = "update"
+	deleteGlobalPermission GlobalPermission = "delete"
+)
+
+type GlobalPermissionSet map[GlobalPermission]struct{}
+
+func CreateGlobalPermissionSet(permissions ...GlobalPermission) GlobalPermissionSet {
+	res := make(GlobalPermissionSet)
+	for _, p := range permissions {
+		res[p] = struct{}{}
+	}
+
+	return res
+}
+
+func (s GlobalPermissionSet) Values() []GlobalPermission {
+	result := make([]GlobalPermission, 0, len(s))
+
+	for permission := range s {
+		result = append(result, permission)
+	}
+
+	return result
+}
+
+func (s GlobalPermissionSet) Append(permission ...GlobalPermission) {
+	for _, p := range permission {
+		s[p] = struct{}{}
+	}
+}
+
+func JoinGlobalPermissionsSets(sets ...GlobalPermissionSet) GlobalPermissionSet {
+	res := make(GlobalPermissionSet)
+
+	for _, set := range sets {
+		for permission := range set {
+			res[permission] = struct{}{}
+		}
+	}
+
+	return res
+}
+
+func (s GlobalPermissionSet) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.Values())
+}
+
+func (s *GlobalPermissionSet) UnmarshalJSON(data []byte) error {
+	var permissions []GlobalPermission
+
+	if err := json.Unmarshal(data, &permissions); err != nil {
+		return err
+	}
+
+	*s = make(map[GlobalPermission]struct{})
+
+	for _, permission := range permissions {
+		(*s)[permission] = struct{}{}
+	}
+
+	return nil
+}
+
+/*
+The list of global permissions
+*/
+
+// WriteGlobalPermission Get all rights to (over)write data
+func WriteGlobalPermission() GlobalPermissionSet {
+	return CreateGlobalPermissionSet(writeGlobalPermission)
+}
+
+// InsertGlobalPermission Get rights to add data
+func InsertGlobalPermission() GlobalPermissionSet {
+	set := WriteGlobalPermission()
+	set.Append(insertGlobalPermission)
+
+	return set
+}
+
+// UpdateGlobalPermission Get rights to modify data, not to delete a row
+func UpdateGlobalPermission() GlobalPermissionSet {
+	set := WriteGlobalPermission()
+	set.Append(updateGlobalPermission)
+
+	return set
+}
+
+// DeleteGlobalPermission Get all rights to delete data and the table
+func DeleteGlobalPermission() GlobalPermissionSet {
+	set := WriteGlobalPermission()
+	set.Append(deleteGlobalPermission)
+
+	return set
+}
+
+// ReadGlobalPermission Get access to read the data
+func ReadGlobalPermission() GlobalPermissionSet {
+	set := JoinGlobalPermissionsSets(
+		DeleteGlobalPermission(),
+		UpdateGlobalPermission(),
+		InsertGlobalPermission(),
+		WriteGlobalPermission(),
+	)
+	set.Append(readGlobalPermission)
+
+	return set
+}
 
 // DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.
 // It contains all the necessary configuration parameters for the plugin to function.
@@ -62,9 +173,9 @@ type DataObjectType struct {
 }
 
 type DataObjectTypePermission struct {
-	Permission        string   `json:"permission"`
-	GlobalPermissions []string `json:"globalPermissions,omitempty"`
-	Description       string   `json:"description"`
+	Permission        string              `json:"permission"`
+	GlobalPermissions GlobalPermissionSet `json:"globalPermissions,omitempty"`
+	Description       string              `json:"description"`
 }
 
 type MetaData struct {

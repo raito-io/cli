@@ -44,7 +44,7 @@ func TestReadGlobalPermission(t *testing.T) {
 	permissions := ReadGlobalPermission()
 
 	// Then
-	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{readGlobalPermission, writeGlobalPermission, deleteGlobalPermission, truncateGlobalPermission, updateGlobalPermission, insertGlobalPermission})
+	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{readGlobalPermission, writeGlobalPermission, deleteGlobalPermission, updateGlobalPermission, insertGlobalPermission})
 }
 
 func TestCreateGlobalPermissionSet(t *testing.T) {

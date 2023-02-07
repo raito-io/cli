@@ -74,6 +74,7 @@ func (s GlobalPermissionSet) Append(permission ...GlobalPermission) {
 
 func JoinGlobalPermissionsSets(sets ...GlobalPermissionSet) GlobalPermissionSet {
 	res := make(GlobalPermissionSet)
+
 	for _, set := range sets {
 		for permission := range set {
 			res[permission] = struct{}{}

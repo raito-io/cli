@@ -176,6 +176,7 @@ type DataObjectTypePermission struct {
 	Permission        string              `json:"permission"`
 	GlobalPermissions GlobalPermissionSet `json:"globalPermissions,omitempty"`
 	Description       string              `json:"description"`
+	Action            []string            `json:"action,omitempty"`
 }
 
 type MetaData struct {

@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	version = "dev"
+	version = v.DevVersion.String()
 	date    = ""
 )
 
 func main() {
 	v.SetVersion(version, date)
-	cmd.Execute(v.GetVersion(), os.Args[1:], os.Exit)
+	cmd.Execute(v.GetVersionString(), os.Args[1:], os.Exit)
 }

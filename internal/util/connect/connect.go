@@ -21,7 +21,7 @@ func doPost(host, path, body, contentType string, config *target.BaseConfig) (*h
 	}
 
 	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("User-Agent", "Raito CLI "+version.GetVersion())
+	req.Header.Set("User-Agent", "Raito CLI "+version.GetVersionString())
 
 	err = auth.AddToken(req, config)
 	if err != nil {
@@ -51,7 +51,7 @@ func doGet(host, path string, config *target.BaseConfig) (*http.Response, error)
 		return nil, fmt.Errorf("error while creating HTTP GET request to %q: %s", url, err.Error())
 	}
 
-	req.Header.Set("User-Agent", "Raito CLI "+version.GetVersion())
+	req.Header.Set("User-Agent", "Raito CLI "+version.GetVersionString())
 	err = auth.AddToken(req, config)
 
 	if err != nil {

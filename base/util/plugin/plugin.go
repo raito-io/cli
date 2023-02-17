@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-plugin"
 )
 
@@ -98,8 +99,12 @@ func (i PluginInfo) FullOverview() string {
 }
 
 // Info interface needs to be implemented by all plugins to provide basic plugin information.
+//
+//go:generate go run github.com/vektra/mockery/v2 --name=Info --with-expecter
 type Info interface {
 	PluginInfo() PluginInfo
+	CliBuildVersion() semver.Version
+	PluginCliConstraint() semver.Constraints
 }
 
 // InfoPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -134,11 +139,43 @@ func (g *infoRPC) PluginInfo() PluginInfo {
 	return resp
 }
 
+func (g *infoRPC) CliBuildVersion() semver.Version {
+	var resp semver.Version
+
+	err := g.client.Call("Plugin.CliBuildVersion", new(interface{}), &resp)
+	if err != nil {
+		return semver.Version{}
+	}
+
+	return resp
+}
+
+func (g *infoRPC) PluginCliConstraint() semver.Constraints {
+	var resp semver.Constraints
+
+	err := g.client.Call("Plugin.PluginCliConstraint", new(interface{}), &resp)
+	if err != nil {
+		return semver.Constraints{}
+	}
+
+	return resp
+}
+
 type infoRPCServer struct {
 	Impl Info
 }
 
 func (s *infoRPCServer) PluginInfo(args interface{}, resp *PluginInfo) error {
 	*resp = s.Impl.PluginInfo()
+	return nil
+}
+
+func (s *infoRPCServer) CliBuildVersion(args interface{}, resp *semver.Version) error {
+	*resp = s.Impl.CliBuildVersion()
+	return nil
+}
+
+func (s *infoRPCServer) PluginCliConstraint(args interface{}, resp *semver.Constraints) error {
+	*resp = s.Impl.PluginCliConstraint()
 	return nil
 }

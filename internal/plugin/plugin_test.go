@@ -2,11 +2,19 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-hclog"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/Masterminds/semver/v3"
+	"github.com/hashicorp/go-hclog"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	plugin2 "github.com/raito-io/cli/base/util/plugin"
+	mocks2 "github.com/raito-io/cli/base/util/plugin/mocks"
+	"github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/cli/internal/version/mocks"
 )
 
 func TestNewClientError(t *testing.T) {
@@ -163,3 +171,113 @@ func TestNewClientNotImplemented(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, sync2)
 }*/
+
+func Test_isPluginCompatibleWithCli(t *testing.T) {
+	type args struct {
+		currentCliVersion       *semver.Version
+		currentCliConstraint    string
+		PluginInfoCliVersion    *semver.Version
+		PluginInfoCliConstraint string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "Plugin is compatible with cli (cli version > plugin version)",
+			args: args{
+				currentCliVersion:       semver.MustParse("1.0.0"),
+				currentCliConstraint:    "0.0.0 - 1.0.0",
+				PluginInfoCliVersion:    semver.MustParse("0.5.0"),
+				PluginInfoCliConstraint: "0.0.0 - 0.5.0",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "Plugin is compatible with cli (cli version < plugin version)",
+			args: args{
+				currentCliVersion:       semver.MustParse("1.0.0"),
+				currentCliConstraint:    "0.0.0 - 1.0.0",
+				PluginInfoCliVersion:    semver.MustParse("1.5.0"),
+				PluginInfoCliConstraint: "0.0.0 - 1.5.0",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "Plugin is compatible with cli (cli version == plugin version)",
+			args: args{
+				currentCliVersion:       semver.MustParse("1.0.0"),
+				currentCliConstraint:    "0.0.0 - 1.0.0",
+				PluginInfoCliVersion:    semver.MustParse("1.0.0"),
+				PluginInfoCliConstraint: "0.0.0 - 1.0.0",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "Plugin is not compatible with cli (cli version < plugin version)",
+			args: args{
+				currentCliVersion:       semver.MustParse("0.5.8"),
+				currentCliConstraint:    "0.0.0 - 0.5.8",
+				PluginInfoCliVersion:    semver.MustParse("1.0.0"),
+				PluginInfoCliConstraint: "1.0.0 - 1.0.0",
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name: "Plugin is not compatible with cli (cli version > plugin version)",
+			args: args{
+				currentCliVersion:       semver.MustParse("1.5.8"),
+				currentCliConstraint:    "1.0.0 - 1.5.8",
+				PluginInfoCliVersion:    semver.MustParse("0.42.0"),
+				PluginInfoCliConstraint: "0.0.0 - 0.42.0",
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name: "Plugin compatible in dev mode",
+			args: args{
+				currentCliVersion:       version.DevVersion,
+				currentCliConstraint:    fmt.Sprintf("1.0.0 - %s", version.DevVersion),
+				PluginInfoCliVersion:    semver.MustParse("1.0.0"),
+				PluginInfoCliConstraint: "0.0.0 - 1.0.0",
+			},
+			want:    true,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			currentCliConstraint, err := semver.NewConstraint(tt.args.currentCliConstraint)
+			require.NoError(t, err)
+
+			pluginInfoCliConstraint, err := semver.NewConstraint(tt.args.PluginInfoCliConstraint)
+			require.NoError(t, err)
+
+			currentCliInformation := mocks.NewCliVersionInformation(t)
+			currentCliInformation.EXPECT().GetCliVersion().Return(tt.args.currentCliVersion).Maybe()
+			currentCliInformation.EXPECT().CliPluginConstraint().Return(currentCliConstraint).Maybe()
+
+			pluginInfo := mocks2.NewInfo(t)
+			pluginInfo.EXPECT().CliBuildVersion().Return(*tt.args.PluginInfoCliVersion).Maybe()
+			pluginInfo.EXPECT().PluginCliConstraint().Return(*pluginInfoCliConstraint).Maybe()
+			pluginInfo.EXPECT().PluginInfo().Return(plugin2.PluginInfo{}).Maybe()
+
+			got, err := isPluginCompatibleWithCli(currentCliInformation, pluginInfo, hclog.L())
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

@@ -17,11 +17,13 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
+	"github.com/raito-io/cli/internal/version"
 )
 
 const LATEST = "latest"
@@ -63,14 +65,14 @@ type PluginClient interface {
 	GetInfo() (plugin2.Info, error)
 }
 
-func NewPluginClient(connector string, version string, logger hclog.Logger) (PluginClient, error) {
-	pluginPath, err := findMatchingPlugin(connector, version, logger)
+func NewPluginClient(connector string, pluginVersion string, logger hclog.Logger) (PluginClient, error) {
+	pluginPath, err := findMatchingPlugin(connector, pluginVersion, logger)
 	if err != nil {
-		return nil, fmt.Errorf("error while finding matching plugin for %q (version %q): %s", connector, version, err.Error())
+		return nil, fmt.Errorf("error while finding matching plugin for %q (pluginVersion %q): %s", connector, pluginVersion, err.Error())
 	}
 
 	if pluginPath == "" {
-		return nil, fmt.Errorf("unable to find matching plugin for %q (version %q)", connector, version)
+		return nil, fmt.Errorf("unable to find matching plugin for %q (pluginVersion %q)", connector, pluginVersion)
 	}
 
 	client := plugin.NewClient(&plugin.ClientConfig{
@@ -93,10 +95,37 @@ func NewPluginClient(connector string, version string, logger hclog.Logger) (Plu
 		return nil, fmt.Errorf("the plugin (%s) doesn't correctly implement the necessary interfaces", connector)
 	}
 
+	currentVersion := version.CurrentCliVersionInformation{}
+	if _, err = isPluginCompatibleWithCli(&currentVersion, is, logger); err != nil {
+		logger.Error("Plugin not compatible: %s", err.Error())
+		return nil, err
+	}
+
 	info := is.PluginInfo()
 	logger.Debug("Using plugin: " + info.String())
 
 	return pci, nil
+}
+
+func isPluginCompatibleWithCli(currentCliInformation version.CliVersionInformation, pluginInfo plugin2.Info, logger hclog.Logger) (bool, error) {
+	if currentCliInformation.GetCliVersion().Equal(version.DevVersion) {
+		logger.Warn("Skip plugin compatibility check for dev version")
+		return true, nil
+	}
+
+	//Check if current CLI version is compatible with CLI version used at plugin compile time (current version > plugin compiled version)
+	pluginCompiledVersion := pluginInfo.CliBuildVersion()
+	if currentCliInformation.CliPluginConstraint().Check(&pluginCompiledVersion) {
+		return true, nil
+	}
+
+	//Check if plugin CLI version is compatible with current CLI version (current version < plugin compiled version)
+	pluginConstraint := pluginInfo.PluginCliConstraint()
+	if pluginConstraint.Check(currentCliInformation.GetCliVersion()) {
+		return true, nil
+	}
+
+	return false, fmt.Errorf("plugin (%s) doesn't support the current CLI version (%s)", pluginInfo.PluginInfo().Version.String(), version.GetCliVersion().String())
 }
 
 // findMatchingPlugin looks for a plugin with the given connector name and version

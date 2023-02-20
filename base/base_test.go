@@ -3,6 +3,7 @@ package base
 import (
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/raito-io/cli/base/access_provider"
@@ -146,6 +147,14 @@ func (s *combo) PluginInfo() plugin.PluginInfo {
 	return plugin.PluginInfo{}
 }
 
+func (s *combo) CliBuildVersion() semver.Version {
+	return *semver.MustParse("3.0.0")
+}
+
+func (s *combo) CliMinimalVersion() semver.Version {
+	return *semver.MustParse("0.0.0")
+}
+
 type identityStoryPlugin struct{}
 
 func (s *identityStoryPlugin) SyncIdentityStore(config *identity_store.IdentityStoreSyncConfig) identity_store.IdentityStoreSyncResult {
@@ -184,4 +193,12 @@ type infoPlugin struct{}
 
 func (s *infoPlugin) PluginInfo() plugin.PluginInfo {
 	return plugin.PluginInfo{}
+}
+
+func (s *infoPlugin) CliBuildVersion() semver.Version {
+	return *semver.MustParse("3.0.0")
+}
+
+func (s *infoPlugin) CliMinimalVersion() semver.Version {
+	return *semver.MustParse("0.0.0")
 }

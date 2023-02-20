@@ -104,7 +104,7 @@ func (i PluginInfo) FullOverview() string {
 type Info interface {
 	PluginInfo() PluginInfo
 	CliBuildVersion() semver.Version
-	PluginCliConstraint() semver.Constraints
+	CliMinimalVersion() semver.Version
 }
 
 // InfoPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -150,12 +150,12 @@ func (g *infoRPC) CliBuildVersion() semver.Version {
 	return resp
 }
 
-func (g *infoRPC) PluginCliConstraint() semver.Constraints {
-	var resp semver.Constraints
+func (g *infoRPC) CliMinimalVersion() semver.Version {
+	var resp semver.Version
 
 	err := g.client.Call("Plugin.PluginCliConstraint", new(interface{}), &resp)
 	if err != nil {
-		return semver.Constraints{}
+		return semver.Version{}
 	}
 
 	return resp
@@ -175,7 +175,7 @@ func (s *infoRPCServer) CliBuildVersion(args interface{}, resp *semver.Version) 
 	return nil
 }
 
-func (s *infoRPCServer) PluginCliConstraint(args interface{}, resp *semver.Constraints) error {
-	*resp = s.Impl.PluginCliConstraint()
+func (s *infoRPCServer) CliMinimalVersion(args interface{}, resp *semver.Version) error {
+	*resp = s.Impl.CliMinimalVersion()
 	return nil
 }

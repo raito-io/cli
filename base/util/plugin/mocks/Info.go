@@ -63,43 +63,43 @@ func (_c *Info_CliBuildVersion_Call) RunAndReturn(run func() semver.Version) *In
 	return _c
 }
 
-// PluginCliConstraint provides a mock function with given fields:
-func (_m *Info) PluginCliConstraint() semver.Constraints {
+// CliMinimalVersion provides a mock function with given fields:
+func (_m *Info) CliMinimalVersion() semver.Version {
 	ret := _m.Called()
 
-	var r0 semver.Constraints
-	if rf, ok := ret.Get(0).(func() semver.Constraints); ok {
+	var r0 semver.Version
+	if rf, ok := ret.Get(0).(func() semver.Version); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(semver.Constraints)
+		r0 = ret.Get(0).(semver.Version)
 	}
 
 	return r0
 }
 
-// Info_PluginCliConstraint_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PluginCliConstraint'
-type Info_PluginCliConstraint_Call struct {
+// Info_CliMinimalVersion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CliMinimalVersion'
+type Info_CliMinimalVersion_Call struct {
 	*mock.Call
 }
 
-// PluginCliConstraint is a helper method to define mock.On call
-func (_e *Info_Expecter) PluginCliConstraint() *Info_PluginCliConstraint_Call {
-	return &Info_PluginCliConstraint_Call{Call: _e.mock.On("PluginCliConstraint")}
+// CliMinimalVersion is a helper method to define mock.On call
+func (_e *Info_Expecter) CliMinimalVersion() *Info_CliMinimalVersion_Call {
+	return &Info_CliMinimalVersion_Call{Call: _e.mock.On("CliMinimalVersion")}
 }
 
-func (_c *Info_PluginCliConstraint_Call) Run(run func()) *Info_PluginCliConstraint_Call {
+func (_c *Info_CliMinimalVersion_Call) Run(run func()) *Info_CliMinimalVersion_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *Info_PluginCliConstraint_Call) Return(_a0 semver.Constraints) *Info_PluginCliConstraint_Call {
+func (_c *Info_CliMinimalVersion_Call) Return(_a0 semver.Version) *Info_CliMinimalVersion_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *Info_PluginCliConstraint_Call) RunAndReturn(run func() semver.Constraints) *Info_PluginCliConstraint_Call {
+func (_c *Info_CliMinimalVersion_Call) RunAndReturn(run func() semver.Version) *Info_CliMinimalVersion_Call {
 	_c.Call.Return(run)
 	return _c
 }

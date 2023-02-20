@@ -19,6 +19,6 @@ func (i *InfoImpl) CliBuildVersion() semver.Version {
 	return *version.GetCliVersion()
 }
 
-func (i *InfoImpl) PluginCliConstraint() semver.Constraints {
-	return *version.CliPluginConstraint()
+func (i *InfoImpl) CliMinimalVersion() semver.Version {
+	return *version.GetMinimalCliVersion()
 }

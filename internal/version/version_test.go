@@ -17,6 +17,6 @@ func TestSemanticVersion(t *testing.T) {
 }
 
 func TestCliPluginConstraint(t *testing.T) {
-	constraint := CliPluginConstraint()
+	constraint := GetMinimalCliVersion()
 	assert.NotNil(t, constraint)
 }

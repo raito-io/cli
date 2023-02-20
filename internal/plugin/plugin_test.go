@@ -9,7 +9,6 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
 	mocks2 "github.com/raito-io/cli/base/util/plugin/mocks"
@@ -175,9 +174,9 @@ func TestNewClientNotImplemented(t *testing.T) {
 func Test_isPluginCompatibleWithCli(t *testing.T) {
 	type args struct {
 		currentCliVersion       *semver.Version
-		currentCliConstraint    string
+		cliMinimalVersion       *semver.Version
 		PluginInfoCliVersion    *semver.Version
-		PluginInfoCliConstraint string
+		PluginMinimalCliVersion *semver.Version
 	}
 	tests := []struct {
 		name    string
@@ -189,9 +188,9 @@ func Test_isPluginCompatibleWithCli(t *testing.T) {
 			name: "Plugin is compatible with cli (cli version > plugin version)",
 			args: args{
 				currentCliVersion:       semver.MustParse("1.0.0"),
-				currentCliConstraint:    "0.0.0 - 1.0.0",
+				cliMinimalVersion:       semver.MustParse("0.0.0"),
 				PluginInfoCliVersion:    semver.MustParse("0.5.0"),
-				PluginInfoCliConstraint: "0.0.0 - 0.5.0",
+				PluginMinimalCliVersion: semver.MustParse("0.0.0"),
 			},
 			want:    true,
 			wantErr: false,
@@ -200,9 +199,9 @@ func Test_isPluginCompatibleWithCli(t *testing.T) {
 			name: "Plugin is compatible with cli (cli version < plugin version)",
 			args: args{
 				currentCliVersion:       semver.MustParse("1.0.0"),
-				currentCliConstraint:    "0.0.0 - 1.0.0",
+				cliMinimalVersion:       semver.MustParse("0.0.0"),
 				PluginInfoCliVersion:    semver.MustParse("1.5.0"),
-				PluginInfoCliConstraint: "0.0.0 - 1.5.0",
+				PluginMinimalCliVersion: semver.MustParse("0.0.0"),
 			},
 			want:    true,
 			wantErr: false,
@@ -211,9 +210,9 @@ func Test_isPluginCompatibleWithCli(t *testing.T) {
 			name: "Plugin is compatible with cli (cli version == plugin version)",
 			args: args{
 				currentCliVersion:       semver.MustParse("1.0.0"),
-				currentCliConstraint:    "0.0.0 - 1.0.0",
+				cliMinimalVersion:       semver.MustParse("0.0.0"),
 				PluginInfoCliVersion:    semver.MustParse("1.0.0"),
-				PluginInfoCliConstraint: "0.0.0 - 1.0.0",
+				PluginMinimalCliVersion: semver.MustParse("0.0.0"),
 			},
 			want:    true,
 			wantErr: false,
@@ -222,9 +221,9 @@ func Test_isPluginCompatibleWithCli(t *testing.T) {
 			name: "Plugin is not compatible with cli (cli version < plugin version)",
 			args: args{
 				currentCliVersion:       semver.MustParse("0.5.8"),
-				currentCliConstraint:    "0.0.0 - 0.5.8",
+				cliMinimalVersion:       semver.MustParse("0.0.0"),
 				PluginInfoCliVersion:    semver.MustParse("1.0.0"),
-				PluginInfoCliConstraint: "1.0.0 - 1.0.0",
+				PluginMinimalCliVersion: semver.MustParse("1.0.0"),
 			},
 			want:    false,
 			wantErr: true,
@@ -233,9 +232,9 @@ func Test_isPluginCompatibleWithCli(t *testing.T) {
 			name: "Plugin is not compatible with cli (cli version > plugin version)",
 			args: args{
 				currentCliVersion:       semver.MustParse("1.5.8"),
-				currentCliConstraint:    "1.0.0 - 1.5.8",
+				cliMinimalVersion:       semver.MustParse("1.0.0"),
 				PluginInfoCliVersion:    semver.MustParse("0.42.0"),
-				PluginInfoCliConstraint: "0.0.0 - 0.42.0",
+				PluginMinimalCliVersion: semver.MustParse("0.0.0"),
 			},
 			want:    false,
 			wantErr: true,
@@ -244,9 +243,9 @@ func Test_isPluginCompatibleWithCli(t *testing.T) {
 			name: "Plugin compatible in dev mode",
 			args: args{
 				currentCliVersion:       version.DevVersion,
-				currentCliConstraint:    fmt.Sprintf("1.0.0 - %s", version.DevVersion),
+				cliMinimalVersion:       semver.MustParse("1.0.0"),
 				PluginInfoCliVersion:    semver.MustParse("1.0.0"),
-				PluginInfoCliConstraint: "0.0.0 - 1.0.0",
+				PluginMinimalCliVersion: semver.MustParse("0.0.0"),
 			},
 			want:    true,
 			wantErr: false,
@@ -254,19 +253,13 @@ func Test_isPluginCompatibleWithCli(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			currentCliConstraint, err := semver.NewConstraint(tt.args.currentCliConstraint)
-			require.NoError(t, err)
-
-			pluginInfoCliConstraint, err := semver.NewConstraint(tt.args.PluginInfoCliConstraint)
-			require.NoError(t, err)
-
 			currentCliInformation := mocks.NewCliVersionInformation(t)
 			currentCliInformation.EXPECT().GetCliVersion().Return(tt.args.currentCliVersion).Maybe()
-			currentCliInformation.EXPECT().CliPluginConstraint().Return(currentCliConstraint).Maybe()
+			currentCliInformation.EXPECT().GetCliMinimalCompatibleVersion().Return(tt.args.cliMinimalVersion).Maybe()
 
 			pluginInfo := mocks2.NewInfo(t)
 			pluginInfo.EXPECT().CliBuildVersion().Return(*tt.args.PluginInfoCliVersion).Maybe()
-			pluginInfo.EXPECT().PluginCliConstraint().Return(*pluginInfoCliConstraint).Maybe()
+			pluginInfo.EXPECT().CliMinimalVersion().Return(*tt.args.PluginMinimalCliVersion).Maybe()
 			pluginInfo.EXPECT().PluginInfo().Return(plugin2.PluginInfo{}).Maybe()
 
 			got, err := isPluginCompatibleWithCli(currentCliInformation, pluginInfo, hclog.L())

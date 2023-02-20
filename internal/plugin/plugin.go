@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 
@@ -113,19 +114,30 @@ func isPluginCompatibleWithCli(currentCliInformation version.CliVersionInformati
 		return true, nil
 	}
 
-	//Check if current CLI version is compatible with CLI version used at plugin compile time (current version > plugin compiled version)
-	pluginCompiledVersion := pluginInfo.CliBuildVersion()
-	if currentCliInformation.CliPluginConstraint().Check(&pluginCompiledVersion) {
-		return true, nil
+	check := func(minVersion, currentVersion, versionToCheck *semver.Version) bool {
+		if versionToCheck.Compare(minVersion) >= 0 && versionToCheck.Compare(currentVersion) <= 0 {
+			return true
+		}
+
+		return false
 	}
 
-	//Check if plugin CLI version is compatible with current CLI version (current version < plugin compiled version)
-	pluginConstraint := pluginInfo.PluginCliConstraint()
-	if pluginConstraint.Check(currentCliInformation.GetCliVersion()) {
-		return true, nil
-	}
+	pluginCurrentVersion := pluginInfo.CliBuildVersion()
+	pluginMinimalCliVersion := pluginInfo.CliMinimalVersion()
 
-	return false, fmt.Errorf("plugin (%s) doesn't support the current CLI version (%s)", pluginInfo.PluginInfo().Version.String(), version.GetCliVersion().String())
+	if currentCliInformation.GetCliVersion().LessThan(&pluginCurrentVersion) {
+		if check(&pluginMinimalCliVersion, &pluginCurrentVersion, currentCliInformation.GetCliVersion()) {
+			return true, nil
+		} else {
+			return false, fmt.Errorf("plugin cli version %[1]s is not compatible with cli version %[2]s: expected cli version not between %[3]s - %[1]s", pluginCurrentVersion.String(), currentCliInformation.GetCliVersion().String(), pluginMinimalCliVersion.String())
+		}
+	} else {
+		if check(currentCliInformation.GetCliMinimalCompatibleVersion(), currentCliInformation.GetCliVersion(), &pluginCurrentVersion) {
+			return true, nil
+		} else {
+			return false, fmt.Errorf("plugin cli version %[1]s is not compatible with cli version %[2]s: expected plugin cli version not between %[3]s - %[2]s", pluginCurrentVersion.String(), currentCliInformation.GetCliVersion().String(), currentCliInformation.GetCliMinimalCompatibleVersion().String())
+		}
+	}
 }
 
 // findMatchingPlugin looks for a plugin with the given connector name and version

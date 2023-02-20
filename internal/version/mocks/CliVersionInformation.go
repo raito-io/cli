@@ -20,45 +20,45 @@ func (_m *CliVersionInformation) EXPECT() *CliVersionInformation_Expecter {
 	return &CliVersionInformation_Expecter{mock: &_m.Mock}
 }
 
-// CliPluginConstraint provides a mock function with given fields:
-func (_m *CliVersionInformation) CliPluginConstraint() *semver.Constraints {
+// GetCliMinimalCompatibleVersion provides a mock function with given fields:
+func (_m *CliVersionInformation) GetCliMinimalCompatibleVersion() *semver.Version {
 	ret := _m.Called()
 
-	var r0 *semver.Constraints
-	if rf, ok := ret.Get(0).(func() *semver.Constraints); ok {
+	var r0 *semver.Version
+	if rf, ok := ret.Get(0).(func() *semver.Version); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*semver.Constraints)
+			r0 = ret.Get(0).(*semver.Version)
 		}
 	}
 
 	return r0
 }
 
-// CliVersionInformation_CliPluginConstraint_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CliPluginConstraint'
-type CliVersionInformation_CliPluginConstraint_Call struct {
+// CliVersionInformation_GetCliMinimalCompatibleVersion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCliMinimalCompatibleVersion'
+type CliVersionInformation_GetCliMinimalCompatibleVersion_Call struct {
 	*mock.Call
 }
 
-// CliPluginConstraint is a helper method to define mock.On call
-func (_e *CliVersionInformation_Expecter) CliPluginConstraint() *CliVersionInformation_CliPluginConstraint_Call {
-	return &CliVersionInformation_CliPluginConstraint_Call{Call: _e.mock.On("CliPluginConstraint")}
+// GetCliMinimalCompatibleVersion is a helper method to define mock.On call
+func (_e *CliVersionInformation_Expecter) GetCliMinimalCompatibleVersion() *CliVersionInformation_GetCliMinimalCompatibleVersion_Call {
+	return &CliVersionInformation_GetCliMinimalCompatibleVersion_Call{Call: _e.mock.On("GetCliMinimalCompatibleVersion")}
 }
 
-func (_c *CliVersionInformation_CliPluginConstraint_Call) Run(run func()) *CliVersionInformation_CliPluginConstraint_Call {
+func (_c *CliVersionInformation_GetCliMinimalCompatibleVersion_Call) Run(run func()) *CliVersionInformation_GetCliMinimalCompatibleVersion_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *CliVersionInformation_CliPluginConstraint_Call) Return(_a0 *semver.Constraints) *CliVersionInformation_CliPluginConstraint_Call {
+func (_c *CliVersionInformation_GetCliMinimalCompatibleVersion_Call) Return(_a0 *semver.Version) *CliVersionInformation_GetCliMinimalCompatibleVersion_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *CliVersionInformation_CliPluginConstraint_Call) RunAndReturn(run func() *semver.Constraints) *CliVersionInformation_CliPluginConstraint_Call {
+func (_c *CliVersionInformation_GetCliMinimalCompatibleVersion_Call) RunAndReturn(run func() *semver.Version) *CliVersionInformation_GetCliMinimalCompatibleVersion_Call {
 	_c.Call.Return(run)
 	return _c
 }

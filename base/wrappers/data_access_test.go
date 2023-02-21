@@ -22,7 +22,7 @@ func TestDataAccessSyncFunction_SyncFromTarget(t *testing.T) {
 	config := &access_provider.AccessSyncFromTarget{
 		Prefix:     "prefix",
 		TargetFile: "targetFile",
-		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:  config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	accessProviderFileCreator := mocks.NewAccessProviderFileCreator(t)
@@ -51,7 +51,7 @@ func TestDataAccessSyncFunction_SyncFromTarget_ErrorOnFileCreation(t *testing.T)
 	config := &access_provider.AccessSyncFromTarget{
 		Prefix:     "prefix",
 		TargetFile: "targetFile",
-		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:  config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	syncerMock := NewMockAccessProviderSyncer(t)
@@ -82,7 +82,7 @@ func TestDataAccessSyncFunction_SyncFromTarget_ErrorOnSync(t *testing.T) {
 	config := &access_provider.AccessSyncFromTarget{
 		Prefix:     "prefix",
 		TargetFile: "targetFile",
-		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:  config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	accessProviderFilCreator := mocks.NewAccessProviderFileCreator(t)
@@ -116,7 +116,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 	config := &access_provider.AccessSyncToTarget{
 		SourceFile:         "SourceFile",
 		FeedbackTargetFile: "FeedbackTargetFile",
-		ConfigMap:          config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:          config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	accessFeedBackFileCreator := mocks2.NewSyncFeedbackFileCreator(t)
@@ -215,7 +215,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode(t *testing.T) {
 		Prefix:             "R",
 		SourceFile:         "SourceFile",
 		FeedbackTargetFile: "FeedbackTargetFile",
-		ConfigMap:          config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:          config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
@@ -278,7 +278,7 @@ func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsingFactory(t *testin
 	config := &access_provider.AccessSyncToTarget{
 		SourceFile:         "SourceFile",
 		FeedbackTargetFile: "FeedbackTargetFile",
-		ConfigMap:          config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:          config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	syncerMock := NewMockAccessProviderSyncer(t)
@@ -307,7 +307,7 @@ func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsing(t *testing.T) {
 	config := &access_provider.AccessSyncToTarget{
 		SourceFile:         "SourceFile",
 		FeedbackTargetFile: "FeedbackTargetFile",
-		ConfigMap:          config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:          config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	accessProviderParser := mocks2.NewAccessProviderImportFileParser(t)
@@ -342,7 +342,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFile
 	config := &access_provider.AccessSyncToTarget{
 		SourceFile:         "SourceFile",
 		FeedbackTargetFile: "FeedbackTargetFile",
-		ConfigMap:          config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:          config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
@@ -411,7 +411,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnSync(t *test
 	config := &access_provider.AccessSyncToTarget{
 		SourceFile:         "SourceFile",
 		FeedbackTargetFile: "FeedbackTargetFile",
-		ConfigMap:          config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:          config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	accessFeedBackFileCreator := mocks2.NewSyncFeedbackFileCreator(t)
@@ -480,7 +480,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode_ErrorOnSync(t *testing
 		Prefix:             "R",
 		SourceFile:         "SourceFile",
 		FeedbackTargetFile: "FeedbackTargetFile",
-		ConfigMap:          config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:          config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{

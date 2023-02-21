@@ -17,7 +17,7 @@ func TestIdentityStoreSyncFunction_SyncIdentityStore(t *testing.T) {
 	config := &identity_store.IdentityStoreSyncConfig{
 		GroupFile: "GroupFile",
 		UserFile:  "UserFile",
-		ConfigMap: config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap: config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := is_mocks.NewIdentityStoreFileCreator(t)
@@ -47,7 +47,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOfFileCreation(t *testing.T) {
 	config := &identity_store.IdentityStoreSyncConfig{
 		GroupFile: "GroupFile",
 		UserFile:  "UserFile",
-		ConfigMap: config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap: config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	syncerMock := NewMockIdentityStoreSyncer(t)
@@ -78,7 +78,7 @@ func TestMockDataUsageSyncer_SyncDataUsage_ErrorSync(t *testing.T) {
 	config := &identity_store.IdentityStoreSyncConfig{
 		GroupFile: "GroupFile",
 		UserFile:  "UserFile",
-		ConfigMap: config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap: config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := is_mocks.NewIdentityStoreFileCreator(t)

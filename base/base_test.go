@@ -1,7 +1,6 @@
 package base
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +14,7 @@ import (
 func TestRegisterIdentityStoreService(t *testing.T) {
 	Logger()
 	issi := identityStoryPlugin{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServer{}
 	pluginMap, err := buildPluginMap(&issi, &isi)
 
 	assert.Nil(t, err)
@@ -28,7 +27,7 @@ func TestRegisterIdentityStoreService(t *testing.T) {
 func TestRegisterDataSourceService(t *testing.T) {
 	Logger()
 	dssi := dataSourcePlugin{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServer{}
 	pluginMap, err := buildPluginMap(&dssi, &isi)
 
 	assert.Nil(t, err)
@@ -40,7 +39,7 @@ func TestRegisterDataSourceService(t *testing.T) {
 func TestRegisterAccessSyncService(t *testing.T) {
 	Logger()
 	dasi := accessSyncPlugin{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServer{}
 	pluginMap, err := buildPluginMap(&dasi, &isi)
 
 	assert.Nil(t, err)
@@ -86,7 +85,7 @@ func TestRegisterDoubleDataAccessService(t *testing.T) {
 	Logger()
 	das1 := accessSyncPlugin{}
 	das2 := accessSyncPlugin{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServer{}
 	pluginMap, err := buildPluginMap(&das1, &das2, &isi)
 
 	assert.NotNil(t, err)
@@ -106,7 +105,7 @@ func TestRegisterIgnoreNoService(t *testing.T) {
 	Logger()
 	das1 := accessSyncPlugin{}
 	a := another{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServer{}
 	pluginMap, err := buildPluginMap(&a, &das1, &isi)
 
 	assert.Nil(t, err)
@@ -125,7 +124,9 @@ func TestRegisterNoInfoPlugin(t *testing.T) {
 
 type another struct{}
 
-type combo struct{}
+type combo struct {
+	plugin.UnimplementedInfoServer
+}
 
 func (s *combo) SyncIdentityStore(config *identity_store.IdentityStoreSyncConfig) identity_store.IdentityStoreSyncResult {
 	return identity_store.IdentityStoreSyncResult{}
@@ -141,10 +142,6 @@ func (s *combo) GetDataSourceMetaData() data_source.MetaData {
 
 func (s *combo) GetIdentityStoreMetaData() identity_store.MetaData {
 	return identity_store.MetaData{}
-}
-
-func (s *combo) PluginInfo(_ context.Context) (*plugin.PluginInfo, error) {
-	return &plugin.PluginInfo{}, nil
 }
 
 type identityStoryPlugin struct{}
@@ -179,10 +176,4 @@ func (s *accessSyncPlugin) SyncToTarget(config *access_provider.AccessSyncToTarg
 
 func (s *accessSyncPlugin) SyncConfig() access_provider.AccessSyncConfig {
 	return access_provider.AccessSyncConfig{}
-}
-
-type infoPlugin struct{}
-
-func (s *infoPlugin) PluginInfo(_ context.Context) (*plugin.PluginInfo, error) {
-	return &plugin.PluginInfo{}, nil
 }

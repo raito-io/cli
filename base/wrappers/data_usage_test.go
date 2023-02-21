@@ -16,7 +16,7 @@ func TestDataUsageSyncFunction_SyncDataUsage(t *testing.T) {
 	//Given
 	config := &data_usage.DataUsageSyncConfig{
 		TargetFile: "SomeTargetString",
-		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:  config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := du_mocks.NewDataUsageFileCreator(t)
@@ -46,7 +46,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOnFileCreation(t *testing.T) {
 	//Given
 	config := &data_usage.DataUsageSyncConfig{
 		TargetFile: "SomeTargetString",
-		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:  config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	syncerMock := NewMockDataUsageSyncer(t)
@@ -76,7 +76,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 	//Given
 	config := &data_usage.DataUsageSyncConfig{
 		TargetFile: "SomeTargetString",
-		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:  config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := du_mocks.NewDataUsageFileCreator(t)

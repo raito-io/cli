@@ -17,7 +17,7 @@ func TestDataSourceSyncFunction_SyncDataSource(t *testing.T) {
 	config := &data_source.DataSourceSyncConfig{
 		TargetFile:   "targetFile",
 		DataSourceId: "DataSourceId",
-		ConfigMap:    config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:    config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := ds_mocks.NewDataSourceFileCreator(t)
@@ -46,7 +46,7 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorOnFile(t *testing.T) {
 	config := &data_source.DataSourceSyncConfig{
 		TargetFile:   "targetFile",
 		DataSourceId: "DataSourceId",
-		ConfigMap:    config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:    config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	syncerMock := NewMockDataSourceSyncer(t)
@@ -77,7 +77,7 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorSync(t *testing.T) {
 	config := &data_source.DataSourceSyncConfig{
 		TargetFile:   "targetFile",
 		DataSourceId: "DataSourceId",
-		ConfigMap:    config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:    config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := ds_mocks.NewDataSourceFileCreator(t)

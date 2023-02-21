@@ -2,10 +2,6 @@ package config
 
 import "strconv"
 
-type ConfigMap struct {
-	Parameters map[string]string
-}
-
 // GetBool returns the boolean value with the given key in the Parameters map. If not found, or the value cannot be converted to a boolean, false is returned.
 func (c *ConfigMap) GetBool(key string) bool {
 	return c.GetBoolWithDefault(key, false)

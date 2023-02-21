@@ -1,18 +1,19 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetBool(t *testing.T) {
 	c := ConfigMap{
-		Parameters: map[string]interface{}{
+		Parameters: map[string]string{
 			"bool-ok":    "true",
 			"bool-ok-1":  "1",
 			"bool-nok":   "nok",
 			"bool-false": "false",
-			"bool-real":  true,
+			"bool-real":  "true",
 		},
 	}
 	assert.Equal(t, true, c.GetBoolWithDefault("bool-real", false))
@@ -33,7 +34,7 @@ func TestGetBool(t *testing.T) {
 
 func TestGetString(t *testing.T) {
 	c := ConfigMap{
-		Parameters: map[string]interface{}{
+		Parameters: map[string]string{
 			"string-ok":    "some string",
 			"string-empty": "",
 		},
@@ -48,12 +49,12 @@ func TestGetString(t *testing.T) {
 
 func TestGetInt(t *testing.T) {
 	c := ConfigMap{
-		Parameters: map[string]interface{}{
+		Parameters: map[string]string{
 			"int-ok":    "123",
 			"int-empty": "",
 			"int-wrong": "wrong",
-			"int-real":  555,
-			"int64":     int64(777),
+			"int-real":  "555",
+			"int64":     "777",
 		},
 	}
 	assert.Equal(t, 123, c.GetIntWithDefault("int-ok", 666))

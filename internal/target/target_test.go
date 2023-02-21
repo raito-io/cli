@@ -315,7 +315,7 @@ func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
 func TestBuildParameterMapFromArguments(t *testing.T) {
 	params := buildParameterMapFromArguments([]string{"--bool-val", "--string-val=blah", "--another-one", "moremoremore"})
 	assert.Equal(t, 3, len(params))
-	assert.Equal(t, true, params["bool-val"])
+	assert.Equal(t, "TRUE", params["bool-val"])
 	assert.Equal(t, "blah", params["string-val"])
 	assert.Equal(t, "moremoremore", params["another-one"])
 }
@@ -448,7 +448,7 @@ func TestLogTarget(t *testing.T) {
 		BaseConfig: BaseConfig{
 			ApiSecret: "mylittlesecret",
 			ConfigMap: config2.ConfigMap{
-				Parameters: map[string]interface{}{
+				Parameters: map[string]string{
 					"password": "anothersecret",
 					"normal":   "readible",
 				},

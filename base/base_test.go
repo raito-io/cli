@@ -1,6 +1,7 @@
 package base
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -142,8 +143,8 @@ func (s *combo) GetIdentityStoreMetaData() identity_store.MetaData {
 	return identity_store.MetaData{}
 }
 
-func (s *combo) PluginInfo() plugin.PluginInfo {
-	return plugin.PluginInfo{}
+func (s *combo) PluginInfo(_ context.Context) (*plugin.PluginInfo, error) {
+	return &plugin.PluginInfo{}, nil
 }
 
 type identityStoryPlugin struct{}
@@ -182,6 +183,6 @@ func (s *accessSyncPlugin) SyncConfig() access_provider.AccessSyncConfig {
 
 type infoPlugin struct{}
 
-func (s *infoPlugin) PluginInfo() plugin.PluginInfo {
-	return plugin.PluginInfo{}
+func (s *infoPlugin) PluginInfo(_ context.Context) (*plugin.PluginInfo, error) {
+	return &plugin.PluginInfo{}, nil
 }

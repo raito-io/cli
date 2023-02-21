@@ -3,6 +3,7 @@ package plugin
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -15,8 +16,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
@@ -78,6 +81,8 @@ func NewPluginClient(connector string, version string, logger hclog.Logger) (Plu
 		Plugins:         pluginMap,
 		Cmd:             exec.Command(pluginPath),
 		Logger:          logger,
+		AllowedProtocols: []plugin.Protocol{
+			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
 	})
 
 	// Connecting to see if it works...
@@ -93,8 +98,12 @@ func NewPluginClient(connector string, version string, logger hclog.Logger) (Plu
 		return nil, fmt.Errorf("the plugin (%s) doesn't correctly implement the necessary interfaces", connector)
 	}
 
-	info := is.PluginInfo()
-	logger.Debug("Using plugin: " + info.String())
+	info, err := is.GetInfo(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("plugininfo: %w", err)
+	}
+
+	logger.Debug("Using plugin: " + info.InfoString())
 
 	return pci, nil
 }
@@ -262,29 +271,25 @@ func getLatestVersionFromFiles(matches []string) (string, string) {
 }
 
 func getLatestVersion(matches []string) string {
-	versions := make([]plugin2.Version, 0, len(matches))
+	versions := make([]*semver.Version, 0, len(matches))
 
 	for _, match := range matches {
 		if match == "latest" {
 			return match
 		}
 
-		versions = append(versions, plugin2.ParseVersion(match))
+		version, err := semver.StrictNewVersion(match)
+		if err != nil {
+			continue
+		}
+
+		versions = append(versions, version)
 	}
 
 	sort.SliceStable(versions, func(i, j int) bool {
 		v1 := versions[i]
 		v2 := versions[j]
-		if v1.Major < v2.Major {
-			return true
-		}
-		if v1.Minor < v2.Minor {
-			return true
-		}
-		if v1.Maintenance < v2.Maintenance {
-			return true
-		}
-		return false
+		return v1.LessThan(v2)
 	})
 
 	return versions[len(versions)-1].String()

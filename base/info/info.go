@@ -1,13 +1,17 @@
 package info
 
 import (
+	"context"
+
 	"github.com/raito-io/cli/base/util/plugin"
 )
 
 type InfoImpl struct {
-	Info plugin.PluginInfo
+	plugin.UnimplementedInfoServer
+
+	Info *plugin.PluginInfo
 }
 
-func (i *InfoImpl) PluginInfo() plugin.PluginInfo {
-	return i.Info
+func (i *InfoImpl) GetInfo(context.Context, *plugin.Empty) (*plugin.PluginInfo, error) {
+	return i.Info, nil
 }

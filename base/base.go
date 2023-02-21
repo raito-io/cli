@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
@@ -71,7 +72,7 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, error) {
 			logger.Debug("Registered DataUsageSyncer Plugin")
 		}
 
-		if i, ok := plugin.(plugin2.Info); ok {
+		if i, ok := plugin.(plugin2.InfoServer); ok {
 			if _, f := pluginMap[plugin2.InfoName]; f {
 				return nil, errors.New("multiple implementation for Info Plugin found. There should be only one")
 			}
@@ -108,6 +109,7 @@ func RegisterPlugins(pluginImpls ...interface{}) error {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: handshakeConfig,
 		Plugins:         pluginMap,
+		GRPCServer:      plugin.DefaultGRPCServer,
 	})
 
 	return nil

@@ -53,9 +53,7 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 	accessFile := viper.GetString(constants.AccessFileFlag)
 	if accessFile == "" {
 		if fp, ok := targetConfig.Parameters[constants.AccessFileFlag]; ok {
-			if af, ok := fp.(string); ok {
-				accessFile = af
-			}
+			accessFile = fp
 		}
 	}
 

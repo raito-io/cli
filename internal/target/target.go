@@ -3,8 +3,10 @@ package target
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
+	"github.com/aws/smithy-go/ptr"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
@@ -155,7 +157,7 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 	if err != nil {
 		return nil, err
 	}
-	tConfig.Parameters = make(map[string]interface{})
+	tConfig.Parameters = make(map[string]string)
 
 	for k, v := range target {
 		if _, f := constants.KnownFlags[k]; !f {
@@ -163,7 +165,13 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 			if err != nil {
 				return nil, err
 			}
-			tConfig.Parameters[k] = cv
+
+			stringvalue := argumentToString(cv)
+			if stringvalue == nil {
+				continue
+			}
+
+			tConfig.Parameters[k] = *stringvalue
 		}
 	}
 
@@ -208,8 +216,8 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 	return &tConfig, nil
 }
 
-func buildParameterMapFromArguments(args []string) map[string]interface{} {
-	params := make(map[string]interface{})
+func buildParameterMapFromArguments(args []string) map[string]string {
+	params := make(map[string]string)
 
 	for i := 0; i < len(args); i++ {
 		if strings.HasPrefix(args[i], "--") {
@@ -225,12 +233,29 @@ func buildParameterMapFromArguments(args []string) map[string]interface{} {
 				i++
 			} else {
 				// Otherwise, we consider this a boolean flag
-				params[arg] = true
+				params[arg] = "TRUE"
 			}
 		}
 	}
 
 	return params
+}
+
+func argumentToString(arg interface{}) *string {
+	if arg == nil {
+		return nil
+	}
+
+	switch v := arg.(type) {
+	case string:
+		return &v
+	case int:
+		return ptr.String(strconv.Itoa(v))
+	case bool:
+		return ptr.String(strconv.FormatBool(v))
+	}
+
+	return nil
 }
 
 func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*BaseConfig, error) {
@@ -304,7 +329,7 @@ func logTargetConfig(config *BaseTargetConfig) {
 		hclog.L().Error("Error while copying config")
 		return
 	}
-	cc.Parameters = make(map[string]interface{})
+	cc.Parameters = make(map[string]string)
 
 	err = copier.Copy(&cc.Parameters, config.Parameters)
 	if err != nil {

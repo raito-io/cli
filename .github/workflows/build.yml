@@ -16,6 +16,9 @@ jobs:
         with:
           go-version: '1.18'
 
+      - name: Install protoc
+        uses: arduino/setup-protoc@v1
+
       - name: Install buf
         uses: bufbuild/buf-setup-action@v1
 

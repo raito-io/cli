@@ -56,7 +56,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOnFileCreation(t *testing.T) {
 		fileCreatorFactory: func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error) {
 			return nil, &error2.ErrorResult{
 				ErrorMessage: "BOOM!",
-				ErrorCode:    error2.UnknownError,
+				ErrorCode:    error2.ErrorCode_UNKNOWN_ERROR,
 			}
 		},
 	}
@@ -67,7 +67,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOnFileCreation(t *testing.T) {
 	//Then
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.UnknownError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
 
 	syncerMock.AssertNotCalled(t, "SyncDataUsage", mock.Anything, mock.Anything, mock.Anything)
 }
@@ -85,7 +85,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 	syncerMock := NewMockDataUsageSyncer(t)
 	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(&error2.ErrorResult{
 		ErrorMessage: "BOOM!",
-		ErrorCode:    error2.BadInputParameterError,
+		ErrorCode:    error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR,
 	})
 
 	syncFunction := dataUsageSyncFunction{
@@ -101,7 +101,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 	//Then
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.BadInputParameterError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR, result.Error.ErrorCode)
 	syncerMock.AssertNumberOfCalls(t, "SyncDataUsage", 1)
 	fileCreatorMock.AssertNumberOfCalls(t, "Close", 1)
 }

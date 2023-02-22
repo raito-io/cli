@@ -1,7 +1,7 @@
 syntax = "proto3";
 package proto;
 
-option go_package="github.com/raito/cli/base/util/plugin";
+option go_package="github.com/raito-io/cli/base/util/plugin";
 
 // PluginInfo represents the information about a plugin.
 message PluginInfo {

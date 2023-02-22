@@ -1,0 +1,18 @@
+syntax = "proto3";
+package proto;
+
+option go_package="github.com/raito-io/cli/base/util/error";
+
+enum ErrorCode {
+  NO_ERROR = 0;
+  UNKNOWN_ERROR = 1;
+  BAD_INPUT_PARAMETER_ERROR = 2;
+  MISSING_INPUT_PARAMETER_ERROR = 3;
+  SOURCE_CONNECTION_ERROR = 4;
+}
+
+message ErrorResult {
+  string errorMessage = 1;
+  ErrorCode errorCode = 2;
+
+}

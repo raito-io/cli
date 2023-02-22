@@ -1,0 +1,51 @@
+syntax = "proto3";
+package proto;
+
+option go_package="github.com/raito-io/cli/base/data_source";
+
+import "config.proto";
+import "error.proto";
+
+// DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.
+// It contains all the necessary configuration parameters for the plugin to function.
+message DataSourceSyncConfig {
+  ConfigMap configMap = 1;
+  string TargetFile = 2;
+  string DataSourceId = 3;
+}
+
+// DataSourceSyncResult represents the result from the data source sync process.
+// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
+message DataSourceSyncResult {
+    ErrorResult error = 1;
+}
+
+message MetaData {
+  repeated DataObjectType dataObjectTypes = 1;
+  repeated string supportedFeatures = 2;
+  string type = 3;
+  string icon = 4;
+}
+
+message DataObjectType {
+  string name = 1;
+  string type = 2;
+  string label = 3;
+  string icon = 4;
+  repeated DataObjectTypePermission permissions = 5;
+  repeated string children = 6;
+}
+
+message DataObjectTypePermission {
+  string permission = 1;
+  repeated string globalPermissions = 2;
+  string description = 3;
+  repeated string action = 4;
+}
+
+message Empty {}
+
+service DataSourceSync {
+  rpc SyncDataSource(DataSourceSyncConfig) returns (DataSourceSyncResult);
+  rpc GetDataSourceMetaData(Empty) returns (MetaData);
+}

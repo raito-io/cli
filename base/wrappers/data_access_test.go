@@ -61,7 +61,7 @@ func TestDataAccessSyncFunction_SyncFromTarget_ErrorOnFileCreation(t *testing.T)
 		accessFileCreatorFactory: func(config *access_provider.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error) {
 			return nil, &error2.ErrorResult{
 				ErrorMessage: "BOOM!",
-				ErrorCode:    error2.UnknownError,
+				ErrorCode:    error2.ErrorCode_UNKNOWN_ERROR,
 			}
 		},
 	}
@@ -72,7 +72,7 @@ func TestDataAccessSyncFunction_SyncFromTarget_ErrorOnFileCreation(t *testing.T)
 	//Then
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.UnknownError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
 
 	syncerMock.AssertNotCalled(t, "SyncAccessProvidersFromTarget", mock.Anything, mock.Anything, mock.Anything)
 }
@@ -92,7 +92,7 @@ func TestDataAccessSyncFunction_SyncFromTarget_ErrorOnSync(t *testing.T) {
 	syncerMock.EXPECT().SyncAccessProvidersFromTarget(mock.Anything, accessProviderFilCreator, &config.ConfigMap).Return(
 		&error2.ErrorResult{
 			ErrorMessage: "BOOM!",
-			ErrorCode:    error2.UnknownError,
+			ErrorCode:    error2.ErrorCode_UNKNOWN_ERROR,
 		}).Once()
 
 	syncFunction := DataAccessSyncFunction{
@@ -108,7 +108,7 @@ func TestDataAccessSyncFunction_SyncFromTarget_ErrorOnSync(t *testing.T) {
 	//Then
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.UnknownError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
 }
 
 func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
@@ -296,7 +296,7 @@ func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsingFactory(t *testin
 	//Then
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "boom", result.Error.ErrorMessage)
-	assert.Equal(t, error2.UnknownError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
 
 	syncerMock.AssertNotCalled(t, "SyncAccessAsCodeToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	syncerMock.AssertNotCalled(t, "SyncAccessProvidersToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
@@ -313,7 +313,7 @@ func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsing(t *testing.T) {
 	accessProviderParser := mocks2.NewAccessProviderImportFileParser(t)
 	accessProviderParser.EXPECT().ParseAccessProviders().Return(nil, &error2.ErrorResult{
 		ErrorMessage: "BOOM!",
-		ErrorCode:    error2.SourceConnectionError,
+		ErrorCode:    error2.ErrorCode_UNKNOWN_ERROR,
 	}).Once()
 
 	syncerMock := NewMockAccessProviderSyncer(t)
@@ -331,7 +331,7 @@ func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsing(t *testing.T) {
 	//Then
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.SourceConnectionError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
 
 	syncerMock.AssertNotCalled(t, "SyncAccessProvidersToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	syncerMock.AssertNotCalled(t, "SyncAccessAsCodeToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
@@ -401,7 +401,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFile
 	//Then
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "boom", result.Error.ErrorMessage)
-	assert.Equal(t, error2.UnknownError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
 
 	syncerMock.AssertNotCalled(t, "SyncAccessProvidersToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
@@ -470,7 +470,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnSync(t *test
 
 	//Then
 	assert.NotNil(t, result.Error)
-	assert.Equal(t, error2.UnknownError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
 	assert.Equal(t, "boom", result.Error.ErrorMessage)
 }
 
@@ -536,7 +536,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode_ErrorOnSync(t *testing
 
 	//Then
 	assert.NotNil(t, result.Error)
-	assert.Equal(t, error2.UnknownError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
 	assert.Equal(t, "boom", result.Error.ErrorMessage)
 }
 

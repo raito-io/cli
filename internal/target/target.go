@@ -70,7 +70,7 @@ func RunTargets(baseConfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig
 
 func HandleTargetError(err error, config *BaseTargetConfig, during string) {
 	if errorResult, ok := err.(error2.ErrorResult); ok {
-		if errorResult.ErrorCode == error2.BadInputParameterError || errorResult.ErrorCode == error2.MissingInputParameterError {
+		if errorResult.ErrorCode == error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR || errorResult.ErrorCode == error2.ErrorCode_MISSING_INPUT_PARAMETER_ERROR {
 			config.TargetLogger.Error(fmt.Sprintf("Error during %s: %s. Execute command 'info <connector>' to print out the expected parameters for the connector.", during, errorResult.ErrorMessage))
 			return
 		}

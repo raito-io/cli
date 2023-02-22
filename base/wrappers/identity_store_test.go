@@ -57,7 +57,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOfFileCreation(t *testing.T) {
 		identityHandlerFactory: func(config *identity_store.IdentityStoreSyncConfig) (identity_store.IdentityStoreFileCreator, error) {
 			return nil, &error2.ErrorResult{
 				ErrorMessage: "BOOM!",
-				ErrorCode:    error2.BadInputParameterError,
+				ErrorCode:    error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR,
 			}
 		},
 	}
@@ -68,7 +68,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOfFileCreation(t *testing.T) {
 	//Then
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.BadInputParameterError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR, result.Error.ErrorCode)
 
 	syncerMock.AssertNotCalled(t, "SyncIdentityStore", mock.Anything, mock.Anything, mock.Anything)
 }
@@ -87,7 +87,7 @@ func TestMockDataUsageSyncer_SyncDataUsage_ErrorSync(t *testing.T) {
 	syncerMock := NewMockIdentityStoreSyncer(t)
 	syncerMock.EXPECT().SyncIdentityStore(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(&error2.ErrorResult{
 		ErrorMessage: "BOOM!",
-		ErrorCode:    error2.SourceConnectionError,
+		ErrorCode:    error2.ErrorCode_SOURCE_CONNECTION_ERROR,
 	}).Once()
 
 	syncFunction := identityStoreSyncFunction{
@@ -103,7 +103,7 @@ func TestMockDataUsageSyncer_SyncDataUsage_ErrorSync(t *testing.T) {
 	//Then
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.SourceConnectionError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_SOURCE_CONNECTION_ERROR, result.Error.ErrorCode)
 }
 
 func TestIdentityStoreSyncWrapper(t *testing.T) {

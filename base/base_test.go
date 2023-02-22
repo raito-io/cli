@@ -1,6 +1,7 @@
 package base
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,18 +127,11 @@ type another struct{}
 
 type combo struct {
 	plugin.UnimplementedInfoServer
+	dataSourcePlugin
 }
 
 func (s *combo) SyncIdentityStore(config *identity_store.IdentityStoreSyncConfig) identity_store.IdentityStoreSyncResult {
 	return identity_store.IdentityStoreSyncResult{}
-}
-
-func (s *combo) SyncDataSource(config *data_source.DataSourceSyncConfig) data_source.DataSourceSyncResult {
-	return data_source.DataSourceSyncResult{}
-}
-
-func (s *combo) GetDataSourceMetaData() data_source.MetaData {
-	return data_source.MetaData{}
 }
 
 func (s *combo) GetIdentityStoreMetaData() identity_store.MetaData {
@@ -156,12 +150,12 @@ func (s *identityStoryPlugin) GetIdentityStoreMetaData() identity_store.MetaData
 
 type dataSourcePlugin struct{}
 
-func (s *dataSourcePlugin) SyncDataSource(config *data_source.DataSourceSyncConfig) data_source.DataSourceSyncResult {
-	return data_source.DataSourceSyncResult{}
+func (s *dataSourcePlugin) SyncDataSource(_ context.Context, _ *data_source.DataSourceSyncConfig) (*data_source.DataSourceSyncResult, error) {
+	return &data_source.DataSourceSyncResult{}, nil
 }
 
-func (s *dataSourcePlugin) GetDataSourceMetaData() data_source.MetaData {
-	return data_source.MetaData{}
+func (s *dataSourcePlugin) GetDataSourceMetaData(ctx context.Context) (*data_source.MetaData, error) {
+	return &data_source.MetaData{}, nil
 }
 
 type accessSyncPlugin struct{}

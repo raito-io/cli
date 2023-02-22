@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 )
@@ -115,6 +114,5 @@ type infoGRPCServer struct {
 }
 
 func (s *infoGRPCServer) GetInfo(ctx context.Context, in *Empty) (*PluginInfo, error) {
-	hclog.L().Info("GRPC call GetInfo.")
 	return s.Impl.GetInfo(ctx, in)
 }

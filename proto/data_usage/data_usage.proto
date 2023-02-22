@@ -4,8 +4,6 @@ package data_usage;
 import "util/config/config.proto";
 import "util/error/error.proto";
 
-option go_package = "github.com/raito-io/cli/base/data_usage";
-
 // DataUsageSyncConfig represents the configuration that is passed from the CLI to the DataUsageSyncer plugin interface.
 // It contains all the necessary configuration parameters for the plugin to function.
 message DataUsageSyncConfig {

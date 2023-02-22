@@ -1,8 +1,6 @@
 syntax = "proto3";
 package util.error;
 
-option go_package = "github.com/raito-io/cli/base/util/error";
-
 enum ErrorCode {
   NO_ERROR = 0;
   UNKNOWN_ERROR = 1;

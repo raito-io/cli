@@ -68,6 +68,7 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient
 	}
 
 	s.TargetConfig.TargetLogger.Info("Fetching identity store metadata")
+
 	md, err := iss.GetIdentityStoreMetaData(context.Background())
 	if err != nil {
 		return job.Failed, "", err
@@ -81,13 +82,14 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient
 	}
 
 	s.TargetConfig.TargetLogger.Info("Gathering users and groups")
+
 	result, err := iss.SyncIdentityStore(context.Background(), &syncerConfig)
 	if err != nil {
 		return job.Failed, "", err
 	}
 
 	if result.Error != nil {
-		return job.Failed, "", *(result.Error)
+		return job.Failed, "", result.Error
 	}
 
 	importerConfig := IdentityStoreImportConfig{

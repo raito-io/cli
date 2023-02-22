@@ -58,6 +58,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, s
 	}
 
 	s.TargetConfig.TargetLogger.Info("Fetching data source metadata")
+
 	md, err := dss.GetDataSourceMetaData(context.Background())
 	if err != nil {
 		return job.Failed, "", err

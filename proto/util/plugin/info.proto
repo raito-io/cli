@@ -3,8 +3,6 @@ package util.plugin;
 
 import "google/protobuf/empty.proto";
 
-option go_package = "github.com/raito-io/cli/base/util/plugin";
-
 // PluginInfo represents the information about a plugin.
 message PluginInfo {
   string name = 1;

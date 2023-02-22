@@ -30,20 +30,20 @@ type AccessProviderSyncer interface {
 }
 
 func DataAccessSync(syncer AccessProviderSyncer, configOpt ...func(config *access_provider.AccessSyncConfig)) *DataAccessSyncFunction {
-	config := access_provider.AccessSyncConfig{}
-
-	for _, fn := range configOpt {
-		fn(&config)
-	}
-
-	return &DataAccessSyncFunction{
+	obj := &DataAccessSyncFunction{
 		Syncer:                           syncer,
 		accessFileCreatorFactory:         sync_from_target.NewAccessProviderFileCreator,
 		accessFeedbackFileCreatorFactory: sync_to_target.NewFeedbackFileCreator,
 		accessProviderParserFactory:      sync_to_target.NewAccessProviderFileParser,
 
-		config: config,
+		config: access_provider.AccessSyncConfig{},
 	}
+
+	for _, fn := range configOpt {
+		fn(&obj.config)
+	}
+
+	return obj
 }
 
 type DataAccessSyncFunction struct {

@@ -143,6 +143,7 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 	}
 
 	s.TargetConfig.TargetLogger.Info("Synchronizing access providers between data source and the Raito")
+
 	res, err := das.SyncFromTarget(context.Background(), &syncerConfig)
 	if err != nil {
 		return err

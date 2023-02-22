@@ -5,8 +5,6 @@ import "google/protobuf/empty.proto";
 import "util/config/config.proto";
 import "util/error/error.proto";
 
-option go_package = "github.com/raito-io/cli/base/data_source";
-
 // DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.
 // It contains all the necessary configuration parameters for the plugin to function.
 message DataSourceSyncConfig {

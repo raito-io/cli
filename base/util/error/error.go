@@ -39,7 +39,7 @@ func CreateSourceConnectionError(url, message string) *ErrorResult {
 
 // ToErrorResult is a helper method to to create an ErrorResult from an error. If the error already is of type ErrorResult, the original is returned.
 func ToErrorResult(err error) *ErrorResult {
-	if res, ok := err.(ErrorResult); ok {
+	if res, ok := err.(ErrorResult); ok { //nolint:govet
 		return &res
 	}
 

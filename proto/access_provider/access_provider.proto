@@ -5,8 +5,6 @@ import "google/protobuf/empty.proto";
 import "util/config/config.proto";
 import "util/error/error.proto";
 
-option go_package = "github.com/raito-io/cli/base/access_provider";
-
 // AccessSyncToTarget contains all necessary configuration parameters to export Data from Raito into DS
 message AccessSyncToTarget {
   util.config.ConfigMap config_map = 1;

@@ -37,7 +37,7 @@ func ParseVersion(strVersion string) *version.SemVer {
 		return nil
 	}
 
-	return &version.SemVer{Major: uint64(major), Minor: uint64(minor), Patch: uint64(maintenance)} //nolint:gosec
+	return &version.SemVer{Major: uint64(major), Minor: uint64(minor), Patch: uint64(maintenance)}
 }
 
 func (i *PluginInfo) InfoString() string {

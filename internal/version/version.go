@@ -11,8 +11,6 @@ import (
 	version2 "github.com/raito-io/cli/base/util/version"
 )
 
-var v = ""
-
 var DevVersion = semver.New(0, 0, 0, "error", "noVersionDefined")
 
 var version = *DevVersion

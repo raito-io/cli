@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,9 +36,10 @@ func TestDataSourceSyncFunction_SyncDataSource(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncDataSource(config)
+	result, err := syncFunction.SyncDataSource(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.Nil(t, result.Error)
 }
 
@@ -62,9 +64,10 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorOnFile(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncDataSource(config)
+	result, err := syncFunction.SyncDataSource(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
 	assert.Equal(t, error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR, result.Error.ErrorCode)
@@ -97,9 +100,10 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorSync(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncDataSource(config)
+	result, err := syncFunction.SyncDataSource(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
 	assert.Equal(t, error2.ErrorCode_SOURCE_CONNECTION_ERROR, result.Error.ErrorCode)

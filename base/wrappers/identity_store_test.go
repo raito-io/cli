@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestIdentityStoreSyncFunction_SyncIdentityStore(t *testing.T) {
 	config := &identity_store.IdentityStoreSyncConfig{
 		GroupFile: "GroupFile",
 		UserFile:  "UserFile",
-		ConfigMap: config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
+		ConfigMap: &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := is_mocks.NewIdentityStoreFileCreator(t)
@@ -26,7 +27,7 @@ func TestIdentityStoreSyncFunction_SyncIdentityStore(t *testing.T) {
 	fileCreatorMock.EXPECT().GetGroupCount().Return(0)
 
 	syncerMock := NewMockIdentityStoreSyncer(t)
-	syncerMock.EXPECT().SyncIdentityStore(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(nil).Once()
+	syncerMock.EXPECT().SyncIdentityStore(mock.Anything, fileCreatorMock, config.ConfigMap).Return(nil).Once()
 
 	syncFunction := identityStoreSyncFunction{
 		syncer: syncerMock,
@@ -36,9 +37,10 @@ func TestIdentityStoreSyncFunction_SyncIdentityStore(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncIdentityStore(config)
+	result, err := syncFunction.SyncIdentityStore(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.Nil(t, result.Error)
 }
 
@@ -47,7 +49,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOfFileCreation(t *testing.T) {
 	config := &identity_store.IdentityStoreSyncConfig{
 		GroupFile: "GroupFile",
 		UserFile:  "UserFile",
-		ConfigMap: config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
+		ConfigMap: &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	syncerMock := NewMockIdentityStoreSyncer(t)
@@ -63,9 +65,10 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOfFileCreation(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncIdentityStore(config)
+	result, err := syncFunction.SyncIdentityStore(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
 	assert.Equal(t, error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR, result.Error.ErrorCode)
@@ -78,14 +81,14 @@ func TestMockDataUsageSyncer_SyncDataUsage_ErrorSync(t *testing.T) {
 	config := &identity_store.IdentityStoreSyncConfig{
 		GroupFile: "GroupFile",
 		UserFile:  "UserFile",
-		ConfigMap: config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
+		ConfigMap: &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := is_mocks.NewIdentityStoreFileCreator(t)
 	fileCreatorMock.EXPECT().Close().Return().Once()
 
 	syncerMock := NewMockIdentityStoreSyncer(t)
-	syncerMock.EXPECT().SyncIdentityStore(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(&error2.ErrorResult{
+	syncerMock.EXPECT().SyncIdentityStore(mock.Anything, fileCreatorMock, config.ConfigMap).Return(&error2.ErrorResult{
 		ErrorMessage: "BOOM!",
 		ErrorCode:    error2.ErrorCode_SOURCE_CONNECTION_ERROR,
 	}).Once()
@@ -98,9 +101,10 @@ func TestMockDataUsageSyncer_SyncDataUsage_ErrorSync(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncIdentityStore(config)
+	result, err := syncFunction.SyncIdentityStore(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
 	assert.Equal(t, error2.ErrorCode_SOURCE_CONNECTION_ERROR, result.Error.ErrorCode)

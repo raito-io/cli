@@ -25,18 +25,30 @@ func (_m *MockIdentityStoreSyncer) EXPECT() *MockIdentityStoreSyncer_Expecter {
 	return &MockIdentityStoreSyncer_Expecter{mock: &_m.Mock}
 }
 
-// GetIdentityStoreMetaData provides a mock function with given fields:
-func (_m *MockIdentityStoreSyncer) GetIdentityStoreMetaData() identity_store.MetaData {
-	ret := _m.Called()
+// GetIdentityStoreMetaData provides a mock function with given fields: ctx
+func (_m *MockIdentityStoreSyncer) GetIdentityStoreMetaData(ctx context.Context) (*identity_store.MetaData, error) {
+	ret := _m.Called(ctx)
 
-	var r0 identity_store.MetaData
-	if rf, ok := ret.Get(0).(func() identity_store.MetaData); ok {
-		r0 = rf()
+	var r0 *identity_store.MetaData
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (*identity_store.MetaData, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) *identity_store.MetaData); ok {
+		r0 = rf(ctx)
 	} else {
-		r0 = ret.Get(0).(identity_store.MetaData)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*identity_store.MetaData)
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetIdentityStoreMetaData'
@@ -45,23 +57,24 @@ type MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call struct {
 }
 
 // GetIdentityStoreMetaData is a helper method to define mock.On call
-func (_e *MockIdentityStoreSyncer_Expecter) GetIdentityStoreMetaData() *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
-	return &MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call{Call: _e.mock.On("GetIdentityStoreMetaData")}
+//   - ctx context.Context
+func (_e *MockIdentityStoreSyncer_Expecter) GetIdentityStoreMetaData(ctx interface{}) *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
+	return &MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call{Call: _e.mock.On("GetIdentityStoreMetaData", ctx)}
 }
 
-func (_c *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call) Run(run func()) *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
+func (_c *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call) Run(run func(ctx context.Context)) *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		run(args[0].(context.Context))
 	})
 	return _c
 }
 
-func (_c *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call) Return(_a0 identity_store.MetaData) *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
-	_c.Call.Return(_a0)
+func (_c *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call) Return(_a0 *identity_store.MetaData, _a1 error) *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call) RunAndReturn(run func() identity_store.MetaData) *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
+func (_c *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call) RunAndReturn(run func(context.Context) (*identity_store.MetaData, error)) *MockIdentityStoreSyncer_GetIdentityStoreMetaData_Call {
 	_c.Call.Return(run)
 	return _c
 }

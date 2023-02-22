@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.12
-// source: data_source.proto
+// source: data_source/data_source.proto
 
 package data_source
 
@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -18,124 +19,124 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// DataSourceSyncClient is the client API for DataSourceSync service.
+// DataSourceSyncServiceClient is the client API for DataSourceSyncService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type DataSourceSyncClient interface {
+type DataSourceSyncServiceClient interface {
 	SyncDataSource(ctx context.Context, in *DataSourceSyncConfig, opts ...grpc.CallOption) (*DataSourceSyncResult, error)
-	GetDataSourceMetaData(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetaData, error)
+	GetDataSourceMetaData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*MetaData, error)
 }
 
-type dataSourceSyncClient struct {
+type dataSourceSyncServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewDataSourceSyncClient(cc grpc.ClientConnInterface) DataSourceSyncClient {
-	return &dataSourceSyncClient{cc}
+func NewDataSourceSyncServiceClient(cc grpc.ClientConnInterface) DataSourceSyncServiceClient {
+	return &dataSourceSyncServiceClient{cc}
 }
 
-func (c *dataSourceSyncClient) SyncDataSource(ctx context.Context, in *DataSourceSyncConfig, opts ...grpc.CallOption) (*DataSourceSyncResult, error) {
+func (c *dataSourceSyncServiceClient) SyncDataSource(ctx context.Context, in *DataSourceSyncConfig, opts ...grpc.CallOption) (*DataSourceSyncResult, error) {
 	out := new(DataSourceSyncResult)
-	err := c.cc.Invoke(ctx, "/proto.DataSourceSync/SyncDataSource", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/data_source.DataSourceSyncService/SyncDataSource", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *dataSourceSyncClient) GetDataSourceMetaData(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetaData, error) {
+func (c *dataSourceSyncServiceClient) GetDataSourceMetaData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*MetaData, error) {
 	out := new(MetaData)
-	err := c.cc.Invoke(ctx, "/proto.DataSourceSync/GetDataSourceMetaData", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/data_source.DataSourceSyncService/GetDataSourceMetaData", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// DataSourceSyncServer is the server API for DataSourceSync service.
-// All implementations must embed UnimplementedDataSourceSyncServer
+// DataSourceSyncServiceServer is the server API for DataSourceSyncService service.
+// All implementations must embed UnimplementedDataSourceSyncServiceServer
 // for forward compatibility
-type DataSourceSyncServer interface {
+type DataSourceSyncServiceServer interface {
 	SyncDataSource(context.Context, *DataSourceSyncConfig) (*DataSourceSyncResult, error)
-	GetDataSourceMetaData(context.Context, *Empty) (*MetaData, error)
-	mustEmbedUnimplementedDataSourceSyncServer()
+	GetDataSourceMetaData(context.Context, *emptypb.Empty) (*MetaData, error)
+	mustEmbedUnimplementedDataSourceSyncServiceServer()
 }
 
-// UnimplementedDataSourceSyncServer must be embedded to have forward compatible implementations.
-type UnimplementedDataSourceSyncServer struct {
+// UnimplementedDataSourceSyncServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedDataSourceSyncServiceServer struct {
 }
 
-func (UnimplementedDataSourceSyncServer) SyncDataSource(context.Context, *DataSourceSyncConfig) (*DataSourceSyncResult, error) {
+func (UnimplementedDataSourceSyncServiceServer) SyncDataSource(context.Context, *DataSourceSyncConfig) (*DataSourceSyncResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncDataSource not implemented")
 }
-func (UnimplementedDataSourceSyncServer) GetDataSourceMetaData(context.Context, *Empty) (*MetaData, error) {
+func (UnimplementedDataSourceSyncServiceServer) GetDataSourceMetaData(context.Context, *emptypb.Empty) (*MetaData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDataSourceMetaData not implemented")
 }
-func (UnimplementedDataSourceSyncServer) mustEmbedUnimplementedDataSourceSyncServer() {}
+func (UnimplementedDataSourceSyncServiceServer) mustEmbedUnimplementedDataSourceSyncServiceServer() {}
 
-// UnsafeDataSourceSyncServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to DataSourceSyncServer will
+// UnsafeDataSourceSyncServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DataSourceSyncServiceServer will
 // result in compilation errors.
-type UnsafeDataSourceSyncServer interface {
-	mustEmbedUnimplementedDataSourceSyncServer()
+type UnsafeDataSourceSyncServiceServer interface {
+	mustEmbedUnimplementedDataSourceSyncServiceServer()
 }
 
-func RegisterDataSourceSyncServer(s grpc.ServiceRegistrar, srv DataSourceSyncServer) {
-	s.RegisterService(&DataSourceSync_ServiceDesc, srv)
+func RegisterDataSourceSyncServiceServer(s grpc.ServiceRegistrar, srv DataSourceSyncServiceServer) {
+	s.RegisterService(&DataSourceSyncService_ServiceDesc, srv)
 }
 
-func _DataSourceSync_SyncDataSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _DataSourceSyncService_SyncDataSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DataSourceSyncConfig)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DataSourceSyncServer).SyncDataSource(ctx, in)
+		return srv.(DataSourceSyncServiceServer).SyncDataSource(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.DataSourceSync/SyncDataSource",
+		FullMethod: "/data_source.DataSourceSyncService/SyncDataSource",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataSourceSyncServer).SyncDataSource(ctx, req.(*DataSourceSyncConfig))
+		return srv.(DataSourceSyncServiceServer).SyncDataSource(ctx, req.(*DataSourceSyncConfig))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DataSourceSync_GetDataSourceMetaData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+func _DataSourceSyncService_GetDataSourceMetaData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DataSourceSyncServer).GetDataSourceMetaData(ctx, in)
+		return srv.(DataSourceSyncServiceServer).GetDataSourceMetaData(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.DataSourceSync/GetDataSourceMetaData",
+		FullMethod: "/data_source.DataSourceSyncService/GetDataSourceMetaData",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataSourceSyncServer).GetDataSourceMetaData(ctx, req.(*Empty))
+		return srv.(DataSourceSyncServiceServer).GetDataSourceMetaData(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// DataSourceSync_ServiceDesc is the grpc.ServiceDesc for DataSourceSync service.
+// DataSourceSyncService_ServiceDesc is the grpc.ServiceDesc for DataSourceSyncService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var DataSourceSync_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.DataSourceSync",
-	HandlerType: (*DataSourceSyncServer)(nil),
+var DataSourceSyncService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "data_source.DataSourceSyncService",
+	HandlerType: (*DataSourceSyncServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "SyncDataSource",
-			Handler:    _DataSourceSync_SyncDataSource_Handler,
+			Handler:    _DataSourceSyncService_SyncDataSource_Handler,
 		},
 		{
 			MethodName: "GetDataSourceMetaData",
-			Handler:    _DataSourceSync_GetDataSourceMetaData_Handler,
+			Handler:    _DataSourceSyncService_GetDataSourceMetaData_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "data_source.proto",
+	Metadata: "data_source/data_source.proto",
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/raito-io/cli/internal/target"
 )
 
-func SetMetaData(config target.BaseTargetConfig, metadata identity_store.MetaData) error {
+func SetMetaData(config target.BaseTargetConfig, metadata *identity_store.MetaData) error {
 	logger := config.TargetLogger.With("identitystore", config.IdentityStoreId)
 	start := time.Now()
 

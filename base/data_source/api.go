@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -172,12 +173,12 @@ type DataSourceSyncerPlugin struct {
 }
 
 func (p *DataSourceSyncerPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	RegisterDataSourceSyncServer(s, &dataSourceSyncerGRPCServer{Impl: p.Impl})
+	RegisterDataSourceSyncServiceServer(s, &dataSourceSyncerGRPCServer{Impl: p.Impl})
 	return nil
 }
 
 func (DataSourceSyncerPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
-	return &dataSourceSyncerGRPC{client: NewDataSourceSyncClient(c)}, nil
+	return &dataSourceSyncerGRPC{client: NewDataSourceSyncServiceClient(c)}, nil
 }
 
 // DataSourceSyncerName constant should not be used directly when implementing plugins.
@@ -185,18 +186,18 @@ func (DataSourceSyncerPlugin) GRPCClient(ctx context.Context, broker *plugin.GRP
 // used by the CLI and the cli-plugin-base library (RegisterPlugins function) to register the plugins.
 const DataSourceSyncerName = "dataSourceSyncer"
 
-type dataSourceSyncerGRPC struct{ client DataSourceSyncClient }
+type dataSourceSyncerGRPC struct{ client DataSourceSyncServiceClient }
 
 func (g *dataSourceSyncerGRPC) SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (*DataSourceSyncResult, error) {
 	return g.client.SyncDataSource(ctx, config)
 }
 
 func (g *dataSourceSyncerGRPC) GetDataSourceMetaData(ctx context.Context) (*MetaData, error) {
-	return g.client.GetDataSourceMetaData(ctx, &Empty{})
+	return g.client.GetDataSourceMetaData(ctx, &emptypb.Empty{})
 }
 
 type dataSourceSyncerGRPCServer struct {
-	UnimplementedDataSourceSyncServer
+	UnimplementedDataSourceSyncServiceServer
 
 	Impl DataSourceSyncer
 }
@@ -205,6 +206,6 @@ func (s *dataSourceSyncerGRPCServer) SyncDataSource(ctx context.Context, config 
 	return s.Impl.SyncDataSource(ctx, config)
 }
 
-func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, _ *Empty) (*MetaData, error) {
+func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, _ *emptypb.Empty) (*MetaData, error) {
 	return s.Impl.GetDataSourceMetaData(ctx)
 }

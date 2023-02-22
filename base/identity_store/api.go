@@ -1,50 +1,34 @@
 package identity_store
 
 import (
-	"net/rpc"
+	"context"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/raito-io/cli/base/util/config"
-	error2 "github.com/raito-io/cli/base/util/error"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
-
-// IdentityStoreSyncConfig represents the configuration that is passed from the CLI to the IdentityStoreSyncer plugin interface.
-// It contains all the necessary configuration parameters for the plugin to function.
-type IdentityStoreSyncConfig struct {
-	config.ConfigMap
-	UserFile  string
-	GroupFile string
-}
-
-// IdentityStoreSyncResult represents the result from the identity store sync process.
-// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
-type IdentityStoreSyncResult struct {
-	Error *error2.ErrorResult
-}
-
-type MetaData struct {
-	Type string `json:"type"`
-	Icon string `json:"icon"`
-}
 
 // IdentityStoreSyncer interface needs to be implemented by any plugin that wants to import users and groups into a Raito identity store.
 type IdentityStoreSyncer interface {
-	SyncIdentityStore(config *IdentityStoreSyncConfig) IdentityStoreSyncResult
-	GetIdentityStoreMetaData() MetaData
+	SyncIdentityStore(ctx context.Context, config *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error)
+	GetIdentityStoreMetaData(ctx context.Context) (*MetaData, error)
 }
 
 // IdentityStoreSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
 // A plugin should not be using this directly, but instead depend on the cli-plugin-base library to register the plugins.
 type IdentityStoreSyncerPlugin struct {
+	plugin.Plugin
+
 	Impl IdentityStoreSyncer
 }
 
-func (p *IdentityStoreSyncerPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
-	return &identityStoreSyncerRPCServer{Impl: p.Impl}, nil
+func (p *IdentityStoreSyncerPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+	RegisterIdentityStoreSyncServiceServer(s, &identityStoreSyncerGRPCServer{Impl: p.Impl})
+	return nil
 }
 
-func (IdentityStoreSyncerPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
-	return &identityStoreSyncerRPC{client: c}, nil
+func (IdentityStoreSyncerPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &identityStoreSyncerGRPC{client: NewIdentityStoreSyncServiceClient(c)}, nil
 }
 
 // IdentityStoreSyncerName constant should not be used directly when implementing plugins.
@@ -52,41 +36,28 @@ func (IdentityStoreSyncerPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (int
 // used by the CLI and the cli-plugin-base library (RegisterPlugins function) to register the plugins.
 const IdentityStoreSyncerName = "identityStoreSyncer"
 
-type identityStoreSyncerRPC struct{ client *rpc.Client }
-
-func (g *identityStoreSyncerRPC) SyncIdentityStore(config *IdentityStoreSyncConfig) IdentityStoreSyncResult {
-	var resp IdentityStoreSyncResult
-
-	err := g.client.Call("Plugin.SyncIdentityStore", config, &resp)
-	if err != nil && resp.Error == nil {
-		resp.Error = error2.ToErrorResult(err)
-	}
-
-	return resp
+type identityStoreSyncerGRPC struct {
+	client IdentityStoreSyncServiceClient
 }
 
-func (g *identityStoreSyncerRPC) GetIdentityStoreMetaData() MetaData {
-	var resp MetaData
-
-	err := g.client.Call("Plugin.GetIdentityStoreMetaData", new(interface{}), &resp)
-	if err != nil {
-		return MetaData{}
-	}
-
-	return resp
+func (g *identityStoreSyncerGRPC) SyncIdentityStore(ctx context.Context, config *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error) {
+	return g.client.SyncIdentityStore(ctx, config)
 }
 
-type identityStoreSyncerRPCServer struct {
+func (g *identityStoreSyncerGRPC) GetIdentityStoreMetaData(ctx context.Context) (*MetaData, error) {
+	return g.client.GetIdentityStoreMetaData(ctx, &emptypb.Empty{})
+}
+
+type identityStoreSyncerGRPCServer struct {
+	UnimplementedIdentityStoreSyncServiceServer
+
 	Impl IdentityStoreSyncer
 }
 
-func (s *identityStoreSyncerRPCServer) SyncIdentityStore(config *IdentityStoreSyncConfig, resp *IdentityStoreSyncResult) error {
-	*resp = s.Impl.SyncIdentityStore(config)
-
-	return nil
+func (s *identityStoreSyncerGRPCServer) SyncIdentityStore(ctx context.Context, config *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error) {
+	return s.Impl.SyncIdentityStore(ctx, config)
 }
 
-func (s *identityStoreSyncerRPCServer) GetIdentityStoreMetaData(args interface{}, resp *MetaData) error {
-	*resp = s.Impl.GetIdentityStoreMetaData()
-	return nil
+func (s *identityStoreSyncerGRPCServer) GetIdentityStoreMetaData(ctx context.Context, _ *emptypb.Empty) (*MetaData, error) {
+	return s.Impl.GetIdentityStoreMetaData(ctx)
 }

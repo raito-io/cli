@@ -1,0 +1,8 @@
+syntax = "proto3";
+package util.config;
+
+option go_package = "github.com/raito-io/cli/base/util/config";
+
+message ConfigMap {
+  map<string, string> parameters = 1;
+}

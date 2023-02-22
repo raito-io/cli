@@ -1,7 +1,7 @@
 syntax = "proto3";
-package proto;
+package util.error;
 
-option go_package="github.com/raito-io/cli/base/util/error";
+option go_package = "github.com/raito-io/cli/base/util/error";
 
 enum ErrorCode {
   NO_ERROR = 0;
@@ -12,7 +12,6 @@ enum ErrorCode {
 }
 
 message ErrorResult {
-  string errorMessage = 1;
-  ErrorCode errorCode = 2;
-
+  string error_message = 1;
+  ErrorCode error_code = 2;
 }

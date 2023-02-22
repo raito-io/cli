@@ -8,12 +8,8 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
-
-// TODO
-//func (i Version) String() string {
-//	return fmt.Sprintf("%d.%d.%d", i.Major, i.Minor, i.Maintenance)
-//}
 
 // ParseVersion parses
 // the given string version in the form X.Y.Z and returns a Version struct representing it.
@@ -78,16 +74,16 @@ type Info interface {
 type InfoPlugin struct {
 	plugin.Plugin
 
-	Impl InfoServer
+	Impl InfoServiceServer
 }
 
 func (p *InfoPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	RegisterInfoServer(s, &infoGRPCServer{Impl: p.Impl})
+	RegisterInfoServiceServer(s, &infoGRPCServer{Impl: p.Impl})
 	return nil
 }
 
 func (InfoPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
-	return &infoGRPC{client: NewInfoClient(c)}, nil
+	return &infoGRPC{client: NewInfoServiceClient(c)}, nil
 }
 
 // InfoName constant should not be used directly when implementing plugins.
@@ -95,10 +91,10 @@ func (InfoPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *
 // used by the CLI and the cli-plugin-base library (RegisterPlugins function) to register the plugins.
 const InfoName = "info"
 
-type infoGRPC struct{ client InfoClient }
+type infoGRPC struct{ client InfoServiceClient }
 
 func (g *infoGRPC) GetInfo(ctx context.Context) (*PluginInfo, error) {
-	resp, err := g.client.GetInfo(ctx, &Empty{})
+	resp, err := g.client.GetInfo(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, err
 	}
@@ -107,12 +103,12 @@ func (g *infoGRPC) GetInfo(ctx context.Context) (*PluginInfo, error) {
 }
 
 type infoGRPCServer struct {
-	UnimplementedInfoServer
+	UnimplementedInfoServiceServer
 
 	// This is the real implementation
-	Impl InfoServer
+	Impl InfoServiceServer
 }
 
-func (s *infoGRPCServer) GetInfo(ctx context.Context, in *Empty) (*PluginInfo, error) {
+func (s *infoGRPCServer) GetInfo(ctx context.Context, in *emptypb.Empty) (*PluginInfo, error) {
 	return s.Impl.GetInfo(ctx, in)
 }

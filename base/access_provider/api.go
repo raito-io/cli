@@ -1,71 +1,37 @@
 package access_provider
 
 import (
-	"fmt"
+	"context"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-
-	"github.com/raito-io/cli/base/util/config"
-	error2 "github.com/raito-io/cli/base/util/error"
-
-	"net/rpc"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
-
-// AccessSyncToTarget contains all necessary configuration parameters to export Data from Raito into DS
-type AccessSyncToTarget struct {
-	config.ConfigMap
-	// SourceFile points to the file containing the access controls that need to be pushed to the data source.
-	SourceFile string
-	// FeedbackTargetFile points to the file where the plugin needs to export the access controls feedback to.
-	FeedbackTargetFile string
-	Prefix             string
-}
-
-// AccessSyncFromTarget contains all necessary configuration parameters to import Data from Raito into DS
-type AccessSyncFromTarget struct {
-	config.ConfigMap
-	// TargetFile points to the file where the plugin needs to export the access control naming.
-	TargetFile string
-	Prefix     string
-}
-
-// AccessSyncResult represents the result from the data access sync process.
-// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
-type AccessSyncResult struct {
-	Error *error2.ErrorResult
-}
-
-// AccessSyncConfig gives us information on how the CLI can sync access providers
-type AccessSyncConfig struct {
-	// SupportPartialSync if true, syncing only out of sync access providers is allowed
-	SupportPartialSync bool
-
-	// ImplicitDeleteInAccessProviderUpdate if true, access providers can be deleted by name only
-	ImplicitDeleteInAccessProviderUpdate bool
-}
 
 // AccessSyncer interface needs to be implemented by any plugin that wants to sync access controls between Raito and the data source.
 // This sync can be in the 2 directions or in just 1 depending on the parameters set in AccessSyncConfig.
 type AccessSyncer interface {
-	SyncFromTarget(config *AccessSyncFromTarget) AccessSyncResult
-	SyncToTarget(config *AccessSyncToTarget) AccessSyncResult
+	SyncFromTarget(ctx context.Context, config *AccessSyncFromTarget) (*AccessSyncResult, error)
+	SyncToTarget(ctx context.Context, config *AccessSyncToTarget) (*AccessSyncResult, error)
 
-	SyncConfig() AccessSyncConfig
+	SyncConfig(ctx context.Context) (*AccessSyncConfig, error)
 }
 
 // AccessSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
 // A plugin should not be using this directly, but instead depend on the cli-plugin-base library to register the plugins.
 type AccessSyncerPlugin struct {
+	plugin.Plugin
+
 	Impl AccessSyncer
 }
 
-func (p AccessSyncerPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
-	return &accessSyncerRPCServer{Impl: p.Impl}, nil
+func (p AccessSyncerPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+	RegisterAccessProviderSyncServiceServer(s, &accessSyncerGRPCServer{Impl: p.Impl})
+	return nil
 }
 
-func (AccessSyncerPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
-	return &accessSyncerRPC{client: c}, nil
+func (AccessSyncerPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &accessSyncerGRPC{client: NewAccessProviderSyncServiceClient(c)}, nil
 }
 
 // AccessSyncerName constant should not be used directly when implementing plugins.
@@ -73,59 +39,38 @@ func (AccessSyncerPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{
 // used by the CLI and the cli-plugin-base library (RegisterPlugins function) to register the plugins.
 const AccessSyncerName = "accessSyncer"
 
-type accessSyncerRPC struct{ client *rpc.Client }
-
-func (g *accessSyncerRPC) SyncFromTarget(config *AccessSyncFromTarget) AccessSyncResult {
-	var resp AccessSyncResult
-
-	err := g.client.Call("Plugin.SyncFromTarget", config, &resp)
-	if err != nil && resp.Error == nil {
-		resp.Error = error2.ToErrorResult(err)
-	}
-
-	return resp
+type accessSyncerGRPC struct {
+	client AccessProviderSyncServiceClient
 }
 
-func (g *accessSyncerRPC) SyncToTarget(config *AccessSyncToTarget) AccessSyncResult {
-	var resp AccessSyncResult
-
-	err := g.client.Call("Plugin.SyncToTarget", config, &resp)
-	if err != nil && resp.Error == nil {
-		resp.Error = error2.ToErrorResult(err)
-	}
-
-	return resp
+func (g *accessSyncerGRPC) SyncFromTarget(ctx context.Context, config *AccessSyncFromTarget) (*AccessSyncResult, error) {
+	return g.client.SyncFromTarget(ctx, config)
 }
 
-func (g *accessSyncerRPC) SyncConfig() AccessSyncConfig {
-	var resp AccessSyncConfig
-
-	err := g.client.Call("Plugin.SyncConfig", new(interface{}), &resp)
-	if err != nil {
-		hclog.L().Warn(fmt.Sprintf("Failed to load sync config from plugin. Will use default settings. %s", err.Error()))
-		return AccessSyncConfig{}
-	}
-
-	return resp
+func (g *accessSyncerGRPC) SyncToTarget(ctx context.Context, config *AccessSyncToTarget) (*AccessSyncResult, error) {
+	return g.client.SyncToTarget(ctx, config)
 }
 
-type accessSyncerRPCServer struct {
+func (g *accessSyncerGRPC) SyncConfig(ctx context.Context) (*AccessSyncConfig, error) {
+	return g.client.SyncConfig(ctx, &emptypb.Empty{})
+}
+
+type accessSyncerGRPCServer struct {
+	UnimplementedAccessProviderSyncServiceServer
+
 	Impl AccessSyncer
 }
 
-func (s *accessSyncerRPCServer) SyncToTarget(config *AccessSyncToTarget, resp *AccessSyncResult) error {
-	*resp = s.Impl.SyncToTarget(config)
-	return nil
+func (s *accessSyncerGRPCServer) SyncToTarget(ctx context.Context, config *AccessSyncToTarget) (*AccessSyncResult, error) {
+	return s.Impl.SyncToTarget(ctx, config)
 }
 
-func (s *accessSyncerRPCServer) SyncFromTarget(config *AccessSyncFromTarget, resp *AccessSyncResult) error {
-	*resp = s.Impl.SyncFromTarget(config)
-	return nil
+func (s *accessSyncerGRPCServer) SyncFromTarget(ctx context.Context, config *AccessSyncFromTarget) (*AccessSyncResult, error) {
+	return s.Impl.SyncFromTarget(ctx, config)
 }
 
-func (s *accessSyncerRPCServer) SyncConfig(args interface{}, resp *AccessSyncConfig) error {
-	*resp = s.Impl.SyncConfig()
-	return nil
+func (s *accessSyncerGRPCServer) SyncConfig(ctx context.Context, _ *emptypb.Empty) (*AccessSyncConfig, error) {
+	return s.Impl.SyncConfig(ctx)
 }
 
 func WithSupportPartialSync() func(config *AccessSyncConfig) {

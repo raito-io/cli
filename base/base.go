@@ -72,7 +72,7 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, error) {
 			logger.Debug("Registered DataUsageSyncer Plugin")
 		}
 
-		if i, ok := plugin.(plugin2.InfoServer); ok {
+		if i, ok := plugin.(plugin2.InfoServiceServer); ok {
 			if _, f := pluginMap[plugin2.InfoName]; f {
 				return nil, errors.New("multiple implementation for Info Plugin found. There should be only one")
 			}

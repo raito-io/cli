@@ -14,3 +14,11 @@ test:
 lint:
 	golangci-lint run ./...
 	go fmt ./...
+
+
+protobuf-lint:
+	buf format -w
+	buf lint
+
+protobuf-generate:
+	go generate  -run protoc ./...

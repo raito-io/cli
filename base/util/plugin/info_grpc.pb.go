@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.12
-// source: info.proto
+// source: util/plugin/info.proto
 
 package plugin
 
@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -18,88 +19,88 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// InfoClient is the client API for Info service.
+// InfoServiceClient is the client API for InfoService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type InfoClient interface {
-	GetInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PluginInfo, error)
+type InfoServiceClient interface {
+	GetInfo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PluginInfo, error)
 }
 
-type infoClient struct {
+type infoServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewInfoClient(cc grpc.ClientConnInterface) InfoClient {
-	return &infoClient{cc}
+func NewInfoServiceClient(cc grpc.ClientConnInterface) InfoServiceClient {
+	return &infoServiceClient{cc}
 }
 
-func (c *infoClient) GetInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PluginInfo, error) {
+func (c *infoServiceClient) GetInfo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PluginInfo, error) {
 	out := new(PluginInfo)
-	err := c.cc.Invoke(ctx, "/proto.Info/getInfo", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/util.plugin.InfoService/GetInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// InfoServer is the server API for Info service.
-// All implementations must embed UnimplementedInfoServer
+// InfoServiceServer is the server API for InfoService service.
+// All implementations must embed UnimplementedInfoServiceServer
 // for forward compatibility
-type InfoServer interface {
-	GetInfo(context.Context, *Empty) (*PluginInfo, error)
-	mustEmbedUnimplementedInfoServer()
+type InfoServiceServer interface {
+	GetInfo(context.Context, *emptypb.Empty) (*PluginInfo, error)
+	mustEmbedUnimplementedInfoServiceServer()
 }
 
-// UnimplementedInfoServer must be embedded to have forward compatible implementations.
-type UnimplementedInfoServer struct {
+// UnimplementedInfoServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedInfoServiceServer struct {
 }
 
-func (UnimplementedInfoServer) GetInfo(context.Context, *Empty) (*PluginInfo, error) {
+func (UnimplementedInfoServiceServer) GetInfo(context.Context, *emptypb.Empty) (*PluginInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInfo not implemented")
 }
-func (UnimplementedInfoServer) mustEmbedUnimplementedInfoServer() {}
+func (UnimplementedInfoServiceServer) mustEmbedUnimplementedInfoServiceServer() {}
 
-// UnsafeInfoServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to InfoServer will
+// UnsafeInfoServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to InfoServiceServer will
 // result in compilation errors.
-type UnsafeInfoServer interface {
-	mustEmbedUnimplementedInfoServer()
+type UnsafeInfoServiceServer interface {
+	mustEmbedUnimplementedInfoServiceServer()
 }
 
-func RegisterInfoServer(s grpc.ServiceRegistrar, srv InfoServer) {
-	s.RegisterService(&Info_ServiceDesc, srv)
+func RegisterInfoServiceServer(s grpc.ServiceRegistrar, srv InfoServiceServer) {
+	s.RegisterService(&InfoService_ServiceDesc, srv)
 }
 
-func _Info_GetInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+func _InfoService_GetInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InfoServer).GetInfo(ctx, in)
+		return srv.(InfoServiceServer).GetInfo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.Info/getInfo",
+		FullMethod: "/util.plugin.InfoService/GetInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InfoServer).GetInfo(ctx, req.(*Empty))
+		return srv.(InfoServiceServer).GetInfo(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Info_ServiceDesc is the grpc.ServiceDesc for Info service.
+// InfoService_ServiceDesc is the grpc.ServiceDesc for InfoService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Info_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.Info",
-	HandlerType: (*InfoServer)(nil),
+var InfoService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "util.plugin.InfoService",
+	HandlerType: (*InfoServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "getInfo",
-			Handler:    _Info_GetInfo_Handler,
+			MethodName: "GetInfo",
+			Handler:    _InfoService_GetInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "info.proto",
+	Metadata: "util/plugin/info.proto",
 }

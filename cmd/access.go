@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"time"
@@ -74,12 +75,14 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 		return err
 	}
 
-	res := as.SyncToTarget(&access_provider.AccessSyncToTarget{
-		ConfigMap:  config.ConfigMap{Parameters: targetConfig.Parameters},
+	res, err := as.SyncToTarget(context.Background(), &access_provider.AccessSyncToTarget{
+		ConfigMap:  &config.ConfigMap{Parameters: targetConfig.Parameters},
 		Prefix:     "R",
 		SourceFile: accessFile,
 	})
-	if res.Error != nil {
+	if err != nil {
+		return err
+	} else if res.Error != nil {
 		target.HandleTargetError(res.Error, targetConfig, "synchronizing access information to the data source")
 		return err
 	}

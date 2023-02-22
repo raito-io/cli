@@ -170,7 +170,7 @@ func TestGlobalPermissionSet_Json(t *testing.T) {
 	}
 
 	// Then
-	assert.JSONEq(t, `["read", "insert"]`, string(jsonBytes))
+	assert.True(t, `["read","insert"]` == string(jsonBytes) || `["insert","read"]` == string(jsonBytes))
 
 	// Unmashal //
 

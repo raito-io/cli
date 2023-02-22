@@ -1,6 +1,7 @@
 package access_provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -131,7 +132,7 @@ func (s *dataAccessImportSubtask) GetResultObject() interface{} {
 // Import data from Raito to DS
 func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, targetFile string) (returnErr error) {
 	syncerConfig := dapc.AccessSyncFromTarget{
-		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		ConfigMap:  &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		Prefix:     "",
 		TargetFile: targetFile,
 	}
@@ -142,7 +143,10 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 	}
 
 	s.TargetConfig.TargetLogger.Info("Synchronizing access providers between data source and the Raito")
-	res := das.SyncFromTarget(&syncerConfig)
+	res, err := das.SyncFromTarget(context.Background(), &syncerConfig)
+	if err != nil {
+		return err
+	}
 
 	if res.Error != nil {
 		return res.Error
@@ -196,7 +200,12 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 
 	statusUpdater.AddTaskEvent(job.DataRetrieve)
 
-	daExporter := NewAccessProviderExporter(&AccessProviderExporterConfig{BaseTargetConfig: *s.TargetConfig}, statusUpdater, das.SyncConfig())
+	syncConfig, err := das.SyncConfig(context.Background())
+	if err != nil {
+		return job.Failed, "", err
+	}
+
+	daExporter := NewAccessProviderExporter(&AccessProviderExporterConfig{BaseTargetConfig: *s.TargetConfig}, statusUpdater, syncConfig)
 
 	_, dar, err := daExporter.TriggerExport(*s.JobId)
 
@@ -215,14 +224,18 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 	s.updateLastCalculated(darInformation)
 
 	syncerConfig := dapc.AccessSyncToTarget{
-		ConfigMap:          baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		ConfigMap:          &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		Prefix:             "",
 		SourceFile:         dar,
 		FeedbackTargetFile: targetFile,
 	}
 
 	s.TargetConfig.TargetLogger.Info("Synchronizing access providers between Raito and the data source")
-	res := das.SyncToTarget(&syncerConfig)
+
+	res, err := das.SyncToTarget(context.Background(), &syncerConfig)
+	if err != nil {
+		return job.Failed, "", err
+	}
 
 	if res.Error != nil {
 		return job.Failed, "", res.Error

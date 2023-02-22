@@ -13,6 +13,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/jinzhu/copier v0.3.5
 	github.com/pterm/pterm v0.12.54
+	github.com/raito-io/golang-set v0.0.4
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.1
@@ -62,7 +63,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/raito-io/golang-set v0.0.4 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rs/zerolog v1.27.0 // indirect
 	github.com/spf13/afero v1.9.3 // indirect

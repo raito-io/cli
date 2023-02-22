@@ -5,11 +5,17 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/raito-io/cli/base/util/version"
+	version2 "github.com/raito-io/cli/internal/version"
 )
 
 // DataUsageSyncer interface needs to be implemented by any plugin that wants to import data usage information
 // into a Raito data source.
 type DataUsageSyncer interface {
+	version.CliVersionHandler
+
 	SyncDataUsage(ctx context.Context, config *DataUsageSyncConfig) (*DataUsageSyncResult, error)
 }
 
@@ -41,6 +47,10 @@ func (g *dataUsageSyncerGRPC) SyncDataUsage(ctx context.Context, config *DataUsa
 	return g.client.SyncDataUsage(ctx, config)
 }
 
+func (g *dataUsageSyncerGRPC) CliVersionInformation(context.Context) (*version.CliBuildInformation, error) {
+	return g.client.CliVersionInformation(context.Background(), &emptypb.Empty{})
+}
+
 type dataUsageSyncerGRPCServer struct {
 	UnimplementedDataUsageSyncServiceServer
 
@@ -49,4 +59,15 @@ type dataUsageSyncerGRPCServer struct {
 
 func (s *dataUsageSyncerGRPCServer) SyncDataUsage(ctx context.Context, config *DataUsageSyncConfig) (*DataUsageSyncResult, error) {
 	return s.Impl.SyncDataUsage(ctx, config)
+}
+
+func (s *dataUsageSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (*version.CliBuildInformation, error) {
+	return s.Impl.CliVersionInformation(ctx)
+}
+
+type DataUsageSyncerVersionHandler struct {
+}
+
+func (h *DataUsageSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
+	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion, supportedFeatures...), nil
 }

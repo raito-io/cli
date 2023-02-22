@@ -6,11 +6,16 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/raito-io/cli/base/util/version"
+	version2 "github.com/raito-io/cli/internal/version"
 )
 
 // AccessSyncer interface needs to be implemented by any plugin that wants to sync access controls between Raito and the data source.
 // This sync can be in the 2 directions or in just 1 depending on the parameters set in AccessSyncConfig.
 type AccessSyncer interface {
+	version.CliVersionHandler
+
 	SyncFromTarget(ctx context.Context, config *AccessSyncFromTarget) (*AccessSyncResult, error)
 	SyncToTarget(ctx context.Context, config *AccessSyncToTarget) (*AccessSyncResult, error)
 
@@ -55,6 +60,10 @@ func (g *accessSyncerGRPC) SyncConfig(ctx context.Context) (*AccessSyncConfig, e
 	return g.client.SyncConfig(ctx, &emptypb.Empty{})
 }
 
+func (g *accessSyncerGRPC) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
+	return g.client.CliVersionInformation(ctx, &emptypb.Empty{})
+}
+
 type accessSyncerGRPCServer struct {
 	UnimplementedAccessProviderSyncServiceServer
 
@@ -73,6 +82,10 @@ func (s *accessSyncerGRPCServer) SyncConfig(ctx context.Context, _ *emptypb.Empt
 	return s.Impl.SyncConfig(ctx)
 }
 
+func (s *accessSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (*version.CliBuildInformation, error) {
+	return s.Impl.CliVersionInformation(ctx)
+}
+
 func WithSupportPartialSync() func(config *AccessSyncConfig) {
 	return func(config *AccessSyncConfig) {
 		config.SupportPartialSync = true
@@ -83,4 +96,11 @@ func WithImplicitDeleteInAccessProviderUpdate() func(config *AccessSyncConfig) {
 	return func(config *AccessSyncConfig) {
 		config.ImplicitDeleteInAccessProviderUpdate = true
 	}
+}
+
+type AccessSyncerVersionHandler struct {
+}
+
+func (h *AccessSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
+	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion, supportedFeatures...), nil
 }

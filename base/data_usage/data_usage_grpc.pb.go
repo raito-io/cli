@@ -8,9 +8,11 @@ package data_usage
 
 import (
 	context "context"
+	version "github.com/raito-io/cli/base/util/version"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -22,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DataUsageSyncServiceClient interface {
+	CliVersionInformation(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*version.CliBuildInformation, error)
 	SyncDataUsage(ctx context.Context, in *DataUsageSyncConfig, opts ...grpc.CallOption) (*DataUsageSyncResult, error)
 }
 
@@ -31,6 +34,15 @@ type dataUsageSyncServiceClient struct {
 
 func NewDataUsageSyncServiceClient(cc grpc.ClientConnInterface) DataUsageSyncServiceClient {
 	return &dataUsageSyncServiceClient{cc}
+}
+
+func (c *dataUsageSyncServiceClient) CliVersionInformation(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*version.CliBuildInformation, error) {
+	out := new(version.CliBuildInformation)
+	err := c.cc.Invoke(ctx, "/data_usage.DataUsageSyncService/CliVersionInformation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *dataUsageSyncServiceClient) SyncDataUsage(ctx context.Context, in *DataUsageSyncConfig, opts ...grpc.CallOption) (*DataUsageSyncResult, error) {
@@ -46,6 +58,7 @@ func (c *dataUsageSyncServiceClient) SyncDataUsage(ctx context.Context, in *Data
 // All implementations must embed UnimplementedDataUsageSyncServiceServer
 // for forward compatibility
 type DataUsageSyncServiceServer interface {
+	CliVersionInformation(context.Context, *emptypb.Empty) (*version.CliBuildInformation, error)
 	SyncDataUsage(context.Context, *DataUsageSyncConfig) (*DataUsageSyncResult, error)
 	mustEmbedUnimplementedDataUsageSyncServiceServer()
 }
@@ -54,6 +67,9 @@ type DataUsageSyncServiceServer interface {
 type UnimplementedDataUsageSyncServiceServer struct {
 }
 
+func (UnimplementedDataUsageSyncServiceServer) CliVersionInformation(context.Context, *emptypb.Empty) (*version.CliBuildInformation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CliVersionInformation not implemented")
+}
 func (UnimplementedDataUsageSyncServiceServer) SyncDataUsage(context.Context, *DataUsageSyncConfig) (*DataUsageSyncResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncDataUsage not implemented")
 }
@@ -68,6 +84,24 @@ type UnsafeDataUsageSyncServiceServer interface {
 
 func RegisterDataUsageSyncServiceServer(s grpc.ServiceRegistrar, srv DataUsageSyncServiceServer) {
 	s.RegisterService(&DataUsageSyncService_ServiceDesc, srv)
+}
+
+func _DataUsageSyncService_CliVersionInformation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataUsageSyncServiceServer).CliVersionInformation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/data_usage.DataUsageSyncService/CliVersionInformation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataUsageSyncServiceServer).CliVersionInformation(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _DataUsageSyncService_SyncDataUsage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -95,6 +129,10 @@ var DataUsageSyncService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "data_usage.DataUsageSyncService",
 	HandlerType: (*DataUsageSyncServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CliVersionInformation",
+			Handler:    _DataUsageSyncService_CliVersionInformation_Handler,
+		},
 		{
 			MethodName: "SyncDataUsage",
 			Handler:    _DataUsageSyncService_SyncDataUsage_Handler,

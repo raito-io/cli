@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/raito-io/golang-set/set"
 
 	dupc "github.com/raito-io/cli/base/data_usage"
 	baseconfig "github.com/raito-io/cli/base/util/config"
@@ -16,6 +17,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/version"
 )
 
 type DataUsageSync struct {
@@ -33,11 +35,20 @@ type DataUsageImportResult struct {
 	Warnings []string `json:"warnings"`
 }
 
+func (s *DataUsageSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, set.Set[string], error) {
+	dus, err := c.GetDataUsageSyncer()
+	if err != nil {
+		return false, nil, err
+	}
+
+	return version.IsValidToSync(ctx, dus, dupc.MinimalCliVersion)
+}
+
 func (s *DataUsageSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, supportedFeatures set.Set[string]) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-du", "json"))
 

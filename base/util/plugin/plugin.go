@@ -9,13 +9,15 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/raito-io/cli/base/util/version"
 )
 
 // ParseVersion parses
 // the given string version in the form X.Y.Z and returns a Version struct representing it.
 // If the input string is invalid, a 0.0.0 version will be returned
-func ParseVersion(version string) *Version {
-	parts := strings.Split(version, ".")
+func ParseVersion(strVersion string) *version.SemVer {
+	parts := strings.Split(strVersion, ".")
 	if len(parts) != 3 {
 		return nil
 	}
@@ -35,12 +37,12 @@ func ParseVersion(version string) *Version {
 		return nil
 	}
 
-	return &Version{Major: int32(major), Minor: int32(minor), Maintenance: int32(maintenance)} //nolint:gosec
+	return &version.SemVer{Major: uint64(major), Minor: uint64(minor), Patch: uint64(maintenance)} //nolint:gosec
 }
 
 func (i *PluginInfo) InfoString() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%s v%d.%d.%d", i.Name, i.Version.Major, i.Version.Minor, i.Version.Maintenance))
+	sb.WriteString(fmt.Sprintf("%s v%d.%d.%d", i.Name, i.Version.Major, i.Version.Minor, i.Version.Patch))
 
 	return sb.String()
 }

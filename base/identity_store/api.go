@@ -6,10 +6,15 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/raito-io/cli/base/util/version"
+	version2 "github.com/raito-io/cli/internal/version"
 )
 
 // IdentityStoreSyncer interface needs to be implemented by any plugin that wants to import users and groups into a Raito identity store.
 type IdentityStoreSyncer interface {
+	version.CliVersionHandler
+
 	SyncIdentityStore(ctx context.Context, config *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error)
 	GetIdentityStoreMetaData(ctx context.Context) (*MetaData, error)
 }
@@ -48,6 +53,10 @@ func (g *identityStoreSyncerGRPC) GetIdentityStoreMetaData(ctx context.Context) 
 	return g.client.GetIdentityStoreMetaData(ctx, &emptypb.Empty{})
 }
 
+func (g *identityStoreSyncerGRPC) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
+	return g.client.CliVersionInformation(ctx, &emptypb.Empty{})
+}
+
 type identityStoreSyncerGRPCServer struct {
 	UnimplementedIdentityStoreSyncServiceServer
 
@@ -60,4 +69,15 @@ func (s *identityStoreSyncerGRPCServer) SyncIdentityStore(ctx context.Context, c
 
 func (s *identityStoreSyncerGRPCServer) GetIdentityStoreMetaData(ctx context.Context, _ *emptypb.Empty) (*MetaData, error) {
 	return s.Impl.GetIdentityStoreMetaData(ctx)
+}
+
+func (s *identityStoreSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (*version.CliBuildInformation, error) {
+	return s.Impl.CliVersionInformation(ctx)
+}
+
+type IdentityStoreSyncerVersionHandler struct {
+}
+
+func (h *IdentityStoreSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
+	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion, supportedFeatures...), nil
 }

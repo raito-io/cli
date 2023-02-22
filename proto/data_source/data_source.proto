@@ -4,6 +4,7 @@ package data_source;
 import "google/protobuf/empty.proto";
 import "util/config/config.proto";
 import "util/error/error.proto";
+import "util/version/version.proto";
 
 // DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.
 // It contains all the necessary configuration parameters for the plugin to function.
@@ -45,6 +46,8 @@ message DataObjectTypePermission {
 }
 
 service DataSourceSyncService {
+  rpc CliVersionInformation(google.protobuf.Empty) returns (util.version.CliBuildInformation);
+
   rpc SyncDataSource(DataSourceSyncConfig) returns (DataSourceSyncResult);
   rpc GetDataSourceMetaData(google.protobuf.Empty) returns (MetaData);
 }

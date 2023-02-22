@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/version"
 )
 
 func initRunCommand(rootCmd *cobra.Command) {
@@ -192,12 +194,26 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 	cfg.TargetLogger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
 
 	taskEventUpdater.AddTaskEvent(job.Started)
+
+	_, supportedFeatures, err := syncTask.IsClientValid(context.Background(), c)
+
+	incompatibleVersionError := version.IncompatibleVersionError{}
+
+	if errors.As(err, &incompatibleVersionError) {
+		cfg.TargetLogger.Error(fmt.Sprintf("Unable to execute %s sync: %s", syncTypeLabel, incompatibleVersionError.Error()))
+		taskEventUpdater.AddTaskEvent(job.Failed)
+
+		return nil
+	} else if err != nil {
+		return err
+	}
+
 	syncParts := syncTask.GetParts()
 
 	for i, taskPart := range syncParts {
 		cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
 
-		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater)
+		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater, supportedFeatures)
 		if err != nil {
 			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
 			taskEventUpdater.AddTaskEvent(job.Failed)

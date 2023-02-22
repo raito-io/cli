@@ -8,6 +8,7 @@ package identity_store
 
 import (
 	context "context"
+	version "github.com/raito-io/cli/base/util/version"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -23,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IdentityStoreSyncServiceClient interface {
+	CliVersionInformation(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*version.CliBuildInformation, error)
 	SyncIdentityStore(ctx context.Context, in *IdentityStoreSyncConfig, opts ...grpc.CallOption) (*IdentityStoreSyncResult, error)
 	GetIdentityStoreMetaData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*MetaData, error)
 }
@@ -33,6 +35,15 @@ type identityStoreSyncServiceClient struct {
 
 func NewIdentityStoreSyncServiceClient(cc grpc.ClientConnInterface) IdentityStoreSyncServiceClient {
 	return &identityStoreSyncServiceClient{cc}
+}
+
+func (c *identityStoreSyncServiceClient) CliVersionInformation(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*version.CliBuildInformation, error) {
+	out := new(version.CliBuildInformation)
+	err := c.cc.Invoke(ctx, "/identity_store.IdentityStoreSyncService/CliVersionInformation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *identityStoreSyncServiceClient) SyncIdentityStore(ctx context.Context, in *IdentityStoreSyncConfig, opts ...grpc.CallOption) (*IdentityStoreSyncResult, error) {
@@ -57,6 +68,7 @@ func (c *identityStoreSyncServiceClient) GetIdentityStoreMetaData(ctx context.Co
 // All implementations must embed UnimplementedIdentityStoreSyncServiceServer
 // for forward compatibility
 type IdentityStoreSyncServiceServer interface {
+	CliVersionInformation(context.Context, *emptypb.Empty) (*version.CliBuildInformation, error)
 	SyncIdentityStore(context.Context, *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error)
 	GetIdentityStoreMetaData(context.Context, *emptypb.Empty) (*MetaData, error)
 	mustEmbedUnimplementedIdentityStoreSyncServiceServer()
@@ -66,6 +78,9 @@ type IdentityStoreSyncServiceServer interface {
 type UnimplementedIdentityStoreSyncServiceServer struct {
 }
 
+func (UnimplementedIdentityStoreSyncServiceServer) CliVersionInformation(context.Context, *emptypb.Empty) (*version.CliBuildInformation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CliVersionInformation not implemented")
+}
 func (UnimplementedIdentityStoreSyncServiceServer) SyncIdentityStore(context.Context, *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncIdentityStore not implemented")
 }
@@ -84,6 +99,24 @@ type UnsafeIdentityStoreSyncServiceServer interface {
 
 func RegisterIdentityStoreSyncServiceServer(s grpc.ServiceRegistrar, srv IdentityStoreSyncServiceServer) {
 	s.RegisterService(&IdentityStoreSyncService_ServiceDesc, srv)
+}
+
+func _IdentityStoreSyncService_CliVersionInformation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityStoreSyncServiceServer).CliVersionInformation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/identity_store.IdentityStoreSyncService/CliVersionInformation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityStoreSyncServiceServer).CliVersionInformation(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _IdentityStoreSyncService_SyncIdentityStore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -129,6 +162,10 @@ var IdentityStoreSyncService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "identity_store.IdentityStoreSyncService",
 	HandlerType: (*IdentityStoreSyncServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CliVersionInformation",
+			Handler:    _IdentityStoreSyncService_CliVersionInformation_Handler,
+		},
 		{
 			MethodName: "SyncIdentityStore",
 			Handler:    _IdentityStoreSyncService_SyncIdentityStore_Handler,

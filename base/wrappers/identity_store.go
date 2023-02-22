@@ -29,6 +29,8 @@ func IdentityStoreSync(syncer IdentityStoreSyncer) *identityStoreSyncFunction {
 }
 
 type identityStoreSyncFunction struct {
+	identity_store.IdentityStoreSyncerVersionHandler
+
 	syncer                 IdentityStoreSyncer
 	identityHandlerFactory func(config *identity_store.IdentityStoreSyncConfig) (identity_store.IdentityStoreFileCreator, error)
 }

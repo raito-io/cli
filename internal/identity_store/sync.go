@@ -7,12 +7,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/raito-io/golang-set/set"
+
 	ispc "github.com/raito-io/cli/base/identity_store"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/version"
 )
 
 type IdentityStoreSync struct {
@@ -31,11 +34,20 @@ type IdentityStoreImportResult struct {
 	Warnings []string `json:"warnings"`
 }
 
+func (s *IdentityStoreSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, set.Set[string], error) {
+	iss, err := c.GetIdentityStoreSyncer()
+	if err != nil {
+		return false, nil, err
+	}
+
+	return version.IsValidToSync(ctx, iss, ispc.MinimalCliVersion)
+}
+
 func (s *IdentityStoreSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, supportedVersion set.Set[string]) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	userFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-user", "json"))

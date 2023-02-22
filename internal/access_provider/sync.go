@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/raito-io/golang-set/set"
 	"gopkg.in/yaml.v2"
 
 	dapc "github.com/raito-io/cli/base/access_provider"
@@ -16,6 +17,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/version"
 )
 
 type AccessProviderImportResult struct {
@@ -54,6 +56,15 @@ type dataAccessImportSubtask struct {
 	JobId        *string
 }
 
+func (s *DataAccessSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, set.Set[string], error) {
+	accessSyncer, err := c.GetAccessSyncer()
+	if err != nil {
+		return false, nil, err
+	}
+
+	return version.IsValidToSync(ctx, accessSyncer, dapc.MinimalCliVersion)
+}
+
 func (s *DataAccessSync) GetParts() []job.TaskPart {
 	result := []job.TaskPart{
 		&dataAccessExportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId},
@@ -66,7 +77,7 @@ func (s *DataAccessSync) GetParts() []job.TaskPart {
 	return result
 }
 
-func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, supportedFeatures set.Set[string]) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
@@ -156,7 +167,7 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 	return nil
 }
 
-func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, supportedFeatures set.Set[string]) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da-feedback", "json"))

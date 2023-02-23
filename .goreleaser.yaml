@@ -35,6 +35,7 @@ brews:
       bash_completion.install "completions/raito.bash" => "raito"
       zsh_completion.install "completions/raito.zsh" => "_raito"
       fish_completion.install "completions/raito.fish"
+    skip_upload: auto
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -45,3 +46,5 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+release:
+  prerelease: auto

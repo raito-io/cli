@@ -11,6 +11,10 @@ func (v *SemVer) ToVersion() *semver.Version {
 }
 
 func ToSemVer(version *semver.Version) *SemVer {
+	if version == nil {
+		return nil
+	}
+
 	return &SemVer{
 		Major:      version.Major(),
 		Minor:      version.Minor(),

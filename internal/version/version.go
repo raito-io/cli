@@ -2,7 +2,9 @@ package version
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"
@@ -15,10 +17,15 @@ var DevVersion = semver.New(0, 0, 0, "error", "noVersionDefined")
 var version = *DevVersion
 var date = ""
 
-func SetVersion(setVersion, setDate string) {
-	semverVersion := semver.MustParse(setVersion)
+var pluginCliVersion *semver.Version
 
-	version = *semverVersion
+func SetVersion(setVersion, setDate string) {
+	if setVersion != "" {
+		semverVersion := semver.MustParse(setVersion)
+
+		version = *semverVersion
+	}
+
 	date = setDate
 }
 
@@ -30,9 +37,28 @@ func GetCliVersion() *semver.Version {
 	return &version
 }
 
+func getCliVersionInPlugin() *semver.Version {
+	if pluginCliVersion == nil {
+		bi, ok := debug.ReadBuildInfo()
+		if !ok {
+			return nil
+		}
+
+		for _, dep := range bi.Deps {
+			if dep.Path == "github.com/raito-io/cli" {
+				pluginCliVersion = semver.MustParse(dep.Version)
+
+				break
+			}
+		}
+	}
+
+	return pluginCliVersion
+}
+
 func CreateSyncerCliBuildInformation(minimalCliVersion *semver.Version) *version2.CliBuildInformation {
 	return &version2.CliBuildInformation{
-		CliBuildVersion:   version2.ToSemVer(GetCliVersion()),
+		CliBuildVersion:   version2.ToSemVer(getCliVersionInPlugin()),
 		CliMinimalVersion: version2.ToSemVer(minimalCliVersion),
 	}
 }
@@ -48,6 +74,9 @@ func IsValidToSync(ctx context.Context, plugin version2.CliVersionHandler, synce
 
 func isValidToSync(pluginInformation *version2.CliBuildInformation, syncerMinimalVersion *semver.Version, cliInfo func() *semver.Version) (bool, error) {
 	currentCliVersion := cliInfo()
+	if currentCliVersion == nil {
+		return false, errors.New("could not get current cli version")
+	}
 
 	if currentCliVersion.Equal(DevVersion) {
 		hclog.L().Warn("Running in dev mode, skipping version check")

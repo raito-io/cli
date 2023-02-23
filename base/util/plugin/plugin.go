@@ -30,6 +30,7 @@ func (i *PluginInfo) InfoString() string {
 
 	if i.GetVersion() != nil {
 		sv := semver.New(i.GetVersion().GetMajor(), i.GetVersion().GetMinor(), i.GetVersion().GetPatch(), i.GetVersion().GetPrerelease(), i.GetVersion().GetBuild())
+
 		sb.WriteString("v")
 		sb.WriteString(sv.String())
 	} else {

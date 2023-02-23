@@ -18,7 +18,7 @@ import (
 
 func TestAccessProviderRoleSyncFunction_SyncAccessProviderFromTarget(t *testing.T) {
 	//Given
-	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+	configMap := config.ConfigMap{Parameters: map[string]string{"key": "value"}}
 
 	accessProviderFileCreator := mocks.NewAccessProviderFileCreator(t)
 
@@ -38,7 +38,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderFromTarget(t *testing.
 
 func TestAccessProviderRoleSyncFunction_SyncAccessProviderFromTarget_WithError(t *testing.T) {
 	//Given
-	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+	configMap := config.ConfigMap{Parameters: map[string]string{"key": "value"}}
 
 	accessProviderFileCreator := mocks.NewAccessProviderFileCreator(t)
 
@@ -58,7 +58,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderFromTarget_WithError(t
 
 func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
 	//Given
-	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+	configMap := config.ConfigMap{Parameters: map[string]string{"key": "value"}}
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
@@ -133,7 +133,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
 
 func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget_NameGeneratorFactoryError(t *testing.T) {
 	//Given
-	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+	configMap := config.ConfigMap{Parameters: map[string]string{"key": "value"}}
 
 	accessProvidersImport := sync_to_target.AccessProviderImport{
 		LastCalculated: time.Now().Unix(),
@@ -192,7 +192,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget_NameGeneratorFa
 
 func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T) {
 	//Given
-	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+	configMap := config.ConfigMap{Parameters: map[string]string{"key": "value"}}
 
 	accessFeedBackFileCreator := mocks2.NewSyncFeedbackFileCreator(t)
 
@@ -300,7 +300,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 
 func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget_ErrorOnNameGeneratorFactory(t *testing.T) {
 	//Given
-	configMap := config.ConfigMap{Parameters: map[string]interface{}{"key": "value"}}
+	configMap := config.ConfigMap{Parameters: map[string]string{"key": "value"}}
 
 	accessFeedBackFileCreator := mocks2.NewSyncFeedbackFileCreator(t)
 

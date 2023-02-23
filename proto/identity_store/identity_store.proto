@@ -1,0 +1,30 @@
+syntax = "proto3";
+package identity_store;
+
+import "google/protobuf/empty.proto";
+import "util/config/config.proto";
+import "util/error/error.proto";
+
+// IdentityStoreSyncConfig represents the configuration that is passed from the CLI to the IdentityStoreSyncer plugin interface.
+// It contains all the necessary configuration parameters for the plugin to function.
+message IdentityStoreSyncConfig {
+  util.config.ConfigMap config_map = 1;
+  string user_file = 2;
+  string group_file = 3;
+}
+
+// IdentityStoreSyncResult represents the result from the identity store sync process.
+// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
+message IdentityStoreSyncResult {
+  util.error.ErrorResult error = 1;
+}
+
+message MetaData {
+  string type = 1;
+  string icon = 2;
+}
+
+service IdentityStoreSyncService {
+  rpc SyncIdentityStore(IdentityStoreSyncConfig) returns (IdentityStoreSyncResult);
+  rpc GetIdentityStoreMetaData(google.protobuf.Empty) returns (MetaData);
+}

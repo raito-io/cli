@@ -1,0 +1,31 @@
+syntax = "proto3";
+package util.plugin;
+
+import "google/protobuf/empty.proto";
+
+// PluginInfo represents the information about a plugin.
+message PluginInfo {
+  string name = 1;
+  string description = 2;
+  Version version = 3;
+  repeated ParameterInfo parameters = 4;
+}
+
+// Version contains semantic versioning information of the plugin
+message Version {
+  int32 major = 1;
+  int32 minor = 2;
+  int32 maintenance = 3;
+}
+
+// ParameterInfo contains the information about a parameter.
+// This is used to inform the CLI user what command-line parameters are expected explicitly for this target (plugin).
+message ParameterInfo {
+  string name = 1;
+  string description = 2;
+  bool mandatory = 3;
+}
+
+service InfoService {
+  rpc GetInfo(google.protobuf.Empty) returns (PluginInfo);
+}

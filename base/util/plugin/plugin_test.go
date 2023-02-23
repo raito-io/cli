@@ -1,21 +1,22 @@
 package plugin
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPluginInfo(t *testing.T) {
 	i := PluginInfo{
 		Name:        "TestPlugin",
-		Version:     Version{1, 2, 3},
+		Version:     &Version{Major: 1, Minor: 2, Maintenance: 3},
 		Description: "Plugin Description!",
-		Parameters: []ParameterInfo{
-			{"p1", "p1 descr", true},
-			{"p2", "p2 descr", false},
+		Parameters: []*ParameterInfo{
+			{Name: "p1", Description: "p1 descr", Mandatory: true},
+			{Name: "p2", Description: "p2 descr", Mandatory: false},
 		},
 	}
 
-	is := i.String()
+	is := i.InfoString()
 	assert.Equal(t, "TestPlugin v1.2.3", is)
 }

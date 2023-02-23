@@ -1,7 +1,10 @@
 # To try different version of Go
 GO := go
 
-generate:
+protobuf-generate:
+	buf generate
+
+generate: protobuf-generate
 	go generate ./...
 
 build: generate
@@ -14,3 +17,11 @@ test:
 lint:
 	golangci-lint run ./...
 	go fmt ./...
+
+
+protobuf-lint:
+	buf lint
+
+protobuf-format:
+	buf format -w
+

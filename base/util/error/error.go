@@ -2,23 +2,7 @@ package error
 
 import "fmt"
 
-type ErrorCode int
-
-const (
-	NoError ErrorCode = iota
-	UnknownError
-	BadInputParameterError
-	MissingInputParameterError
-	SourceConnectionError
-)
-
-// ErrorResult represents an error returned by an API call.
-type ErrorResult struct {
-	ErrorMessage string
-	ErrorCode    ErrorCode
-}
-
-func (e ErrorResult) Error() string {
+func (e ErrorResult) Error() string { //nolint:govet
 	return e.ErrorMessage
 }
 
@@ -26,7 +10,7 @@ func (e ErrorResult) Error() string {
 func CreateMissingInputParameterError(parameter string) *ErrorResult {
 	return &ErrorResult{
 		ErrorMessage: fmt.Sprintf("mandatory parameter %q is missing", parameter),
-		ErrorCode:    MissingInputParameterError,
+		ErrorCode:    ErrorCode_MISSING_INPUT_PARAMETER_ERROR,
 	}
 }
 
@@ -41,7 +25,7 @@ func CreateBadInputParameterError(parameter, value, explanation string) *ErrorRe
 
 	return &ErrorResult{
 		ErrorMessage: msg,
-		ErrorCode:    BadInputParameterError,
+		ErrorCode:    ErrorCode_BAD_INPUT_PARAMETER_ERROR,
 	}
 }
 
@@ -49,13 +33,13 @@ func CreateBadInputParameterError(parameter, value, explanation string) *ErrorRe
 func CreateSourceConnectionError(url, message string) *ErrorResult {
 	return &ErrorResult{
 		ErrorMessage: fmt.Sprintf("error while connecting to %q: %s", url, message),
-		ErrorCode:    SourceConnectionError,
+		ErrorCode:    ErrorCode_SOURCE_CONNECTION_ERROR,
 	}
 }
 
 // ToErrorResult is a helper method to to create an ErrorResult from an error. If the error already is of type ErrorResult, the original is returned.
 func ToErrorResult(err error) *ErrorResult {
-	if res, ok := err.(ErrorResult); ok {
+	if res, ok := err.(ErrorResult); ok { //nolint:govet
 		return &res
 	}
 
@@ -63,5 +47,5 @@ func ToErrorResult(err error) *ErrorResult {
 		return res
 	}
 
-	return &ErrorResult{ErrorMessage: err.Error(), ErrorCode: UnknownError}
+	return &ErrorResult{ErrorMessage: err.Error(), ErrorCode: ErrorCode_UNKNOWN_ERROR}
 }

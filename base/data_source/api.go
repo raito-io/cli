@@ -1,13 +1,12 @@
 package data_source
 
 import (
+	"context"
 	"encoding/json"
-	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
-
-	"github.com/raito-io/cli/base/util/config"
-	error2 "github.com/raito-io/cli/base/util/error"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -60,6 +59,16 @@ func (s GlobalPermissionSet) Values() []GlobalPermission {
 
 	for permission := range s {
 		result = append(result, permission)
+	}
+
+	return result
+}
+
+func (s GlobalPermissionSet) StringValues() []string {
+	result := make([]string, 0, len(s))
+
+	for permission := range s {
+		result = append(result, string(permission))
 	}
 
 	return result
@@ -149,61 +158,27 @@ func ReadGlobalPermission() GlobalPermissionSet {
 	return set
 }
 
-// DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.
-// It contains all the necessary configuration parameters for the plugin to function.
-type DataSourceSyncConfig struct {
-	config.ConfigMap
-	TargetFile   string
-	DataSourceId string
-}
-
-// DataSourceSyncResult represents the result from the data source sync process.
-// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
-type DataSourceSyncResult struct {
-	Error *error2.ErrorResult
-}
-
-type DataObjectType struct {
-	Name        string                     `json:"name"`
-	Type        string                     `json:"type"`
-	Label       string                     `json:"label"`
-	Icon        string                     `json:"icon"`
-	Permissions []DataObjectTypePermission `json:"permissions"`
-	Children    []string                   `json:"children"`
-}
-
-type DataObjectTypePermission struct {
-	Permission        string              `json:"permission"`
-	GlobalPermissions GlobalPermissionSet `json:"globalPermissions,omitempty"`
-	Description       string              `json:"description"`
-	Action            []string            `json:"action,omitempty"`
-}
-
-type MetaData struct {
-	DataObjectTypes   []DataObjectType `json:"dataObjectTypes"`
-	SupportedFeatures []string         `json:"supportedFeatures"`
-	Type              string           `json:"type"`
-	Icon              string           `json:"icon"`
-}
-
 // DataSourceSyncer interface needs to be implemented by any plugin that wants to import data objects into a Raito data source.
 type DataSourceSyncer interface {
-	SyncDataSource(config *DataSourceSyncConfig) DataSourceSyncResult
-	GetDataSourceMetaData() MetaData
+	SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (*DataSourceSyncResult, error)
+	GetDataSourceMetaData(ctx context.Context) (*MetaData, error)
 }
 
 // DataSourceSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
 // A plugin should not be using this directly, but instead depend on the cli-plugin-base library to register the plugins.
 type DataSourceSyncerPlugin struct {
+	plugin.Plugin
+
 	Impl DataSourceSyncer
 }
 
-func (p *DataSourceSyncerPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
-	return &dataSourceSyncerRPCServer{Impl: p.Impl}, nil
+func (p *DataSourceSyncerPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+	RegisterDataSourceSyncServiceServer(s, &dataSourceSyncerGRPCServer{Impl: p.Impl})
+	return nil
 }
 
-func (DataSourceSyncerPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
-	return &dataSourceSyncerRPC{client: c}, nil
+func (DataSourceSyncerPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &dataSourceSyncerGRPC{client: NewDataSourceSyncServiceClient(c)}, nil
 }
 
 // DataSourceSyncerName constant should not be used directly when implementing plugins.
@@ -211,40 +186,26 @@ func (DataSourceSyncerPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interf
 // used by the CLI and the cli-plugin-base library (RegisterPlugins function) to register the plugins.
 const DataSourceSyncerName = "dataSourceSyncer"
 
-type dataSourceSyncerRPC struct{ client *rpc.Client }
+type dataSourceSyncerGRPC struct{ client DataSourceSyncServiceClient }
 
-func (g *dataSourceSyncerRPC) SyncDataSource(config *DataSourceSyncConfig) DataSourceSyncResult {
-	var resp DataSourceSyncResult
-
-	err := g.client.Call("Plugin.SyncDataSource", config, &resp)
-	if err != nil && resp.Error == nil {
-		resp.Error = error2.ToErrorResult(err)
-	}
-
-	return resp
+func (g *dataSourceSyncerGRPC) SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (*DataSourceSyncResult, error) {
+	return g.client.SyncDataSource(ctx, config)
 }
 
-func (g *dataSourceSyncerRPC) GetDataSourceMetaData() MetaData {
-	var resp MetaData
-
-	err := g.client.Call("Plugin.GetDataSourceMetaData", new(interface{}), &resp)
-	if err != nil {
-		return MetaData{}
-	}
-
-	return resp
+func (g *dataSourceSyncerGRPC) GetDataSourceMetaData(ctx context.Context) (*MetaData, error) {
+	return g.client.GetDataSourceMetaData(ctx, &emptypb.Empty{})
 }
 
-type dataSourceSyncerRPCServer struct {
+type dataSourceSyncerGRPCServer struct {
+	UnimplementedDataSourceSyncServiceServer
+
 	Impl DataSourceSyncer
 }
 
-func (s *dataSourceSyncerRPCServer) SyncDataSource(config *DataSourceSyncConfig, resp *DataSourceSyncResult) error {
-	*resp = s.Impl.SyncDataSource(config)
-	return nil
+func (s *dataSourceSyncerGRPCServer) SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (*DataSourceSyncResult, error) {
+	return s.Impl.SyncDataSource(ctx, config)
 }
 
-func (s *dataSourceSyncerRPCServer) GetDataSourceMetaData(args interface{}, resp *MetaData) error {
-	*resp = s.Impl.GetDataSourceMetaData()
-	return nil
+func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, _ *emptypb.Empty) (*MetaData, error) {
+	return s.Impl.GetDataSourceMetaData(ctx)
 }

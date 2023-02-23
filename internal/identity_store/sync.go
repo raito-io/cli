@@ -1,6 +1,7 @@
 package identity_store
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -56,7 +57,7 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient
 	}
 
 	syncerConfig := ispc.IdentityStoreSyncConfig{
-		ConfigMap: baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		ConfigMap: &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		UserFile:  userFile,
 		GroupFile: groupFile,
 	}
@@ -67,7 +68,11 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient
 	}
 
 	s.TargetConfig.TargetLogger.Info("Fetching identity store metadata")
-	md := iss.GetIdentityStoreMetaData()
+
+	md, err := iss.GetIdentityStoreMetaData(context.Background())
+	if err != nil {
+		return job.Failed, "", err
+	}
 
 	s.TargetConfig.TargetLogger.Info("Updating identity store metadata")
 	err = SetMetaData(*s.TargetConfig, md)
@@ -77,10 +82,14 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient
 	}
 
 	s.TargetConfig.TargetLogger.Info("Gathering users and groups")
-	result := iss.SyncIdentityStore(&syncerConfig)
+
+	result, err := iss.SyncIdentityStore(context.Background(), &syncerConfig)
+	if err != nil {
+		return job.Failed, "", err
+	}
 
 	if result.Error != nil {
-		return job.Failed, "", *(result.Error)
+		return job.Failed, "", result.Error
 	}
 
 	importerConfig := IdentityStoreImportConfig{

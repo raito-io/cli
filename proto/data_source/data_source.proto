@@ -1,0 +1,50 @@
+syntax = "proto3";
+package data_source;
+
+import "google/protobuf/empty.proto";
+import "util/config/config.proto";
+import "util/error/error.proto";
+
+// DataSourceSyncConfig represents the configuration that is passed from the CLI to the DataAccessSyncer plugin interface.
+// It contains all the necessary configuration parameters for the plugin to function.
+message DataSourceSyncConfig {
+  util.config.ConfigMap config_map = 1;
+  string target_file = 2;
+  string data_source_id = 3;
+}
+
+// DataSourceSyncResult represents the result from the data source sync process.
+// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
+message DataSourceSyncResult {
+  util.error.ErrorResult error = 1;
+}
+
+//NoLinting ToSupport GQL schema (temporarily)
+message MetaData {
+  repeated DataObjectType dataObjectTypes = 1;
+  repeated string supportedFeatures = 2;
+  string type = 3;
+  string icon = 4;
+}
+
+message DataObjectType {
+  string name = 1;
+  string type = 2;
+  string label = 3;
+  string icon = 4;
+  repeated DataObjectTypePermission permissions = 5;
+  repeated string children = 6;
+}
+
+//NoLinting ToSupport GQL schema (temporarily)
+message DataObjectTypePermission {
+  string permission = 1;
+  repeated string globalPermissions = 2;
+  string description = 3;
+  repeated string action = 4;
+}
+
+service DataSourceSyncService {
+  rpc SyncDataSource(DataSourceSyncConfig) returns (DataSourceSyncResult);
+  rpc GetDataSourceMetaData(google.protobuf.Empty) returns (MetaData);
+}

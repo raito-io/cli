@@ -12,7 +12,7 @@ import (
 	"github.com/raito-io/cli/internal/target"
 )
 
-func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) error {
+func SetMetaData(config *target.BaseTargetConfig, metadata *data_source.MetaData) error {
 	logger := config.TargetLogger.With("datasource", config.DataSourceId)
 	start := time.Now()
 
@@ -44,7 +44,7 @@ func SetMetaData(config target.BaseTargetConfig, metadata data_source.MetaData) 
 }
 
 // marshalMetaData marshals the MetaData struct to a string
-func marshalMetaData(md data_source.MetaData) (string, error) {
+func marshalMetaData(md *data_source.MetaData) (string, error) {
 	mdb, err := json.Marshal(md)
 	if err != nil {
 		return "", fmt.Errorf("error while serializing data source metadata information: %s", err.Error())

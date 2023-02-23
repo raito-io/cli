@@ -3,8 +3,10 @@ package target
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
+	"github.com/aws/smithy-go/ptr"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
@@ -16,8 +18,18 @@ import (
 	"github.com/raito-io/cli/internal/constants"
 )
 
+type ConfigMap struct {
+	Parameters map[string]string
+}
+
+func (c *ConfigMap) ToProtobufConfigMap() *config.ConfigMap {
+	return &config.ConfigMap{
+		Parameters: c.Parameters,
+	}
+}
+
 type BaseConfig struct {
-	config.ConfigMap
+	ConfigMap
 	ApiUser    string
 	ApiSecret  string
 	Domain     string
@@ -67,8 +79,8 @@ func RunTargets(baseConfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig
 }
 
 func HandleTargetError(err error, config *BaseTargetConfig, during string) {
-	if errorResult, ok := err.(error2.ErrorResult); ok {
-		if errorResult.ErrorCode == error2.BadInputParameterError || errorResult.ErrorCode == error2.MissingInputParameterError {
+	if errorResult, ok := err.(error2.ErrorResult); ok { //nolint:govet
+		if errorResult.ErrorCode == error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR || errorResult.ErrorCode == error2.ErrorCode_MISSING_INPUT_PARAMETER_ERROR {
 			config.TargetLogger.Error(fmt.Sprintf("Error during %s: %s. Execute command 'info <connector>' to print out the expected parameters for the connector.", during, errorResult.ErrorMessage))
 			return
 		}
@@ -155,7 +167,7 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 	if err != nil {
 		return nil, err
 	}
-	tConfig.Parameters = make(map[string]interface{})
+	tConfig.Parameters = make(map[string]string)
 
 	for k, v := range target {
 		if _, f := constants.KnownFlags[k]; !f {
@@ -163,7 +175,11 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 			if err != nil {
 				return nil, err
 			}
-			tConfig.Parameters[k] = cv
+
+			stringvalue := argumentToString(cv)
+			if stringvalue != nil {
+				tConfig.Parameters[k] = *stringvalue
+			}
 		}
 	}
 
@@ -208,8 +224,8 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 	return &tConfig, nil
 }
 
-func buildParameterMapFromArguments(args []string) map[string]interface{} {
-	params := make(map[string]interface{})
+func buildParameterMapFromArguments(args []string) map[string]string {
+	params := make(map[string]string)
 
 	for i := 0; i < len(args); i++ {
 		if strings.HasPrefix(args[i], "--") {
@@ -225,12 +241,29 @@ func buildParameterMapFromArguments(args []string) map[string]interface{} {
 				i++
 			} else {
 				// Otherwise, we consider this a boolean flag
-				params[arg] = true
+				params[arg] = "TRUE"
 			}
 		}
 	}
 
 	return params
+}
+
+func argumentToString(arg interface{}) *string {
+	if arg == nil {
+		return nil
+	}
+
+	switch v := arg.(type) {
+	case string:
+		return &v
+	case int:
+		return ptr.String(strconv.Itoa(v))
+	case bool:
+		return ptr.String(strconv.FormatBool(v))
+	}
+
+	return nil
 }
 
 func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*BaseConfig, error) {
@@ -304,7 +337,7 @@ func logTargetConfig(config *BaseTargetConfig) {
 		hclog.L().Error("Error while copying config")
 		return
 	}
-	cc.Parameters = make(map[string]interface{})
+	cc.Parameters = make(map[string]string)
 
 	err = copier.Copy(&cc.Parameters, config.Parameters)
 	if err != nil {

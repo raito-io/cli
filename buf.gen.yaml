@@ -1,0 +1,12 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/raito-io/cli/base
+plugins:
+  - plugin: go
+    out: base
+    opt: paths=source_relative
+  - plugin: go-grpc
+    out: base
+    opt: paths=source_relative

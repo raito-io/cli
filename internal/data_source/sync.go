@@ -1,6 +1,7 @@
 package data_source
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -46,7 +47,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, s
 	}
 
 	syncerConfig := dspc.DataSourceSyncConfig{
-		ConfigMap:    baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		ConfigMap:    &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		TargetFile:   targetFile,
 		DataSourceId: s.TargetConfig.DataSourceId,
 	}
@@ -57,17 +58,25 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, s
 	}
 
 	s.TargetConfig.TargetLogger.Info("Fetching data source metadata")
-	md := dss.GetDataSourceMetaData()
+
+	md, err := dss.GetDataSourceMetaData(context.Background())
+	if err != nil {
+		return job.Failed, "", err
+	}
 
 	s.TargetConfig.TargetLogger.Info("Updating data source metadata")
-	err = SetMetaData(*s.TargetConfig, md)
+	err = SetMetaData(s.TargetConfig, md)
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
 	s.TargetConfig.TargetLogger.Info("Gathering data objects from the data source")
-	res := dss.SyncDataSource(&syncerConfig)
+
+	res, err := dss.SyncDataSource(context.Background(), &syncerConfig)
+	if err != nil {
+		return job.Failed, "", err
+	}
 
 	if res.Error != nil {
 		return job.Failed, "", err

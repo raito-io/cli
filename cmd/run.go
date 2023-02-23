@@ -97,7 +97,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 			}()
 
 			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
-			if runErr := executeSingleRun(baseConfig); err != nil {
+			if runErr := executeSingleRun(baseConfig); runErr != nil {
 				baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 			}
 
@@ -106,7 +106,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 				select {
 				case <-ticker.C:
 					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
-					if runErr := executeSingleRun(baseConfig); err != nil {
+					if runErr := executeSingleRun(baseConfig); runErr != nil {
 						baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 					}
 

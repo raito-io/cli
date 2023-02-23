@@ -1,0 +1,22 @@
+syntax = "proto3";
+package data_usage;
+
+import "util/config/config.proto";
+import "util/error/error.proto";
+
+// DataUsageSyncConfig represents the configuration that is passed from the CLI to the DataUsageSyncer plugin interface.
+// It contains all the necessary configuration parameters for the plugin to function.
+message DataUsageSyncConfig {
+  util.config.ConfigMap config_map = 1;
+  string target_file = 2;
+}
+
+// DataUsageSyncResult represents the result from the data usage sync process.
+// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
+message DataUsageSyncResult {
+  util.error.ErrorResult error = 1;
+}
+
+service DataUsageSyncService {
+  rpc SyncDataUsage(DataUsageSyncConfig) returns (DataUsageSyncResult);
+}

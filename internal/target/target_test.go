@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	config2 "github.com/raito-io/cli/base/util/config"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/jinzhu/copier"
 	"github.com/spf13/viper"
@@ -194,9 +192,9 @@ func TestBuildTargetConfigFromMap(t *testing.T) {
 	assert.Equal(t, false, config.SkipDataSourceSync)
 	assert.Equal(t, true, config.SkipDataAccessSync)
 	assert.Equal(t, 3, len(config.ConfigMap.Parameters))
-	assert.Equal(t, "v1", config.ConfigMap.GetString("custom1"))
-	assert.Equal(t, 5, config.ConfigMap.GetInt("custom2"))
-	assert.Equal(t, true, config.ConfigMap.GetBoolWithDefault("custom3", false))
+	assert.Equal(t, "v1", config.ConfigMap.ToProtobufConfigMap().GetString("custom1"))
+	assert.Equal(t, 5, config.ConfigMap.ToProtobufConfigMap().GetInt("custom2"))
+	assert.Equal(t, true, config.ConfigMap.ToProtobufConfigMap().GetBoolWithDefault("custom3", false))
 }
 
 func TestBuildTargetConfigFromMapNoName(t *testing.T) {
@@ -296,7 +294,7 @@ func TestBuildTargetConfigFromFlags(t *testing.T) {
 	assert.Equal(t, true, config.SkipDataSourceSync)
 	assert.Equal(t, true, config.SkipDataAccessSync)
 	assert.Equal(t, 1, len(config.ConfigMap.Parameters))
-	assert.Equal(t, "ok", config.ConfigMap.GetString("custom1"))
+	assert.Equal(t, "ok", config.ConfigMap.ToProtobufConfigMap().GetString("custom1"))
 }
 
 func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
@@ -315,7 +313,7 @@ func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
 func TestBuildParameterMapFromArguments(t *testing.T) {
 	params := buildParameterMapFromArguments([]string{"--bool-val", "--string-val=blah", "--another-one", "moremoremore"})
 	assert.Equal(t, 3, len(params))
-	assert.Equal(t, true, params["bool-val"])
+	assert.Equal(t, "TRUE", params["bool-val"])
 	assert.Equal(t, "blah", params["string-val"])
 	assert.Equal(t, "moremoremore", params["another-one"])
 }
@@ -447,8 +445,8 @@ func TestLogTarget(t *testing.T) {
 	config := BaseTargetConfig{
 		BaseConfig: BaseConfig{
 			ApiSecret: "mylittlesecret",
-			ConfigMap: config2.ConfigMap{
-				Parameters: map[string]interface{}{
+			ConfigMap: ConfigMap{
+				Parameters: map[string]string{
 					"password": "anothersecret",
 					"normal":   "readible",
 				},

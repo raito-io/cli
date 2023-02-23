@@ -1,0 +1,51 @@
+syntax = "proto3";
+package access_provider;
+
+import "google/protobuf/empty.proto";
+import "util/config/config.proto";
+import "util/error/error.proto";
+
+// AccessSyncToTarget contains all necessary configuration parameters to export Data from Raito into DS
+message AccessSyncToTarget {
+  util.config.ConfigMap config_map = 1;
+
+  // SourceFile points to the file containing the access controls that need to be pushed to the data source.
+  string source_file = 2;
+
+  // FeedbackTargetFile points to the file where the plugin needs to export the access controls feedback to.
+  string feedback_target_file = 3;
+  string prefix = 4;
+
+  string test = 5;
+}
+
+// AccessSyncFromTarget contains all necessary configuration parameters to import Data from Raito into DS
+message AccessSyncFromTarget {
+  util.config.ConfigMap config_map = 1;
+
+  // TargetFile points to the file where the plugin needs to export the access control naming.
+  string target_file = 2;
+  string prefix = 3;
+}
+
+// AccessSyncResult represents the result from the data access sync process.
+// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
+message AccessSyncResult {
+  util.error.ErrorResult error = 1;
+}
+
+// AccessSyncConfig gives us information on how the CLI can sync access providers
+message AccessSyncConfig {
+  // SupportPartialSync if true, syncing only out of sync access providers is allowed
+  bool support_partial_sync = 1;
+
+  // ImplicitDeleteInAccessProviderUpdate if true, access providers can be deleted by name only
+  bool implicit_delete_in_access_provider_update = 2;
+}
+
+service AccessProviderSyncService {
+  rpc SyncFromTarget(AccessSyncFromTarget) returns (AccessSyncResult);
+  rpc SyncToTarget(AccessSyncToTarget) returns (AccessSyncResult);
+
+  rpc SyncConfig(google.protobuf.Empty) returns (AccessSyncConfig);
+}

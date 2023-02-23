@@ -1,6 +1,7 @@
 package base
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ import (
 func TestRegisterIdentityStoreService(t *testing.T) {
 	Logger()
 	issi := identityStoryPlugin{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, err := buildPluginMap(&issi, &isi)
 
 	assert.Nil(t, err)
@@ -27,7 +28,7 @@ func TestRegisterIdentityStoreService(t *testing.T) {
 func TestRegisterDataSourceService(t *testing.T) {
 	Logger()
 	dssi := dataSourcePlugin{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, err := buildPluginMap(&dssi, &isi)
 
 	assert.Nil(t, err)
@@ -39,7 +40,7 @@ func TestRegisterDataSourceService(t *testing.T) {
 func TestRegisterAccessSyncService(t *testing.T) {
 	Logger()
 	dasi := accessSyncPlugin{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, err := buildPluginMap(&dasi, &isi)
 
 	assert.Nil(t, err)
@@ -85,7 +86,7 @@ func TestRegisterDoubleDataAccessService(t *testing.T) {
 	Logger()
 	das1 := accessSyncPlugin{}
 	das2 := accessSyncPlugin{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, err := buildPluginMap(&das1, &das2, &isi)
 
 	assert.NotNil(t, err)
@@ -105,7 +106,7 @@ func TestRegisterIgnoreNoService(t *testing.T) {
 	Logger()
 	das1 := accessSyncPlugin{}
 	a := another{}
-	isi := infoPlugin{}
+	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, err := buildPluginMap(&a, &das1, &isi)
 
 	assert.Nil(t, err)
@@ -124,64 +125,42 @@ func TestRegisterNoInfoPlugin(t *testing.T) {
 
 type another struct{}
 
-type combo struct{}
-
-func (s *combo) SyncIdentityStore(config *identity_store.IdentityStoreSyncConfig) identity_store.IdentityStoreSyncResult {
-	return identity_store.IdentityStoreSyncResult{}
-}
-
-func (s *combo) SyncDataSource(config *data_source.DataSourceSyncConfig) data_source.DataSourceSyncResult {
-	return data_source.DataSourceSyncResult{}
-}
-
-func (s *combo) GetDataSourceMetaData() data_source.MetaData {
-	return data_source.MetaData{}
-}
-
-func (s *combo) GetIdentityStoreMetaData() identity_store.MetaData {
-	return identity_store.MetaData{}
-}
-
-func (s *combo) PluginInfo() plugin.PluginInfo {
-	return plugin.PluginInfo{}
+type combo struct {
+	plugin.UnimplementedInfoServiceServer
+	dataSourcePlugin
+	identityStoryPlugin
 }
 
 type identityStoryPlugin struct{}
 
-func (s *identityStoryPlugin) SyncIdentityStore(config *identity_store.IdentityStoreSyncConfig) identity_store.IdentityStoreSyncResult {
-	return identity_store.IdentityStoreSyncResult{}
+func (s *identityStoryPlugin) SyncIdentityStore(_ context.Context, _ *identity_store.IdentityStoreSyncConfig) (*identity_store.IdentityStoreSyncResult, error) {
+	return &identity_store.IdentityStoreSyncResult{}, nil
 }
 
-func (s *identityStoryPlugin) GetIdentityStoreMetaData() identity_store.MetaData {
-	return identity_store.MetaData{}
+func (s *identityStoryPlugin) GetIdentityStoreMetaData(_ context.Context) (*identity_store.MetaData, error) {
+	return &identity_store.MetaData{}, nil
 }
 
 type dataSourcePlugin struct{}
 
-func (s *dataSourcePlugin) SyncDataSource(config *data_source.DataSourceSyncConfig) data_source.DataSourceSyncResult {
-	return data_source.DataSourceSyncResult{}
+func (s *dataSourcePlugin) SyncDataSource(_ context.Context, _ *data_source.DataSourceSyncConfig) (*data_source.DataSourceSyncResult, error) {
+	return &data_source.DataSourceSyncResult{}, nil
 }
 
-func (s *dataSourcePlugin) GetDataSourceMetaData() data_source.MetaData {
-	return data_source.MetaData{}
+func (s *dataSourcePlugin) GetDataSourceMetaData(_ context.Context) (*data_source.MetaData, error) {
+	return &data_source.MetaData{}, nil
 }
 
 type accessSyncPlugin struct{}
 
-func (s *accessSyncPlugin) SyncFromTarget(config *access_provider.AccessSyncFromTarget) access_provider.AccessSyncResult {
-	return access_provider.AccessSyncResult{}
+func (s *accessSyncPlugin) SyncFromTarget(_ context.Context, _ *access_provider.AccessSyncFromTarget) (*access_provider.AccessSyncResult, error) {
+	return &access_provider.AccessSyncResult{}, nil
 }
 
-func (s *accessSyncPlugin) SyncToTarget(config *access_provider.AccessSyncToTarget) access_provider.AccessSyncResult {
-	return access_provider.AccessSyncResult{}
+func (s *accessSyncPlugin) SyncToTarget(_ context.Context, _ *access_provider.AccessSyncToTarget) (*access_provider.AccessSyncResult, error) {
+	return &access_provider.AccessSyncResult{}, nil
 }
 
-func (s *accessSyncPlugin) SyncConfig() access_provider.AccessSyncConfig {
-	return access_provider.AccessSyncConfig{}
-}
-
-type infoPlugin struct{}
-
-func (s *infoPlugin) PluginInfo() plugin.PluginInfo {
-	return plugin.PluginInfo{}
+func (s *accessSyncPlugin) SyncConfig(_ context.Context) (*access_provider.AccessSyncConfig, error) {
+	return &access_provider.AccessSyncConfig{}, nil
 }

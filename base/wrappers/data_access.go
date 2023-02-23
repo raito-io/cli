@@ -30,20 +30,20 @@ type AccessProviderSyncer interface {
 }
 
 func DataAccessSync(syncer AccessProviderSyncer, configOpt ...func(config *access_provider.AccessSyncConfig)) *DataAccessSyncFunction {
-	config := access_provider.AccessSyncConfig{}
-
-	for _, fn := range configOpt {
-		fn(&config)
-	}
-
-	return &DataAccessSyncFunction{
+	obj := &DataAccessSyncFunction{
 		Syncer:                           syncer,
 		accessFileCreatorFactory:         sync_from_target.NewAccessProviderFileCreator,
 		accessFeedbackFileCreatorFactory: sync_to_target.NewFeedbackFileCreator,
 		accessProviderParserFactory:      sync_to_target.NewAccessProviderFileParser,
 
-		config: config,
+		config: access_provider.AccessSyncConfig{},
 	}
+
+	for _, fn := range configOpt {
+		fn(&obj.config)
+	}
+
+	return obj
 }
 
 type DataAccessSyncFunction struct {
@@ -55,9 +55,7 @@ type DataAccessSyncFunction struct {
 	config access_provider.AccessSyncConfig
 }
 
-func (s *DataAccessSyncFunction) SyncFromTarget(config *access_provider.AccessSyncFromTarget) access_provider.AccessSyncResult {
-	ctx := context.Background()
-
+func (s *DataAccessSyncFunction) SyncFromTarget(ctx context.Context, config *access_provider.AccessSyncFromTarget) (*access_provider.AccessSyncResult, error) {
 	logger.Info("Starting data access synchronisation from target")
 	logger.Debug("Creating file for storing access providers")
 
@@ -65,42 +63,40 @@ func (s *DataAccessSyncFunction) SyncFromTarget(config *access_provider.AccessSy
 	if err != nil {
 		logger.Error(err.Error())
 
-		return mapErrorToAccessSyncResult(err)
+		return mapErrorToAccessSyncResult(err), nil
 	}
 	defer fileCreator.Close()
 
 	sec, err := timedExecution(func() error {
-		return s.Syncer.SyncAccessProvidersFromTarget(ctx, fileCreator, &config.ConfigMap)
+		return s.Syncer.SyncAccessProvidersFromTarget(ctx, fileCreator, config.ConfigMap)
 	})
 
 	if err != nil {
 		logger.Error(err.Error())
 
-		return mapErrorToAccessSyncResult(err)
+		return mapErrorToAccessSyncResult(err), nil
 	}
 
 	logger.Info(fmt.Sprintf("Fetched %d access provider in %s", fileCreator.GetAccessProviderCount(), sec))
 
-	return access_provider.AccessSyncResult{}
+	return &access_provider.AccessSyncResult{}, nil
 }
 
-func (s *DataAccessSyncFunction) SyncToTarget(config *access_provider.AccessSyncToTarget) access_provider.AccessSyncResult {
-	ctx := context.Background()
-
+func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *access_provider.AccessSyncToTarget) (*access_provider.AccessSyncResult, error) {
 	logger.Info("Starting data access synchronisation to target")
 
 	accessProviderParser, err := s.accessProviderParserFactory(config)
 	if err != nil {
 		logger.Error(err.Error())
 
-		return mapErrorToAccessSyncResult(err)
+		return mapErrorToAccessSyncResult(err), nil
 	}
 
 	dar, err := accessProviderParser.ParseAccessProviders()
 	if err != nil {
 		logger.Error(err.Error())
 
-		return mapErrorToAccessSyncResult(err)
+		return mapErrorToAccessSyncResult(err), nil
 	}
 
 	prefix := config.Prefix
@@ -110,39 +106,39 @@ func (s *DataAccessSyncFunction) SyncToTarget(config *access_provider.AccessSync
 
 	if accessAsCode {
 		sec, err = timedExecution(func() error {
-			return s.Syncer.SyncAccessAsCodeToTarget(ctx, dar, prefix, &config.ConfigMap)
+			return s.Syncer.SyncAccessAsCodeToTarget(ctx, dar, prefix, config.ConfigMap)
 		})
 	} else {
 		feedbackFile, err2 := s.accessFeedbackFileCreatorFactory(config)
 		if err2 != nil {
 			logger.Error(err2.Error())
 
-			return mapErrorToAccessSyncResult(err2)
+			return mapErrorToAccessSyncResult(err2), nil
 		}
 		defer feedbackFile.Close()
 
 		sec, err = timedExecution(func() error {
-			return s.Syncer.SyncAccessProviderToTarget(ctx, dar, feedbackFile, &config.ConfigMap)
+			return s.Syncer.SyncAccessProviderToTarget(ctx, dar, feedbackFile, config.ConfigMap)
 		})
 	}
 
 	if err != nil {
 		logger.Error(err.Error())
 
-		return mapErrorToAccessSyncResult(err)
+		return mapErrorToAccessSyncResult(err), nil
 	}
 
 	logger.Info(fmt.Sprintf("Successfully synced access providers to target in %s", sec))
 
-	return access_provider.AccessSyncResult{}
+	return &access_provider.AccessSyncResult{}, nil
 }
 
-func (s *DataAccessSyncFunction) SyncConfig() access_provider.AccessSyncConfig {
-	return s.config
+func (s *DataAccessSyncFunction) SyncConfig(_ context.Context) (*access_provider.AccessSyncConfig, error) {
+	return &s.config, nil
 }
 
-func mapErrorToAccessSyncResult(err error) access_provider.AccessSyncResult {
-	return access_provider.AccessSyncResult{
+func mapErrorToAccessSyncResult(err error) *access_provider.AccessSyncResult {
+	return &access_provider.AccessSyncResult{
 		Error: e.ToErrorResult(err),
 	}
 }

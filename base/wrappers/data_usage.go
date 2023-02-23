@@ -31,9 +31,7 @@ type dataUsageSyncFunction struct {
 	fileCreatorFactory func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error)
 }
 
-func (s *dataUsageSyncFunction) SyncDataUsage(config *data_usage.DataUsageSyncConfig) data_usage.DataUsageSyncResult {
-	ctx := context.Background()
-
+func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_usage.DataUsageSyncConfig) (*data_usage.DataUsageSyncResult, error) {
 	logger.Info("Starting data usage synchronisation")
 	logger.Debug("Creating file for storing data usage")
 
@@ -41,26 +39,26 @@ func (s *dataUsageSyncFunction) SyncDataUsage(config *data_usage.DataUsageSyncCo
 	if err != nil {
 		logger.Error(err.Error())
 
-		return data_usage.DataUsageSyncResult{
+		return &data_usage.DataUsageSyncResult{
 			Error: e.ToErrorResult(err),
-		}
+		}, nil
 	}
 	defer fileCreator.Close()
 
 	sec, err := timedExecution(func() error {
-		return s.syncer.SyncDataUsage(ctx, fileCreator, &config.ConfigMap)
+		return s.syncer.SyncDataUsage(ctx, fileCreator, config.ConfigMap)
 	})
 
 	if err != nil {
 		logger.Error(err.Error())
 
-		return data_usage.DataUsageSyncResult{
+		return &data_usage.DataUsageSyncResult{
 			Error: e.ToErrorResult(err),
-		}
+		}, nil
 	}
 
 	logger.Info(fmt.Sprintf("Retrieved %d rows and written them to file, for a total time of %s",
 		fileCreator.GetStatementCount(), sec))
 
-	return data_usage.DataUsageSyncResult{}
+	return &data_usage.DataUsageSyncResult{}, nil
 }

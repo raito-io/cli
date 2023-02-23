@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestDataSourceSyncFunction_SyncDataSource(t *testing.T) {
 	config := &data_source.DataSourceSyncConfig{
 		TargetFile:   "targetFile",
 		DataSourceId: "DataSourceId",
-		ConfigMap:    config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:    &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := ds_mocks.NewDataSourceFileCreator(t)
@@ -25,7 +26,7 @@ func TestDataSourceSyncFunction_SyncDataSource(t *testing.T) {
 	fileCreatorMock.EXPECT().GetDataObjectCount().Return(0)
 
 	syncerMock := NewMockDataSourceSyncer(t)
-	syncerMock.EXPECT().SyncDataSource(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(nil).Once()
+	syncerMock.EXPECT().SyncDataSource(mock.Anything, fileCreatorMock, config.ConfigMap).Return(nil).Once()
 
 	syncFunction := dataSourceSyncFunction{
 		syncer: syncerMock,
@@ -35,9 +36,10 @@ func TestDataSourceSyncFunction_SyncDataSource(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncDataSource(config)
+	result, err := syncFunction.SyncDataSource(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.Nil(t, result.Error)
 }
 
@@ -46,7 +48,7 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorOnFile(t *testing.T) {
 	config := &data_source.DataSourceSyncConfig{
 		TargetFile:   "targetFile",
 		DataSourceId: "DataSourceId",
-		ConfigMap:    config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:    &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	syncerMock := NewMockDataSourceSyncer(t)
@@ -55,19 +57,20 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorOnFile(t *testing.T) {
 		syncer: syncerMock,
 		fileCreatorFactory: func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error) {
 			return nil, error2.ErrorResult{
-				ErrorCode:    error2.BadInputParameterError,
+				ErrorCode:    error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR,
 				ErrorMessage: "BOOM!",
 			}
 		},
 	}
 
 	//When
-	result := syncFunction.SyncDataSource(config)
+	result, err := syncFunction.SyncDataSource(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.BadInputParameterError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR, result.Error.ErrorCode)
 
 	syncerMock.AssertNotCalled(t, "SyncIdentityStore", mock.Anything, mock.Anything, mock.Anything)
 }
@@ -77,15 +80,15 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorSync(t *testing.T) {
 	config := &data_source.DataSourceSyncConfig{
 		TargetFile:   "targetFile",
 		DataSourceId: "DataSourceId",
-		ConfigMap:    config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:    &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := ds_mocks.NewDataSourceFileCreator(t)
 	fileCreatorMock.EXPECT().Close().Return().Once()
 
 	syncerMock := NewMockDataSourceSyncer(t)
-	syncerMock.EXPECT().SyncDataSource(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(error2.ErrorResult{
-		ErrorCode:    error2.SourceConnectionError,
+	syncerMock.EXPECT().SyncDataSource(mock.Anything, fileCreatorMock, config.ConfigMap).Return(error2.ErrorResult{
+		ErrorCode:    error2.ErrorCode_SOURCE_CONNECTION_ERROR,
 		ErrorMessage: "BOOM!",
 	}).Once()
 
@@ -97,12 +100,13 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorSync(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncDataSource(config)
+	result, err := syncFunction.SyncDataSource(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.SourceConnectionError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_SOURCE_CONNECTION_ERROR, result.Error.ErrorCode)
 }
 
 func TestDataSourceSyncFunctionWrapper(t *testing.T) {

@@ -1,6 +1,7 @@
 package data_usage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -51,7 +52,7 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, st
 	}
 
 	syncerConfig := dupc.DataUsageSyncConfig{
-		ConfigMap:  baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		ConfigMap:  &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		TargetFile: targetFile,
 	}
 
@@ -81,8 +82,10 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, st
 
 	s.TargetConfig.TargetLogger.Info("Fetching usage data from the data source")
 
-	res := dus.SyncDataUsage(&syncerConfig)
-	if res.Error != nil {
+	res, err := dus.SyncDataUsage(context.Background(), &syncerConfig)
+	if err != nil {
+		return job.Failed, "", err
+	} else if res.Error != nil {
 		return job.Failed, "", err
 	}
 

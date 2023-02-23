@@ -37,10 +37,10 @@ type accessProviderExporter struct {
 	config        *AccessProviderExporterConfig
 	log           hclog.Logger
 	statusUpdater job.TaskEventUpdater
-	syncConfig    access_provider.AccessSyncConfig
+	syncConfig    *access_provider.AccessSyncConfig
 }
 
-func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdater job.TaskEventUpdater, syncConfig access_provider.AccessSyncConfig) AccessProviderExporter {
+func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdater job.TaskEventUpdater, syncConfig *access_provider.AccessSyncConfig) AccessProviderExporter {
 	logger := config.TargetLogger.With("AccessProviderExport", config.DataSourceId)
 	dsI := accessProviderExporter{config, logger, statusUpdater, syncConfig}
 

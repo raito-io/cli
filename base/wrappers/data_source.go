@@ -21,7 +21,7 @@ type DataSourceObjectHandler interface {
 //go:generate go run github.com/vektra/mockery/v2 --name=DataSourceSyncer --with-expecter --inpackage
 type DataSourceSyncer interface {
 	SyncDataSource(ctx context.Context, dataSourceHandler DataSourceObjectHandler, configParams *config.ConfigMap) error
-	GetDataSourceMetaData() data_source.MetaData
+	GetDataSourceMetaData(ctx context.Context) (*data_source.MetaData, error)
 }
 
 func DataSourceSync(syncer DataSourceSyncer) *dataSourceSyncFunction {
@@ -36,9 +36,7 @@ type dataSourceSyncFunction struct {
 	fileCreatorFactory func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error)
 }
 
-func (s *dataSourceSyncFunction) SyncDataSource(config *data_source.DataSourceSyncConfig) data_source.DataSourceSyncResult {
-	ctx := context.Background()
-
+func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *data_source.DataSourceSyncConfig) (*data_source.DataSourceSyncResult, error) {
 	logger.Info("Starting data source synchronisation")
 	logger.Debug("Creating file for storing data source")
 
@@ -46,32 +44,33 @@ func (s *dataSourceSyncFunction) SyncDataSource(config *data_source.DataSourceSy
 	if err != nil {
 		logger.Error(err.Error())
 
-		return mapErrorToDataSourceSyncResult(err)
+		// TODO Reconsider this error handling
+		return mapErrorToDataSourceSyncResult(err), nil
 	}
 	defer fileCreator.Close()
 
 	start := time.Now()
 
-	err = s.syncer.SyncDataSource(ctx, fileCreator, &config.ConfigMap)
+	err = s.syncer.SyncDataSource(ctx, fileCreator, config.ConfigMap)
 	if err != nil {
 		logger.Error(err.Error())
 
-		return mapErrorToDataSourceSyncResult(err)
+		return mapErrorToDataSourceSyncResult(err), nil
 	}
 
 	sec := time.Since(start).Round(time.Millisecond)
 
 	logger.Info(fmt.Sprintf("Fetched %d data objects in %s", fileCreator.GetDataObjectCount(), sec))
 
-	return data_source.DataSourceSyncResult{}
+	return &data_source.DataSourceSyncResult{}, nil
 }
 
-func (s *dataSourceSyncFunction) GetDataSourceMetaData() data_source.MetaData {
-	return s.syncer.GetDataSourceMetaData()
+func (s *dataSourceSyncFunction) GetDataSourceMetaData(ctx context.Context) (*data_source.MetaData, error) {
+	return s.syncer.GetDataSourceMetaData(ctx)
 }
 
-func mapErrorToDataSourceSyncResult(err error) data_source.DataSourceSyncResult {
-	return data_source.DataSourceSyncResult{
+func mapErrorToDataSourceSyncResult(err error) *data_source.DataSourceSyncResult {
+	return &data_source.DataSourceSyncResult{
 		Error: e.ToErrorResult(err),
 	}
 }

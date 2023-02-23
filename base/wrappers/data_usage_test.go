@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ func TestDataUsageSyncFunction_SyncDataUsage(t *testing.T) {
 	//Given
 	config := &data_usage.DataUsageSyncConfig{
 		TargetFile: "SomeTargetString",
-		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:  &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := du_mocks.NewDataUsageFileCreator(t)
@@ -24,7 +25,7 @@ func TestDataUsageSyncFunction_SyncDataUsage(t *testing.T) {
 	fileCreatorMock.EXPECT().GetStatementCount().Return(0)
 
 	syncerMock := NewMockDataUsageSyncer(t)
-	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(nil)
+	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(nil)
 
 	syncFunction := dataUsageSyncFunction{
 		syncer: syncerMock,
@@ -34,9 +35,10 @@ func TestDataUsageSyncFunction_SyncDataUsage(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncDataUsage(config)
+	result, err := syncFunction.SyncDataUsage(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.Nil(t, result.Error)
 	syncerMock.AssertNumberOfCalls(t, "SyncDataUsage", 1)
 	fileCreatorMock.AssertNumberOfCalls(t, "Close", 1)
@@ -46,7 +48,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOnFileCreation(t *testing.T) {
 	//Given
 	config := &data_usage.DataUsageSyncConfig{
 		TargetFile: "SomeTargetString",
-		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:  &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	syncerMock := NewMockDataUsageSyncer(t)
@@ -56,18 +58,19 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOnFileCreation(t *testing.T) {
 		fileCreatorFactory: func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error) {
 			return nil, &error2.ErrorResult{
 				ErrorMessage: "BOOM!",
-				ErrorCode:    error2.UnknownError,
+				ErrorCode:    error2.ErrorCode_UNKNOWN_ERROR,
 			}
 		},
 	}
 
 	//When
-	result := syncFunction.SyncDataUsage(config)
+	result, err := syncFunction.SyncDataUsage(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.UnknownError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
 
 	syncerMock.AssertNotCalled(t, "SyncDataUsage", mock.Anything, mock.Anything, mock.Anything)
 }
@@ -76,16 +79,16 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 	//Given
 	config := &data_usage.DataUsageSyncConfig{
 		TargetFile: "SomeTargetString",
-		ConfigMap:  config2.ConfigMap{Parameters: map[string]interface{}{"key": "value"}},
+		ConfigMap:  &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
 	}
 
 	fileCreatorMock := du_mocks.NewDataUsageFileCreator(t)
 	fileCreatorMock.EXPECT().Close().Return()
 
 	syncerMock := NewMockDataUsageSyncer(t)
-	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, &config.ConfigMap).Return(&error2.ErrorResult{
+	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(&error2.ErrorResult{
 		ErrorMessage: "BOOM!",
-		ErrorCode:    error2.BadInputParameterError,
+		ErrorCode:    error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR,
 	})
 
 	syncFunction := dataUsageSyncFunction{
@@ -96,12 +99,13 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 	}
 
 	//When
-	result := syncFunction.SyncDataUsage(config)
+	result, err := syncFunction.SyncDataUsage(context.Background(), config)
 
 	//Then
+	assert.NoError(t, err)
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.BadInputParameterError, result.Error.ErrorCode)
+	assert.Equal(t, error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR, result.Error.ErrorCode)
 	syncerMock.AssertNumberOfCalls(t, "SyncDataUsage", 1)
 	fileCreatorMock.AssertNumberOfCalls(t, "Close", 1)
 }

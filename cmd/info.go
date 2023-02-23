@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/plugin"
 	"github.com/spf13/cobra"
+
+	"github.com/raito-io/cli/internal/plugin"
 )
 
 func initInfoCommand(rootCmd *cobra.Command) {
@@ -44,5 +46,11 @@ func executeInfoCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	hclog.L().Info(info.PluginInfo().FullOverview())
+	pluginInfo, err := info.GetInfo(context.Background())
+	if err != nil {
+		hclog.L().Error(fmt.Sprintf("Failed to load plugin info: %s", err))
+		return
+	}
+
+	hclog.L().Info(pluginInfo.FullOverview())
 }

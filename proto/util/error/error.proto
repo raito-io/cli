@@ -1,0 +1,15 @@
+syntax = "proto3";
+package util.error;
+
+enum ErrorCode {
+  NO_ERROR = 0;
+  UNKNOWN_ERROR = 1;
+  BAD_INPUT_PARAMETER_ERROR = 2;
+  MISSING_INPUT_PARAMETER_ERROR = 3;
+  SOURCE_CONNECTION_ERROR = 4;
+}
+
+message ErrorResult {
+  string error_message = 1;
+  ErrorCode error_code = 2;
+}

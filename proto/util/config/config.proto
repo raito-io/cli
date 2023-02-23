@@ -1,0 +1,6 @@
+syntax = "proto3";
+package util.config;
+
+message ConfigMap {
+  map<string, string> parameters = 1;
+}

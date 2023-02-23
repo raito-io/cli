@@ -17,7 +17,7 @@ import (
 func ParseVersion(version string) *Version {
 	sv := semver.MustParse(version)
 
-	return &Version{Major: int32(sv.Major()), Minor: int32(sv.Minor()), Maintenance: int32(sv.Patch())} //nolint:gosec
+	return &Version{Major: int32(sv.Major()), Minor: int32(sv.Minor()), Maintenance: int32(sv.Patch())}
 }
 
 func (i *PluginInfo) InfoString() string {

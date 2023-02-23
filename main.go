@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	version = v.DevVersion.String()
+	version = ""
 	date    = ""
 )
 

@@ -36,39 +36,40 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, error) {
 	infoFound := false
 
 	for _, plugin := range pluginImpls {
-		if iss, ok := plugin.(identity_store.IdentityStoreSyncer); ok {
+		switch p := plugin.(type) {
+		case identity_store.IdentityStoreSyncer:
 			if _, f := pluginMap[identity_store.IdentityStoreSyncerName]; f {
 				return nil, errors.New("multiple implementations for IdentityStoreSyncer Plugin found. There should be only one")
 			}
-			pluginMap[identity_store.IdentityStoreSyncerName] = &identity_store.IdentityStoreSyncerPlugin{Impl: iss}
+			pluginMap[identity_store.IdentityStoreSyncerName] = &identity_store.IdentityStoreSyncerPlugin{Impl: p}
 
 			logger.Debug("Registered IdentityStoreSyncer Plugin")
-		} else if dss, ok := plugin.(data_source.DataSourceSyncer); ok {
+		case data_source.DataSourceSyncer:
 			if _, f := pluginMap[data_source.DataSourceSyncerName]; f {
 				return nil, errors.New("multiple implementations for DataSourceSyncer Plugin found. There should be only one")
 			}
-			pluginMap[data_source.DataSourceSyncerName] = &data_source.DataSourceSyncerPlugin{Impl: dss}
+			pluginMap[data_source.DataSourceSyncerName] = &data_source.DataSourceSyncerPlugin{Impl: p}
 
 			logger.Debug("Registered DataSourceSyncer Plugin")
-		} else if as, ok := plugin.(access_provider.AccessSyncer); ok {
+		case access_provider.AccessSyncer:
 			if _, f := pluginMap[access_provider.AccessSyncerName]; f {
 				return nil, errors.New("multiple implementations for AccessSyncer Plugin found. There should be only one")
 			}
-			pluginMap[access_provider.AccessSyncerName] = &access_provider.AccessSyncerPlugin{Impl: as}
+			pluginMap[access_provider.AccessSyncerName] = &access_provider.AccessSyncerPlugin{Impl: p}
 
 			logger.Debug("Registered AccessSyncer Plugin")
-		} else if dus, ok := plugin.(data_usage.DataUsageSyncer); ok {
+		case data_usage.DataUsageSyncer:
 			if _, f := pluginMap[data_usage.DataUsageSyncerName]; f {
 				return nil, errors.New("multiple implementations for DataUsageSyncer Plugin found. There should be only one")
 			}
-			pluginMap[data_usage.DataUsageSyncerName] = &data_usage.DataUsageSyncerPlugin{Impl: dus}
+			pluginMap[data_usage.DataUsageSyncerName] = &data_usage.DataUsageSyncerPlugin{Impl: p}
 
 			logger.Debug("Registered DataUsageSyncer Plugin")
-		} else if i, ok := plugin.(plugin2.InfoServiceServer); ok {
+		case plugin2.InfoServiceServer:
 			if _, f := pluginMap[plugin2.InfoName]; f {
 				return nil, errors.New("multiple implementation for Info Plugin found. There should be only one")
 			}
-			pluginMap[plugin2.InfoName] = &plugin2.InfoPlugin{Impl: i}
+			pluginMap[plugin2.InfoName] = &plugin2.InfoPlugin{Impl: p}
 
 			logger.Debug("Registered Info Plugin")
 

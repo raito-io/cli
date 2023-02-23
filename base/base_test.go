@@ -49,39 +49,6 @@ func TestRegisterAccessSyncService(t *testing.T) {
 	assert.NotNil(t, pluginMap[access_provider.AccessSyncerName])
 }
 
-func TestRegisterComboService(t *testing.T) {
-	Logger()
-	csi := combo{}
-	pluginMap, err := buildPluginMap(&csi)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, pluginMap)
-	assert.Equal(t, 3, len(pluginMap))
-	assert.NotNil(t, pluginMap[data_source.DataSourceSyncerName])
-	assert.NotNil(t, pluginMap[plugin.InfoName])
-	assert.NotNil(t, pluginMap[identity_store.IdentityStoreSyncerName])
-}
-
-func TestRegisterDoubleIdentityStoreService(t *testing.T) {
-	Logger()
-	csi := combo{}
-	issi := identityStoryPlugin{}
-	pluginMap, err := buildPluginMap(&issi, &csi)
-
-	assert.NotNil(t, err)
-	assert.Nil(t, pluginMap)
-}
-
-func TestRegisterDoubleDataSourceService(t *testing.T) {
-	Logger()
-	csi := combo{}
-	dssi := dataSourcePlugin{}
-	pluginMap, err := buildPluginMap(&dssi, &csi)
-
-	assert.NotNil(t, err)
-	assert.Nil(t, pluginMap)
-}
-
 func TestRegisterDoubleDataAccessService(t *testing.T) {
 	Logger()
 	das1 := accessSyncPlugin{}
@@ -125,13 +92,9 @@ func TestRegisterNoInfoPlugin(t *testing.T) {
 
 type another struct{}
 
-type combo struct {
-	plugin.UnimplementedInfoServiceServer
-	dataSourcePlugin
-	identityStoryPlugin
+type identityStoryPlugin struct {
+	identity_store.IdentityStoreSyncerVersionHandler
 }
-
-type identityStoryPlugin struct{}
 
 func (s *identityStoryPlugin) SyncIdentityStore(_ context.Context, _ *identity_store.IdentityStoreSyncConfig) (*identity_store.IdentityStoreSyncResult, error) {
 	return &identity_store.IdentityStoreSyncResult{}, nil
@@ -141,7 +104,9 @@ func (s *identityStoryPlugin) GetIdentityStoreMetaData(_ context.Context) (*iden
 	return &identity_store.MetaData{}, nil
 }
 
-type dataSourcePlugin struct{}
+type dataSourcePlugin struct {
+	data_source.DataSourceSyncerVersionHandler
+}
 
 func (s *dataSourcePlugin) SyncDataSource(_ context.Context, _ *data_source.DataSourceSyncConfig) (*data_source.DataSourceSyncResult, error) {
 	return &data_source.DataSourceSyncResult{}, nil
@@ -151,7 +116,9 @@ func (s *dataSourcePlugin) GetDataSourceMetaData(_ context.Context) (*data_sourc
 	return &data_source.MetaData{}, nil
 }
 
-type accessSyncPlugin struct{}
+type accessSyncPlugin struct {
+	access_provider.AccessSyncerVersionHandler
+}
 
 func (s *accessSyncPlugin) SyncFromTarget(_ context.Context, _ *access_provider.AccessSyncFromTarget) (*access_provider.AccessSyncResult, error) {
 	return &access_provider.AccessSyncResult{}, nil

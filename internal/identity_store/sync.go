@@ -13,6 +13,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/version"
 )
 
 type IdentityStoreSync struct {
@@ -29,6 +30,15 @@ type IdentityStoreImportResult struct {
 	GroupsRemoved int `json:"groupsRemoved"`
 
 	Warnings []string `json:"warnings"`
+}
+
+func (s *IdentityStoreSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error) {
+	iss, err := c.GetIdentityStoreSyncer()
+	if err != nil {
+		return false, err
+	}
+
+	return version.IsValidToSync(ctx, iss, ispc.MinimalCliVersion)
 }
 
 func (s *IdentityStoreSync) GetParts() []job.TaskPart {

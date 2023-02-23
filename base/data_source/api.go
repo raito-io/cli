@@ -7,6 +7,9 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/raito-io/cli/base/util/version"
+	version2 "github.com/raito-io/cli/internal/version"
 )
 
 const (
@@ -160,6 +163,8 @@ func ReadGlobalPermission() GlobalPermissionSet {
 
 // DataSourceSyncer interface needs to be implemented by any plugin that wants to import data objects into a Raito data source.
 type DataSourceSyncer interface {
+	version.CliVersionHandler
+
 	SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (*DataSourceSyncResult, error)
 	GetDataSourceMetaData(ctx context.Context) (*MetaData, error)
 }
@@ -196,6 +201,10 @@ func (g *dataSourceSyncerGRPC) GetDataSourceMetaData(ctx context.Context) (*Meta
 	return g.client.GetDataSourceMetaData(ctx, &emptypb.Empty{})
 }
 
+func (g *dataSourceSyncerGRPC) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
+	return g.client.CliVersionInformation(ctx, &emptypb.Empty{})
+}
+
 type dataSourceSyncerGRPCServer struct {
 	UnimplementedDataSourceSyncServiceServer
 
@@ -208,4 +217,15 @@ func (s *dataSourceSyncerGRPCServer) SyncDataSource(ctx context.Context, config 
 
 func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, _ *emptypb.Empty) (*MetaData, error) {
 	return s.Impl.GetDataSourceMetaData(ctx)
+}
+
+func (s *dataSourceSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (*version.CliBuildInformation, error) {
+	return s.Impl.CliVersionInformation(ctx)
+}
+
+type DataSourceSyncerVersionHandler struct {
+}
+
+func (h *DataSourceSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
+	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion), nil
 }

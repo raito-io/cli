@@ -47,6 +47,8 @@ func DataAccessSync(syncer AccessProviderSyncer, configOpt ...func(config *acces
 }
 
 type DataAccessSyncFunction struct {
+	access_provider.AccessSyncerVersionHandler
+
 	Syncer                           AccessProviderSyncer
 	accessFileCreatorFactory         func(config *access_provider.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error)
 	accessFeedbackFileCreatorFactory func(config *access_provider.AccessSyncToTarget) (sync_to_target.SyncFeedbackFileCreator, error)

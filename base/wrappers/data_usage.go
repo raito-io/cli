@@ -27,6 +27,8 @@ func DataUsageSync(syncer DataUsageSyncer) *dataUsageSyncFunction {
 }
 
 type dataUsageSyncFunction struct {
+	data_usage.DataUsageSyncerVersionHandler
+
 	syncer             DataUsageSyncer
 	fileCreatorFactory func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error)
 }

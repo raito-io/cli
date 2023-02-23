@@ -2,6 +2,7 @@ package job
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -23,6 +24,7 @@ type SubtaskEventUpdater interface {
 }
 
 type Task interface {
+	IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error)
 	GetParts() []TaskPart
 }
 

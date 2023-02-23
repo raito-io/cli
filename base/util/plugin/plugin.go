@@ -62,7 +62,6 @@ func (i *PluginInfo) FullOverview() string {
 // Info interface needs to be implemented by all plugins to provide basic plugin information.
 type Info interface {
 	GetInfo(ctx context.Context) (*PluginInfo, error)
-	NonExistingCall(ctx context.Context) (*TestMsg, error)
 }
 
 // InfoPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -98,15 +97,6 @@ func (g *infoGRPC) GetInfo(ctx context.Context) (*PluginInfo, error) {
 	return resp, nil
 }
 
-func (g *infoGRPC) NonExistingCall(ctx context.Context) (*TestMsg, error) {
-	resp, err := g.client.NonExistingCall(ctx, &emptypb.Empty{})
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
 type infoGRPCServer struct {
 	UnimplementedInfoServiceServer
 
@@ -116,8 +106,4 @@ type infoGRPCServer struct {
 
 func (s *infoGRPCServer) GetInfo(ctx context.Context, in *emptypb.Empty) (*PluginInfo, error) {
 	return s.Impl.GetInfo(ctx, in)
-}
-
-func (s *infoGRPCServer) NonExistingCall(ctx context.Context, in *emptypb.Empty) (*TestMsg, error) {
-	return s.Impl.NonExistingCall(ctx, in)
 }

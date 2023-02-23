@@ -30,7 +30,9 @@ import (
 const LATEST = "latest"
 
 var nameRegexp = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z\d]$`)
-var versionRegexp = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
+var versionRegexp = regexp.MustCompile(`^v?([0-9]+)(\.[0-9]+)(\.[0-9]+)` +
+	`(-([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?` +
+	`(\+([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?$`)
 
 var localPluginFolder = "./raito/plugins/"
 var globalPluginFolder string

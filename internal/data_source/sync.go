@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/raito-io/golang-set/set"
-
 	dspc "github.com/raito-io/cli/base/data_source"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/file"
@@ -31,10 +29,10 @@ type DataSourceSync struct {
 	JobId        string
 }
 
-func (s *DataSourceSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, set.Set[string], error) {
+func (s *DataSourceSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error) {
 	dss, err := c.GetDataSourceSyncer()
 	if err != nil {
-		return false, nil, err
+		return false, err
 	}
 
 	return version.IsValidToSync(ctx, dss, dspc.MinimalCliVersion)
@@ -44,7 +42,7 @@ func (s *DataSourceSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, supportedFeatures set.Set[string]) (job.JobStatus, string, error) {
+func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))

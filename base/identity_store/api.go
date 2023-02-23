@@ -79,5 +79,5 @@ type IdentityStoreSyncerVersionHandler struct {
 }
 
 func (h *IdentityStoreSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
-	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion, supportedFeatures...), nil
+	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion), nil
 }

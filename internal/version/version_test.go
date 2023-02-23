@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/raito-io/golang-set/set"
 	"github.com/stretchr/testify/assert"
 
 	version2 "github.com/raito-io/cli/base/util/version"
@@ -26,7 +25,6 @@ func Test_isValidToSync(t *testing.T) {
 		name    string
 		args    args
 		want    bool
-		want1   set.Set[string]
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -35,7 +33,6 @@ func Test_isValidToSync(t *testing.T) {
 				pluginInformation: &version2.CliBuildInformation{
 					CliBuildVersion:   &version2.SemVer{Major: 1, Minor: 4, Patch: 2},
 					CliMinimalVersion: &version2.SemVer{Major: 1, Minor: 0, Patch: 0},
-					SupportedFeatures: []string{"feature1", "feature2"},
 				},
 				syncerMinimalVersion: semver.New(2, 0, 4, "", ""),
 				cliInfo: func() *semver.Version {
@@ -43,7 +40,6 @@ func Test_isValidToSync(t *testing.T) {
 				},
 			},
 			want:    true,
-			want1:   set.NewSet("feature1", "feature2"),
 			wantErr: assert.NoError,
 		},
 		{
@@ -52,7 +48,6 @@ func Test_isValidToSync(t *testing.T) {
 				pluginInformation: &version2.CliBuildInformation{
 					CliBuildVersion:   &version2.SemVer{Major: 2, Minor: 0, Patch: 4},
 					CliMinimalVersion: &version2.SemVer{Major: 1, Minor: 0, Patch: 0},
-					SupportedFeatures: []string{"feature1", "feature3"},
 				},
 				syncerMinimalVersion: semver.New(2, 0, 4, "", ""),
 				cliInfo: func() *semver.Version {
@@ -60,7 +55,6 @@ func Test_isValidToSync(t *testing.T) {
 				},
 			},
 			want:    true,
-			want1:   set.NewSet("feature1", "feature3"),
 			wantErr: assert.NoError,
 		},
 		{
@@ -69,7 +63,6 @@ func Test_isValidToSync(t *testing.T) {
 				pluginInformation: &version2.CliBuildInformation{
 					CliBuildVersion:   &version2.SemVer{Major: 2, Minor: 0, Patch: 4},
 					CliMinimalVersion: &version2.SemVer{Major: 1, Minor: 0, Patch: 0},
-					SupportedFeatures: []string{"feature1", "feature3"},
 				},
 				syncerMinimalVersion: semver.New(1, 0, 0, "", ""),
 				cliInfo: func() *semver.Version {
@@ -77,7 +70,6 @@ func Test_isValidToSync(t *testing.T) {
 				},
 			},
 			want:    true,
-			want1:   set.NewSet("feature1", "feature3"),
 			wantErr: assert.NoError,
 		},
 		{
@@ -86,15 +78,13 @@ func Test_isValidToSync(t *testing.T) {
 				pluginInformation: &version2.CliBuildInformation{
 					CliBuildVersion:   &version2.SemVer{Major: 1, Minor: 4, Patch: 2},
 					CliMinimalVersion: &version2.SemVer{Major: 1, Minor: 0, Patch: 0},
-					SupportedFeatures: []string{"feature1", "feature3"},
 				},
 				syncerMinimalVersion: semver.New(2, 0, 4, "", ""),
 				cliInfo: func() *semver.Version {
 					return semver.New(2, 0, 0, "", "")
 				},
 			},
-			want:  false,
-			want1: nil,
+			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 				return assert.ErrorAs(t, err, &IncompatibleVersionError{})
 			},
@@ -105,15 +95,13 @@ func Test_isValidToSync(t *testing.T) {
 				pluginInformation: &version2.CliBuildInformation{
 					CliBuildVersion:   &version2.SemVer{Major: 2, Minor: 0, Patch: 4},
 					CliMinimalVersion: &version2.SemVer{Major: 2, Minor: 0, Patch: 0},
-					SupportedFeatures: []string{"feature1", "feature3"},
 				},
 				syncerMinimalVersion: semver.New(1, 4, 2, "", ""),
 				cliInfo: func() *semver.Version {
 					return semver.New(1, 0, 0, "", "")
 				},
 			},
-			want:  false,
-			want1: nil,
+			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 				return assert.ErrorAs(t, err, &IncompatibleVersionError{})
 			},
@@ -121,12 +109,11 @@ func Test_isValidToSync(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := isValidToSync(tt.args.pluginInformation, tt.args.syncerMinimalVersion, tt.args.cliInfo)
+			got, err := isValidToSync(tt.args.pluginInformation, tt.args.syncerMinimalVersion, tt.args.cliInfo)
 			if !tt.wantErr(t, err, fmt.Sprintf("isValidToSync(%v, %v, %v)", tt.args.pluginInformation, tt.args.syncerMinimalVersion, tt.args.cliInfo())) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "isValidToSync(%v, %v, %v)", tt.args.pluginInformation, tt.args.syncerMinimalVersion, tt.args.cliInfo())
-			assert.Equalf(t, tt.want1, got1, "isValidToSync(%v, %v, %v)", tt.args.pluginInformation, tt.args.syncerMinimalVersion, tt.args.cliInfo())
 		})
 	}
 }

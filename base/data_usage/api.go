@@ -69,5 +69,5 @@ type DataUsageSyncerVersionHandler struct {
 }
 
 func (h *DataUsageSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
-	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion, supportedFeatures...), nil
+	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion), nil
 }

@@ -12,5 +12,4 @@ message SemVer {
 message CliBuildInformation {
   SemVer cli_build_version = 1;
   SemVer cli_minimal_version = 2;
-  repeated string supported_features = 3;
 }

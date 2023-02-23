@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/raito-io/golang-set/set"
-
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
@@ -26,12 +24,12 @@ type SubtaskEventUpdater interface {
 }
 
 type Task interface {
-	IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, set.Set[string], error)
+	IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error)
 	GetParts() []TaskPart
 }
 
 type TaskPart interface {
-	StartSyncAndQueueTaskPart(c plugin.PluginClient, statusUpdater TaskEventUpdater, supportedFeatures set.Set[string]) (JobStatus, string, error)
+	StartSyncAndQueueTaskPart(c plugin.PluginClient, statusUpdater TaskEventUpdater) (JobStatus, string, error)
 	ProcessResults(results interface{}) error
 	GetResultObject() interface{}
 }

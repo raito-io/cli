@@ -195,8 +195,7 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 
 	taskEventUpdater.AddTaskEvent(job.Started)
 
-	_, supportedFeatures, err := syncTask.IsClientValid(context.Background(), c)
-
+	_, err = syncTask.IsClientValid(context.Background(), c)
 	incompatibleVersionError := version.IncompatibleVersionError{}
 
 	if errors.As(err, &incompatibleVersionError) {
@@ -213,7 +212,7 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 	for i, taskPart := range syncParts {
 		cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
 
-		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater, supportedFeatures)
+		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater)
 		if err != nil {
 			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
 			taskEventUpdater.AddTaskEvent(job.Failed)

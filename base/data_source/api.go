@@ -227,5 +227,5 @@ type DataSourceSyncerVersionHandler struct {
 }
 
 func (h *DataSourceSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
-	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion, supportedFeatures...), nil
+	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion), nil
 }

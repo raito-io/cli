@@ -6,7 +6,6 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/golang-set/set"
 
 	version2 "github.com/raito-io/cli/base/util/version"
 )
@@ -31,31 +30,29 @@ func GetCliVersion() *semver.Version {
 	return &version
 }
 
-func CreateSyncerCliBuildInformation(minimalCliVersion *semver.Version, supportedFeatures ...string) *version2.CliBuildInformation {
+func CreateSyncerCliBuildInformation(minimalCliVersion *semver.Version) *version2.CliBuildInformation {
 	return &version2.CliBuildInformation{
 		CliBuildVersion:   version2.ToSemVer(GetCliVersion()),
 		CliMinimalVersion: version2.ToSemVer(minimalCliVersion),
-		SupportedFeatures: supportedFeatures,
 	}
 }
 
-func IsValidToSync(ctx context.Context, plugin version2.CliVersionHandler, syncerMinimalVersion *semver.Version) (bool, set.Set[string], error) {
+func IsValidToSync(ctx context.Context, plugin version2.CliVersionHandler, syncerMinimalVersion *semver.Version) (bool, error) {
 	pluginInformation, err := plugin.CliVersionInformation(ctx)
 	if err != nil {
-		return false, nil, err
+		return false, err
 	}
 
 	return isValidToSync(pluginInformation, syncerMinimalVersion, GetCliVersion)
 }
 
-func isValidToSync(pluginInformation *version2.CliBuildInformation, syncerMinimalVersion *semver.Version, cliInfo func() *semver.Version) (bool, set.Set[string], error) {
+func isValidToSync(pluginInformation *version2.CliBuildInformation, syncerMinimalVersion *semver.Version, cliInfo func() *semver.Version) (bool, error) {
 	currentCliVersion := cliInfo()
-	supportedFeaturesFn := func() set.Set[string] { return set.NewSet(pluginInformation.SupportedFeatures...) }
 
 	if currentCliVersion.Equal(DevVersion) {
 		hclog.L().Warn("Running in dev mode, skipping version check")
 
-		return true, supportedFeaturesFn(), nil
+		return true, nil
 	}
 
 	pluginCliCurrentVersion := pluginInformation.CliBuildVersion.ToVersion()
@@ -64,24 +61,24 @@ func isValidToSync(pluginInformation *version2.CliBuildInformation, syncerMinima
 	if pluginCliCurrentVersion.LessThan(currentCliVersion) {
 		//CLI version is newer than plugin version
 		if syncerMinimalVersion.GreaterThan(pluginCliCurrentVersion) {
-			return false, nil, IncompatibleVersionError{
+			return false, IncompatibleVersionError{
 				pluginVersion: pluginCliCurrentVersion.String(),
 				cliVersion:    currentCliVersion.String(),
 				updatePlugin:  true,
 			}
 		} else {
-			return true, supportedFeaturesFn(), nil
+			return true, nil
 		}
 	} else {
 		//CLI version is older than plugin version
 		if pluginMinimalVersion.GreaterThan(currentCliVersion) {
-			return false, nil, IncompatibleVersionError{
+			return false, IncompatibleVersionError{
 				pluginVersion: pluginCliCurrentVersion.String(),
 				cliVersion:    currentCliVersion.String(),
 				updatePlugin:  false,
 			}
 		} else {
-			return true, supportedFeaturesFn(), nil
+			return true, nil
 		}
 	}
 }

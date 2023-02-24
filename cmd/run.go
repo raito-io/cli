@@ -286,6 +286,14 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 	targetConfig.TargetLogger.Info("Executing target...")
 
 	start := time.Now()
+	defer func() {
+		if syncError != nil {
+			targetConfig.TargetLogger.Error(fmt.Sprintf("Failed execution: %s", syncError.Error()), "success")
+		} else {
+			targetConfig.TargetLogger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
+		}
+
+	}()
 
 	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)
 	if err != nil {
@@ -325,8 +333,6 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 	if err != nil {
 		return err
 	}
-
-	targetConfig.TargetLogger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
 
 	return nil
 }

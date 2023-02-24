@@ -142,9 +142,13 @@ func (s *sinkAdapter) handleProgress(spinner *pterm.SpinnerPrinter, target strin
 			spinner.UpdateText(text)
 		}
 	} else if level == hclog.Error {
-		spinner.Fail(text)
+		if s.hasSuccess(args) {
+			spinner.Fail(text)
+		} else {
+			pterm.Error.Println(text)
+		}
 	} else if level == hclog.Warn {
-		spinner.Warning(text)
+		pterm.Warning.Println(text)
 	}
 }
 

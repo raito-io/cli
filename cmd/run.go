@@ -172,10 +172,13 @@ func runSync(baseconfig *target.BaseConfig) error {
 		if compatibilityInformation.DeprecatedWarningMsg != nil {
 			warning += *compatibilityInformation.DeprecatedWarningMsg
 		}
+
 		baseconfig.BaseLogger.Warn(fmt.Sprintf("CLI version %s is deprecated.%s Please upgrade to supported version (%s) soon.", version.GetCliVersion().String(), warning, compatibilityInformation.SupportedVersions))
+
 		fallthrough
 	case version_management.Supported:
 		return target.RunTargets(baseconfig, runTargetSync)
+	case version_management.CompatibilityUnknown:
 	}
 
 	return errors.New("unknown CLI version")
@@ -286,13 +289,13 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 	targetConfig.TargetLogger.Info("Executing target...")
 
 	start := time.Now()
+
 	defer func() {
 		if syncError != nil {
 			targetConfig.TargetLogger.Error(fmt.Sprintf("Failed execution: %s", syncError.Error()), "success")
 		} else {
 			targetConfig.TargetLogger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
 		}
-
 	}()
 
 	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)

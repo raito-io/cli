@@ -23,6 +23,7 @@ import (
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/cli/internal/version_management"
 )
 
 func initRunCommand(rootCmd *cobra.Command) {
@@ -154,7 +155,30 @@ func executeSingleRun(baseconfig *target.BaseConfig) error {
 }
 
 func runSync(baseconfig *target.BaseConfig) error {
-	return target.RunTargets(baseconfig, runTargetSync)
+	compatibilityInformation, err := version_management.IsCompatibleWithAppServer(baseconfig)
+	if err != nil {
+		baseconfig.BaseLogger.Error(fmt.Sprintf("Failed to check compatibility with app server: %s", err.Error()))
+
+		return fmt.Errorf("compatibility check failed: %s", err.Error())
+	}
+
+	switch compatibilityInformation.Compatibility {
+	case version_management.NotSupported:
+		baseconfig.BaseLogger.Error(fmt.Sprintf("CLI version is not compatible with app server. Please upgrade to a supported version (%s).", compatibilityInformation.SupportedVersions))
+
+		return errors.New("unsupported CLI version")
+	case version_management.Deprecated:
+		warning := " "
+		if compatibilityInformation.DeprecatedWarningMsg != nil {
+			warning += *compatibilityInformation.DeprecatedWarningMsg
+		}
+		baseconfig.BaseLogger.Warn(fmt.Sprintf("CLI version %s is deprecated.%s Please upgrade to supported version (%s) soon.", version.GetCliVersion().String(), warning, compatibilityInformation.SupportedVersions))
+		fallthrough
+	case version_management.Supported:
+		return target.RunTargets(baseconfig, runTargetSync)
+	}
+
+	return errors.New("unknown CLI version")
 }
 
 func execute(targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
@@ -196,7 +220,7 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 	taskEventUpdater.AddTaskEvent(job.Started)
 
 	_, err = syncTask.IsClientValid(context.Background(), c)
-	incompatibleVersionError := version.IncompatibleVersionError{}
+	incompatibleVersionError := version_management.IncompatiblePluginVersionError{}
 
 	if errors.As(err, &incompatibleVersionError) {
 		cfg.TargetLogger.Error(fmt.Sprintf("Unable to execute %s sync: %s", syncTypeLabel, incompatibleVersionError.Error()))

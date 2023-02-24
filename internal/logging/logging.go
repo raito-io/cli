@@ -11,8 +11,9 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/pterm/pterm"
-	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
+
+	"github.com/raito-io/cli/internal/constants"
 )
 
 func SetupLogging() {
@@ -124,6 +125,8 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 func (s *sinkAdapter) handleNormalOutput(level hclog.Level, msg string) {
 	if level == hclog.Error {
 		pterm.Error.Println(msg)
+	} else if level == hclog.Warn {
+		pterm.Warning.Println(msg)
 	} else if level == hclog.Info {
 		pterm.Println(msg)
 	}
@@ -141,7 +144,7 @@ func (s *sinkAdapter) handleProgress(spinner *pterm.SpinnerPrinter, target strin
 	} else if level == hclog.Error {
 		spinner.Fail(text)
 	} else if level == hclog.Warn {
-		spinner.UpdateText("Warning: " + text)
+		spinner.Warning(text)
 	}
 }
 

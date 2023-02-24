@@ -32,6 +32,8 @@ func DataSourceSync(syncer DataSourceSyncer) *dataSourceSyncFunction {
 }
 
 type dataSourceSyncFunction struct {
+	data_source.DataSourceSyncerVersionHandler
+
 	syncer             DataSourceSyncer
 	fileCreatorFactory func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error)
 }

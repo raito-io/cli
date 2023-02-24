@@ -2,20 +2,14 @@ syntax = "proto3";
 package util.plugin;
 
 import "google/protobuf/empty.proto";
+import "util/version/version.proto";
 
 // PluginInfo represents the information about a plugin.
 message PluginInfo {
   string name = 1;
   string description = 2;
-  Version version = 3;
+  util.version.SemVer version = 3;
   repeated ParameterInfo parameters = 4;
-}
-
-// Version contains semantic versioning information of the plugin
-message Version {
-  int32 major = 1;
-  int32 minor = 2;
-  int32 maintenance = 3;
 }
 
 // ParameterInfo contains the information about a parameter.

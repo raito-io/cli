@@ -2,11 +2,12 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-hclog"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/hashicorp/go-hclog"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewClientError(t *testing.T) {
@@ -40,6 +41,8 @@ func TestVersionRegEx(t *testing.T) {
 	assert.True(t, validateVersion("0.1.2"))
 	assert.True(t, validateVersion("11.0.0"))
 	assert.True(t, validateVersion("111.222.33333"))
+	assert.True(t, validateVersion("111.222.33333-dev0"))
+	assert.True(t, validateVersion("111.222.33333-dev0+build5"))
 
 	assert.False(t, validateVersion(".0.0"))
 	assert.False(t, validateVersion("jos"))

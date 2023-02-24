@@ -8,6 +8,7 @@ package data_source
 
 import (
 	context "context"
+	version "github.com/raito-io/cli/base/util/version"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -23,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DataSourceSyncServiceClient interface {
+	CliVersionInformation(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*version.CliBuildInformation, error)
 	SyncDataSource(ctx context.Context, in *DataSourceSyncConfig, opts ...grpc.CallOption) (*DataSourceSyncResult, error)
 	GetDataSourceMetaData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*MetaData, error)
 }
@@ -33,6 +35,15 @@ type dataSourceSyncServiceClient struct {
 
 func NewDataSourceSyncServiceClient(cc grpc.ClientConnInterface) DataSourceSyncServiceClient {
 	return &dataSourceSyncServiceClient{cc}
+}
+
+func (c *dataSourceSyncServiceClient) CliVersionInformation(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*version.CliBuildInformation, error) {
+	out := new(version.CliBuildInformation)
+	err := c.cc.Invoke(ctx, "/data_source.DataSourceSyncService/CliVersionInformation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *dataSourceSyncServiceClient) SyncDataSource(ctx context.Context, in *DataSourceSyncConfig, opts ...grpc.CallOption) (*DataSourceSyncResult, error) {
@@ -57,6 +68,7 @@ func (c *dataSourceSyncServiceClient) GetDataSourceMetaData(ctx context.Context,
 // All implementations must embed UnimplementedDataSourceSyncServiceServer
 // for forward compatibility
 type DataSourceSyncServiceServer interface {
+	CliVersionInformation(context.Context, *emptypb.Empty) (*version.CliBuildInformation, error)
 	SyncDataSource(context.Context, *DataSourceSyncConfig) (*DataSourceSyncResult, error)
 	GetDataSourceMetaData(context.Context, *emptypb.Empty) (*MetaData, error)
 	mustEmbedUnimplementedDataSourceSyncServiceServer()
@@ -66,6 +78,9 @@ type DataSourceSyncServiceServer interface {
 type UnimplementedDataSourceSyncServiceServer struct {
 }
 
+func (UnimplementedDataSourceSyncServiceServer) CliVersionInformation(context.Context, *emptypb.Empty) (*version.CliBuildInformation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CliVersionInformation not implemented")
+}
 func (UnimplementedDataSourceSyncServiceServer) SyncDataSource(context.Context, *DataSourceSyncConfig) (*DataSourceSyncResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncDataSource not implemented")
 }
@@ -83,6 +98,24 @@ type UnsafeDataSourceSyncServiceServer interface {
 
 func RegisterDataSourceSyncServiceServer(s grpc.ServiceRegistrar, srv DataSourceSyncServiceServer) {
 	s.RegisterService(&DataSourceSyncService_ServiceDesc, srv)
+}
+
+func _DataSourceSyncService_CliVersionInformation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataSourceSyncServiceServer).CliVersionInformation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/data_source.DataSourceSyncService/CliVersionInformation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataSourceSyncServiceServer).CliVersionInformation(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _DataSourceSyncService_SyncDataSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -128,6 +161,10 @@ var DataSourceSyncService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "data_source.DataSourceSyncService",
 	HandlerType: (*DataSourceSyncServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CliVersionInformation",
+			Handler:    _DataSourceSyncService_CliVersionInformation_Handler,
+		},
 		{
 			MethodName: "SyncDataSource",
 			Handler:    _DataSourceSyncService_SyncDataSource_Handler,

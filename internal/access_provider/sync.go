@@ -16,6 +16,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/version"
 )
 
 type AccessProviderImportResult struct {
@@ -52,6 +53,15 @@ type dataAccessExportSubtask struct {
 type dataAccessImportSubtask struct {
 	TargetConfig *target.BaseTargetConfig
 	JobId        *string
+}
+
+func (s *DataAccessSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error) {
+	accessSyncer, err := c.GetAccessSyncer()
+	if err != nil {
+		return false, err
+	}
+
+	return version.IsValidToSync(ctx, accessSyncer, dapc.MinimalCliVersion)
 }
 
 func (s *DataAccessSync) GetParts() []job.TaskPart {

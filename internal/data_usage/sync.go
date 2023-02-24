@@ -16,6 +16,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/version"
 )
 
 type DataUsageSync struct {
@@ -31,6 +32,15 @@ type DataUsageImportResult struct {
 	EdgesRemoved          int `json:"edgesRemoved"`
 
 	Warnings []string `json:"warnings"`
+}
+
+func (s *DataUsageSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error) {
+	dus, err := c.GetDataUsageSyncer()
+	if err != nil {
+		return false, err
+	}
+
+	return version.IsValidToSync(ctx, dus, dupc.MinimalCliVersion)
 }
 
 func (s *DataUsageSync) GetParts() []job.TaskPart {

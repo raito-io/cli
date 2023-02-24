@@ -13,6 +13,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/version"
 )
 
 type DataSourceImportResult struct {
@@ -26,6 +27,15 @@ type DataSourceImportResult struct {
 type DataSourceSync struct {
 	TargetConfig *target.BaseTargetConfig
 	JobId        string
+}
+
+func (s *DataSourceSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error) {
+	dss, err := c.GetDataSourceSyncer()
+	if err != nil {
+		return false, err
+	}
+
+	return version.IsValidToSync(ctx, dss, dspc.MinimalCliVersion)
 }
 
 func (s *DataSourceSync) GetParts() []job.TaskPart {

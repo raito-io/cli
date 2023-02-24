@@ -4,6 +4,7 @@ package access_provider;
 import "google/protobuf/empty.proto";
 import "util/config/config.proto";
 import "util/error/error.proto";
+import "util/version/version.proto";
 
 // AccessSyncToTarget contains all necessary configuration parameters to export Data from Raito into DS
 message AccessSyncToTarget {
@@ -44,6 +45,8 @@ message AccessSyncConfig {
 }
 
 service AccessProviderSyncService {
+  rpc CliVersionInformation(google.protobuf.Empty) returns (util.version.CliBuildInformation);
+
   rpc SyncFromTarget(AccessSyncFromTarget) returns (AccessSyncResult);
   rpc SyncToTarget(AccessSyncToTarget) returns (AccessSyncResult);
 

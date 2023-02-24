@@ -3,44 +3,39 @@ package plugin
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/raito-io/cli/base/util/version"
 )
 
 // ParseVersion parses
 // the given string version in the form X.Y.Z and returns a Version struct representing it.
 // If the input string is invalid, a 0.0.0 version will be returned
-func ParseVersion(version string) *Version {
-	parts := strings.Split(version, ".")
-	if len(parts) != 3 {
-		return nil
-	}
-	major, err := strconv.Atoi(parts[0])
+func ParseVersion(stringVersion string) *version.SemVer {
+	sv := semver.MustParse(stringVersion)
 
-	if err != nil {
-		return nil
-	}
-	minor, err := strconv.Atoi(parts[1])
-
-	if err != nil {
-		return nil
-	}
-	maintenance, err := strconv.Atoi(parts[2])
-
-	if err != nil {
-		return nil
-	}
-
-	return &Version{Major: int32(major), Minor: int32(minor), Maintenance: int32(maintenance)} //nolint:gosec
+	return &version.SemVer{Major: sv.Major(), Minor: sv.Minor(), Patch: sv.Patch(), Prerelease: sv.Prerelease(), Build: sv.Metadata()}
 }
 
 func (i *PluginInfo) InfoString() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%s v%d.%d.%d", i.Name, i.Version.Major, i.Version.Minor, i.Version.Maintenance))
+
+	sb.WriteString(i.Name)
+	sb.WriteString(" ")
+
+	if i.GetVersion() != nil {
+		sv := semver.New(i.GetVersion().GetMajor(), i.GetVersion().GetMinor(), i.GetVersion().GetPatch(), i.GetVersion().GetPrerelease(), i.GetVersion().GetBuild())
+
+		sb.WriteString("v")
+		sb.WriteString(sv.String())
+	} else {
+		sb.WriteString("unknown version")
+	}
 
 	return sb.String()
 }

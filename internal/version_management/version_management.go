@@ -125,14 +125,14 @@ func (e IncompatiblePluginVersionError) Error() string {
 	return fmt.Sprintf("Plugin is incompatible with CLI version. Plugin is build with CLI version '%s' while current CLI version is '%s', %s", e.pluginVersion, e.cliVersion, solution)
 }
 
-func IsCompatibleWithAppServer(config *target.BaseConfig) (CompatibilityInformation, error) {
+func IsCompatibleWithRaitoCloud(config *target.BaseConfig) (CompatibilityInformation, error) {
 	if version.GetCliVersion().Equal(version.DevVersion) {
 		return CompatibilityInformation{
 			Compatibility: Supported,
 		}, nil
 	}
 
-	supportedVersions, err := getCompatibleAppServerVersions(config)
+	supportedVersions, err := getCompatibleRaitoCloudVersions(config)
 	if err != nil {
 		return CompatibilityInformation{
 			Compatibility: CompatibilityUnknown,
@@ -160,13 +160,13 @@ func IsCompatibleWithAppServer(config *target.BaseConfig) (CompatibilityInformat
 	}, nil
 }
 
-type SupportedAppServerVersions struct {
+type SupportedRaitoCloudVersions struct {
 	SupportedVersions    *semver.Constraints
 	DeprecatedVersions   *semver.Constraints
 	DeprecatedVersionMsg *string
 }
 
-func getCompatibleAppServerVersions(config *target.BaseConfig) (*SupportedAppServerVersions, error) {
+func getCompatibleRaitoCloudVersions(config *target.BaseConfig) (*SupportedRaitoCloudVersions, error) {
 	gqlQuery := `{"operationName": "SupportedCLIVersion", "variables": {}, "query": "query SupportedCLIVersion {
 				SupportedCLIVersion {
 					supportedVersions
@@ -184,22 +184,22 @@ func getCompatibleAppServerVersions(config *target.BaseConfig) (*SupportedAppSer
 	_, err := graphql.ExecuteGraphQL(gqlQuery, config, &res)
 
 	if err != nil {
-		return nil, fmt.Errorf("compatible AppServer version: %w", err)
+		return nil, fmt.Errorf("compatible Raito Cloud version: %w", err)
 	}
 
 	currentVersionConstraint, err := semver.NewConstraint(res.Response.SupportedVersions)
 	if err != nil {
-		return nil, fmt.Errorf("compatible AppServer version: %w", err)
+		return nil, fmt.Errorf("compatible Raito Cloud version: %w", err)
 	}
 
-	result := &SupportedAppServerVersions{
+	result := &SupportedRaitoCloudVersions{
 		SupportedVersions: currentVersionConstraint,
 	}
 
 	if res.Response.DeprecatedVersions != nil {
 		result.DeprecatedVersions, err = semver.NewConstraint(res.Response.DeprecatedVersions.DeprecatedVersions)
 		if err != nil {
-			return nil, fmt.Errorf("compatible AppServer version: %w", err)
+			return nil, fmt.Errorf("compatible Raito Cloud version: %w", err)
 		}
 
 		result.DeprecatedVersionMsg = res.Response.DeprecatedVersions.Msg

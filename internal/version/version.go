@@ -12,10 +12,6 @@ var date = ""
 func SetVersion(setVersion, setDate string) {
 	if setVersion != "" {
 		semverVersion := semver.MustParse(setVersion)
-
-		version = *semverVersion
-	} else {
-		semverVersion := semver.MustParse("0.15.0")
 		version = *semverVersion
 	}
 

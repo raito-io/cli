@@ -155,16 +155,16 @@ func executeSingleRun(baseconfig *target.BaseConfig) error {
 }
 
 func runSync(baseconfig *target.BaseConfig) error {
-	compatibilityInformation, err := version_management.IsCompatibleWithAppServer(baseconfig)
+	compatibilityInformation, err := version_management.IsCompatibleWithRaitoCloud(baseconfig)
 	if err != nil {
-		baseconfig.BaseLogger.Error(fmt.Sprintf("Failed to check compatibility with app server: %s", err.Error()))
+		baseconfig.BaseLogger.Error(fmt.Sprintf("Failed to check compatibility with Raito Cloud: %s", err.Error()))
 
 		return fmt.Errorf("compatibility check failed: %s", err.Error())
 	}
 
 	switch compatibilityInformation.Compatibility {
 	case version_management.NotSupported:
-		baseconfig.BaseLogger.Error(fmt.Sprintf("CLI version is not compatible with app server. Please upgrade to a supported version (%s).", compatibilityInformation.SupportedVersions))
+		baseconfig.BaseLogger.Error(fmt.Sprintf("CLI version is not compatible with Raito Cloud. Please upgrade to a supported version (%s).", compatibilityInformation.SupportedVersions))
 
 		return errors.New("unsupported CLI version")
 	case version_management.Deprecated:

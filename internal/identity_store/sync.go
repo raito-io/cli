@@ -13,7 +13,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/cli/internal/version_management"
 )
 
 type IdentityStoreSync struct {
@@ -38,7 +38,7 @@ func (s *IdentityStoreSync) IsClientValid(ctx context.Context, c plugin.PluginCl
 		return false, err
 	}
 
-	return version.IsValidToSync(ctx, iss, ispc.MinimalCliVersion)
+	return version_management.IsValidToSync(ctx, iss, ispc.MinimalCliVersion)
 }
 
 func (s *IdentityStoreSync) GetParts() []job.TaskPart {

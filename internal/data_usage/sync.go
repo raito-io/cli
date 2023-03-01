@@ -16,7 +16,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/cli/internal/version_management"
 )
 
 type DataUsageSync struct {
@@ -40,7 +40,7 @@ func (s *DataUsageSync) IsClientValid(ctx context.Context, c plugin.PluginClient
 		return false, err
 	}
 
-	return version.IsValidToSync(ctx, dus, dupc.MinimalCliVersion)
+	return version_management.IsValidToSync(ctx, dus, dupc.MinimalCliVersion)
 }
 
 func (s *DataUsageSync) GetParts() []job.TaskPart {

@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/raito-io/cli/base/util/version"
-	version2 "github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/cli/internal/version_management"
 )
 
 // IdentityStoreSyncer interface needs to be implemented by any plugin that wants to import users and groups into a Raito identity store.
@@ -79,5 +79,5 @@ type IdentityStoreSyncerVersionHandler struct {
 }
 
 func (h *IdentityStoreSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
-	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion), nil
+	return version_management.CreateSyncerCliBuildInformation(MinimalCliVersion), nil
 }

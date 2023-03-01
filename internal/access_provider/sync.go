@@ -16,7 +16,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/cli/internal/version_management"
 )
 
 type AccessProviderImportResult struct {
@@ -61,7 +61,7 @@ func (s *DataAccessSync) IsClientValid(ctx context.Context, c plugin.PluginClien
 		return false, err
 	}
 
-	return version.IsValidToSync(ctx, accessSyncer, dapc.MinimalCliVersion)
+	return version_management.IsValidToSync(ctx, accessSyncer, dapc.MinimalCliVersion)
 }
 
 func (s *DataAccessSync) GetParts() []job.TaskPart {

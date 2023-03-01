@@ -20,6 +20,7 @@ import (
 	"github.com/raito-io/cli/internal/data_usage"
 	"github.com/raito-io/cli/internal/identity_store"
 	"github.com/raito-io/cli/internal/job"
+	"github.com/raito-io/cli/internal/logging"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/version"
@@ -218,6 +219,13 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 		}
 	}()
 
+	cfg, cleanup, taskLoggingError := logging.CreateTaskLogger(cfg, jobID, syncType)
+	if taskLoggingError != nil {
+		return taskLoggingError
+	}
+
+	defer cleanup()
+
 	cfg.TargetLogger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
 
 	taskEventUpdater.AddTaskEvent(job.Started)
@@ -237,51 +245,59 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 	syncParts := syncTask.GetParts()
 
 	for i, taskPart := range syncParts {
-		cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
-
-		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater)
-		if err != nil {
-			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
-			taskEventUpdater.AddTaskEvent(job.Failed)
-
-			return err
-		}
-
-		if status != job.Completed {
-			taskEventUpdater.AddTaskEvent(status)
-		}
-
-		if status == job.Queued {
-			cfg.TargetLogger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
-		}
-
-		syncResult := taskPart.GetResultObject()
-
-		if syncResult != nil {
-			subtask, err := job.WaitForJobToComplete(jobID, syncType, subtaskId, syncResult, cfg, status)
-			if err != nil {
-				taskEventUpdater.AddTaskEvent(job.Failed)
-				return err
-			}
-
-			if subtask.Status == job.Failed {
-				taskEventUpdater.AddTaskEvent(job.Failed)
-				return fmt.Errorf("%s", strings.Join(subtask.Errors, ", "))
-			}
-
-			err = taskPart.ProcessResults(syncResult)
-			if err != nil {
-				taskEventUpdater.AddTaskEvent(job.Failed)
-				return err
-			}
-		} else if status != job.Completed {
-			taskEventUpdater.AddTaskEvent(job.Failed)
-			return fmt.Errorf("unable to load results")
+		err2 := runTaskPartSync(cfg, syncTypeLabel, taskEventUpdater, jobID, syncType, taskPart, i, syncParts, c)
+		if err2 != nil {
+			return err2
 		}
 	}
 
 	taskEventUpdater.AddTaskEvent(job.Completed)
 
+	return nil
+}
+
+func runTaskPartSync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, jobID string, syncType string, taskPart job.TaskPart, i int, syncParts []job.TaskPart, c plugin.PluginClient) error {
+	cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
+
+	status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater)
+	if err != nil {
+		target.HandleTargetError(err, cfg, "synchronizing "+syncType)
+		taskEventUpdater.AddTaskEvent(job.Failed)
+
+		return err
+	}
+
+	if status != job.Completed {
+		taskEventUpdater.AddTaskEvent(status)
+	}
+
+	if status == job.Queued {
+		cfg.TargetLogger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
+	}
+
+	syncResult := taskPart.GetResultObject()
+
+	if syncResult != nil {
+		subtask, err := job.WaitForJobToComplete(jobID, syncType, subtaskId, syncResult, cfg, status)
+		if err != nil {
+			taskEventUpdater.AddTaskEvent(job.Failed)
+			return err
+		}
+
+		if subtask.Status == job.Failed {
+			taskEventUpdater.AddTaskEvent(job.Failed)
+			return fmt.Errorf("%s", strings.Join(subtask.Errors, ", "))
+		}
+
+		err = taskPart.ProcessResults(syncResult)
+		if err != nil {
+			taskEventUpdater.AddTaskEvent(job.Failed)
+			return err
+		}
+	} else if status != job.Completed {
+		taskEventUpdater.AddTaskEvent(job.Failed)
+		return fmt.Errorf("unable to load results")
+	}
 	return nil
 }
 

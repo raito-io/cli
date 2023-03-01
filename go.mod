@@ -15,7 +15,7 @@ require (
 	github.com/pterm/pterm v0.12.54
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/vektra/mockery/v2 v2.20.0
 	google.golang.org/grpc v1.53.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0

@@ -44,7 +44,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.DisableLogForwarding, false, "If set, sync logs will not be forwarded to Raito Cloud.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataSourceSync, false, "If set, data source sync logs will not be forwarded to Raito Cloud.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataAccessSync, false, "If set, data access sync logs will not be forwarded to Raito Cloud.")
-	cmd.PersistentFlags().Bool(constants.DisableLogForwardingIdentityStoreSync, false, "If set, identity store sync logs will not be forwarded to Raito Could.")
+	cmd.PersistentFlags().Bool(constants.DisableLogForwardingIdentityStoreSync, false, "If set, identity store sync logs will not be forwarded to Raito Cloud.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataUsageSync, false, "If set, data usage sync logs will not be forwarded to Raito Cloud.")
 
 	BindFlag(constants.FrequencyFlag, cmd)

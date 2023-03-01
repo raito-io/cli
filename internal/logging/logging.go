@@ -247,7 +247,7 @@ func (s *taskFileSink) Accept(name string, level hclog.Level, msg string, args .
 		}
 	}
 
-	s.writer.WriteString(fmt.Sprintf("%s [%s] %s: %s:%s\n", time.Now().Format("2006-01-02T15:04:05.000-0700"), level.String(), name, msg, argsBuilder.String()))
+	s.writer.WriteString(fmt.Sprintf("%s [%s] %s: %s:%s\n", time.Now().Format("2006-01-02T15:04:05.000-0700"), level.String(), name, msg, argsBuilder.String())) //nolint:errcheck
 }
 
 func (s *taskFileSink) Close() error {

@@ -23,6 +23,7 @@ import (
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/cli/internal/version_management"
 )
 
 func initRunCommand(rootCmd *cobra.Command) {
@@ -154,7 +155,33 @@ func executeSingleRun(baseconfig *target.BaseConfig) error {
 }
 
 func runSync(baseconfig *target.BaseConfig) error {
-	return target.RunTargets(baseconfig, runTargetSync)
+	compatibilityInformation, err := version_management.IsCompatibleWithRaitoCloud(baseconfig)
+	if err != nil {
+		baseconfig.BaseLogger.Error(fmt.Sprintf("Failed to check compatibility with Raito Cloud: %s", err.Error()))
+
+		return fmt.Errorf("compatibility check failed: %s", err.Error())
+	}
+
+	switch compatibilityInformation.Compatibility {
+	case version_management.NotSupported:
+		baseconfig.BaseLogger.Error(fmt.Sprintf("CLI version is not compatible with Raito Cloud. Please upgrade to a supported version (%s).", compatibilityInformation.SupportedVersions))
+
+		return errors.New("unsupported CLI version")
+	case version_management.Deprecated:
+		warning := " "
+		if compatibilityInformation.DeprecatedWarningMsg != nil {
+			warning += *compatibilityInformation.DeprecatedWarningMsg
+		}
+
+		baseconfig.BaseLogger.Warn(fmt.Sprintf("CLI version %s is deprecated.%s Please upgrade to supported version (%s) soon.", version.GetCliVersion().String(), warning, compatibilityInformation.SupportedVersions))
+
+		fallthrough
+	case version_management.Supported:
+		return target.RunTargets(baseconfig, runTargetSync)
+	case version_management.CompatibilityUnknown:
+	}
+
+	return errors.New("unknown CLI version")
 }
 
 func execute(targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
@@ -196,7 +223,7 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 	taskEventUpdater.AddTaskEvent(job.Started)
 
 	_, err = syncTask.IsClientValid(context.Background(), c)
-	incompatibleVersionError := version.IncompatibleVersionError{}
+	incompatibleVersionError := version_management.IncompatiblePluginVersionError{}
 
 	if errors.As(err, &incompatibleVersionError) {
 		cfg.TargetLogger.Error(fmt.Sprintf("Unable to execute %s sync: %s", syncTypeLabel, incompatibleVersionError.Error()))
@@ -263,6 +290,14 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 
 	start := time.Now()
 
+	defer func() {
+		if syncError != nil {
+			targetConfig.TargetLogger.Error(fmt.Sprintf("Failed execution: %s", syncError.Error()), "success")
+		} else {
+			targetConfig.TargetLogger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
+		}
+	}()
+
 	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)
 	if err != nil {
 		targetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
@@ -301,8 +336,6 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 	if err != nil {
 		return err
 	}
-
-	targetConfig.TargetLogger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
 
 	return nil
 }

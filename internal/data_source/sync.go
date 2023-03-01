@@ -13,7 +13,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/cli/internal/version_management"
 )
 
 type DataSourceImportResult struct {
@@ -35,7 +35,7 @@ func (s *DataSourceSync) IsClientValid(ctx context.Context, c plugin.PluginClien
 		return false, err
 	}
 
-	return version.IsValidToSync(ctx, dss, dspc.MinimalCliVersion)
+	return version_management.IsValidToSync(ctx, dss, dspc.MinimalCliVersion)
 }
 
 func (s *DataSourceSync) GetParts() []job.TaskPart {

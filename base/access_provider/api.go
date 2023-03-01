@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/raito-io/cli/base/util/version"
-	version2 "github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/cli/internal/version_management"
 )
 
 // AccessSyncer interface needs to be implemented by any plugin that wants to sync access controls between Raito and the data source.
@@ -102,5 +102,5 @@ type AccessSyncerVersionHandler struct {
 }
 
 func (h *AccessSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
-	return version2.CreateSyncerCliBuildInformation(MinimalCliVersion), nil
+	return version_management.CreateSyncerCliBuildInformation(MinimalCliVersion), nil
 }

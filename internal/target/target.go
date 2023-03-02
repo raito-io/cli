@@ -49,6 +49,11 @@ type BaseTargetConfig struct {
 	SkipDataAccessSync    bool
 	SkipDataUsageSync     bool
 
+	LockAllWho    bool
+	LockAllWhat   bool
+	LockAllNames  bool
+	LockAllDelete bool
+
 	OnlyOutOfSyncData    bool
 	SkipDataAccessImport bool
 
@@ -314,6 +319,10 @@ func buildTargetConfigFromFlags(baseConfig *BaseConfig) *BaseTargetConfig {
 		SkipDataSourceSync:    viper.GetBool(constants.SkipDataSourceSyncFlag),
 		SkipDataAccessSync:    viper.GetBool(constants.SkipDataAccessSyncFlag),
 		SkipDataUsageSync:     viper.GetBool(constants.SkipDataUsageSyncFlag),
+		LockAllWho:            viper.GetBool(constants.LockAllWhoFlag),
+		LockAllWhat:           viper.GetBool(constants.LockAllWhatFlag),
+		LockAllNames:          viper.GetBool(constants.LockAllNamesFlag),
+		LockAllDelete:         viper.GetBool(constants.LockAllDeleteFlag),
 		TargetLogger:          baseConfig.BaseLogger.With("target", name),
 		DeleteUntouched:       true,
 		DeleteTempFiles:       true,

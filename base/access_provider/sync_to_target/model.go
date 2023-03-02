@@ -21,6 +21,8 @@ type AccessProvider struct {
 	Action      Action    `yaml:"action" json:"action"`
 	Who         WhoItem   `yaml:"who" json:"who"`
 	Delete      bool      `yaml:"delete" json:"delete"`
+	WhoLocked   *bool     `yaml:"whoLocked" json:"whoLocked"`
+	WhatLocked  *bool     `yaml:"whatLocked" json:"whatLocked"`
 }
 
 type Access struct {

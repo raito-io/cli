@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aws/smithy-go/ptr"
+
 	"github.com/raito-io/cli/base/access_provider"
 )
 
@@ -69,6 +71,22 @@ func (d *accessProviderFileCreator) AddAccessProviders(dataAccessList ...*Access
 	}
 
 	for _, da := range dataAccessList {
+		if d.config.LockAllWho {
+			da.WhoLocked = ptr.Bool(true)
+		}
+
+		if d.config.LockAllWhat {
+			da.WhatLocked = ptr.Bool(true)
+		}
+
+		if d.config.LockAllNames {
+			da.NameLocked = ptr.Bool(true)
+		}
+
+		if d.config.LockAllDelete {
+			da.DeleteLocked = ptr.Bool(true)
+		}
+
 		var err error
 
 		if d.dataAccessCount > 0 {

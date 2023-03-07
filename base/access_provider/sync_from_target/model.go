@@ -4,13 +4,16 @@ import "github.com/raito-io/cli/base/data_source"
 
 // AccessProvider describes data access in the format that is suitable to be imported into Raito.x
 type AccessProvider struct {
-	ExternalId string    `json:"externalId"`
-	Name       string    `json:"name"`
-	NamingHint string    `json:"namingHint"`
-	Access     []*Access `yaml:"access" json:"access"`
-	Action     Action    `json:"action"`
-	Policy     string    `json:"policy"`
-	Who        *WhoItem  `yaml:"who" json:"who"`
+	ExternalId string `json:"externalId"`
+	Name       string `json:"name"`
+	NamingHint string `json:"namingHint"`
+
+	// Deprecated: use ActualName and What fields directory
+	Access []*Access `yaml:"access" json:"access"`
+
+	Action Action   `json:"action"`
+	Policy string   `json:"policy"`
+	Who    *WhoItem `yaml:"who" json:"who"`
 
 	// Locking properties
 
@@ -24,6 +27,10 @@ type AccessProvider struct {
 	NameLockedReason   *string `json:"nameLockedReason"`
 	DeleteLocked       *bool   `json:"deleteLocked"`
 	DeleteLockedReason *string `json:"deleteLockedReason"`
+
+	ActualName string `yaml:"actualName" json:"actualName"`
+	// Who represents who has access to the 'what'. Nil means that the 'who' is unknown.
+	What []WhatItem `yaml:"what" json:"what"`
 }
 
 type Access struct {

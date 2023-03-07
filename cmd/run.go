@@ -40,6 +40,12 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.SkipIdentityStoreSyncFlag, false, "If set, the identity store synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipDataAccessSyncFlag, false, "If set, the data access information from Raito will not be synced to the data sources in the target list.")
 	cmd.PersistentFlags().Bool(constants.SkipDataUsageSyncFlag, false, "If set, the data usage information synchronization step to Raito will be skipped for each of the targets.")
+
+	cmd.PersistentFlags().Bool(constants.LockAllWhoFlag, false, "If set, the 'who' of all access providers imported into Raito Cloud will be locked.")
+	cmd.PersistentFlags().Bool(constants.LockAllWhatFlag, false, "If set, the 'what' of all access providers imported into Raito Cloud will be locked.")
+	cmd.PersistentFlags().Bool(constants.LockAllNamesFlag, false, "If set, the names of all access providers imported into Raito Cloud will be locked.")
+	cmd.PersistentFlags().Bool(constants.LockAllDeleteFlag, false, "If set, the deletion of all access providers imported into Raito Cloud will be locked.")
+
 	cmd.PersistentFlags().Bool(constants.DisableWebsocketFlag, false, "If set, raito will not setup a websocket to trigger new syncs. This flag has only effect if frequency is set.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwarding, false, "If set, sync logs will not be forwarded to Raito Cloud.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataSourceSync, false, "If set, data source sync logs will not be forwarded to Raito Cloud.")
@@ -52,6 +58,10 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.SkipIdentityStoreSyncFlag, cmd)
 	BindFlag(constants.SkipDataAccessSyncFlag, cmd)
 	BindFlag(constants.SkipDataUsageSyncFlag, cmd)
+	BindFlag(constants.LockAllWhoFlag, cmd)
+	BindFlag(constants.LockAllWhatFlag, cmd)
+	BindFlag(constants.LockAllNamesFlag, cmd)
+	BindFlag(constants.LockAllDeleteFlag, cmd)
 	BindFlag(constants.DisableWebsocketFlag, cmd)
 	BindFlag(constants.DisableLogForwarding, cmd)
 	BindFlag(constants.DisableLogForwardingDataSourceSync, cmd)

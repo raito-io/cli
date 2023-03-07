@@ -27,6 +27,10 @@ message AccessSyncFromTarget {
   // TargetFile points to the file where the plugin needs to export the access control naming.
   string target_file = 2;
   string prefix = 3;
+  bool lock_all_who = 4;
+  bool lock_all_what = 5;
+  bool lock_all_names = 6;
+  bool lock_all_delete = 7;
 }
 
 // AccessSyncResult represents the result from the data access sync process.

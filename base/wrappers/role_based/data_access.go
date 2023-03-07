@@ -15,8 +15,8 @@ import (
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderRoleSyncer --with-expecter --inpackage
 type AccessProviderRoleSyncer interface {
 	SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler wrappers.AccessProviderHandler, configMap *config.ConfigMap) error
-	SyncAccessProvidersToTarget(ctx context.Context, rolesToRemove []string, access map[string]sync_to_target.EnrichedAccess, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
-	SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]sync_to_target.EnrichedAccess, prefix string, configMap *config.ConfigMap) error
+	SyncAccessProvidersToTarget(ctx context.Context, rolesToRemove []string, access map[string]*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
+	SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]*sync_to_target.AccessProvider, prefix string, configMap *config.ConfigMap) error
 }
 
 func AccessProviderRoleSync(syncer AccessProviderRoleSyncer, namingConstraints naming_hint.NamingConstraints, configOpt ...func(config *access_provider.AccessSyncConfig)) *wrappers.DataAccessSyncFunction {
@@ -53,20 +53,16 @@ func (s *accessProviderRoleSyncFunction) SyncAccessAsCodeToTarget(ctx context.Co
 	}
 
 	apList := accessProviders.AccessProviders
-	apMap := make(map[string]sync_to_target.EnrichedAccess)
+	apMap := make(map[string]*sync_to_target.AccessProvider)
 
-	for apIndex, ap := range apList {
-		roleNames, err := uniqueRoleNameGenerator.GenerateOrdered(apList[apIndex])
+	for _, ap := range apList {
+		roleName, err := uniqueRoleNameGenerator.Generate(ap)
 		if err != nil {
 			return err
 		}
 
-		for i, access := range ap.Access {
-			roleName := roleNames[i]
-
-			logger.Info(fmt.Sprintf("Generated rolename %q", roleName))
-			apMap[roleName] = sync_to_target.EnrichedAccess{Access: access, AccessProvider: apList[apIndex]}
-		}
+		logger.Info(fmt.Sprintf("Generated rolename %q", roleName))
+		apMap[roleName] = ap
 	}
 
 	return s.syncer.SyncAccessAsCodeToTarget(ctx, apMap, prefix, configMap)
@@ -80,34 +76,29 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 
 	apList := accessProviders.AccessProviders
 
-	apMap := make(map[string]sync_to_target.EnrichedAccess)
+	apMap := make(map[string]*sync_to_target.AccessProvider)
 	rolesToRemove := make([]string, 0)
 
-	for apIndex, ap := range apList {
-		roleNames, err := uniqueRoleNameGenerator.Generate(apList[apIndex])
-		if err != nil {
-			return err
-		}
-
+	for _, ap := range apList {
 		if ap.Delete {
-			for _, access := range ap.Access {
-				if access.ActualName == nil {
-					logger.Warn(fmt.Sprintf("No actualname defined for deleted access %q. This will be ignored", access.Id))
-					continue
-				}
+			if ap.ActualName == nil {
+				logger.Warn(fmt.Sprintf("No actualname defined for deleted access provider %q. This will be ignored", ap.Id))
+				continue
+			}
 
-				roleName := *access.ActualName
+			roleName := *ap.ActualName
 
-				if !find(rolesToRemove, roleName) {
-					rolesToRemove = append(rolesToRemove, roleName)
-				}
+			if !find(rolesToRemove, roleName) {
+				rolesToRemove = append(rolesToRemove, roleName)
 			}
 		} else {
-			for _, access := range ap.Access {
-				roleName := roleNames[access.Id]
-				if _, f := apMap[roleName]; !f {
-					apMap[roleName] = sync_to_target.EnrichedAccess{Access: access, AccessProvider: apList[apIndex]}
-				}
+			roleName, err := uniqueRoleNameGenerator.Generate(ap)
+			if err != nil {
+				return err
+			}
+
+			if _, f := apMap[roleName]; !f {
+				apMap[roleName] = ap
 			}
 		}
 	}

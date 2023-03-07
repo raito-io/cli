@@ -13,16 +13,22 @@ type AccessProviderImport struct {
 }
 
 type AccessProvider struct {
-	Id          string    `yaml:"id" json:"id"`
-	Name        string    `yaml:"name" json:"name"`
-	Description string    `yaml:"description" json:"description"`
-	NamingHint  string    `yaml:"namingHint" json:"namingHint"`
-	Access      []*Access `yaml:"access" json:"access"`
-	Action      Action    `yaml:"action" json:"action"`
-	Who         WhoItem   `yaml:"who" json:"who"`
-	Delete      bool      `yaml:"delete" json:"delete"`
-	WhoLocked   *bool     `yaml:"whoLocked" json:"whoLocked"`
-	WhatLocked  *bool     `yaml:"whatLocked" json:"whatLocked"`
+	Id          string `yaml:"id" json:"id"`
+	Name        string `yaml:"name" json:"name"`
+	Description string `yaml:"description" json:"description"`
+	NamingHint  string `yaml:"namingHint" json:"namingHint"`
+
+	// Deprecated: use ActualName and What fields directory
+	Access []*Access `yaml:"access" json:"access"`
+
+	Action     Action  `yaml:"action" json:"action"`
+	Who        WhoItem `yaml:"who" json:"who"`
+	Delete     bool    `yaml:"delete" json:"delete"`
+	WhoLocked  *bool   `yaml:"whoLocked" json:"whoLocked"`
+	WhatLocked *bool   `yaml:"whatLocked" json:"whatLocked"`
+
+	ActualName *string    `yaml:"actualName" json:"actualName"`
+	What       []WhatItem `yaml:"what" json:"what"`
 }
 
 type Access struct {
@@ -52,11 +58,6 @@ type AccessSyncFeedbackInformation struct {
 type accessProviderFeedbackInformation struct {
 	ExternalId            string                          `json:"externalId"`
 	AccessFeedbackObjects []AccessSyncFeedbackInformation `json:"access"`
-}
-
-type EnrichedAccess struct {
-	Access         *Access
-	AccessProvider *AccessProvider
 }
 
 type Action int

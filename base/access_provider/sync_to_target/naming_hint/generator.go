@@ -3,7 +3,6 @@ package naming_hint
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -17,8 +16,7 @@ type UniqueGenerator interface {
 	// Generate create unique and consistent name that can be used in the target data source to create access elements.
 	// The argument ap is an access provider pointer. Each next ap that is provided to the class should have an ascending ID to guarantee a deterministic ID generation
 	// The output is a map that will point AccessIDs to the unique generate name
-	Generate(ap *sync_to_target.AccessProvider) (map[string]string, error)
-	GenerateOrdered(ap *sync_to_target.AccessProvider) ([]string, error)
+	Generate(ap *sync_to_target.AccessProvider) (string, error)
 }
 
 // uniqueNameGenerator implements a Generate method which generates unique names that can be used to create access elements.
@@ -75,33 +73,7 @@ func NewUniqueNameGenerator(logger hclog.Logger, prefix string, constraints *Nam
 	}, nil
 }
 
-func (g *uniqueNameGenerator) GenerateOrdered(ap *sync_to_target.AccessProvider) ([]string, error) {
-	generatedResult, err := g.generate(ap, false)
-	if err != nil {
-		return nil, err
-	}
-
-	sortedKeys := make([]string, 0)
-
-	for key := range generatedResult {
-		sortedKeys = append(sortedKeys, key)
-	}
-
-	sort.Strings(sortedKeys)
-
-	result := make([]string, len(generatedResult))
-	for i, key := range sortedKeys {
-		result[i] = generatedResult[key]
-	}
-
-	return result, nil
-}
-
-func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (map[string]string, error) {
-	return g.generate(ap, true)
-}
-
-func (g *uniqueNameGenerator) generate(ap *sync_to_target.AccessProvider, useAccessIds bool) (map[string]string, error) {
+func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (string, error) {
 	// Reserve 6 character for post fix ID
 	maxLength := g.constraints.MaxLength - 6
 
@@ -114,78 +86,50 @@ func (g *uniqueNameGenerator) generate(ap *sync_to_target.AccessProvider, useAcc
 
 	name, err := g.translator.Translate(g.prefix + nameHinting)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if uint(len(name)) > maxLength {
 		name = name[:maxLength]
 	}
 
-	accessElements := make(map[string]*sync_to_target.Access)
-	accessElementIds := make([]string, len(ap.Access))
+	if ap.ActualName != nil {
+		// Search for post fix ID
+		originalNameSplit := strings.Split(*ap.ActualName, fmt.Sprintf("%[1]c%[1]c", g.splitCharacter))
+		originalName := originalNameSplit[0]
 
-	for i := range ap.Access {
-		access := ap.Access[i]
-		var accessId string
+		if len(originalNameSplit) > 2 {
+			g.logger.Warn(fmt.Sprintf("Current actual name %q does not fit expected name pattern. Rename is required", *ap.ActualName))
+		} else if originalName == name && len(originalNameSplit) > 1 {
+			idNumber, err := strconv.ParseInt(originalNameSplit[1], 16, 16)
 
-		if useAccessIds {
-			accessId = access.Id
-		} else {
-			accessId = fmt.Sprintf("%08d", i)
-		}
+			if err == nil {
+				number := uint(idNumber)
 
-		accessElements[accessId] = access
-
-		accessElementIds[i] = accessId
-	}
-
-	// Make sure we read out all access elements in creating order
-	sort.Strings(accessElementIds)
-
-	result := make(map[string]string)
-
-	for _, accessId := range accessElementIds {
-		access := accessElements[accessId]
-
-		if access.ActualName != nil {
-			// Search for post fix ID
-			originalNameSplit := strings.Split(*access.ActualName, fmt.Sprintf("%[1]c%[1]c", g.splitCharacter))
-			originalName := originalNameSplit[0]
-
-			if len(originalNameSplit) > 2 {
-				g.logger.Warn(fmt.Sprintf("Current actual name %q does not fit expected name pattern. Rename is required", *access.ActualName))
-			} else if originalName == name && len(originalNameSplit) > 1 {
-				idNumber, err := strconv.ParseInt(originalNameSplit[1], 16, 16)
-
-				if err == nil {
-					number := uint(idNumber)
-
-					if _, found := g.existingNames[name]; !found || g.existingNames[name] < number {
-						g.existingNames[name] = number
-					}
-				} else {
-					g.logger.Warn("Error while parsing id from actualName. Will ignore actualName")
+				if _, found := g.existingNames[name]; !found || g.existingNames[name] < number {
+					g.existingNames[name] = number
 				}
+			} else {
+				g.logger.Warn("Error while parsing id from actualName. Will ignore actualName")
 			}
-		}
-
-		if currentNumber, found := g.existingNames[name]; found {
-			postfixId := fmt.Sprintf("%[1]c%[1]c%[2]x", g.splitCharacter, currentNumber)
-
-			if !g.constraints.UpperCaseLetters {
-				postfixId = strings.ToLower(postfixId)
-			}
-
-			g.existingNames[name] = currentNumber + 1
-
-			result[accessId] = fmt.Sprintf("%s%s", name, postfixId)
-		} else {
-			g.existingNames[name] = 0
-			result[accessId] = name
 		}
 	}
 
-	g.logger.Info(fmt.Sprintf("Generate unique name for ap %q: %+v", ap.Name, result))
+	if currentNumber, found := g.existingNames[name]; found {
+		postfixId := fmt.Sprintf("%[1]c%[1]c%[2]x", g.splitCharacter, currentNumber)
 
-	return result, nil
+		if !g.constraints.UpperCaseLetters {
+			postfixId = strings.ToLower(postfixId)
+		}
+
+		g.existingNames[name] = currentNumber + 1
+
+		name = fmt.Sprintf("%s%s", name, postfixId)
+	} else {
+		g.existingNames[name] = 0
+	}
+
+	g.logger.Info(fmt.Sprintf("Generate unique name for ap %q: %+v", ap.Name, name))
+
+	return name, nil
 }

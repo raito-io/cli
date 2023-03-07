@@ -37,37 +37,22 @@ func TestUniqueGenerator_Generate_NoDuplicatedNames(t *testing.T) {
 		translator:     &translatorMock{},
 	}
 
-	names := map[*sync_to_target.AccessProvider]map[string]string{
+	names := map[*sync_to_target.AccessProvider]string{
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID",
 			NamingHint: "the_first_access_provider",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         "AccessId1",
-					ActualName: nil,
-				},
-			},
-		}: {"AccessId1": "the_first_access_provider"},
+			ActualName: nil,
+		}: "the_first_access_provider",
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID2",
 			NamingHint: "second_access_provider",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         "AccessId2",
-					ActualName: nil,
-				},
-			},
-		}: {"AccessId2": "second_access_provider"},
+			ActualName: nil,
+		}: "second_access_provider",
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID3",
 			NamingHint: "and_the_last_access_provider",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         "AccessId3",
-					ActualName: nil,
-				},
-			},
-		}: {"AccessId3": "and_the_last_access_provid"},
+			ActualName: nil,
+		}: "and_the_last_access_provid",
 	}
 
 	//WHEN + THEN
@@ -104,25 +89,20 @@ func TestUniqueGenerator_Generate_DuplicatedNames(t *testing.T) {
 		return &sync_to_target.AccessProvider{
 			Id:         fmt.Sprintf("SomeID%d", id),
 			NamingHint: "the_same_name",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         fmt.Sprintf("AccessId%d", id),
-					ActualName: nil,
-				},
-			},
+			ActualName: nil,
 		}
 	}
 
 	ap := accessProviderGenerator(0)
 	output, err := generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "the_same_name", output[ap.Access[0].Id])
+	assert.Equal(t, "the_same_name", output)
 
 	//WHEN + THEN
 	for i := 0; i < 24; i++ {
 		ap = accessProviderGenerator(i + 1)
 		output, err = generator.Generate(ap)
-		name := output[ap.Access[0].Id]
+		name := output
 
 		assert.NoError(t, err)
 		assert.Equal(t, "the_same_name__", name[:15])
@@ -166,25 +146,20 @@ func TestUniqueGenerator_Generate_DuplicatedNames_uppercase(t *testing.T) {
 		return &sync_to_target.AccessProvider{
 			Id:         fmt.Sprintf("SomeID%d", id),
 			NamingHint: "THE_SAME_NAME",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         fmt.Sprintf("AccessId%d", id),
-					ActualName: nil,
-				},
-			},
+			ActualName: nil,
 		}
 	}
 
 	ap := accessProviderGenerator(0)
 	output, err := generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "THE_SAME_NAME", output[ap.Access[0].Id])
+	assert.Equal(t, "THE_SAME_NAME", output)
 
 	//WHEN + THEN
 	for i := 0; i < 24; i++ {
 		ap = accessProviderGenerator(i + 1)
 		output, err = generator.Generate(ap)
-		name := output[ap.Access[0].Id]
+		name := output
 
 		assert.NoError(t, err)
 		assert.Equal(t, "THE_SAME_NAME__", name[:15])
@@ -228,25 +203,20 @@ func TestUniqueGenerator_Generate_LongAndAlreadyExistingNames(t *testing.T) {
 		return &sync_to_target.AccessProvider{
 			Id:         fmt.Sprintf("SomeID%d", id),
 			NamingHint: namingHint,
-			Access: []*sync_to_target.Access{
-				{
-					Id:         fmt.Sprintf("AccessId%d", id),
-					ActualName: nil,
-				},
-			},
+			ActualName: nil,
 		}
 	}
 
 	ap := accessProviderGenerator(0, "abcdefghij")
 	output, err := generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "abcdefghij", output[ap.Access[0].Id])
+	assert.Equal(t, "abcdefghij", output)
 
 	//WHEN + THEN
 	for i := 0; i < 24; i++ {
 		ap = accessProviderGenerator(i+1, "abcdefghijkl")
 		output, err = generator.Generate(ap)
-		name := output[ap.Access[0].Id]
+		name := output
 
 		assert.NoError(t, err)
 		assert.Equal(t, "abcdefghij__", name[:12])
@@ -292,34 +262,29 @@ func TestUniqueGenerator_Generate_ActualNamesExist(t *testing.T) {
 		return &sync_to_target.AccessProvider{
 			Id:         fmt.Sprintf("SomeID%d", id),
 			NamingHint: nameHint,
-			Access: []*sync_to_target.Access{
-				{
-					Id:         fmt.Sprintf("AccessId%d", id),
-					ActualName: actualName,
-				},
-			},
+			ActualName: actualName,
 		}
 	}
 
 	ap := accessProviderGenerator(0)
 	output, err := generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "THE_SAME_NAME__0", output[ap.Access[0].Id])
+	assert.Equal(t, "THE_SAME_NAME__0", output)
 
 	ap = accessProviderGenerator(1)
 	output, err = generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "THE_SAME_NAME__2", output[ap.Access[0].Id])
+	assert.Equal(t, "THE_SAME_NAME__2", output)
 
 	ap = accessProviderGenerator(2)
 	output, err = generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "THE_SAME_NAME__4", output[ap.Access[0].Id])
+	assert.Equal(t, "THE_SAME_NAME__4", output)
 
 	ap = accessProviderGenerator(3)
 	output, err = generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "THE_SAME_NAME__5", output[ap.Access[0].Id])
+	assert.Equal(t, "THE_SAME_NAME__5", output)
 }
 
 func TestUniqueGenerator_Generate_ActualNamesNotEqualToNameHint(t *testing.T) {
@@ -343,56 +308,14 @@ func TestUniqueGenerator_Generate_ActualNamesNotEqualToNameHint(t *testing.T) {
 		return &sync_to_target.AccessProvider{
 			Id:         fmt.Sprintf("SomeID%d", id),
 			NamingHint: "THE_NAME_HINT_TO_USE",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         fmt.Sprintf("AccessId%d", id),
-					ActualName: &actualName,
-				},
-			},
+			ActualName: &actualName,
 		}
 	}
 
 	ap := accessProviderGenerator(0)
 	output, err := generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "THE_NAME_HINT_TO_USE", output[ap.Access[0].Id])
-}
-
-func TestUniqueGenerator_Generate_MultipleAccessElements(t *testing.T) {
-	constraints := NamingConstraints{
-		UpperCaseLetters:  true,
-		LowerCaseLetters:  false,
-		SpecialCharacters: "_-!",
-		Numbers:           true,
-		MaxLength:         32,
-	}
-	generator := uniqueNameGenerator{
-		logger:         logger,
-		constraints:    &constraints,
-		splitCharacter: '_',
-		existingNames:  map[string]uint{},
-		translator:     &translatorMock{},
-	}
-
-	ap := &sync_to_target.AccessProvider{
-		Id:         fmt.Sprintf("SomeId"),
-		NamingHint: "THE_NAME_HINT_TO_USE",
-		Access: []*sync_to_target.Access{
-			{
-				Id:         "BD",
-				ActualName: nil,
-			},
-			{
-				Id:         "AB",
-				ActualName: nil,
-			},
-		},
-	}
-
-	output, err := generator.Generate(ap)
-	assert.NoError(t, err)
-	assert.Equal(t, "THE_NAME_HINT_TO_USE", output["AB"])
-	assert.Equal(t, "THE_NAME_HINT_TO_USE__0", output["BD"])
+	assert.Equal(t, "THE_NAME_HINT_TO_USE", output)
 }
 
 func TestUniqueGenerator_Generate_InvalidActualName(t *testing.T) {
@@ -415,17 +338,12 @@ func TestUniqueGenerator_Generate_InvalidActualName(t *testing.T) {
 	ap := &sync_to_target.AccessProvider{
 		Id:         fmt.Sprintf("SomeId"),
 		NamingHint: "THE_NAME_HINT_TO_USE",
-		Access: []*sync_to_target.Access{
-			{
-				Id:         "BD",
-				ActualName: &actualNamme,
-			},
-		},
+		ActualName: &actualNamme,
 	}
 
 	output, err := generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "THE_NAME_HINT_TO_USE", output["BD"])
+	assert.Equal(t, "THE_NAME_HINT_TO_USE", output)
 }
 
 func TestUniqueGeneratorIT_Generate(t *testing.T) {
@@ -442,37 +360,22 @@ func TestUniqueGeneratorIT_Generate(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	names := map[*sync_to_target.AccessProvider]map[string]string{
+	names := map[*sync_to_target.AccessProvider]string{
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID",
 			NamingHint: "the_first_access_provider",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         "AccessId1",
-					ActualName: nil,
-				},
-			},
-		}: {"AccessId1": "THE_FIRST_ACCESS_PROVIDER"},
+			ActualName: nil,
+		}: "THE_FIRST_ACCESS_PROVIDER",
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID2",
 			NamingHint: "second_access_provider",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         "AccessId2",
-					ActualName: nil,
-				},
-			},
-		}: {"AccessId2": "SECOND_ACCESS_PROVIDER"},
+			ActualName: nil,
+		}: "SECOND_ACCESS_PROVIDER",
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID3",
 			NamingHint: "and_the_last_access_provider",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         "AccessId3",
-					ActualName: nil,
-				},
-			},
-		}: {"AccessId3": "AND_THE_LAST_ACCESS_PROVID"},
+			ActualName: nil,
+		}: "AND_THE_LAST_ACCESS_PROVID",
 	}
 
 	//WHEN + THEN
@@ -506,12 +409,7 @@ func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase(t *testing.T) {
 		return &sync_to_target.AccessProvider{
 			Id:         fmt.Sprintf("SomeID%d", id),
 			NamingHint: "the_same_name",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         fmt.Sprintf("AccessId%d", id),
-					ActualName: nil,
-				},
-			},
+			ActualName: nil,
 		}
 	}
 
@@ -519,13 +417,13 @@ func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase(t *testing.T) {
 	ap := accessProviderGenerator(0)
 	output, err := generator.Generate(ap)
 	assert.NoError(t, err)
-	assert.Equal(t, "THE_SAME_NAME", output[ap.Access[0].Id])
+	assert.Equal(t, "THE_SAME_NAME", output)
 
 	//WHEN + THEN
 	for i := 0; i < 24; i++ {
 		ap = accessProviderGenerator(i + 1)
 		output, err = generator.Generate(ap)
-		name := output[ap.Access[0].Id]
+		name := output
 
 		assert.NoError(t, err)
 		assert.Equal(t, "THE_SAME_NAME__", name[:15])
@@ -558,37 +456,22 @@ func TestUniqueGeneratorIT_Generate_WithPrefix(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	names := map[*sync_to_target.AccessProvider]map[string]string{
+	names := map[*sync_to_target.AccessProvider]string{
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID",
 			NamingHint: "the_first_access_provider",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         "AccessId1",
-					ActualName: nil,
-				},
-			},
-		}: {"AccessId1": "PREFIX_THE_FIRST_ACCESS_PR"},
+			ActualName: nil,
+		}: "PREFIX_THE_FIRST_ACCESS_PR",
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID2",
 			NamingHint: "second_access_provider",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         "AccessId2",
-					ActualName: nil,
-				},
-			},
-		}: {"AccessId2": "PREFIX_SECOND_ACCESS_PROVI"},
+			ActualName: nil,
+		}: "PREFIX_SECOND_ACCESS_PROVI",
 		&sync_to_target.AccessProvider{
 			Id:         "SomeID3",
 			NamingHint: "and_the_last_access_provider",
-			Access: []*sync_to_target.Access{
-				{
-					Id:         "AccessId3",
-					ActualName: nil,
-				},
-			},
-		}: {"AccessId3": "PREFIX_AND_THE_LAST_ACCESS"},
+			ActualName: nil,
+		}: "PREFIX_AND_THE_LAST_ACCESS",
 	}
 
 	//WHEN + THEN

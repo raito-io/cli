@@ -65,26 +65,34 @@ func (d *accessProviderFileCreator) Close() {
 // AddAccessProviders adds the slice of data access elements to the import file.
 // It returns an error when writing one of the objects fails (it will not process the other data objects after that).
 // It returns nil if everything went well.
-func (d *accessProviderFileCreator) AddAccessProviders(dataAccessList ...*AccessProvider) error {
-	if len(dataAccessList) == 0 {
+func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*AccessProvider) error {
+	if len(accessProviders) == 0 {
 		return nil
 	}
 
-	for _, da := range dataAccessList {
+	for _, ap := range accessProviders {
 		if d.config.LockAllWho {
-			da.WhoLocked = ptr.Bool(true)
+			ap.WhoLocked = ptr.Bool(true)
 		}
 
 		if d.config.LockAllWhat {
-			da.WhatLocked = ptr.Bool(true)
+			ap.WhatLocked = ptr.Bool(true)
 		}
 
 		if d.config.LockAllNames {
-			da.NameLocked = ptr.Bool(true)
+			ap.NameLocked = ptr.Bool(true)
 		}
 
 		if d.config.LockAllDelete {
-			da.DeleteLocked = ptr.Bool(true)
+			ap.DeleteLocked = ptr.Bool(true)
+		}
+
+		// TODO REFACTOR to be removed once the old API is removed
+		// This now makes sure we send the new model (no more Access layer) to Raito cloud.
+		if len(ap.Access) > 0 && ap.What == nil {
+			ap.What = ap.Access[0].What
+			ap.ActualName = ap.Access[0].ActualName
+			ap.Access = nil
 		}
 
 		var err error
@@ -95,9 +103,9 @@ func (d *accessProviderFileCreator) AddAccessProviders(dataAccessList ...*Access
 
 		d.targetFile.WriteString("\n") //nolint:errcheck
 
-		doBuf, err := json.Marshal(da)
+		doBuf, err := json.Marshal(ap)
 		if err != nil {
-			return fmt.Errorf("error while serializing data object with externalID %q", da.ExternalId)
+			return fmt.Errorf("error while serializing data object with externalID %q", ap.ExternalId)
 		}
 
 		d.targetFile.WriteString("\n") //nolint:errcheck

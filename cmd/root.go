@@ -129,7 +129,7 @@ func (cmd *rootCmd) initConfig() {
 	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
-	if cfgFile != "" && err != nil {
+	if err != nil {
 		// No logger yet
 		fmt.Printf("error while reading config file: %s\n", err.Error()) //nolint:forbidigo
 		cmd.exitForError()

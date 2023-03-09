@@ -129,9 +129,9 @@ func (cmd *rootCmd) initConfig() {
 	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
-	if err != nil {
+	if err != nil && !strings.HasSuffix(viper.ConfigFileUsed(), "/raito") {
 		// No logger yet
-		fmt.Printf("error while reading config file: %s\n", err.Error()) //nolint:forbidigo
+		fmt.Printf("error while reading config file %q: %s\n", viper.ConfigFileUsed(), err.Error()) //nolint:forbidigo
 		cmd.exitForError()
 	}
 

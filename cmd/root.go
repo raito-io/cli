@@ -3,6 +3,7 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
+	"github.com/hashicorp/go-hclog"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -134,4 +135,8 @@ func (cmd *rootCmd) initConfig() {
 	}
 
 	logging.SetupLogging()
+
+	if viper.ConfigFileUsed() != "" {
+		hclog.L().Debug(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))
+	}
 }

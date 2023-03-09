@@ -64,14 +64,6 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
 		LastCalculated: time.Now().Unix(),
 		AccessProviders: []*sync_to_target.AccessProvider{
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId1",
-					},
-					{
-						Id: "AccessId2",
-					},
-				},
 				Id:          "AP1",
 				Description: "Descr",
 				Delete:      false,
@@ -80,16 +72,19 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId3",
-					},
-				},
 				Id:          "AP2",
 				Description: "Descr2",
 				Delete:      false,
 				Name:        "Ap2",
 				NamingHint:  "NameHint2",
+				Action:      sync_to_target.Grant,
+			},
+			{
+				Id:          "AP3",
+				Description: "Descr3",
+				Delete:      false,
+				Name:        "Ap3",
+				NamingHint:  "NameHint1",
 				Action:      sync_to_target.Grant,
 			},
 		},
@@ -114,19 +109,10 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget(t *testing.T) {
 	//Then
 	assert.NoError(t, err)
 	syncerMock.AssertCalled(t, "SyncAccessAsCodeToTarget", mock.Anything,
-		map[string]sync_to_target.EnrichedAccess{
-			"R_NAME_HINT1": {
-				AccessProvider: accessProvidersImport.AccessProviders[0],
-				Access:         accessProvidersImport.AccessProviders[0].Access[0],
-			},
-			"R_NAME_HINT1__0": {
-				AccessProvider: accessProvidersImport.AccessProviders[0],
-				Access:         accessProvidersImport.AccessProviders[0].Access[1],
-			},
-			"R_NAME_HINT2": {
-				AccessProvider: accessProvidersImport.AccessProviders[1],
-				Access:         accessProvidersImport.AccessProviders[1].Access[0],
-			},
+		map[string]*sync_to_target.AccessProvider{
+			"R_NAME_HINT1":    accessProvidersImport.AccessProviders[0],
+			"R_NAME_HINT2":    accessProvidersImport.AccessProviders[1],
+			"R_NAME_HINT1__0": accessProvidersImport.AccessProviders[2],
 		}, "R_", &configMap,
 	)
 }
@@ -202,14 +188,6 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 		LastCalculated: time.Now().Unix(),
 		AccessProviders: []*sync_to_target.AccessProvider{
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId1",
-					},
-					{
-						Id: "AccessId2",
-					},
-				},
 				Id:          "AP1",
 				Description: "Descr",
 				Delete:      false,
@@ -218,11 +196,6 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId3",
-					},
-				},
 				Id:          "AP2",
 				Description: "Descr2",
 				Delete:      false,
@@ -231,12 +204,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id:         "SomeAccessToDelete",
-						ActualName: &actualName1,
-					},
-				},
+				ActualName:  &actualName1,
 				Id:          "AP3",
 				Description: "Descr3",
 				Delete:      true,
@@ -245,11 +213,6 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AnotherAccessToDelete",
-					},
-				},
 				Id:          "AP4",
 				Description: "Descr4",
 				Delete:      true,
@@ -280,19 +243,9 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 	assert.NoError(t, err)
 	syncerMock.AssertCalled(t, "SyncAccessProvidersToTarget", mock.Anything,
 		[]string{actualName1},
-		map[string]sync_to_target.EnrichedAccess{
-			"NAME_HINT1": {
-				AccessProvider: accessProvidersImport.AccessProviders[0],
-				Access:         accessProvidersImport.AccessProviders[0].Access[0],
-			},
-			"NAME_HINT1__0": {
-				AccessProvider: accessProvidersImport.AccessProviders[0],
-				Access:         accessProvidersImport.AccessProviders[0].Access[1],
-			},
-			"NAME_HINT2": {
-				AccessProvider: accessProvidersImport.AccessProviders[1],
-				Access:         accessProvidersImport.AccessProviders[1].Access[0],
-			},
+		map[string]*sync_to_target.AccessProvider{
+			"NAME_HINT1": accessProvidersImport.AccessProviders[0],
+			"NAME_HINT2": accessProvidersImport.AccessProviders[1],
 		},
 		accessFeedBackFileCreator, &configMap,
 	)

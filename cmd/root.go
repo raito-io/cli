@@ -3,8 +3,9 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
-	"github.com/hashicorp/go-hclog"
 	"strings"
+
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

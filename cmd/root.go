@@ -116,10 +116,8 @@ func (cmd *rootCmd) initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Search config in home directory with name ".cobra" (without extension).
 		viper.AddConfigPath(".")
 		viper.AddConfigPath("$HOME/.raito")
-		viper.SetConfigType("yaml")
 		viper.SetConfigName("raito")
 	}
 

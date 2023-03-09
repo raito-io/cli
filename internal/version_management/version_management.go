@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"runtime/debug"
-	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"
@@ -167,27 +166,22 @@ type SupportedRaitoCloudVersions struct {
 }
 
 func getCompatibleRaitoCloudVersions(config *target.BaseConfig) (*SupportedRaitoCloudVersions, error) {
-	gqlQuery := `{"operationName": "SupportedCLIVersion", "variables": {}, "query": "query SupportedCLIVersion {
-				SupportedCLIVersion {
-					supportedVersions
-                    deprecatedVersions {
-                        deprecatedVersions
-						msg
-                        }
-					}
-				}"}`
+	var query struct {
+		SupportedCliVersion struct {
+			SupportedVersions  string
+			DeprecatedVersions *struct {
+				DeprecatedVersions string
+				Msg                *string
+			}
+		} `graphql:"SupportedCLIVersion"`
+	}
 
-	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
-	gqlQuery = strings.Replace(gqlQuery, "\t", "", -1)
-
-	res := Response{}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, config, &res)
-
+	err := graphql.NewClient(config).Query(context.Background(), &query, nil)
 	if err != nil {
 		return nil, fmt.Errorf("compatible Raito Cloud version: %w", err)
 	}
 
-	currentVersionConstraint, err := semver.NewConstraint(res.Response.SupportedVersions)
+	currentVersionConstraint, err := semver.NewConstraint(query.SupportedCliVersion.SupportedVersions)
 	if err != nil {
 		return nil, fmt.Errorf("compatible Raito Cloud version: %w", err)
 	}
@@ -196,28 +190,14 @@ func getCompatibleRaitoCloudVersions(config *target.BaseConfig) (*SupportedRaito
 		SupportedVersions: currentVersionConstraint,
 	}
 
-	if res.Response.DeprecatedVersions != nil {
-		result.DeprecatedVersions, err = semver.NewConstraint(res.Response.DeprecatedVersions.DeprecatedVersions)
+	if query.SupportedCliVersion.DeprecatedVersions != nil {
+		result.DeprecatedVersions, err = semver.NewConstraint(query.SupportedCliVersion.DeprecatedVersions.DeprecatedVersions)
 		if err != nil {
 			return nil, fmt.Errorf("compatible Raito Cloud version: %w", err)
 		}
 
-		result.DeprecatedVersionMsg = res.Response.DeprecatedVersions.Msg
+		result.DeprecatedVersionMsg = query.SupportedCliVersion.DeprecatedVersions.Msg
 	}
 
 	return result, nil
-}
-
-type DeprecatedVersionGqlResponse struct {
-	DeprecatedVersions string  `json:"deprecatedVersions"`
-	Msg                *string `json:"msg"`
-}
-
-type QueryResponse struct {
-	SupportedVersions  string                        `json:"supportedVersions"`
-	DeprecatedVersions *DeprecatedVersionGqlResponse `json:"deprecatedVersions"`
-}
-
-type Response struct {
-	Response QueryResponse `json:"SupportedCLIVersion"`
 }

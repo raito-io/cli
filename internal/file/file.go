@@ -28,12 +28,27 @@ func CreateUniqueFileName(hint, ext string) string {
 // UploadFile uploads the file from the given path.
 // It returns the key to use to pass to the Raito backend to use the file.
 func UploadFile(file string, config *target.BaseTargetConfig) (string, error) {
-	start := time.Now()
-
 	url, key, err := getUploadURL(config)
 	if err != nil {
 		return "", err
 	}
+
+	return uploadFileToBucket(file, config, url, key)
+}
+
+// UploadLogFile uploads the file from the given path.
+// It returns the key to use to pass to the Raito backend to use the file.
+func UploadLogFile(file string, config *target.BaseTargetConfig) (string, error) {
+	url, key, err := getUploadLogsURL(config)
+	if err != nil {
+		return "", err
+	}
+
+	return uploadFileToBucket(file, config, url, key)
+}
+
+func uploadFileToBucket(file string, config *target.BaseTargetConfig, url string, key string) (string, error) {
+	start := time.Now()
 
 	data, err := os.Open(file)
 	if err != nil {
@@ -78,7 +93,15 @@ func UploadFile(file string, config *target.BaseTargetConfig) (string, error) {
 // It returns the upload URL and the file key to use to pass to the Raito backend to use it.
 // Returns two empty strings if something went wrong (error logged)
 func getUploadURL(config *target.BaseTargetConfig) (string, string, error) {
-	resp, err := connect.DoGetToRaito("file/upload/signed-url", &config.BaseConfig)
+	return getUploadUrlAndKey(config, "file/upload/signed-url")
+}
+
+func getUploadLogsURL(config *target.BaseTargetConfig) (string, string, error) {
+	return getUploadUrlAndKey(config, "file/upload/logs/signed-url")
+}
+
+func getUploadUrlAndKey(config *target.BaseTargetConfig, path string) (string, string, error) {
+	resp, err := connect.DoGetToRaito(path, &config.BaseConfig)
 	if err != nil {
 		return "", "", fmt.Errorf("error while trying to get a signed upload URL: %s", err.Error())
 	}

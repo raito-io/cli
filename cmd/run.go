@@ -20,6 +20,7 @@ import (
 	"github.com/raito-io/cli/internal/data_usage"
 	"github.com/raito-io/cli/internal/identity_store"
 	"github.com/raito-io/cli/internal/job"
+	"github.com/raito-io/cli/internal/logging"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/version"
@@ -46,6 +47,11 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.LockAllDeleteFlag, false, "If set, the deletion of all access providers imported into Raito Cloud will be locked.")
 
 	cmd.PersistentFlags().Bool(constants.DisableWebsocketFlag, false, "If set, raito will not setup a websocket to trigger new syncs. This flag has only effect if frequency is set.")
+	cmd.PersistentFlags().Bool(constants.DisableLogForwarding, false, "If set, sync logs will not be forwarded to Raito Cloud.")
+	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataSourceSync, false, "If set, data source sync logs will not be forwarded to Raito Cloud.")
+	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataAccessSync, false, "If set, data access sync logs will not be forwarded to Raito Cloud.")
+	cmd.PersistentFlags().Bool(constants.DisableLogForwardingIdentityStoreSync, false, "If set, identity store sync logs will not be forwarded to Raito Cloud.")
+	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataUsageSync, false, "If set, data usage sync logs will not be forwarded to Raito Cloud.")
 
 	BindFlag(constants.FrequencyFlag, cmd)
 	BindFlag(constants.SkipDataSourceSyncFlag, cmd)
@@ -57,6 +63,11 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.LockAllNamesFlag, cmd)
 	BindFlag(constants.LockAllDeleteFlag, cmd)
 	BindFlag(constants.DisableWebsocketFlag, cmd)
+	BindFlag(constants.DisableLogForwarding, cmd)
+	BindFlag(constants.DisableLogForwardingDataSourceSync, cmd)
+	BindFlag(constants.DisableLogForwardingDataAccessSync, cmd)
+	BindFlag(constants.DisableLogForwardingIdentityStoreSync, cmd)
+	BindFlag(constants.DisableLogForwardingDataUsageSync, cmd)
 
 	cmd.FParseErrWhitelist.UnknownFlags = true
 
@@ -221,7 +232,44 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 	return nil
 }
 
+func logForwardingEnabled(syncType string) bool {
+	if viper.GetBool(constants.DisableLogForwarding) {
+		return false
+	}
+
+	cmdFlag := ""
+
+	switch syncType {
+	case constants.DataSourceSync:
+		cmdFlag = constants.DisableLogForwardingDataSourceSync
+	case constants.IdentitySync:
+		cmdFlag = constants.DisableLogForwardingIdentityStoreSync
+	case constants.DataAccessSync:
+		cmdFlag = constants.DisableLogForwardingDataAccessSync
+	case constants.DataUsageSync:
+		cmdFlag = constants.DisableLogForwardingDataUsageSync
+	}
+
+	return !viper.GetBool(cmdFlag)
+}
+
 func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, syncTask job.Task, c plugin.PluginClient, syncType string, jobID string) (err error) {
+	if logForwardingEnabled(syncType) {
+		targetCfg, cleanup, taskLoggingError := logging.CreateTaskLogger(cfg, jobID, syncType)
+		if taskLoggingError != nil {
+			return taskLoggingError
+		}
+
+		cfg = targetCfg
+
+		defer func() {
+			cleanUpErr := cleanup()
+			if cleanUpErr != nil {
+				cfg.TargetLogger.Warn(fmt.Sprintf("Failed to close logger for task: %s", cleanUpErr.Error()))
+			}
+		}()
+	}
+
 	defer func() {
 		if err != nil {
 			cfg.TargetLogger.Error(fmt.Sprintf("Synchronizing %s failed: %s", syncTypeLabel, err.Error()))
@@ -247,50 +295,59 @@ func sync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater j
 	syncParts := syncTask.GetParts()
 
 	for i, taskPart := range syncParts {
-		cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
-
-		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater)
-		if err != nil {
-			target.HandleTargetError(err, cfg, "synchronizing "+syncType)
-			taskEventUpdater.AddTaskEvent(job.Failed)
-
-			return err
-		}
-
-		if status != job.Completed {
-			taskEventUpdater.AddTaskEvent(status)
-		}
-
-		if status == job.Queued {
-			cfg.TargetLogger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
-		}
-
-		syncResult := taskPart.GetResultObject()
-
-		if syncResult != nil {
-			subtask, err := job.WaitForJobToComplete(jobID, syncType, subtaskId, syncResult, cfg, status)
-			if err != nil {
-				taskEventUpdater.AddTaskEvent(job.Failed)
-				return err
-			}
-
-			if subtask.Status == job.Failed {
-				taskEventUpdater.AddTaskEvent(job.Failed)
-				return fmt.Errorf("%s", strings.Join(subtask.Errors, ", "))
-			}
-
-			err = taskPart.ProcessResults(syncResult)
-			if err != nil {
-				taskEventUpdater.AddTaskEvent(job.Failed)
-				return err
-			}
-		} else if status != job.Completed {
-			taskEventUpdater.AddTaskEvent(job.Failed)
-			return fmt.Errorf("unable to load results")
+		err2 := runTaskPartSync(cfg, syncTypeLabel, taskEventUpdater, jobID, syncType, taskPart, i, syncParts, c)
+		if err2 != nil {
+			return err2
 		}
 	}
 
 	taskEventUpdater.AddTaskEvent(job.Completed)
+
+	return nil
+}
+
+func runTaskPartSync(cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, jobID string, syncType string, taskPart job.TaskPart, i int, syncParts []job.TaskPart, c plugin.PluginClient) error {
+	cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
+
+	status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(c, taskEventUpdater)
+	if err != nil {
+		target.HandleTargetError(err, cfg, "synchronizing "+syncType)
+		taskEventUpdater.AddTaskEvent(job.Failed)
+
+		return err
+	}
+
+	if status != job.Completed {
+		taskEventUpdater.AddTaskEvent(status)
+	}
+
+	if status == job.Queued {
+		cfg.TargetLogger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
+	}
+
+	syncResult := taskPart.GetResultObject()
+
+	if syncResult != nil {
+		subtask, err := job.WaitForJobToComplete(jobID, syncType, subtaskId, syncResult, cfg, status)
+		if err != nil {
+			taskEventUpdater.AddTaskEvent(job.Failed)
+			return err
+		}
+
+		if subtask.Status == job.Failed {
+			taskEventUpdater.AddTaskEvent(job.Failed)
+			return fmt.Errorf("%s", strings.Join(subtask.Errors, ", "))
+		}
+
+		err = taskPart.ProcessResults(syncResult)
+		if err != nil {
+			taskEventUpdater.AddTaskEvent(job.Failed)
+			return err
+		}
+	} else if status != job.Completed {
+		taskEventUpdater.AddTaskEvent(job.Failed)
+		return fmt.Errorf("unable to load results")
+	}
 
 	return nil
 }

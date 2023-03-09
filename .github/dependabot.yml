@@ -44,3 +44,4 @@ updates:
       separator: '-'
     reviewers:
       - '@raito-io/back-end'
+    target-branch: "dev"

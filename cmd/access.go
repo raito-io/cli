@@ -37,7 +37,13 @@ func initAccessCommand(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(cmd)
 }
 
-func executeAccessCmd(cmd *cobra.Command, args []string) error {
+func executeAccessCmd(cmd *cobra.Command, args []string) (err error) {
+	defer func() {
+		if err != nil {
+			hclog.L().Error("Failed to execute access command: %s", err.Error())
+		}
+	}()
+
 	baseLogger := hclog.L().With("iteration", 0)
 
 	config, err := target.BuildBaseConfigFromFlags(baseLogger, cmd.Flags().Args())
@@ -82,8 +88,7 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 	})
 	if err != nil {
 		return err
-	} else if res.Error != nil {
-		target.HandleTargetError(res.Error, targetConfig, "synchronizing access information to the data source")
+	} else if res.Error != nil { //nolint:staticcheck
 		return err
 	}
 

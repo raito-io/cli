@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/raito-io/cli/base/util/error/grpc_error"
 	"github.com/raito-io/cli/base/util/version"
 	"github.com/raito-io/cli/internal/version_management"
 )
@@ -194,15 +195,15 @@ const DataSourceSyncerName = "dataSourceSyncer"
 type dataSourceSyncerGRPC struct{ client DataSourceSyncServiceClient }
 
 func (g *dataSourceSyncerGRPC) SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (*DataSourceSyncResult, error) {
-	return g.client.SyncDataSource(ctx, config)
+	return grpc_error.ParseErrorResult(g.client.SyncDataSource(ctx, config))
 }
 
 func (g *dataSourceSyncerGRPC) GetDataSourceMetaData(ctx context.Context) (*MetaData, error) {
-	return g.client.GetDataSourceMetaData(ctx, &emptypb.Empty{})
+	return grpc_error.ParseErrorResult(g.client.GetDataSourceMetaData(ctx, &emptypb.Empty{}))
 }
 
 func (g *dataSourceSyncerGRPC) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
-	return g.client.CliVersionInformation(ctx, &emptypb.Empty{})
+	return grpc_error.ParseErrorResult(g.client.CliVersionInformation(ctx, &emptypb.Empty{}))
 }
 
 type dataSourceSyncerGRPCServer struct {
@@ -211,15 +212,27 @@ type dataSourceSyncerGRPCServer struct {
 	Impl DataSourceSyncer
 }
 
-func (s *dataSourceSyncerGRPCServer) SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (*DataSourceSyncResult, error) {
+func (s *dataSourceSyncerGRPCServer) SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (_ *DataSourceSyncResult, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.SyncDataSource(ctx, config)
 }
 
-func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, _ *emptypb.Empty) (*MetaData, error) {
+func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, _ *emptypb.Empty) (_ *MetaData, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.GetDataSourceMetaData(ctx)
 }
 
-func (s *dataSourceSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (*version.CliBuildInformation, error) {
+func (s *dataSourceSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (_ *version.CliBuildInformation, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.CliVersionInformation(ctx)
 }
 

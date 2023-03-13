@@ -1,6 +1,7 @@
 package identity_store
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,8 +11,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/raito-io/cli/internal/job"
+	"github.com/raito-io/cli/internal/job/mocks"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/url"
 )
@@ -35,9 +38,9 @@ func TestIdentityStoreImport(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	defer os.Remove(f1.Name())
 	defer os.Remove(f2.Name())
-	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
+	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 
-	status, subtaskId, err := (*isi).TriggerImport("someJobId")
+	status, subtaskId, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
 	assert.Nil(t, err)
 	assert.True(t, correctContent)
@@ -61,9 +64,9 @@ func TestIdentityStoreImportFailUploadUrl(t *testing.T) {
 	url.TestURL = testServer.URL
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
+	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 
-	status, _, err := (*isi).TriggerImport("someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "uploading")
@@ -84,9 +87,9 @@ func TestIdentityStoreImportFailUpload(t *testing.T) {
 	url.TestURL = testServer.URL
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
+	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 
-	status, _, err := (*isi).TriggerImport("someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "uploading")
@@ -107,9 +110,9 @@ func TestIdentityStoreImportFailImport(t *testing.T) {
 	url.TestURL = testServer.URL
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
+	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 
-	status, _, err := (*isi).TriggerImport("someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "import")
@@ -130,9 +133,9 @@ func TestIdentityStoreImportFaultyResponse(t *testing.T) {
 	url.TestURL = testServer.URL
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
+	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 
-	status, _, err := (*isi).TriggerImport("someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "invalid character")
@@ -152,9 +155,9 @@ func TestIdentityStoreImportWithErrors(t *testing.T) {
 	url.TestURL = testServer.URL
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(f1.Name(), f2.Name())
+	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 
-	status, _, err := (*isi).TriggerImport("someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "twisted")
@@ -214,7 +217,9 @@ func writeTempFiles() (*os.File, *os.File) {
 	return f1, f2
 }
 
-func newIdentityStoreImporter(f1, f2 string) *IdentityStoreImporter {
+func newIdentityStoreImporter(t *testing.T, f1, f2 string) *IdentityStoreImporter {
+	t.Helper()
+
 	isi := NewIdentityStoreImporter(&IdentityStoreImportConfig{
 		BaseTargetConfig: target.BaseTargetConfig{
 			TargetLogger: hclog.L(),
@@ -230,17 +235,23 @@ func newIdentityStoreImporter(f1, f2 string) *IdentityStoreImporter {
 		DeleteUntouched: true,
 		ReplaceGroups:   true,
 		ReplaceTags:     true,
-	}, &dummyTaskEventUpdater{})
+	}, dummyTaskEventUpdater(t))
 	return &isi
 }
 
-type dummyTaskEventUpdater struct {
-}
+func dummyTaskEventUpdater(t *testing.T) *mocks.TaskEventUpdater {
+	t.Helper()
 
-func (d *dummyTaskEventUpdater) AddTaskEvent(status job.JobStatus) {
-	//do Noting
-}
+	m := mocks.NewTaskEventUpdater(t)
+	m.EXPECT().SetStatusToStarted(mock.Anything).Return().Maybe()
+	m.EXPECT().SetStatusToDataRetrieve(mock.Anything).Return().Maybe()
+	m.EXPECT().SetStatusToDataUpload(mock.Anything).Return().Maybe()
+	m.EXPECT().SetStatusToQueued(mock.Anything).Return().Maybe()
+	m.EXPECT().SetStatusToDataProcessing(mock.Anything).Return().Maybe()
+	m.EXPECT().SetStatusToCompleted(mock.Anything).Return().Maybe()
+	m.EXPECT().SetStatusToFailed(mock.Anything, mock.Anything).Return().Maybe()
+	m.EXPECT().SetStatusToSkipped(mock.Anything).Return().Maybe()
+	m.EXPECT().GetSubtaskEventUpdater(mock.Anything).Return(nil).Maybe()
 
-func (d *dummyTaskEventUpdater) GetSubtaskEventUpdater(subtask string) job.SubtaskEventUpdater {
-	return nil
+	return m
 }

@@ -1,6 +1,7 @@
 package identity_store
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -25,7 +26,7 @@ type IdentityStoreImportConfig struct {
 }
 
 type IdentityStoreImporter interface {
-	TriggerImport(jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
 }
 
 type identityStoreImporter struct {
@@ -41,13 +42,13 @@ func NewIdentityStoreImporter(config *IdentityStoreImportConfig, statusUpdater j
 	return &isI
 }
 
-func (i *identityStoreImporter) TriggerImport(jobId string) (job.JobStatus, string, error) {
+func (i *identityStoreImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
 		return i.doImport(jobId, i.config.UserFile, i.config.GroupFile)
 	} else {
-		userKey, groupKey, err := i.upload()
+		userKey, groupKey, err := i.upload(ctx)
 		if err != nil {
 			return job.Failed, "", err
 		}
@@ -56,8 +57,8 @@ func (i *identityStoreImporter) TriggerImport(jobId string) (job.JobStatus, stri
 	}
 }
 
-func (i *identityStoreImporter) upload() (string, string, error) {
-	i.statusUpdater.AddTaskEvent(job.DataUpload)
+func (i *identityStoreImporter) upload(ctx context.Context) (string, string, error) {
+	i.statusUpdater.SetStatusToDataUpload(ctx)
 
 	userKey, err := file.UploadFile(i.config.UserFile, &i.config.BaseTargetConfig)
 	if err != nil {

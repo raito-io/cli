@@ -2,6 +2,7 @@ package access_provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 
 	dapc "github.com/raito-io/cli/base/access_provider"
 	baseconfig "github.com/raito-io/cli/base/util/config"
+	error1 "github.com/raito-io/cli/base/util/error"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
@@ -76,7 +78,7 @@ func (s *DataAccessSync) GetParts() []job.TaskPart {
 	return result
 }
 
-func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
@@ -103,7 +105,7 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(client plugin.Plugin
 
 	daImporter := NewAccessProviderImporter(&importerConfig, statusUpdater)
 
-	status, subtaskId, err := daImporter.TriggerImport(*s.JobId)
+	status, subtaskId, err := daImporter.TriggerImport(ctx, *s.JobId)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -163,14 +165,14 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 		return err
 	}
 
-	if res.Error != nil {
-		return res.Error
+	if res.Error != nil { //nolint:staticcheck
+		return mapErrorResult(res.Error) //nolint:staticcheck
 	}
 
 	return nil
 }
 
-func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da-feedback", "json"))
@@ -184,25 +186,25 @@ func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(client plugin.Plugin
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as actual access name target file", targetFile))
 
-	statusUpdater.AddTaskEvent(job.DataRetrieve)
+	statusUpdater.SetStatusToDataRetrieve(ctx)
 
-	return s.accessSyncExport(client, statusUpdater, targetFile)
+	return s.accessSyncExport(ctx, client, statusUpdater, targetFile)
 }
 
 // Export data from Raito to DS
-func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (_ job.JobStatus, _ string, returnErr error) {
+func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (_ job.JobStatus, _ string, returnErr error) {
 	subTaskUpdater := statusUpdater.GetSubtaskEventUpdater(constants.SubtaskAccessSync)
 
 	defer func() {
 		if returnErr != nil {
 			s.TargetConfig.TargetLogger.Error(fmt.Sprintf("Access provider sync failed due to error: %s", returnErr.Error()))
-			subTaskUpdater.AddSubtaskEvent(job.Failed)
+			subTaskUpdater.AddSubtaskEvent(ctx, job.Failed)
 		} else {
-			subTaskUpdater.AddSubtaskEvent(job.Completed)
+			subTaskUpdater.AddSubtaskEvent(ctx, job.Completed)
 		}
 	}()
 
-	subTaskUpdater.AddSubtaskEvent(job.Started)
+	subTaskUpdater.AddSubtaskEvent(ctx, job.Started)
 
 	s.TargetConfig.TargetLogger.Info("Loading plugin")
 
@@ -213,7 +215,7 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 
 	s.TargetConfig.TargetLogger.Info("Fetching access providers for this data source from Raito")
 
-	statusUpdater.AddTaskEvent(job.DataRetrieve)
+	statusUpdater.SetStatusToDataRetrieve(ctx)
 
 	syncConfig, err := das.SyncConfig(context.Background())
 	if err != nil {
@@ -222,13 +224,13 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 
 	daExporter := NewAccessProviderExporter(&AccessProviderExporterConfig{BaseTargetConfig: *s.TargetConfig}, statusUpdater, syncConfig)
 
-	_, dar, err := daExporter.TriggerExport(*s.JobId)
+	_, dar, err := daExporter.TriggerExport(ctx, *s.JobId)
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	subTaskUpdater.AddSubtaskEvent(job.InProgress)
+	subTaskUpdater.AddSubtaskEvent(ctx, job.InProgress)
 
 	darInformation, err := s.readDataAccessRetrieveInformation(dar)
 	if err != nil {
@@ -252,8 +254,8 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 		return job.Failed, "", err
 	}
 
-	if res.Error != nil {
-		return job.Failed, "", res.Error
+	if res.Error != nil { //nolint:staticcheck
+		return job.Failed, "", mapErrorResult(res.Error) //nolint:staticcheck
 	}
 
 	feedbackImportConfig := AccessProviderExportFeedbackConfig{
@@ -263,7 +265,7 @@ func (s *dataAccessExportSubtask) accessSyncExport(client plugin.PluginClient, s
 
 	importer := NewAccessProviderFeedbackImporter(&feedbackImportConfig, statusUpdater)
 
-	status, subtaskId, err := importer.TriggerFeedbackImport(*s.JobId)
+	status, subtaskId, err := importer.TriggerFeedbackImport(ctx, *s.JobId)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -315,4 +317,12 @@ func (s *dataAccessExportSubtask) ProcessResults(results interface{}) error {
 
 func (s *dataAccessExportSubtask) GetResultObject() interface{} {
 	return &AccessProviderExportFeedbackResult{}
+}
+
+func mapErrorResult(result *error1.ErrorResult) error {
+	if result == nil {
+		return nil
+	}
+
+	return errors.New(result.ErrorMessage)
 }

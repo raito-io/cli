@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +11,6 @@ import (
 	"github.com/raito-io/cli/base/identity_store"
 	is_mocks "github.com/raito-io/cli/base/identity_store/mocks"
 	config2 "github.com/raito-io/cli/base/util/config"
-	error2 "github.com/raito-io/cli/base/util/error"
 )
 
 func TestIdentityStoreSyncFunction_SyncIdentityStore(t *testing.T) {
@@ -57,10 +57,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOfFileCreation(t *testing.T) {
 	syncFunction := identityStoreSyncFunction{
 		syncer: syncerMock,
 		identityHandlerFactory: func(config *identity_store.IdentityStoreSyncConfig) (identity_store.IdentityStoreFileCreator, error) {
-			return nil, &error2.ErrorResult{
-				ErrorMessage: "BOOM!",
-				ErrorCode:    error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR,
-			}
+			return nil, errors.New("BOOM!")
 		},
 	}
 
@@ -68,10 +65,8 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOfFileCreation(t *testing.T) {
 	result, err := syncFunction.SyncIdentityStore(context.Background(), config)
 
 	//Then
-	assert.NoError(t, err)
-	assert.NotNil(t, result.Error)
-	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR, result.Error.ErrorCode)
+	assert.Error(t, err)
+	assert.Nil(t, result)
 
 	syncerMock.AssertNotCalled(t, "SyncIdentityStore", mock.Anything, mock.Anything, mock.Anything)
 }
@@ -88,10 +83,7 @@ func TestMockDataUsageSyncer_SyncDataUsage_ErrorSync(t *testing.T) {
 	fileCreatorMock.EXPECT().Close().Return().Once()
 
 	syncerMock := NewMockIdentityStoreSyncer(t)
-	syncerMock.EXPECT().SyncIdentityStore(mock.Anything, fileCreatorMock, config.ConfigMap).Return(&error2.ErrorResult{
-		ErrorMessage: "BOOM!",
-		ErrorCode:    error2.ErrorCode_SOURCE_CONNECTION_ERROR,
-	}).Once()
+	syncerMock.EXPECT().SyncIdentityStore(mock.Anything, fileCreatorMock, config.ConfigMap).Return(errors.New("BOOM!")).Once()
 
 	syncFunction := identityStoreSyncFunction{
 		syncer: syncerMock,
@@ -104,10 +96,8 @@ func TestMockDataUsageSyncer_SyncDataUsage_ErrorSync(t *testing.T) {
 	result, err := syncFunction.SyncIdentityStore(context.Background(), config)
 
 	//Then
-	assert.NoError(t, err)
-	assert.NotNil(t, result.Error)
-	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.ErrorCode_SOURCE_CONNECTION_ERROR, result.Error.ErrorCode)
+	assert.Error(t, err)
+	assert.Nil(t, result)
 }
 
 func TestIdentityStoreSyncWrapper(t *testing.T) {

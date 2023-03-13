@@ -6,7 +6,6 @@ import (
 
 	"github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/base/util/config"
-	e "github.com/raito-io/cli/base/util/error"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=IdentityStoreIdentityHandler --with-expecter
@@ -35,15 +34,19 @@ type identityStoreSyncFunction struct {
 	identityHandlerFactory func(config *identity_store.IdentityStoreSyncConfig) (identity_store.IdentityStoreFileCreator, error)
 }
 
-func (s *identityStoreSyncFunction) SyncIdentityStore(ctx context.Context, config *identity_store.IdentityStoreSyncConfig) (*identity_store.IdentityStoreSyncResult, error) {
+func (s *identityStoreSyncFunction) SyncIdentityStore(ctx context.Context, config *identity_store.IdentityStoreSyncConfig) (_ *identity_store.IdentityStoreSyncResult, err error) {
+	defer func() {
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failure during identity store sync: %v", err))
+		}
+	}()
+
 	logger.Info("Starting identity store synchronisation")
 	logger.Debug("Creating file for storing identity information")
 
 	fileCreator, err := s.identityHandlerFactory(config)
 	if err != nil {
-		logger.Error(err.Error())
-
-		return mapError(err), nil
+		return nil, err
 	}
 	defer fileCreator.Close()
 
@@ -52,22 +55,17 @@ func (s *identityStoreSyncFunction) SyncIdentityStore(ctx context.Context, confi
 	})
 
 	if err != nil {
-		logger.Error(err.Error())
-
-		return mapError(err), nil
+		return nil, err
 	}
 
 	logger.Info(fmt.Sprintf("Fetched %d users and %d groups in %s", fileCreator.GetUserCount(), fileCreator.GetGroupCount(), sec))
 
-	return &identity_store.IdentityStoreSyncResult{}, nil
+	return &identity_store.IdentityStoreSyncResult{
+		UserCount:  int32(fileCreator.GetUserCount()),
+		GroupCount: int32(fileCreator.GetGroupCount()),
+	}, nil
 }
 
 func (s *identityStoreSyncFunction) GetIdentityStoreMetaData(ctx context.Context) (*identity_store.MetaData, error) {
 	return s.syncer.GetIdentityStoreMetaData(ctx)
-}
-
-func mapError(err error) *identity_store.IdentityStoreSyncResult {
-	return &identity_store.IdentityStoreSyncResult{
-		Error: e.ToErrorResult(err),
-	}
 }

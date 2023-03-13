@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +11,6 @@ import (
 	"github.com/raito-io/cli/base/data_usage"
 	du_mocks "github.com/raito-io/cli/base/data_usage/mocks"
 	config2 "github.com/raito-io/cli/base/util/config"
-	error2 "github.com/raito-io/cli/base/util/error"
 )
 
 func TestDataUsageSyncFunction_SyncDataUsage(t *testing.T) {
@@ -56,10 +56,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOnFileCreation(t *testing.T) {
 	syncFunction := dataUsageSyncFunction{
 		syncer: syncerMock,
 		fileCreatorFactory: func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error) {
-			return nil, &error2.ErrorResult{
-				ErrorMessage: "BOOM!",
-				ErrorCode:    error2.ErrorCode_UNKNOWN_ERROR,
-			}
+			return nil, errors.New("BOOM!")
 		},
 	}
 
@@ -67,10 +64,8 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOnFileCreation(t *testing.T) {
 	result, err := syncFunction.SyncDataUsage(context.Background(), config)
 
 	//Then
-	assert.NoError(t, err)
-	assert.NotNil(t, result.Error)
-	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.ErrorCode_UNKNOWN_ERROR, result.Error.ErrorCode)
+	assert.Error(t, err)
+	assert.Nil(t, result)
 
 	syncerMock.AssertNotCalled(t, "SyncDataUsage", mock.Anything, mock.Anything, mock.Anything)
 }
@@ -86,10 +81,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 	fileCreatorMock.EXPECT().Close().Return()
 
 	syncerMock := NewMockDataUsageSyncer(t)
-	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(&error2.ErrorResult{
-		ErrorMessage: "BOOM!",
-		ErrorCode:    error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR,
-	})
+	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(errors.New("BOOM!"))
 
 	syncFunction := dataUsageSyncFunction{
 		syncer: syncerMock,
@@ -102,10 +94,8 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 	result, err := syncFunction.SyncDataUsage(context.Background(), config)
 
 	//Then
-	assert.NoError(t, err)
-	assert.NotNil(t, result.Error)
-	assert.Equal(t, "BOOM!", result.Error.ErrorMessage)
-	assert.Equal(t, error2.ErrorCode_BAD_INPUT_PARAMETER_ERROR, result.Error.ErrorCode)
+	assert.Error(t, err)
+	assert.Nil(t, result)
 	syncerMock.AssertNumberOfCalls(t, "SyncDataUsage", 1)
 	fileCreatorMock.AssertNumberOfCalls(t, "Close", 1)
 }

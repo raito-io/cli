@@ -2,6 +2,7 @@ package data_usage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -47,7 +48,7 @@ func (s *DataUsageSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-du", "json"))
 
@@ -95,13 +96,13 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, st
 	res, err := dus.SyncDataUsage(context.Background(), &syncerConfig)
 	if err != nil {
 		return job.Failed, "", err
-	} else if res.Error != nil {
-		return job.Failed, "", err
+	} else if res.Error != nil { //nolint:staticcheck
+		return job.Failed, "", errors.New(res.Error.ErrorMessage) //nolint:staticcheck
 	}
 
 	s.TargetConfig.TargetLogger.Info("Importing usage data into Raito")
 
-	status, subtaskId, err := duImporter.TriggerImport(s.JobId)
+	status, subtaskId, err := duImporter.TriggerImport(ctx, s.JobId)
 	if err != nil {
 		return job.Failed, "", err
 	}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/util/config"
-	e "github.com/raito-io/cli/base/util/error"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=DataUsageStatementHandler --with-expecter
@@ -33,18 +32,21 @@ type dataUsageSyncFunction struct {
 	fileCreatorFactory func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error)
 }
 
-func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_usage.DataUsageSyncConfig) (*data_usage.DataUsageSyncResult, error) {
+func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_usage.DataUsageSyncConfig) (_ *data_usage.DataUsageSyncResult, err error) {
+	defer func() {
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failure during data usage sync: %v", err))
+		}
+	}()
+
 	logger.Info("Starting data usage synchronisation")
 	logger.Debug("Creating file for storing data usage")
 
 	fileCreator, err := s.fileCreatorFactory(config)
 	if err != nil {
-		logger.Error(err.Error())
-
-		return &data_usage.DataUsageSyncResult{
-			Error: e.ToErrorResult(err),
-		}, nil
+		return nil, err
 	}
+
 	defer fileCreator.Close()
 
 	sec, err := timedExecution(func() error {
@@ -52,15 +54,13 @@ func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_
 	})
 
 	if err != nil {
-		logger.Error(err.Error())
-
-		return &data_usage.DataUsageSyncResult{
-			Error: e.ToErrorResult(err),
-		}, nil
+		return nil, err
 	}
 
 	logger.Info(fmt.Sprintf("Retrieved %d rows and written them to file, for a total time of %s",
 		fileCreator.GetStatementCount(), sec))
 
-	return &data_usage.DataUsageSyncResult{}, nil
+	return &data_usage.DataUsageSyncResult{
+		Statements: int32(fileCreator.GetStatementCount()),
+	}, nil
 }

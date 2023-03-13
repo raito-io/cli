@@ -37,7 +37,7 @@ message AccessSyncFromTarget {
 // A potential error is also modeled in here so specific errors remain intact when passed over RPC.
 message AccessSyncResult {
   util.error.ErrorResult error = 1 [deprecated = true];
-  int32 accessProviderCount = 2;
+  int32 access_provider_count = 2;
 }
 
 // AccessSyncConfig gives us information on how the CLI can sync access providers

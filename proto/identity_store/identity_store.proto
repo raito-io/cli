@@ -18,8 +18,8 @@ message IdentityStoreSyncConfig {
 // A potential error is also modeled in here so specific errors remain intact when passed over RPC.
 message IdentityStoreSyncResult {
   util.error.ErrorResult error = 1 [deprecated = true];
-  int32 userCount = 2;
-  int32 groupCount = 3;
+  int32 user_count = 2;
+  int32 group_count = 3;
 }
 
 message MetaData {

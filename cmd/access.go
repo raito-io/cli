@@ -54,7 +54,13 @@ func executeAccessCmd(cmd *cobra.Command, args []string) (err error) {
 	return target.RunTargets(config, runAccessTarget)
 }
 
-func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
+func runAccessTarget(targetConfig *target.BaseTargetConfig) (err error) {
+	defer func() {
+		if err != nil {
+			target.HandleTargetError(err, targetConfig)
+		}
+	}()
+
 	start := time.Now()
 
 	accessFile := viper.GetString(constants.AccessFileFlag)
@@ -70,15 +76,13 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 
 	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)
 	if err != nil {
-		targetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
-		return err
+		return fmt.Errorf("initializing connector plugin %q: %w", targetConfig.ConnectorName, err)
 	}
 	defer client.Close()
 
 	as, err := client.GetAccessSyncer()
 	if err != nil {
-		targetConfig.TargetLogger.Error(fmt.Sprintf("The plugin (%s) does not implement the AccessSyncer interface", targetConfig.ConnectorName))
-		return err
+		return fmt.Errorf("plugin (%s) does not implement the AccessSyncer interface: %w", targetConfig.ConnectorName, err)
 	}
 
 	res, err := as.SyncToTarget(context.Background(), &access_provider.AccessSyncToTarget{
@@ -87,9 +91,9 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) error {
 		SourceFile: accessFile,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("synchronizing access information to the data source: %w", err)
 	} else if res.Error != nil { //nolint:staticcheck
-		return err
+		return fmt.Errorf("synchronizing access information to the data source: %w", err)
 	}
 
 	sec := time.Since(start).Round(time.Millisecond)

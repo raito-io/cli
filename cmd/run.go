@@ -269,7 +269,8 @@ func sync(ctx context.Context, cfg *target.BaseTargetConfig, syncTypeLabel strin
 	defer func() {
 		if err != nil {
 			taskEventUpdater.SetStatusToFailed(ctx, err)
-			cfg.TargetLogger.Error(fmt.Sprintf("Synchronizing %s failed: %s", syncTypeLabel, err.Error()))
+
+			target.HandleTargetError(err, cfg, fmt.Sprintf("Synchronizing %s failed", syncType))
 		}
 	}()
 
@@ -321,6 +322,8 @@ func runTaskPartSync(ctx context.Context, cfg *target.BaseTargetConfig, syncType
 
 	status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(ctx, c, taskEventUpdater)
 	if err != nil {
+		err = fmt.Errorf("synchronizing %s : %w", syncType, err)
+
 		return err
 	}
 

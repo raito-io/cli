@@ -1,6 +1,7 @@
 package target
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -11,8 +12,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc/codes"
 
 	"github.com/raito-io/cli/base/util/config"
+	"github.com/raito-io/cli/base/util/error/grpc_error"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
 )
@@ -80,6 +83,23 @@ func RunTargets(baseConfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig
 	} else {
 		return runMultipleTargets(baseConfig, runTarget, &options)
 	}
+}
+
+func HandleTargetError(err error, config *BaseTargetConfig, prefix ...string) {
+	targetError := &grpc_error.InternalPluginStatusError{}
+
+	prefixString := strings.Join(prefix, " ")
+
+	if prefixString != "" {
+		prefixString += ": "
+	}
+
+	if errors.As(err, &targetError) && targetError.StatusCode() == codes.InvalidArgument {
+		config.TargetLogger.Error(fmt.Sprintf("%s%s. Execute command 'info <connector>' to print out the expected parameters for the connector.", prefixString, targetError.Error()))
+		return
+	}
+
+	config.TargetLogger.Error(fmt.Sprintf("%s%s", prefixString, err.Error()))
 }
 
 func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig) error, options *Options) error {

@@ -20,6 +20,10 @@ func (e *InternalPluginStatusError) Error() string {
 	return fmt.Sprintf("%s (%s)", e.errorMsg, e.statusCode.String())
 }
 
+func (e *InternalPluginStatusError) StatusCode() codes.Code {
+	return e.statusCode
+}
+
 var errorStatusMap = map[reflect.Type]codes.Code{
 	reflect.TypeOf((*error2.MissingInputParameterError)(nil)): codes.InvalidArgument,
 	reflect.TypeOf((*error2.BadInputParameterError)(nil)):     codes.InvalidArgument,

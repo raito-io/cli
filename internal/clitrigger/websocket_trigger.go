@@ -3,6 +3,7 @@ package clitrigger
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -119,7 +120,7 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) {
 				err := conn.Write(ctx, websocket.MessageText, heartbeatMsg)
 				if err != nil {
 					failed += 1
-					s.config.BaseLogger.Warn("Failed to connect with websocket for %d times", failed)
+					s.config.BaseLogger.Warn(fmt.Sprintf("Failed to connect with websocket for %d times", failed))
 
 					timer.Reset(time.Duration(2) * time.Second)
 
@@ -161,11 +162,11 @@ func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context) <-chan Trigger
 				internalChannel, err := s.client.Start(ctx)
 				if err != nil {
 					if websocket.CloseStatus(err) > 0 {
-						s.logger.Warn("Failed to create websocket. Will try again: %s", err.Error())
+						s.logger.Warn(fmt.Sprintf("Failed to create websocket. Will try again: %s", err.Error()))
 
 						continue
 					} else {
-						s.logger.Error("Failed to create websocket: %s", err.Error())
+						s.logger.Error(fmt.Sprintf("Failed to create websocket: %s", err.Error()))
 
 						return
 					}
@@ -176,7 +177,7 @@ func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context) <-chan Trigger
 
 					switch m := msg.(type) {
 					case error:
-						s.logger.Warn("Received error on websocket: %s", m.Error())
+						s.logger.Warn(fmt.Sprintf("Received error on websocket: %s", m.Error()))
 						receiveErr = true
 					case TriggerEvent:
 						outputChannel <- m

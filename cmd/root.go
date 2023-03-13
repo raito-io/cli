@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-hclog"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -116,10 +118,8 @@ func (cmd *rootCmd) initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Search config in home directory with name ".cobra" (without extension).
 		viper.AddConfigPath(".")
 		viper.AddConfigPath("$HOME/.raito")
-		viper.SetConfigType("yaml")
 		viper.SetConfigName("raito")
 	}
 
@@ -129,11 +129,15 @@ func (cmd *rootCmd) initConfig() {
 	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
-	if err != nil {
+	if err != nil && !strings.HasSuffix(viper.ConfigFileUsed(), "/raito") && viper.ConfigFileUsed() != "" {
 		// No logger yet
-		fmt.Printf("error while reading config file: %s\n", err.Error()) //nolint:forbidigo
+		fmt.Printf("error while reading config file %q: %s\n", viper.ConfigFileUsed(), err.Error()) //nolint:forbidigo
 		cmd.exitForError()
 	}
 
 	logging.SetupLogging()
+
+	if viper.ConfigFileUsed() != "" {
+		hclog.L().Debug(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))
+	}
 }

@@ -223,7 +223,7 @@ func execute(targetID string, jobID string, syncType string, syncTypeLabel strin
 	switch {
 	case skipSync:
 		taskEventUpdater.SetStatusToSkipped(ctx)
-		cfg.TargetLogger.Warn("Skipping sync of " + syncTypeLabel)
+		cfg.TargetLogger.Info("Skipping sync of " + syncTypeLabel)
 	case targetID == "":
 		taskEventUpdater.SetStatusToSkipped(ctx)
 

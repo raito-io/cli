@@ -21,14 +21,16 @@ type AccessProvider struct {
 	// Deprecated: use ActualName and What fields directory
 	Access []*Access `yaml:"access" json:"access"`
 
-	Action     Action  `yaml:"action" json:"action"`
-	Who        WhoItem `yaml:"who" json:"who"`
-	Delete     bool    `yaml:"delete" json:"delete"`
-	WhoLocked  *bool   `yaml:"whoLocked" json:"whoLocked"`
-	WhatLocked *bool   `yaml:"whatLocked" json:"whatLocked"`
+	Action     Action   `yaml:"action" json:"action"`
+	Who        WhoItem  `yaml:"who" json:"who"`
+	DeletedWho *WhoItem `yaml:"deletedWho" json:"deletedWho"`
+	Delete     bool     `yaml:"delete" json:"delete"`
+	WhoLocked  *bool    `yaml:"whoLocked" json:"whoLocked"`
+	WhatLocked *bool    `yaml:"whatLocked" json:"whatLocked"`
 
 	ActualName *string    `yaml:"actualName" json:"actualName"`
 	What       []WhatItem `yaml:"what" json:"what"`
+	DeleteWhat []WhatItem `yaml:"deleteWhat" json:"deleteWhat"`
 }
 
 type Access struct {

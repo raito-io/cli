@@ -46,7 +46,7 @@ func SetupLogging() {
 	}
 
 	logger := hclog.NewInterceptLogger(&hclog.LoggerOptions{
-		Name:   fmt.Sprintf("raito-cli-%s)", version.GetCliVersion().String()),
+		Name:   fmt.Sprintf("raito-cli-%s", version.GetCliVersion().String()),
 		Output: output,
 	})
 

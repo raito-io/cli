@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -8,6 +9,7 @@ import (
 
 	"github.com/raito-io/cli/internal/auth"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/util/merror"
 	"github.com/raito-io/cli/internal/util/url"
 	"github.com/raito-io/cli/internal/version"
 )
@@ -36,4 +38,16 @@ func (d *authedDoer) Do(req *http.Request) (*http.Response, error) {
 
 func NewClient(config *target.BaseConfig) *graphql.Client {
 	return graphql.NewClient(url.GetRaitoURL()+"query", &authedDoer{config: config})
+}
+
+func ParseErrors(err error) error {
+	gqlErrors := graphql.Errors{}
+	if errors.As(err, &gqlErrors) {
+		err = nil
+		for _, gqlErr := range gqlErrors {
+			err = merror.Append(err, errors.New(gqlErr.Message))
+		}
+	}
+
+	return err
 }

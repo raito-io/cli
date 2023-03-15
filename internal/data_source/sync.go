@@ -2,6 +2,7 @@ package data_source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -42,7 +43,7 @@ func (s *DataSourceSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
@@ -75,7 +76,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, s
 	}
 
 	s.TargetConfig.TargetLogger.Info("Updating data source metadata")
-	err = SetMetaData(s.TargetConfig, md)
+	err = SetMetaData(ctx, s.TargetConfig, md)
 
 	if err != nil {
 		return job.Failed, "", err
@@ -88,8 +89,8 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, s
 		return job.Failed, "", err
 	}
 
-	if res.Error != nil {
-		return job.Failed, "", err
+	if res.Error != nil { //nolint:staticcheck
+		return job.Failed, "", errors.New(res.Error.ErrorMessage) //nolint:staticcheck
 	}
 
 	importerConfig := DataSourceImportConfig{
@@ -101,7 +102,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, s
 	dsImporter := NewDataSourceImporter(&importerConfig, statusUpdater)
 
 	s.TargetConfig.TargetLogger.Info("Importing data objects into Raito")
-	status, subtaskId, err := dsImporter.TriggerImport(s.JobId)
+	status, subtaskId, err := dsImporter.TriggerImport(ctx, s.JobId)
 
 	if err != nil {
 		return job.Failed, "", err

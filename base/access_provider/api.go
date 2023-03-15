@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/raito-io/cli/base/util/error/grpc_error"
 	"github.com/raito-io/cli/base/util/version"
 	"github.com/raito-io/cli/internal/version_management"
 )
@@ -49,19 +50,19 @@ type accessSyncerGRPC struct {
 }
 
 func (g *accessSyncerGRPC) SyncFromTarget(ctx context.Context, config *AccessSyncFromTarget) (*AccessSyncResult, error) {
-	return g.client.SyncFromTarget(ctx, config)
+	return grpc_error.ParseErrorResult(g.client.SyncFromTarget(ctx, config))
 }
 
 func (g *accessSyncerGRPC) SyncToTarget(ctx context.Context, config *AccessSyncToTarget) (*AccessSyncResult, error) {
-	return g.client.SyncToTarget(ctx, config)
+	return grpc_error.ParseErrorResult(g.client.SyncToTarget(ctx, config))
 }
 
 func (g *accessSyncerGRPC) SyncConfig(ctx context.Context) (*AccessSyncConfig, error) {
-	return g.client.SyncConfig(ctx, &emptypb.Empty{})
+	return grpc_error.ParseErrorResult(g.client.SyncConfig(ctx, &emptypb.Empty{}))
 }
 
 func (g *accessSyncerGRPC) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
-	return g.client.CliVersionInformation(ctx, &emptypb.Empty{})
+	return grpc_error.ParseErrorResult(g.client.CliVersionInformation(ctx, &emptypb.Empty{}))
 }
 
 type accessSyncerGRPCServer struct {
@@ -70,19 +71,35 @@ type accessSyncerGRPCServer struct {
 	Impl AccessSyncer
 }
 
-func (s *accessSyncerGRPCServer) SyncToTarget(ctx context.Context, config *AccessSyncToTarget) (*AccessSyncResult, error) {
+func (s *accessSyncerGRPCServer) SyncToTarget(ctx context.Context, config *AccessSyncToTarget) (_ *AccessSyncResult, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.SyncToTarget(ctx, config)
 }
 
-func (s *accessSyncerGRPCServer) SyncFromTarget(ctx context.Context, config *AccessSyncFromTarget) (*AccessSyncResult, error) {
+func (s *accessSyncerGRPCServer) SyncFromTarget(ctx context.Context, config *AccessSyncFromTarget) (_ *AccessSyncResult, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.SyncFromTarget(ctx, config)
 }
 
-func (s *accessSyncerGRPCServer) SyncConfig(ctx context.Context, _ *emptypb.Empty) (*AccessSyncConfig, error) {
+func (s *accessSyncerGRPCServer) SyncConfig(ctx context.Context, _ *emptypb.Empty) (_ *AccessSyncConfig, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.SyncConfig(ctx)
 }
 
-func (s *accessSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (*version.CliBuildInformation, error) {
+func (s *accessSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (_ *version.CliBuildInformation, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.CliVersionInformation(ctx)
 }
 

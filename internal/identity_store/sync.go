@@ -2,6 +2,7 @@ package identity_store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 
 	ispc "github.com/raito-io/cli/base/identity_store"
 	baseconfig "github.com/raito-io/cli/base/util/config"
+	error1 "github.com/raito-io/cli/base/util/error"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
@@ -45,7 +47,7 @@ func (s *IdentityStoreSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	userFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-user", "json"))
@@ -98,8 +100,8 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient
 		return job.Failed, "", err
 	}
 
-	if result.Error != nil {
-		return job.Failed, "", result.Error
+	if result.Error != nil { //nolint:staticcheck
+		return job.Failed, "", s.mapErrorResult(result.Error) //nolint:staticcheck
 	}
 
 	importerConfig := IdentityStoreImportConfig{
@@ -113,7 +115,7 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(client plugin.PluginClient
 	isImporter := NewIdentityStoreImporter(&importerConfig, statusUpdater)
 
 	s.TargetConfig.TargetLogger.Info("Importing users and groups into Raito")
-	status, subtaskId, err := isImporter.TriggerImport(s.JobId)
+	status, subtaskId, err := isImporter.TriggerImport(ctx, s.JobId)
 
 	if err != nil {
 		return job.Failed, "", err
@@ -149,4 +151,12 @@ func (s *IdentityStoreSync) ProcessResults(results interface{}) error {
 
 func (s *IdentityStoreSync) GetResultObject() interface{} {
 	return &IdentityStoreImportResult{}
+}
+
+func (s *IdentityStoreSync) mapErrorResult(result *error1.ErrorResult) error {
+	if result == nil {
+		return nil
+	}
+
+	return errors.New(result.ErrorMessage)
 }

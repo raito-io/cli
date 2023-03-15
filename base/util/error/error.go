@@ -1,51 +1,76 @@
 package error
 
-import "fmt"
+import (
+	"fmt"
 
-func (e ErrorResult) Error() string { //nolint:govet
-	return e.ErrorMessage
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
+
+type MissingInputParameterError struct {
+	parameter string
+}
+
+func (e *MissingInputParameterError) Error() string {
+	return fmt.Sprintf("mandatory parameter %q is missing", e.parameter)
 }
 
 // CreateMissingInputParameterError is a helper method to create a consistent error result across plugins when a mandatory parameter is missing.
-func CreateMissingInputParameterError(parameter string) *ErrorResult {
-	return &ErrorResult{
-		ErrorMessage: fmt.Sprintf("mandatory parameter %q is missing", parameter),
-		ErrorCode:    ErrorCode_MISSING_INPUT_PARAMETER_ERROR,
+func CreateMissingInputParameterError(parameter string) error {
+	return &MissingInputParameterError{parameter: parameter}
+}
+
+type BadInputParameterError struct {
+	parameter   string
+	value       string
+	explanation string
+}
+
+func (e *BadInputParameterError) Error() string {
+	if e.explanation != "" {
+		return fmt.Sprintf("parameter %q has invalid value %q. %s", e.parameter, e.value, e.explanation)
 	}
+
+	return fmt.Sprintf("parameter %q has invalid value %q", e.parameter, e.value)
 }
 
 // CreateBadInputParameterError is a helper method to create a consistent error result across plugins when an input parameter has an unexpected format.
-func CreateBadInputParameterError(parameter, value, explanation string) *ErrorResult {
-	var msg string
-	if explanation != "" {
-		msg = fmt.Sprintf("parameter %q has invalid value %q. %s", parameter, value, explanation)
-	} else {
-		msg = fmt.Sprintf("parameter %q has invalid value %q", parameter, value)
-	}
+func CreateBadInputParameterError(parameter, value, explanation string) error {
+	return &BadInputParameterError{parameter: parameter, value: value, explanation: explanation}
+}
 
-	return &ErrorResult{
-		ErrorMessage: msg,
-		ErrorCode:    ErrorCode_BAD_INPUT_PARAMETER_ERROR,
-	}
+type SourceConnectionError struct {
+	url     string
+	message string
+}
+
+func (e *SourceConnectionError) Error() string {
+	return fmt.Sprintf("error while connecting to %q: %s", e.url, e.message)
 }
 
 // CreateSourceConnectionError is a helper method to create a consistent error result across plugins when there is a connection problem to the data source or identity store.
-func CreateSourceConnectionError(url, message string) *ErrorResult {
-	return &ErrorResult{
-		ErrorMessage: fmt.Sprintf("error while connecting to %q: %s", url, message),
-		ErrorCode:    ErrorCode_SOURCE_CONNECTION_ERROR,
-	}
+func CreateSourceConnectionError(url, message string) error {
+	return &SourceConnectionError{url: url, message: message}
 }
 
-// ToErrorResult is a helper method to to create an ErrorResult from an error. If the error already is of type ErrorResult, the original is returned.
-func ToErrorResult(err error) *ErrorResult {
-	if res, ok := err.(ErrorResult); ok { //nolint:govet
-		return &res
-	}
+type CreateFileError struct {
+	filename     string
+	wrappedError error
+}
 
-	if res, ok := err.(*ErrorResult); ok {
-		return res
-	}
+func (e *CreateFileError) Error() string {
+	return fmt.Sprintf("error creating temporary file %q for data source importer: %s", e.filename, e.wrappedError.Error())
+}
 
-	return &ErrorResult{ErrorMessage: err.Error(), ErrorCode: ErrorCode_UNKNOWN_ERROR}
+func (e *CreateFileError) Unwrap() error {
+	return e.wrappedError
+}
+
+func CreateErrorFileError(filename string, err error) error {
+	return &CreateFileError{filename: filename, wrappedError: err}
+}
+
+// ToErrorResult is a helper method to create an ErrorResult from an error. If the error already is of type ErrorResult, the original is returned.
+func ToErrorResult(err error) error {
+	return status.Error(codes.Internal, err.Error())
 }

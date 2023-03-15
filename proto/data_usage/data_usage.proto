@@ -16,7 +16,8 @@ message DataUsageSyncConfig {
 // DataUsageSyncResult represents the result from the data usage sync process.
 // A potential error is also modeled in here so specific errors remain intact when passed over RPC.
 message DataUsageSyncResult {
-  util.error.ErrorResult error = 1;
+  util.error.ErrorResult error = 1 [deprecated = true];
+  int32 statements = 2;
 }
 
 service DataUsageSyncService {

@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/spf13/viper"
 	"nhooyr.io/websocket"
 
 	"github.com/raito-io/cli/internal/auth"
+	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target"
 )
 
@@ -55,7 +57,10 @@ func (s *WebsocketClient) Start(ctx context.Context) (<-chan interface{}, error)
 		return nil, err
 	}
 
-	s.heartbeat(ctx, conn)
+	err = s.heartbeat(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
 
 	return s.readMessageFromWebsocket(ctx, conn), nil
 }
@@ -106,17 +111,42 @@ func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *we
 	return ch
 }
 
-func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) {
+func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) error {
 	s.wg.Add(1)
+
+	var datasources []string
+	targets := viper.Get(constants.Targets).([]interface{})
+
+	for _, targetObj := range targets {
+		target, ok := targetObj.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		if dsId, found := target["data-source-id"]; found {
+			datasources = append(datasources, dsId.(string))
+		}
+	}
+
+	heartbeatMsgObject := struct {
+		Message     string   `json:"message"`
+		DataSources []string `json:"datasources"`
+	}{
+		Message:     "heartbeat",
+		DataSources: datasources,
+	}
+
+	heartbeatMsg, err := json.Marshal(heartbeatMsgObject)
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		defer s.wg.Done()
 
 		defer conn.Close(websocket.StatusNormalClosure, "Closing websocket")
 
-		heartbeatMsg := []byte("{\"message\": \"heartbeat\"}")
-
-		timer := time.NewTimer(heartbeatTimeout)
+		timer := time.NewTimer(0)
 
 		failed := 0
 
@@ -146,6 +176,8 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) {
 			}
 		}
 	}()
+
+	return nil
 }
 
 type WebsocketCliTrigger struct {

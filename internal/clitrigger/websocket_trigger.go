@@ -3,6 +3,7 @@ package clitrigger
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -15,11 +16,20 @@ import (
 )
 
 const heartbeatTimeout = time.Minute * 5
+const websocketReset = time.Minute * 90
 
 type WebsocketClient struct {
 	wg           sync.WaitGroup
 	config       *target.BaseConfig
 	websocketUrl string
+}
+
+type WebsocketMessageError struct {
+	err error
+}
+
+func (e *WebsocketMessageError) Error() string {
+	return fmt.Sprintf("websocket message error: %s", e.err.Error())
 }
 
 func NewWebsocketClient(config *target.BaseConfig, websocketUrl string) *WebsocketClient {
@@ -141,27 +151,37 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) {
 type WebsocketCliTrigger struct {
 	client *WebsocketClient
 	logger hclog.Logger
+
+	m             sync.Mutex
+	outputChannel chan TriggerEvent
+	cancelFn      func()
 }
 
 func NewWebsocketCliTrigger(config *target.BaseConfig, websocketUrl string) *WebsocketCliTrigger {
 	return &WebsocketCliTrigger{
 		client: NewWebsocketClient(config, websocketUrl),
 		logger: config.BaseLogger,
+
+		outputChannel: make(chan TriggerEvent),
 	}
 }
 
 func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context) <-chan TriggerEvent {
-	outputChannel := make(chan TriggerEvent)
-
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			default:
-				internalChannel, err := s.client.Start(ctx)
+				err := s.readChannel(ctx, s.outputChannel)
+
 				if err != nil {
-					if websocket.CloseStatus(err) > 0 {
+					wserr := &WebsocketMessageError{}
+					if errors.As(err, &wserr) {
+						s.logger.Warn(fmt.Sprintf("Received error: %s", err.Error()))
+
+						continue
+					} else if websocket.CloseStatus(err) > 0 {
 						s.logger.Warn(fmt.Sprintf("Failed to create websocket. Will try again: %s", err.Error()))
 
 						continue
@@ -171,29 +191,64 @@ func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context) <-chan Trigger
 						return
 					}
 				}
-
-				for msg := range internalChannel {
-					receiveErr := false
-
-					switch m := msg.(type) {
-					case error:
-						s.logger.Warn(fmt.Sprintf("Received error on websocket: %s", m.Error()))
-						receiveErr = true
-					case TriggerEvent:
-						outputChannel <- m
-					}
-
-					if receiveErr {
-						break
-					}
-				}
 			}
 		}
 	}()
 
-	return outputChannel
+	return s.outputChannel
+}
+
+func (s *WebsocketCliTrigger) Reset() {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	if s.cancelFn != nil {
+		s.cancelFn()
+	}
 }
 
 func (s *WebsocketCliTrigger) Wait() {
 	s.client.Wait()
+	close(s.outputChannel)
+}
+
+func (s *WebsocketCliTrigger) readChannel(ctx context.Context, outputChannel chan<- TriggerEvent) error {
+	internalCtx, cancelFn := context.WithTimeout(ctx, websocketReset)
+	defer func() {
+		cancelFn()
+
+		s.m.Lock()
+		s.cancelFn = nil
+		s.m.Unlock()
+	}()
+
+	s.m.Lock()
+	s.cancelFn = cancelFn
+	s.m.Unlock()
+
+	s.logger.Debug("Creating websocket connection")
+
+	internalChannel, err := s.client.Start(internalCtx)
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case msg, ok := <-internalChannel:
+			if !ok {
+				return nil
+			}
+
+			switch m := msg.(type) {
+			case error:
+				return &WebsocketMessageError{err: m}
+
+			case TriggerEvent:
+				outputChannel <- m
+			}
+		}
+	}
 }

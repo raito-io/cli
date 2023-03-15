@@ -15,6 +15,7 @@ import (
 	"github.com/aws/smithy-go/ptr"
 
 	"github.com/raito-io/cli/base/access_provider"
+	error2 "github.com/raito-io/cli/base/util/error"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderFileCreator --with-expecter
@@ -129,7 +130,7 @@ func (d *accessProviderFileCreator) GetAccessProviderCount() int {
 func (d *accessProviderFileCreator) createTargetFile() error {
 	f, err := os.Create(d.config.TargetFile)
 	if err != nil {
-		return fmt.Errorf("error creating temporary file for data source importer: %s", err.Error())
+		return error2.CreateErrorFileError(d.config.TargetFile, err)
 	}
 	d.targetFile = f
 

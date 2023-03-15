@@ -1,6 +1,7 @@
 package access_provider
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,7 +31,7 @@ type AccessProviderExporterConfig struct {
 }
 
 type AccessProviderExporter interface {
-	TriggerExport(jobId string) (job.JobStatus, string, error)
+	TriggerExport(ctx context.Context, jobId string) (job.JobStatus, string, error)
 }
 
 type accessProviderExporter struct {
@@ -47,7 +48,7 @@ func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdat
 	return &dsI
 }
 
-func (d *accessProviderExporter) TriggerExport(jobId string) (job.JobStatus, string, error) {
+func (d *accessProviderExporter) TriggerExport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
 	status, subTaskId, err := d.doExport(jobId)
 
 	if err != nil {
@@ -55,7 +56,7 @@ func (d *accessProviderExporter) TriggerExport(jobId string) (job.JobStatus, str
 	}
 
 	result := &AccessProviderExportResult{}
-	subtask, err := job.WaitForJobToComplete(jobId, constants.DataAccessSync, subTaskId, result, &d.config.BaseTargetConfig, status)
+	subtask, err := job.WaitForJobToComplete(ctx, jobId, constants.DataAccessSync, subTaskId, result, &d.config.BaseTargetConfig, status)
 
 	if err != nil {
 		return job.Failed, "", err

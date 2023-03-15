@@ -1,6 +1,7 @@
 package access_provider
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ type AccessProviderImportConfig struct {
 }
 
 type AccessProviderImporter interface {
-	TriggerImport(jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
 }
 
 type accessProviderImporter struct {
@@ -38,13 +39,13 @@ func NewAccessProviderImporter(config *AccessProviderImportConfig, statusUpdater
 	return &dsI
 }
 
-func (d *accessProviderImporter) TriggerImport(jobId string) (job.JobStatus, string, error) {
+func (d *accessProviderImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
 		return d.doImport(jobId, d.config.TargetFile)
 	} else {
-		key, err := d.upload()
+		key, err := d.upload(ctx)
 		if err != nil {
 			return job.Failed, "", err
 		}
@@ -53,8 +54,8 @@ func (d *accessProviderImporter) TriggerImport(jobId string) (job.JobStatus, str
 	}
 }
 
-func (d *accessProviderImporter) upload() (string, error) {
-	d.statusUpdater.AddTaskEvent(job.DataUpload)
+func (d *accessProviderImporter) upload(ctx context.Context) (string, error) {
+	d.statusUpdater.SetStatusToDataUpload(ctx)
 
 	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
 	if err != nil {

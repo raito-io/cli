@@ -1,6 +1,7 @@
 package data_source
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -23,7 +24,7 @@ type DataSourceImportConfig struct {
 }
 
 type DataSourceImporter interface {
-	TriggerImport(jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
 }
 
 type dataSourceImporter struct {
@@ -39,13 +40,13 @@ func NewDataSourceImporter(config *DataSourceImportConfig, statusUpdater job.Tas
 	return &dsI
 }
 
-func (d *dataSourceImporter) TriggerImport(jobId string) (job.JobStatus, string, error) {
+func (d *dataSourceImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
 		return d.doImport(jobId, d.config.TargetFile)
 	} else {
-		key, err := d.upload()
+		key, err := d.upload(ctx)
 		if err != nil {
 			return job.Failed, "", err
 		}
@@ -54,8 +55,8 @@ func (d *dataSourceImporter) TriggerImport(jobId string) (job.JobStatus, string,
 	}
 }
 
-func (d *dataSourceImporter) upload() (string, error) {
-	d.statusUpdater.AddTaskEvent(job.DataUpload)
+func (d *dataSourceImporter) upload(ctx context.Context) (string, error) {
+	d.statusUpdater.SetStatusToDataUpload(ctx)
 
 	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
 	if err != nil {

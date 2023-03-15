@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/raito-io/cli/base/util/error/grpc_error"
 	"github.com/raito-io/cli/base/util/version"
 	"github.com/raito-io/cli/internal/version_management"
 )
@@ -46,15 +47,15 @@ type identityStoreSyncerGRPC struct {
 }
 
 func (g *identityStoreSyncerGRPC) SyncIdentityStore(ctx context.Context, config *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error) {
-	return g.client.SyncIdentityStore(ctx, config)
+	return grpc_error.ParseErrorResult(g.client.SyncIdentityStore(ctx, config))
 }
 
 func (g *identityStoreSyncerGRPC) GetIdentityStoreMetaData(ctx context.Context) (*MetaData, error) {
-	return g.client.GetIdentityStoreMetaData(ctx, &emptypb.Empty{})
+	return grpc_error.ParseErrorResult(g.client.GetIdentityStoreMetaData(ctx, &emptypb.Empty{}))
 }
 
 func (g *identityStoreSyncerGRPC) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
-	return g.client.CliVersionInformation(ctx, &emptypb.Empty{})
+	return grpc_error.ParseErrorResult(g.client.CliVersionInformation(ctx, &emptypb.Empty{}))
 }
 
 type identityStoreSyncerGRPCServer struct {
@@ -63,15 +64,27 @@ type identityStoreSyncerGRPCServer struct {
 	Impl IdentityStoreSyncer
 }
 
-func (s *identityStoreSyncerGRPCServer) SyncIdentityStore(ctx context.Context, config *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error) {
+func (s *identityStoreSyncerGRPCServer) SyncIdentityStore(ctx context.Context, config *IdentityStoreSyncConfig) (_ *IdentityStoreSyncResult, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.SyncIdentityStore(ctx, config)
 }
 
-func (s *identityStoreSyncerGRPCServer) GetIdentityStoreMetaData(ctx context.Context, _ *emptypb.Empty) (*MetaData, error) {
+func (s *identityStoreSyncerGRPCServer) GetIdentityStoreMetaData(ctx context.Context, _ *emptypb.Empty) (_ *MetaData, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.GetIdentityStoreMetaData(ctx)
 }
 
-func (s *identityStoreSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (*version.CliBuildInformation, error) {
+func (s *identityStoreSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (_ *version.CliBuildInformation, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.CliVersionInformation(ctx)
 }
 

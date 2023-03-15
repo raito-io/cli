@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/access_provider/sync_from_target"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	"github.com/raito-io/cli/base/util/config"
-	e "github.com/raito-io/cli/base/util/error"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderHandler --with-expecter
@@ -57,15 +59,19 @@ type DataAccessSyncFunction struct {
 	config access_provider.AccessSyncConfig
 }
 
-func (s *DataAccessSyncFunction) SyncFromTarget(ctx context.Context, config *access_provider.AccessSyncFromTarget) (*access_provider.AccessSyncResult, error) {
+func (s *DataAccessSyncFunction) SyncFromTarget(ctx context.Context, config *access_provider.AccessSyncFromTarget) (_ *access_provider.AccessSyncResult, err error) {
+	defer func() {
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failure during access provider sync from target: %v", err))
+		}
+	}()
+
 	logger.Info("Starting data access synchronisation from target")
 	logger.Debug("Creating file for storing access providers")
 
 	fileCreator, err := s.accessFileCreatorFactory(config)
 	if err != nil {
-		logger.Error(err.Error())
-
-		return mapErrorToAccessSyncResult(err), nil
+		return nil, err
 	}
 	defer fileCreator.Close()
 
@@ -74,31 +80,33 @@ func (s *DataAccessSyncFunction) SyncFromTarget(ctx context.Context, config *acc
 	})
 
 	if err != nil {
-		logger.Error(err.Error())
-
-		return mapErrorToAccessSyncResult(err), nil
+		return nil, err
 	}
 
 	logger.Info(fmt.Sprintf("Fetched %d access provider in %s", fileCreator.GetAccessProviderCount(), sec))
 
-	return &access_provider.AccessSyncResult{}, nil
+	return &access_provider.AccessSyncResult{
+		AccessProviderCount: int32(fileCreator.GetAccessProviderCount()),
+	}, nil
 }
 
-func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *access_provider.AccessSyncToTarget) (*access_provider.AccessSyncResult, error) {
+func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *access_provider.AccessSyncToTarget) (_ *access_provider.AccessSyncResult, err error) {
+	defer func() {
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failure during access provider sync to target: %v", err))
+		}
+	}()
+
 	logger.Info("Starting data access synchronisation to target")
 
 	accessProviderParser, err := s.accessProviderParserFactory(config)
 	if err != nil {
-		logger.Error(err.Error())
-
-		return mapErrorToAccessSyncResult(err), nil
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	dar, err := accessProviderParser.ParseAccessProviders()
 	if err != nil {
-		logger.Error(err.Error())
-
-		return mapErrorToAccessSyncResult(err), nil
+		return nil, err
 	}
 
 	prefix := config.Prefix
@@ -113,9 +121,7 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 	} else {
 		feedbackFile, err2 := s.accessFeedbackFileCreatorFactory(config)
 		if err2 != nil {
-			logger.Error(err2.Error())
-
-			return mapErrorToAccessSyncResult(err2), nil
+			return nil, err2
 		}
 		defer feedbackFile.Close()
 
@@ -125,9 +131,7 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 	}
 
 	if err != nil {
-		logger.Error(err.Error())
-
-		return mapErrorToAccessSyncResult(err), nil
+		return nil, err
 	}
 
 	logger.Info(fmt.Sprintf("Successfully synced access providers to target in %s", sec))
@@ -137,10 +141,4 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 
 func (s *DataAccessSyncFunction) SyncConfig(_ context.Context) (*access_provider.AccessSyncConfig, error) {
 	return &s.config, nil
-}
-
-func mapErrorToAccessSyncResult(err error) *access_provider.AccessSyncResult {
-	return &access_provider.AccessSyncResult{
-		Error: e.ToErrorResult(err),
-	}
 }

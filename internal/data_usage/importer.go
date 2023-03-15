@@ -1,6 +1,7 @@
 package data_usage
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -26,7 +27,7 @@ type DataSourceLastUsed struct {
 }
 
 type DataUsageImporter interface {
-	TriggerImport(jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
 	GetLastUsage() (*time.Time, error)
 }
 
@@ -43,13 +44,13 @@ func NewDataUsageImporter(config *DataUsageImportConfig, statusUpdater job.TaskE
 	return &duI
 }
 
-func (d *dataUsageImporter) TriggerImport(jobId string) (job.JobStatus, string, error) {
+func (d *dataUsageImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
 		return d.doImport(jobId, d.config.TargetFile)
 	} else {
-		key, err := d.upload()
+		key, err := d.upload(ctx)
 		if err != nil {
 			return job.Failed, "", err
 		}
@@ -58,8 +59,8 @@ func (d *dataUsageImporter) TriggerImport(jobId string) (job.JobStatus, string, 
 	}
 }
 
-func (d *dataUsageImporter) upload() (string, error) {
-	d.statusUpdater.AddTaskEvent(job.DataUpload)
+func (d *dataUsageImporter) upload(ctx context.Context) (string, error) {
+	d.statusUpdater.SetStatusToDataUpload(ctx)
 	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
 
 	if err != nil {

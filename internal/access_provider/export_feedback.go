@@ -1,6 +1,7 @@
 package access_provider
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -21,7 +22,7 @@ type AccessProviderExportFeedbackConfig struct {
 }
 
 type AccessProviderExportFeedbackSync interface {
-	TriggerFeedbackImport(jobId string) (job.JobStatus, string, error)
+	TriggerFeedbackImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
 }
 
 type accessProviderFeedbackSync struct {
@@ -37,13 +38,13 @@ func NewAccessProviderFeedbackImporter(config *AccessProviderExportFeedbackConfi
 	return &apI
 }
 
-func (i *accessProviderFeedbackSync) TriggerFeedbackImport(jobId string) (job.JobStatus, string, error) {
+func (i *accessProviderFeedbackSync) TriggerFeedbackImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
 	if env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
 		return i.doImport(jobId, i.config.FeedbackFile)
 	} else {
-		key, err := i.upload()
+		key, err := i.upload(ctx)
 		if err != nil {
 			return job.Failed, "", err
 		}
@@ -52,8 +53,8 @@ func (i *accessProviderFeedbackSync) TriggerFeedbackImport(jobId string) (job.Jo
 	}
 }
 
-func (i *accessProviderFeedbackSync) upload() (string, error) {
-	i.statusUpdater.AddTaskEvent(job.DataUpload)
+func (i *accessProviderFeedbackSync) upload(ctx context.Context) (string, error) {
+	i.statusUpdater.SetStatusToDataUpload(ctx)
 
 	key, err := file.UploadFile(i.config.FeedbackFile, &i.config.BaseTargetConfig)
 	if err != nil {

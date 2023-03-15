@@ -9,17 +9,27 @@ import (
 	"time"
 
 	"github.com/raito-io/cli/internal/graphql"
+	"github.com/raito-io/cli/internal/logging"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 )
 
+//go:generate go run github.com/vektra/mockery/v2 --name=TaskEventUpdater --with-expecter
 type TaskEventUpdater interface {
-	AddTaskEvent(status JobStatus)
+	SetStatusToStarted(ctx context.Context)
+	SetStatusToDataRetrieve(ctx context.Context)
+	SetStatusToDataUpload(ctx context.Context)
+	SetStatusToQueued(ctx context.Context)
+	SetStatusToDataProcessing(ctx context.Context)
+	SetStatusToCompleted(ctx context.Context)
+	SetStatusToFailed(ctx context.Context, err error)
+	SetStatusToSkipped(ctx context.Context)
+
 	GetSubtaskEventUpdater(subtask string) SubtaskEventUpdater
 }
 
 type SubtaskEventUpdater interface {
-	AddSubtaskEvent(status JobStatus)
+	AddSubtaskEvent(ctx context.Context, status JobStatus)
 	SetReceivedDate(receivedDate int64)
 }
 
@@ -29,23 +39,66 @@ type Task interface {
 }
 
 type TaskPart interface {
-	StartSyncAndQueueTaskPart(c plugin.PluginClient, statusUpdater TaskEventUpdater) (JobStatus, string, error)
+	StartSyncAndQueueTaskPart(ctx context.Context, c plugin.PluginClient, statusUpdater TaskEventUpdater) (JobStatus, string, error)
 	ProcessResults(results interface{}) error
 	GetResultObject() interface{}
 }
 
 type taskEventUpdater struct {
-	Cfg     *target.BaseTargetConfig
-	JobId   string
-	JobType string
+	Cfg              *target.BaseTargetConfig
+	JobId            string
+	JobType          string
+	warningCollector logging.WarningCollector
 }
 
-func NewTaskEventUpdater(cfg *target.BaseTargetConfig, jobId, jobType string) TaskEventUpdater {
-	return &taskEventUpdater{cfg, jobId, jobType}
+func NewTaskEventUpdater(cfg *target.BaseTargetConfig, jobId, jobType string, warningCollector logging.WarningCollector) TaskEventUpdater {
+	return &taskEventUpdater{cfg, jobId, jobType, warningCollector}
 }
 
-func (u *taskEventUpdater) AddTaskEvent(status JobStatus) {
-	AddTaskEvent(u.Cfg, u.JobId, u.JobType, status)
+func (u *taskEventUpdater) setStatus(ctx context.Context, status JobStatus, err error) {
+	var errors []error
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	var warnings []string
+	if u.warningCollector != nil {
+		warnings = u.warningCollector.GetWarnings()
+	}
+
+	AddTaskEvent(ctx, u.Cfg, u.JobId, u.JobType, status, warnings, errors)
+}
+
+func (u *taskEventUpdater) SetStatusToStarted(ctx context.Context) {
+	u.setStatus(ctx, Started, nil)
+}
+
+func (u *taskEventUpdater) SetStatusToDataRetrieve(ctx context.Context) {
+	u.setStatus(ctx, DataRetrieve, nil)
+}
+
+func (u *taskEventUpdater) SetStatusToDataUpload(ctx context.Context) {
+	u.setStatus(ctx, DataUpload, nil)
+}
+
+func (u *taskEventUpdater) SetStatusToQueued(ctx context.Context) {
+	u.setStatus(ctx, Queued, nil)
+}
+
+func (u *taskEventUpdater) SetStatusToDataProcessing(ctx context.Context) {
+	u.setStatus(ctx, DataProcessing, nil)
+}
+
+func (u *taskEventUpdater) SetStatusToCompleted(ctx context.Context) {
+	u.setStatus(ctx, Completed, nil)
+}
+
+func (u *taskEventUpdater) SetStatusToFailed(ctx context.Context, err error) {
+	u.setStatus(ctx, Failed, err)
+}
+
+func (u *taskEventUpdater) SetStatusToSkipped(ctx context.Context) {
+	u.setStatus(ctx, Skipped, nil)
 }
 
 func (u *taskEventUpdater) GetSubtaskEventUpdater(subtask string) SubtaskEventUpdater {
@@ -65,146 +118,178 @@ type subtaskEventUpdater struct {
 	receivedDate *int64
 }
 
-func (u *subtaskEventUpdater) AddSubtaskEvent(status JobStatus) {
-	AddSubtaskEvent(u.Cfg, u.JobId, u.JobType, u.Subtask, status, u.receivedDate)
+func (u *subtaskEventUpdater) AddSubtaskEvent(ctx context.Context, status JobStatus) {
+	AddSubtaskEvent(ctx, u.Cfg, u.JobId, u.JobType, u.Subtask, status, u.receivedDate)
 }
 
 func (u *subtaskEventUpdater) SetReceivedDate(receivedDate int64) {
 	u.receivedDate = &receivedDate
 }
 
-func StartJob(cfg *target.BaseTargetConfig) (string, error) {
-	var gqlQueryBuilder strings.Builder
-	gqlQueryBuilder.WriteString(`{ "query": "mutation createJob {
-        createJob(input: { `)
+func StartJob(ctx context.Context, cfg *target.BaseTargetConfig) (string, error) {
+	var mutation struct {
+		CreateJob struct {
+			JobId string
+		} `graphql:"createJob(input: $input)"`
+	}
+
+	type JobInput struct {
+		DataSourceId    *string   `json:"dataSourceId"`
+		IdentityStoreId *string   `json:"identityStoreId"`
+		EventTime       time.Time `json:"eventTime"`
+	}
+
+	input := JobInput{
+		EventTime: time.Now(),
+	}
 
 	if cfg.DataSourceId != "" {
-		gqlQueryBuilder.WriteString(`dataSourceId: \"`)
-		gqlQueryBuilder.WriteString(cfg.DataSourceId)
-		gqlQueryBuilder.WriteString(`\", `)
+		input.DataSourceId = &cfg.DataSourceId
 	}
 
 	if cfg.IdentityStoreId != "" {
-		gqlQueryBuilder.WriteString(`identityStoreId: \"`)
-		gqlQueryBuilder.WriteString(cfg.IdentityStoreId)
-		gqlQueryBuilder.WriteString(`\", `)
+		input.IdentityStoreId = &cfg.IdentityStoreId
 	}
 
-	gqlQueryBuilder.WriteString(`eventTime: \"`)
-	gqlQueryBuilder.WriteString(time.Now().Format(time.RFC3339))
-	gqlQueryBuilder.WriteString(`\"}) { jobId } }" }"`)
-
-	gqlQuery := strings.ReplaceAll(gqlQueryBuilder.String(), "\n", "\\n")
-
-	resp := Response{}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, &cfg.BaseConfig, &resp)
-
+	err := graphql.NewClient(&cfg.BaseConfig).Mutate(ctx, &mutation, map[string]interface{}{"input": input})
 	if err != nil {
 		return "", fmt.Errorf("error while executing import: %s", err.Error())
 	}
 
-	return *resp.Job.JobID, nil
+	return mutation.CreateJob.JobId, nil
 }
 
 func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus, inputErr error) {
-	var errorStr = ""
-
-	if inputErr != nil {
-		errorMsg := strings.ReplaceAll(strings.ReplaceAll(inputErr.Error(), `"`, `\\\"`), "\n", "\\\n")
-		errorStr = fmt.Sprintf(`, errors: [\"%s\"]`, errorMsg)
+	var mutation struct {
+		UpdateJob struct {
+			JobId string
+		} `graphql:"updateJob(id: $id, input: $input)"`
 	}
 
-	var gqlQueryBuilder strings.Builder
-	gqlQueryBuilder.WriteString(`{ "query":"mutation updateJob {
-        updateJob(id: \"`)
-	gqlQueryBuilder.WriteString(jobID)
-	gqlQueryBuilder.WriteString(`\", input: { `)
+	type JobInput struct {
+		DataSourceId    *string   `json:"dataSourceId"`
+		IdentityStoreId *string   `json:"identityStoreId"`
+		Status          JobStatus `json:"status"`
+		EventTime       time.Time `json:"eventTime"`
+		Errors          []string  `json:"errors"`
+	}
+
+	input := JobInput{
+		Status:    status,
+		EventTime: time.Now(),
+	}
+
+	if inputErr != nil {
+		input.Errors = append(input.Errors, inputErr.Error())
+	}
 
 	if cfg.DataSourceId != "" {
-		gqlQueryBuilder.WriteString(`dataSourceId: \"`)
-		gqlQueryBuilder.WriteString(cfg.DataSourceId)
-		gqlQueryBuilder.WriteString(`\", `)
+		input.DataSourceId = &cfg.DataSourceId
 	}
 
 	if cfg.IdentityStoreId != "" {
-		gqlQueryBuilder.WriteString(`identityStoreId: \"`)
-		gqlQueryBuilder.WriteString(cfg.IdentityStoreId)
-		gqlQueryBuilder.WriteString(`\", `)
+		input.IdentityStoreId = &cfg.IdentityStoreId
 	}
 
-	gqlQueryBuilder.WriteString(`status: `)
-	gqlQueryBuilder.WriteString(status.String())
-	gqlQueryBuilder.WriteString(`, eventTime: \"`)
-	gqlQueryBuilder.WriteString(time.Now().Format(time.RFC3339))
-	gqlQueryBuilder.WriteString(`\" `)
-	gqlQueryBuilder.WriteString(errorStr)
-	gqlQueryBuilder.WriteString(`}) { jobId } }" }"`)
-
-	gqlQuery := strings.ReplaceAll(gqlQueryBuilder.String(), "\n", "\\n")
-
-	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &cfg.BaseConfig)
+	err := graphql.NewClient(&cfg.BaseConfig).Mutate(context.Background(), &mutation, map[string]interface{}{"id": jobID, "input": input})
 	if err != nil {
 		cfg.TargetLogger.Debug(fmt.Sprintf("job update failed: %s", err.Error()))
 	}
 }
 
-func AddTaskEvent(cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus) {
-	var gqlQueryBuilder strings.Builder
-	gqlQueryBuilder.WriteString(`{ "query":"mutation addTaskEvent {
-        addTaskEvent(input: { jobId: \"`)
-	gqlQueryBuilder.WriteString(jobID)
-	gqlQueryBuilder.WriteString(`\", `)
+func AddTaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus, warnings []string, errors []error) {
+	var mutation struct {
+		AddTaskEvent struct {
+			JobId string
+		} `graphql:"addTaskEvent(input: $input)"`
+	}
+
+	type TaskEventInput struct {
+		JobId           string    `json:"jobId"`
+		JobType         string    `json:"jobType"`
+		DataSourceId    *string   `json:"dataSourceId"`
+		IdentityStoreId *string   `json:"identityStoreId"`
+		Status          JobStatus `json:"status"`
+		EventTime       time.Time `json:"eventTime"`
+		Errors          []string  `json:"errors"`
+		Warnings        []string  `json:"warnings"`
+	}
+
+	var errorMsgs []string
+	if len(errors) > 0 {
+		errorMsgs = make([]string, len(errors))
+		for i, err := range errors {
+			errorMsgs[i] = err.Error()
+		}
+	}
+
+	input := TaskEventInput{
+		JobId:     jobID,
+		JobType:   jobType,
+		EventTime: time.Now(),
+		Status:    status,
+		Warnings:  warnings,
+		Errors:    errorMsgs,
+	}
 
 	if cfg.DataSourceId != "" {
-		gqlQueryBuilder.WriteString(`dataSourceId: \"`)
-		gqlQueryBuilder.WriteString(cfg.DataSourceId)
-		gqlQueryBuilder.WriteString(`\", `)
+		input.DataSourceId = &cfg.DataSourceId
 	}
 
 	if cfg.IdentityStoreId != "" {
-		gqlQueryBuilder.WriteString(`identityStoreId: \"`)
-		gqlQueryBuilder.WriteString(cfg.IdentityStoreId)
-		gqlQueryBuilder.WriteString(`\", `)
+		input.IdentityStoreId = &cfg.IdentityStoreId
 	}
 
-	gqlQueryBuilder.WriteString(`jobType: \"`)
-	gqlQueryBuilder.WriteString(jobType)
-	gqlQueryBuilder.WriteString(`\", status: `)
-	gqlQueryBuilder.WriteString(status.String())
-	gqlQueryBuilder.WriteString(`, eventTime: \"`)
-	gqlQueryBuilder.WriteString(time.Now().Format(time.RFC3339))
-	gqlQueryBuilder.WriteString(`\"}) { jobId } }" }"`)
-
-	gqlQuery := strings.ReplaceAll(gqlQueryBuilder.String(), "\n", "\\n")
-
-	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &cfg.BaseConfig)
+	err := graphql.NewClient(&cfg.BaseConfig).Mutate(ctx, &mutation, map[string]interface{}{"input": input})
 	if err != nil {
 		cfg.TargetLogger.Debug("taskEvent update failed: %s", err.Error())
 	}
 }
 
-func AddSubtaskEvent(cfg *target.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus, receivedDate *int64) {
-	gqlQuery := fmt.Sprintf(`{ "query":"mutation addSubtaskEvent {
-        addSubtaskEvent(input: { jobId: \"%s\", dataSourceId: \"%s\", identityStoreId: \"%s\", jobType: \"%s\", subtaskId: \"%s\", status: %s, eventTime: \"%s\"`,
-		jobID, cfg.DataSourceId, cfg.IdentityStoreId, jobType, subtask, status.String(), time.Now().Format(time.RFC3339))
-
-	if receivedDate != nil {
-		gqlQuery += fmt.Sprintf(", receivedDate: %d", *receivedDate)
+func AddSubtaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus, receivedDate *int64) {
+	var mutation struct {
+		AddSubtaskEvent struct {
+			JobId string
+		} `graphql:"addSubtaskEvent(input: $input)"`
 	}
 
-	gqlQuery += `}) { jobId } }" }"`
+	type SubtaskInput struct {
+		JobId           string    `json:"jobId"`
+		JobType         string    `json:"jobType"`
+		SubtaskId       string    `json:"subtaskId"`
+		DataSourceId    *string   `json:"dataSourceId"`
+		IdentityStoreId *string   `json:"identityStoreId"`
+		Status          JobStatus `json:"status"`
+		EventTime       time.Time `json:"eventTime"`
+		ReceivedDate    *int64    `json:"receivedDate"`
+	}
 
-	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
+	input := SubtaskInput{
+		JobId:        jobID,
+		JobType:      jobType,
+		SubtaskId:    subtask,
+		Status:       status,
+		EventTime:    time.Now(),
+		ReceivedDate: receivedDate,
+	}
 
-	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &cfg.BaseConfig)
+	if cfg.DataSourceId != "" {
+		input.DataSourceId = &cfg.DataSourceId
+	}
+
+	if cfg.IdentityStoreId != "" {
+		input.IdentityStoreId = &cfg.IdentityStoreId
+	}
+
+	err := graphql.NewClient(&cfg.BaseConfig).Mutate(ctx, &mutation, map[string]interface{}{"input": input})
 	if err != nil {
 		cfg.TargetLogger.Debug("subtask event update failed: %s", err.Error())
 	}
 }
 
-func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, responseResult interface{}) (*Subtask, error) {
-	gqlQuery := fmt.Sprintf(`{ "query": "query getJobSubtask {
-        jobSubtask(jobId: \"%s\", jobType: \"%s\", subtaskId: \"%s\") {
+func GetSubtask(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, responseResult interface{}) (*Subtask, error) {
+	gqlQuery := fmt.Sprintf(`query jobSubtask{
+		jobSubtask(jobId: "%s", jobType: "%s", subtaskId: "%s") {
             jobId
             jobType
             subtaskId
@@ -252,14 +337,19 @@ func GetSubtask(cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, 
                   warnings
               }
             }
-        }}"}`, jobID, jobType, subtaskId)
+        }}`, jobID, jobType, subtaskId)
 
-	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 	gqlQuery = strings.ReplaceAll(gqlQuery, "\t", "")
 
-	response := SubtaskResponse{Subtask{Result: responseResult}}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, &cfg.BaseConfig, &response)
+	rawResponse, err := graphql.NewClient(&cfg.BaseConfig).ExecRaw(ctx, gqlQuery, nil)
+	if err != nil {
+		cfg.TargetLogger.Debug("failed to load Subtask information: %s", err.Error())
+		return nil, err
+	}
 
+	response := SubtaskResponse{Subtask{Result: responseResult}}
+
+	err = json.Unmarshal(rawResponse, &response)
 	if err != nil {
 		cfg.TargetLogger.Debug("failed to load Subtask information: %s", err.Error())
 		return nil, err
@@ -375,7 +465,7 @@ func (e JobStatus) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func WaitForJobToComplete(jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *target.BaseTargetConfig, currentStatus JobStatus) (*Subtask, error) {
+func WaitForJobToComplete(ctx context.Context, jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *target.BaseTargetConfig, currentStatus JobStatus) (*Subtask, error) {
 	i := 0
 
 	var subtask *Subtask
@@ -386,7 +476,7 @@ func WaitForJobToComplete(jobID string, syncType string, subtaskId string, syncR
 			time.Sleep(1 * time.Second)
 		}
 
-		subtask, err = GetSubtask(cfg, jobID, syncType, subtaskId, syncResult)
+		subtask, err = GetSubtask(ctx, cfg, jobID, syncType, subtaskId, syncResult)
 
 		if err != nil {
 			return nil, err

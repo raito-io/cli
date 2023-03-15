@@ -4,57 +4,46 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestToErrorResult(t *testing.T) {
 	res := ToErrorResult(errors.New("An error"))
-	assert.Equal(t, ErrorCode_UNKNOWN_ERROR, res.ErrorCode)
-	assert.Equal(t, "An error", res.ErrorMessage)
-}
 
-func TestToErrorResultAsIs(t *testing.T) {
-	res := ToErrorResult(ErrorResult{
-		ErrorMessage: "Existing",
-		ErrorCode:    ErrorCode_BAD_INPUT_PARAMETER_ERROR,
-	})
-	assert.Equal(t, ErrorCode_BAD_INPUT_PARAMETER_ERROR, res.ErrorCode)
-	assert.Equal(t, "Existing", res.ErrorMessage)
-}
-
-func TestToErrorResultAsPointer(t *testing.T) {
-	res := ToErrorResult(&ErrorResult{
-		ErrorMessage: "Pointer",
-		ErrorCode:    ErrorCode_MISSING_INPUT_PARAMETER_ERROR,
-	})
-	assert.Equal(t, ErrorCode_MISSING_INPUT_PARAMETER_ERROR, res.ErrorCode)
-	assert.Equal(t, "Pointer", res.ErrorMessage)
+	require.Equal(t, status.New(codes.Internal, "An error"), errorToStatus(t, res))
 }
 
 func TestCreateSourceConnectionError(t *testing.T) {
 	res := CreateSourceConnectionError("http://myurl", "failed")
-	assert.Equal(t, ErrorCode_SOURCE_CONNECTION_ERROR, res.ErrorCode)
-	assert.Contains(t, res.ErrorMessage, "http://myurl")
-	assert.Contains(t, res.ErrorMessage, "connecting")
-	assert.Contains(t, res.ErrorMessage, "failed")
+
+	require.Equal(t, "error while connecting to \"http://myurl\": failed", res.Error())
 }
 
 func TestCreateBadInputParameterError(t *testing.T) {
 	res := CreateBadInputParameterError("param1", "v1", "explained")
-	assert.Equal(t, ErrorCode_BAD_INPUT_PARAMETER_ERROR, res.ErrorCode)
-	assert.Equal(t, "parameter \"param1\" has invalid value \"v1\". explained", res.ErrorMessage)
+
+	require.Equal(t, "parameter \"param1\" has invalid value \"v1\". explained", res.Error())
 }
 
 func TestCreateBadInputParameterErrorNoExplanation(t *testing.T) {
 	res := CreateBadInputParameterError("param2", "v2", "")
-	assert.Equal(t, ErrorCode_BAD_INPUT_PARAMETER_ERROR, res.ErrorCode)
-	assert.Contains(t, res.ErrorMessage, "param2")
-	assert.Contains(t, res.ErrorMessage, "v2")
+
+	require.Equal(t, "parameter \"param2\" has invalid value \"v2\"", res.Error())
 }
 
 func TestCreateMissingInputParameterError(t *testing.T) {
 	res := CreateMissingInputParameterError("param666")
-	assert.Equal(t, ErrorCode_MISSING_INPUT_PARAMETER_ERROR, res.ErrorCode)
-	assert.Contains(t, res.ErrorMessage, "missing")
-	assert.Contains(t, res.ErrorMessage, "param666")
+
+	require.Equal(t, "mandatory parameter \"param666\" is missing", res.Error())
+}
+
+func errorToStatus(t *testing.T, err error) *status.Status {
+	t.Helper()
+
+	s, ok := status.FromError(err)
+	require.True(t, ok)
+
+	return s
 }

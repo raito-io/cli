@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -40,16 +41,15 @@ func ExecuteGraphQL(gql string, config *target.BaseConfig, resultObject interfac
 		return nil, err
 	}
 
-	if len(response.Errors) > 0 {
-		var errors []error
-		for _, error := range response.Errors {
-			errors = append(errors, fmt.Errorf("graphql server error: %s", error.Message))
-		}
+	var multiErr error
 
-		return &response, multierror.Append(nil, errors...)
+	if len(response.Errors) > 0 {
+		for _, errMsg := range response.Errors {
+			multiErr = multierror.Append(multiErr, errors.New(errMsg.Message))
+		}
 	}
 
-	return &response, nil
+	return &response, multiErr
 }
 
 func executeGraphQL(gql string, config *target.BaseConfig) ([]byte, error) {

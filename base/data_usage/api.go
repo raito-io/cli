@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/raito-io/cli/base/util/error/grpc_error"
 	"github.com/raito-io/cli/base/util/version"
 	"github.com/raito-io/cli/internal/version_management"
 )
@@ -44,11 +45,11 @@ const DataUsageSyncerName = "dataUsageSyncer"
 type dataUsageSyncerGRPC struct{ client DataUsageSyncServiceClient }
 
 func (g *dataUsageSyncerGRPC) SyncDataUsage(ctx context.Context, config *DataUsageSyncConfig) (*DataUsageSyncResult, error) {
-	return g.client.SyncDataUsage(ctx, config)
+	return grpc_error.ParseErrorResult(g.client.SyncDataUsage(ctx, config))
 }
 
 func (g *dataUsageSyncerGRPC) CliVersionInformation(context.Context) (*version.CliBuildInformation, error) {
-	return g.client.CliVersionInformation(context.Background(), &emptypb.Empty{})
+	return grpc_error.ParseErrorResult(g.client.CliVersionInformation(context.Background(), &emptypb.Empty{}))
 }
 
 type dataUsageSyncerGRPCServer struct {
@@ -57,11 +58,19 @@ type dataUsageSyncerGRPCServer struct {
 	Impl DataUsageSyncer
 }
 
-func (s *dataUsageSyncerGRPCServer) SyncDataUsage(ctx context.Context, config *DataUsageSyncConfig) (*DataUsageSyncResult, error) {
+func (s *dataUsageSyncerGRPCServer) SyncDataUsage(ctx context.Context, config *DataUsageSyncConfig) (_ *DataUsageSyncResult, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.SyncDataUsage(ctx, config)
 }
 
-func (s *dataUsageSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (*version.CliBuildInformation, error) {
+func (s *dataUsageSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (_ *version.CliBuildInformation, err error) {
+	defer func() {
+		err = grpc_error.GrpcDeferErrorHandling(err)
+	}()
+
 	return s.Impl.CliVersionInformation(ctx)
 }
 

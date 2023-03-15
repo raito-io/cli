@@ -7,7 +7,6 @@ import (
 
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/util/config"
-	e "github.com/raito-io/cli/base/util/error"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=DataSourceObjectHandler --with-expecter
@@ -38,16 +37,19 @@ type dataSourceSyncFunction struct {
 	fileCreatorFactory func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error)
 }
 
-func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *data_source.DataSourceSyncConfig) (*data_source.DataSourceSyncResult, error) {
+func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *data_source.DataSourceSyncConfig) (_ *data_source.DataSourceSyncResult, err error) {
+	defer func() {
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failure during data source sync: %v", err))
+		}
+	}()
+
 	logger.Info("Starting data source synchronisation")
 	logger.Debug("Creating file for storing data source")
 
 	fileCreator, err := s.fileCreatorFactory(config)
 	if err != nil {
-		logger.Error(err.Error())
-
-		// TODO Reconsider this error handling
-		return mapErrorToDataSourceSyncResult(err), nil
+		return nil, err
 	}
 	defer fileCreator.Close()
 
@@ -55,24 +57,18 @@ func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *dat
 
 	err = s.syncer.SyncDataSource(ctx, fileCreator, config.ConfigMap)
 	if err != nil {
-		logger.Error(err.Error())
-
-		return mapErrorToDataSourceSyncResult(err), nil
+		return nil, err
 	}
 
 	sec := time.Since(start).Round(time.Millisecond)
 
 	logger.Info(fmt.Sprintf("Fetched %d data objects in %s", fileCreator.GetDataObjectCount(), sec))
 
-	return &data_source.DataSourceSyncResult{}, nil
+	return &data_source.DataSourceSyncResult{
+		DataObjects: int32(fileCreator.GetDataObjectCount()),
+	}, nil
 }
 
 func (s *dataSourceSyncFunction) GetDataSourceMetaData(ctx context.Context) (*data_source.MetaData, error) {
 	return s.syncer.GetDataSourceMetaData(ctx)
-}
-
-func mapErrorToDataSourceSyncResult(err error) *data_source.DataSourceSyncResult {
-	return &data_source.DataSourceSyncResult{
-		Error: e.ToErrorResult(err),
-	}
 }

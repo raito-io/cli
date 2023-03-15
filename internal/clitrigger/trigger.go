@@ -6,5 +6,6 @@ import (
 
 type CliTrigger interface {
 	TriggerChannel(ctx context.Context) <-chan TriggerEvent
+	Reset()
 	Wait()
 }

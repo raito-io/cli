@@ -129,13 +129,17 @@ func executeRun(cmd *cobra.Command, args []string) {
 			for {
 				select {
 				case <-ticker.C:
-					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
+					cliTrigger.Reset()
+
+					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
 					if runErr := executeSingleRun(baseConfig); runErr != nil {
 						baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 					}
 
 					it++
 				case cliTrigger := <-cliTriggerChannel:
+					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", "cli-trigger")
+
 					err := handleCliTrigger(baseConfig, &cliTrigger)
 					if err != nil {
 						baseConfig.BaseLogger.Warn("Cli Trigger failed: %s", err.Error())

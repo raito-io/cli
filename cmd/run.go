@@ -159,7 +159,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 			text = strings.TrimSpace(strings.ToLower(text))
 
-			if len(text) == 0 {
+			if text == "" {
 				continue
 			} else if strings.TrimSpace(strings.ToLower(text)) == "q" {
 				hclog.L().Info("Waiting for the current synchronization run to end ...")

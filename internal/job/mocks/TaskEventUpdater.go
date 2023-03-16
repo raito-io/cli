@@ -66,9 +66,9 @@ func (_c *TaskEventUpdater_GetSubtaskEventUpdater_Call) RunAndReturn(run func(st
 	return _c
 }
 
-// SetStatusToCompleted provides a mock function with given fields: ctx
-func (_m *TaskEventUpdater) SetStatusToCompleted(ctx context.Context) {
-	_m.Called(ctx)
+// SetStatusToCompleted provides a mock function with given fields: ctx, results
+func (_m *TaskEventUpdater) SetStatusToCompleted(ctx context.Context, results []job.TaskResult) {
+	_m.Called(ctx, results)
 }
 
 // TaskEventUpdater_SetStatusToCompleted_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetStatusToCompleted'
@@ -78,13 +78,14 @@ type TaskEventUpdater_SetStatusToCompleted_Call struct {
 
 // SetStatusToCompleted is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *TaskEventUpdater_Expecter) SetStatusToCompleted(ctx interface{}) *TaskEventUpdater_SetStatusToCompleted_Call {
-	return &TaskEventUpdater_SetStatusToCompleted_Call{Call: _e.mock.On("SetStatusToCompleted", ctx)}
+//   - results []job.TaskResult
+func (_e *TaskEventUpdater_Expecter) SetStatusToCompleted(ctx interface{}, results interface{}) *TaskEventUpdater_SetStatusToCompleted_Call {
+	return &TaskEventUpdater_SetStatusToCompleted_Call{Call: _e.mock.On("SetStatusToCompleted", ctx, results)}
 }
 
-func (_c *TaskEventUpdater_SetStatusToCompleted_Call) Run(run func(ctx context.Context)) *TaskEventUpdater_SetStatusToCompleted_Call {
+func (_c *TaskEventUpdater_SetStatusToCompleted_Call) Run(run func(ctx context.Context, results []job.TaskResult)) *TaskEventUpdater_SetStatusToCompleted_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
+		run(args[0].(context.Context), args[1].([]job.TaskResult))
 	})
 	return _c
 }
@@ -94,7 +95,7 @@ func (_c *TaskEventUpdater_SetStatusToCompleted_Call) Return() *TaskEventUpdater
 	return _c
 }
 
-func (_c *TaskEventUpdater_SetStatusToCompleted_Call) RunAndReturn(run func(context.Context)) *TaskEventUpdater_SetStatusToCompleted_Call {
+func (_c *TaskEventUpdater_SetStatusToCompleted_Call) RunAndReturn(run func(context.Context, []job.TaskResult)) *TaskEventUpdater_SetStatusToCompleted_Call {
 	_c.Call.Return(run)
 	return _c
 }

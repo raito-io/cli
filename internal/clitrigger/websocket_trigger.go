@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -115,7 +116,16 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) e
 	s.wg.Add(1)
 
 	var datasources []string
+	var onlyTargets map[string]struct{}
 	targets := viper.Get(constants.Targets).([]interface{})
+
+	onlyTargetsS := viper.GetString(constants.OnlyTargetsFlag)
+	if onlyTargetsS != "" {
+		onlyTargets = make(map[string]struct{})
+		for _, ot := range strings.Split(onlyTargetsS, ",") {
+			onlyTargets[strings.TrimSpace(ot)] = struct{}{}
+		}
+	}
 
 	for _, targetObj := range targets {
 		target, ok := targetObj.(map[string]interface{})
@@ -124,6 +134,12 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) e
 		}
 
 		if dsId, found := target["data-source-id"]; found {
+			if onlyTargets != nil {
+				if _, onlyTargetsFound := onlyTargets[target["name"].(string)]; !onlyTargetsFound {
+					continue
+				}
+			}
+
 			datasources = append(datasources, dsId.(string))
 		}
 	}

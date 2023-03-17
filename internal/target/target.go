@@ -124,7 +124,7 @@ func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTarg
 				errorResult = multierror.Append(errorResult, fmt.Errorf("the target definition could not be parsed correctly (%v)", targetObj))
 				hclog.L().Debug(fmt.Sprintf("The target definition could not be parsed correctly (%v)", targetObj))
 
-				break
+				continue
 			}
 
 			tConfig, err := buildTargetConfigFromMap(baseconfig, target)

@@ -156,7 +156,12 @@ func executeRun(cmd *cobra.Command, args []string) {
 		for {
 			reader := bufio.NewReader(os.Stdin)
 			text, _ := reader.ReadString('\n')
-			if strings.TrimSpace(strings.ToLower(text)) == "q" {
+
+			text = strings.TrimSpace(strings.ToLower(text))
+
+			if text == "" {
+				continue
+			} else if strings.TrimSpace(strings.ToLower(text)) == "q" {
 				hclog.L().Info("Waiting for the current synchronization run to end ...")
 				cancelFn()
 				break

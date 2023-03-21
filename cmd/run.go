@@ -321,7 +321,7 @@ func sync(ctx context.Context, cfg *target.BaseTargetConfig, syncTypeLabel strin
 		}
 	}
 
-	taskEventUpdater.SetStatusToCompleted(ctx)
+	taskEventUpdater.SetStatusToCompleted(ctx, syncTask.GetTaskResults())
 
 	return nil
 }

@@ -23,6 +23,8 @@ import (
 type DataUsageSync struct {
 	TargetConfig *target.BaseTargetConfig
 	JobId        string
+
+	result *job.TaskResult
 }
 
 type DataUsageImportResult struct {
@@ -129,6 +131,12 @@ func (s *DataUsageSync) ProcessResults(results interface{}) error {
 				duResult.StatementsAdded, duResult.StatementsFailed))
 		}
 
+		s.result = &job.TaskResult{
+			ObjectType: "statements",
+			Added:      duResult.StatementsAdded,
+			Failed:     duResult.StatementsFailed,
+		}
+
 		return nil
 	}
 
@@ -137,4 +145,12 @@ func (s *DataUsageSync) ProcessResults(results interface{}) error {
 
 func (s *DataUsageSync) GetResultObject() interface{} {
 	return &DataUsageImportResult{}
+}
+
+func (s *DataUsageSync) GetTaskResults() []job.TaskResult {
+	if s.result == nil {
+		return nil
+	}
+
+	return []job.TaskResult{*s.result}
 }

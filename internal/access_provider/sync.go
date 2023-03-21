@@ -40,6 +40,8 @@ var accessLastCalculated = map[string]int64{}
 type DataAccessSync struct {
 	TargetConfig *target.BaseTargetConfig
 	JobId        string
+
+	result []job.TaskResult
 }
 
 type dataAccessRetrieveInformation struct {
@@ -50,11 +52,15 @@ type dataAccessRetrieveInformation struct {
 type dataAccessExportSubtask struct {
 	TargetConfig *target.BaseTargetConfig
 	JobId        *string
+
+	task *DataAccessSync
 }
 
 type dataAccessImportSubtask struct {
 	TargetConfig *target.BaseTargetConfig
 	JobId        *string
+
+	task *DataAccessSync
 }
 
 func (s *DataAccessSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error) {
@@ -68,14 +74,18 @@ func (s *DataAccessSync) IsClientValid(ctx context.Context, c plugin.PluginClien
 
 func (s *DataAccessSync) GetParts() []job.TaskPart {
 	result := []job.TaskPart{
-		&dataAccessExportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId},
+		&dataAccessExportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId, task: s},
 	}
 
 	if !s.TargetConfig.SkipDataAccessImport {
-		result = append(result, &dataAccessImportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId})
+		result = append(result, &dataAccessImportSubtask{TargetConfig: s.TargetConfig, JobId: &s.JobId, task: s})
 	}
 
 	return result
+}
+
+func (s *DataAccessSync) GetTaskResults() []job.TaskResult {
+	return s.result
 }
 
 func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
@@ -130,6 +140,14 @@ func (s *dataAccessImportSubtask) ProcessResults(results interface{}) error {
 		} else {
 			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
 		}
+
+		s.task.result = append(s.task.result, job.TaskResult{
+			ObjectType: "imported access providers",
+			Added:      daResult.AccessAdded,
+			Updated:    daResult.AccessRemoved,
+			Removed:    daResult.AccessRemoved,
+			Failed:     len(daResult.Warnings),
+		})
 
 		return nil
 	}
@@ -257,6 +275,11 @@ func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client p
 	if res.Error != nil { //nolint:staticcheck
 		return job.Failed, "", mapErrorResult(res.Error) //nolint:staticcheck
 	}
+
+	s.task.result = append(s.task.result, job.TaskResult{
+		ObjectType: "exported access providers",
+		Added:      int(res.AccessProviderCount),
+	})
 
 	feedbackImportConfig := AccessProviderExportFeedbackConfig{
 		BaseTargetConfig: *s.TargetConfig,

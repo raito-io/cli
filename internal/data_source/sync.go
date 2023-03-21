@@ -28,6 +28,8 @@ type DataSourceImportResult struct {
 type DataSourceSync struct {
 	TargetConfig *target.BaseTargetConfig
 	JobId        string
+
+	result *job.TaskResult
 }
 
 func (s *DataSourceSync) IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error) {
@@ -129,6 +131,14 @@ func (s *DataSourceSync) ProcessResults(results interface{}) error {
 			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced data source. Added: %d - Removed: %d - Updated: %d", dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
 		}
 
+		s.result = &job.TaskResult{
+			ObjectType: "data objects",
+			Added:      dsResult.DataObjectsAdded,
+			Removed:    dsResult.DataObjectsRemoved,
+			Updated:    dsResult.DataObjectsUpdated,
+			Failed:     len(dsResult.Warnings),
+		}
+
 		return nil
 	}
 
@@ -137,4 +147,12 @@ func (s *DataSourceSync) ProcessResults(results interface{}) error {
 
 func (s *DataSourceSync) GetResultObject() interface{} {
 	return &DataSourceImportResult{}
+}
+
+func (s *DataSourceSync) GetTaskResults() []job.TaskResult {
+	if s.result == nil {
+		return nil
+	}
+
+	return []job.TaskResult{*s.result}
 }

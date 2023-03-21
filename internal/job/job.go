@@ -21,7 +21,7 @@ type TaskEventUpdater interface {
 	SetStatusToDataUpload(ctx context.Context)
 	SetStatusToQueued(ctx context.Context)
 	SetStatusToDataProcessing(ctx context.Context)
-	SetStatusToCompleted(ctx context.Context)
+	SetStatusToCompleted(ctx context.Context, results []TaskResult)
 	SetStatusToFailed(ctx context.Context, err error)
 	SetStatusToSkipped(ctx context.Context)
 
@@ -36,12 +36,21 @@ type SubtaskEventUpdater interface {
 type Task interface {
 	IsClientValid(ctx context.Context, c plugin.PluginClient) (bool, error)
 	GetParts() []TaskPart
+	GetTaskResults() []TaskResult
 }
 
 type TaskPart interface {
 	StartSyncAndQueueTaskPart(ctx context.Context, c plugin.PluginClient, statusUpdater TaskEventUpdater) (JobStatus, string, error)
 	ProcessResults(results interface{}) error
 	GetResultObject() interface{}
+}
+
+type TaskResult struct {
+	ObjectType string `json:"objectType"`
+	Added      int    `json:"added"`
+	Updated    int    `json:"updated"`
+	Removed    int    `json:"removed"`
+	Failed     int    `json:"failed"`
 }
 
 type taskEventUpdater struct {
@@ -55,7 +64,7 @@ func NewTaskEventUpdater(cfg *target.BaseTargetConfig, jobId, jobType string, wa
 	return &taskEventUpdater{cfg, jobId, jobType, warningCollector}
 }
 
-func (u *taskEventUpdater) setStatus(ctx context.Context, status JobStatus, err error) {
+func (u *taskEventUpdater) setStatus(ctx context.Context, status JobStatus, results []TaskResult, err error) {
 	var errors []error
 	if err != nil {
 		errors = append(errors, err)
@@ -66,39 +75,39 @@ func (u *taskEventUpdater) setStatus(ctx context.Context, status JobStatus, err 
 		warnings = u.warningCollector.GetWarnings()
 	}
 
-	AddTaskEvent(ctx, u.Cfg, u.JobId, u.JobType, status, warnings, errors)
+	AddTaskEvent(ctx, u.Cfg, u.JobId, u.JobType, status, results, warnings, errors)
 }
 
 func (u *taskEventUpdater) SetStatusToStarted(ctx context.Context) {
-	u.setStatus(ctx, Started, nil)
+	u.setStatus(ctx, Started, nil, nil)
 }
 
 func (u *taskEventUpdater) SetStatusToDataRetrieve(ctx context.Context) {
-	u.setStatus(ctx, DataRetrieve, nil)
+	u.setStatus(ctx, DataRetrieve, nil, nil)
 }
 
 func (u *taskEventUpdater) SetStatusToDataUpload(ctx context.Context) {
-	u.setStatus(ctx, DataUpload, nil)
+	u.setStatus(ctx, DataUpload, nil, nil)
 }
 
 func (u *taskEventUpdater) SetStatusToQueued(ctx context.Context) {
-	u.setStatus(ctx, Queued, nil)
+	u.setStatus(ctx, Queued, nil, nil)
 }
 
 func (u *taskEventUpdater) SetStatusToDataProcessing(ctx context.Context) {
-	u.setStatus(ctx, DataProcessing, nil)
+	u.setStatus(ctx, DataProcessing, nil, nil)
 }
 
-func (u *taskEventUpdater) SetStatusToCompleted(ctx context.Context) {
-	u.setStatus(ctx, Completed, nil)
+func (u *taskEventUpdater) SetStatusToCompleted(ctx context.Context, results []TaskResult) {
+	u.setStatus(ctx, Completed, results, nil)
 }
 
 func (u *taskEventUpdater) SetStatusToFailed(ctx context.Context, err error) {
-	u.setStatus(ctx, Failed, err)
+	u.setStatus(ctx, Failed, nil, err)
 }
 
 func (u *taskEventUpdater) SetStatusToSkipped(ctx context.Context) {
-	u.setStatus(ctx, Skipped, nil)
+	u.setStatus(ctx, Skipped, nil, nil)
 }
 
 func (u *taskEventUpdater) GetSubtaskEventUpdater(subtask string) SubtaskEventUpdater {
@@ -197,7 +206,7 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 	}
 }
 
-func AddTaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus, warnings []string, errors []error) {
+func AddTaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus, taskResults []TaskResult, warnings []string, errors []error) {
 	var mutation struct {
 		AddTaskEvent struct {
 			JobId string
@@ -205,14 +214,15 @@ func AddTaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobT
 	}
 
 	type TaskEventInput struct {
-		JobId           string    `json:"jobId"`
-		JobType         string    `json:"jobType"`
-		DataSourceId    *string   `json:"dataSourceId"`
-		IdentityStoreId *string   `json:"identityStoreId"`
-		Status          JobStatus `json:"status"`
-		EventTime       time.Time `json:"eventTime"`
-		Errors          []string  `json:"errors"`
-		Warnings        []string  `json:"warnings"`
+		JobId           string       `json:"jobId"`
+		JobType         string       `json:"jobType"`
+		DataSourceId    *string      `json:"dataSourceId"`
+		IdentityStoreId *string      `json:"identityStoreId"`
+		Status          JobStatus    `json:"status"`
+		EventTime       time.Time    `json:"eventTime"`
+		Errors          []string     `json:"errors"`
+		Warnings        []string     `json:"warnings"`
+		Result          []TaskResult `json:"result"`
 	}
 
 	var errorMsgs []string
@@ -230,6 +240,7 @@ func AddTaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobT
 		Status:    status,
 		Warnings:  warnings,
 		Errors:    errorMsgs,
+		Result:    taskResults,
 	}
 
 	if cfg.DataSourceId != "" {

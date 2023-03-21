@@ -21,6 +21,8 @@ import (
 type IdentityStoreSync struct {
 	TargetConfig *target.BaseTargetConfig
 	JobId        string
+
+	result []job.TaskResult
 }
 
 type IdentityStoreImportResult struct {
@@ -143,6 +145,18 @@ func (s *IdentityStoreSync) ProcessResults(results interface{}) error {
 			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced users and groups. Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d", isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
 		}
 
+		s.result = append(s.result, job.TaskResult{
+			ObjectType: "users",
+			Added:      isResult.UsersAdded,
+			Removed:    isResult.UsersRemoved,
+			Updated:    isResult.UsersUpdated,
+		}, job.TaskResult{
+			ObjectType: "groups",
+			Added:      isResult.GroupsAdded,
+			Removed:    isResult.GroupsRemoved,
+			Updated:    isResult.GroupsUpdated,
+		})
+
 		return nil
 	}
 
@@ -151,6 +165,10 @@ func (s *IdentityStoreSync) ProcessResults(results interface{}) error {
 
 func (s *IdentityStoreSync) GetResultObject() interface{} {
 	return &IdentityStoreImportResult{}
+}
+
+func (s *IdentityStoreSync) GetTaskResults() []job.TaskResult {
+	return s.result
 }
 
 func (s *IdentityStoreSync) mapErrorResult(result *error1.ErrorResult) error {

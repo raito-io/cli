@@ -248,7 +248,7 @@ func dummyTaskEventUpdater(t *testing.T) *mocks.TaskEventUpdater {
 	m.EXPECT().SetStatusToDataUpload(mock.Anything).Return().Maybe()
 	m.EXPECT().SetStatusToQueued(mock.Anything).Return().Maybe()
 	m.EXPECT().SetStatusToDataProcessing(mock.Anything).Return().Maybe()
-	m.EXPECT().SetStatusToCompleted(mock.Anything).Return().Maybe()
+	m.EXPECT().SetStatusToCompleted(mock.Anything, mock.Anything).Return().Maybe()
 	m.EXPECT().SetStatusToFailed(mock.Anything, mock.Anything).Return().Maybe()
 	m.EXPECT().SetStatusToSkipped(mock.Anything).Return().Maybe()
 	m.EXPECT().GetSubtaskEventUpdater(mock.Anything).Return(nil).Maybe()

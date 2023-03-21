@@ -38,8 +38,8 @@ func UploadFile(file string, config *target.BaseTargetConfig) (string, error) {
 
 // UploadLogFile uploads the file from the given path.
 // It returns the key to use to pass to the Raito backend to use the file.
-func UploadLogFile(file string, config *target.BaseTargetConfig) (string, error) {
-	url, key, err := getUploadLogsURL(config)
+func UploadLogFile(file string, config *target.BaseTargetConfig, task string) (string, error) {
+	url, key, err := getUploadLogsURL(config, task)
 	if err != nil {
 		return "", err
 	}
@@ -96,8 +96,8 @@ func getUploadURL(config *target.BaseTargetConfig) (string, string, error) {
 	return getUploadUrlAndKey(config, "file/upload/signed-url")
 }
 
-func getUploadLogsURL(config *target.BaseTargetConfig) (string, string, error) {
-	return getUploadUrlAndKey(config, "file/upload/logs/signed-url")
+func getUploadLogsURL(config *target.BaseTargetConfig, task string) (string, string, error) {
+	return getUploadUrlAndKey(config, "file/upload/logs/signed-url?task="+task)
 }
 
 func getUploadUrlAndKey(config *target.BaseTargetConfig, path string) (string, string, error) {

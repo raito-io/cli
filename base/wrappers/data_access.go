@@ -136,7 +136,9 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 
 	logger.Info(fmt.Sprintf("Successfully synced access providers to target in %s", sec))
 
-	return &access_provider.AccessSyncResult{}, nil
+	return &access_provider.AccessSyncResult{
+		AccessProviderCount: int32(len(dar.AccessProviders)),
+	}, nil
 }
 
 func (s *DataAccessSyncFunction) SyncConfig(_ context.Context) (*access_provider.AccessSyncConfig, error) {

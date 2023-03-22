@@ -144,7 +144,7 @@ func (s *dataAccessImportSubtask) ProcessResults(results interface{}) error {
 		s.task.result = append(s.task.result, job.TaskResult{
 			ObjectType: "imported access providers",
 			Added:      daResult.AccessAdded,
-			Updated:    daResult.AccessRemoved,
+			Updated:    daResult.AccessUpdated,
 			Removed:    daResult.AccessRemoved,
 			Failed:     len(daResult.Warnings),
 		})

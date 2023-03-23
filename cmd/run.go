@@ -140,12 +140,14 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 					it++
 				case cliTrigger := <-cliTriggerChannel:
-					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", "cli-trigger")
+					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
 
 					err := handleCliTrigger(baseConfig, &cliTrigger)
 					if err != nil {
 						baseConfig.BaseLogger.Warn("Cli Trigger failed: %s", err.Error())
 					}
+
+					it++
 				case <-ctx.Done():
 					finished <- struct{}{}
 					return

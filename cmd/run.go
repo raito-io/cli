@@ -159,7 +159,6 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 					it++
 				case <-ctx.Done():
-					hclog.L().Info(fmt.Sprintf("Context cancelled"))
 					return
 				}
 			}

@@ -21,7 +21,7 @@ type websocketResult struct {
 func CreateCliTrigger(config *target.BaseConfig) (CliTrigger, error) {
 	if viper.GetBool(constants.DisableWebsocketFlag) {
 		config.BaseLogger.Info("Websocket sync is disabled. No CLI triggers will be captured")
-		return nil, nil
+		return &DummyCliTrigger{}, nil
 	}
 
 	return createWebsocketTrigger(config)

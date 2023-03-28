@@ -6,7 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	sync2 "sync"
+	"syscall"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -105,13 +108,20 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 		ctx, cancelFn := context.WithCancel(context.Background())
 
-		finished := make(chan struct{})
-		defer close(finished)
+		waitGroup := sync2.WaitGroup{}
 
 		cliTriggerChannel := make(chan clitrigger.TriggerEvent)
 		defer close(cliTriggerChannel)
 
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGUSR1)
+
+		returnSignal := 0
+
+		waitGroup.Add(1)
+
 		go func() {
+			defer waitGroup.Done()
 			defer ticker.Stop()
 
 			cliTriggerCtx, cliTriggerCancel := context.WithCancel(ctx)
@@ -149,31 +159,53 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 					it++
 				case <-ctx.Done():
-					finished <- struct{}{}
 					return
 				}
 			}
 		}()
 
-		for {
-			reader := bufio.NewReader(os.Stdin)
-			text, _ := reader.ReadString('\n')
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			defer cancelFn()
+			defer hclog.L().Info("Waiting for the current synchronization run to end ...")
 
-			text = strings.TrimSpace(strings.ToLower(text))
+			scanner := bufio.NewScanner(os.Stdin)
 
-			if text == "" {
-				continue
-			} else if strings.TrimSpace(strings.ToLower(text)) == "q" {
-				hclog.L().Info("Waiting for the current synchronization run to end ...")
-				cancelFn()
-				break
-			} else {
-				hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case s := <-sigs:
+					if sysc, ok := s.(syscall.Signal); ok {
+						returnSignal = int(sysc)
+					}
+
+					return
+				default:
+					if scanner.Scan() {
+						text := scanner.Text()
+
+						text = strings.TrimSpace(strings.ToLower(text))
+
+						if text == "" {
+							continue
+						} else if strings.TrimSpace(strings.ToLower(text)) == "q" {
+							return
+						} else {
+							hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
+						}
+					}
+				}
 			}
-		}
+		}()
 
-		<-finished
+		waitGroup.Wait()
 		hclog.L().Info("All routines finished. Bye!")
+
+		if returnSignal != 0 {
+			syscall.Exit(returnSignal)
+		}
 	}
 }
 

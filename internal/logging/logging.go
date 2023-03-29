@@ -21,14 +21,14 @@ func SetupLogging() {
 	var output io.Writer = &nilWriter{}
 
 	if viper.GetBool(constants.LogOutputFlag) {
-		output = os.Stderr
+		output = os.Stdout
 
 		if viper.GetString(constants.LogFileFlag) != "" {
 			f, err := os.OpenFile(viper.GetString(constants.LogFileFlag), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 			if err != nil {
 				fmt.Printf("error opening file: %v", err) //nolint:forbidigo
 			}
-			output = io.MultiWriter(f, os.Stderr)
+			output = io.MultiWriter(f, output)
 		}
 	} else if viper.GetString(constants.LogFileFlag) != "" {
 		f, err := os.OpenFile(viper.GetString(constants.LogFileFlag), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)

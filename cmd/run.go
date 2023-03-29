@@ -100,7 +100,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		hclog.L().Info(fmt.Sprintf("Starting synchronization every %d minutes.", freq))
-		hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
+		hclog.L().Info("Press 'ctrl+c' to stop the program.")
 
 		ticker := time.NewTicker(time.Duration(freq) * time.Minute)
 

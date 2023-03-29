@@ -4,9 +4,10 @@ import "github.com/raito-io/cli/base/data_source"
 
 // AccessProvider describes data access in the format that is suitable to be imported into Raito.x
 type AccessProvider struct {
-	ExternalId string `json:"externalId"`
-	Name       string `json:"name"`
-	NamingHint string `json:"namingHint"`
+	ExternalId string  `json:"externalId"`
+	Name       string  `json:"name"`
+	NamingHint string  `json:"namingHint"`
+	Type       *string `json:"type"`
 
 	// Deprecated: use ActualName and What fields directory
 	Access []*Access `yaml:"access" json:"access"`

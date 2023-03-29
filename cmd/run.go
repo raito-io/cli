@@ -1,13 +1,11 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	sync2 "sync"
 	"syscall"
 	"time"
@@ -114,7 +112,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 		defer close(cliTriggerChannel)
 
 		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGUSR1)
+		signal.Notify(sigs, syscall.SIGUSR1, os.Interrupt)
 
 		returnSignal := 0
 
@@ -161,6 +159,8 @@ func executeRun(cmd *cobra.Command, args []string) {
 				case <-ctx.Done():
 					return
 				}
+
+				hclog.L().Info("Press 'ctrl+c' to stop the program.")
 			}
 		}()
 
@@ -169,8 +169,6 @@ func executeRun(cmd *cobra.Command, args []string) {
 			defer waitGroup.Done()
 			defer cancelFn()
 			defer hclog.L().Info("Waiting for the current synchronization run to end ...")
-
-			scanner := bufio.NewScanner(os.Stdin)
 
 			for {
 				select {
@@ -182,20 +180,6 @@ func executeRun(cmd *cobra.Command, args []string) {
 					}
 
 					return
-				default:
-					if scanner.Scan() {
-						text := scanner.Text()
-
-						text = strings.TrimSpace(strings.ToLower(text))
-
-						if text == "" {
-							continue
-						} else if strings.TrimSpace(strings.ToLower(text)) == "q" {
-							return
-						} else {
-							hclog.L().Info("Press the letter 'q' (and press return) to stop the program.")
-						}
-					}
 				}
 			}
 		}()

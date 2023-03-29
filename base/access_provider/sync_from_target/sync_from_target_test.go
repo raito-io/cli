@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/raito-io/cli/base/access_provider"
@@ -40,6 +41,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		NotInternalizable: false,
 		Name:              "AP1",
 		NamingHint:        "AP1Hint",
+		Type:              aws.String("role_test"),
 		Who: &WhoItem{
 			Users:  []string{"uid1"},
 			Groups: []string{"gid1"},
@@ -109,6 +111,8 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "B", apsr[0].What[0].Permissions[1])
 	assert.Equal(t, "Data Object 1", apsr[0].What[0].DataObject.FullName)
 	assert.Equal(t, "schema", apsr[0].What[0].DataObject.Type)
+	assert.NotNil(t, apsr[0].Type)
+	assert.Equal(t, "role_test", *apsr[0].Type)
 
 	assert.Equal(t, "eid2", apsr[1].ExternalId)
 	assert.True(t, apsr[1].NotInternalizable)
@@ -126,4 +130,5 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "C", apsr[1].What[0].Permissions[0])
 	assert.Equal(t, "Data Object 1", apsr[1].What[0].DataObject.FullName)
 	assert.Equal(t, "schema", apsr[1].What[0].DataObject.Type)
+	assert.Nil(t, apsr[1].Type)
 }

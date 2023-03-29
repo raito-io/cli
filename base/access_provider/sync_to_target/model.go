@@ -13,10 +13,11 @@ type AccessProviderImport struct {
 }
 
 type AccessProvider struct {
-	Id          string `yaml:"id" json:"id"`
-	Name        string `yaml:"name" json:"name"`
-	Description string `yaml:"description" json:"description"`
-	NamingHint  string `yaml:"namingHint" json:"namingHint"`
+	Id          string  `yaml:"id" json:"id"`
+	Name        string  `yaml:"name" json:"name"`
+	Description string  `yaml:"description" json:"description"`
+	NamingHint  string  `yaml:"namingHint" json:"namingHint"`
+	Type        *string `yaml:"type" json:"type"`
 
 	// Deprecated: use ActualName and What fields directory
 	Access []*Access `yaml:"access" json:"access"`

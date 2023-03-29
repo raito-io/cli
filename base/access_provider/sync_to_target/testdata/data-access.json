@@ -7,6 +7,7 @@
       "description": "Lots of blah",
       "namingHint": "Blah_",
       "action": "mask",
+      "type": "role_test",
       "who": {
         "users": [ "bart", "dieter" ]
       },

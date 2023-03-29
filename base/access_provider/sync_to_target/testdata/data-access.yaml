@@ -6,6 +6,7 @@ accessProviders:
     description: Lots of blah
     namingHint: Blah_
     action: Mask
+    type: role_test
     who:
       users:
         - bart

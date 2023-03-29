@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/raito-io/cli/base/access_provider"
 )
@@ -40,6 +41,8 @@ func validateParsedAccessFile(t *testing.T, parsed *AccessProviderImport, err er
 	assert.Equal(t, "Blah_", ap.NamingHint)
 	assert.Equal(t, Mask, ap.Action)
 	assert.Equal(t, 1, len(ap.Access))
+	require.NotNil(t, ap.Type)
+	assert.Equal(t, "role_test", *ap.Type)
 
 	a := ap.Access[0]
 	assert.Equal(t, "Blahkes", *a.ActualName)

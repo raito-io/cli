@@ -1,6 +1,8 @@
 package connect
 
 import (
+	"github.com/raito-io/cli/internal/constants"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/raito-io/cli/internal/target"
-	url2 "github.com/raito-io/cli/internal/util/url"
 )
 
 func TestDoGet(t *testing.T) {
@@ -26,7 +27,8 @@ func TestDoGet(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	url2.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		Domain:     "TestRaito",
@@ -60,7 +62,8 @@ func TestDoPost(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	url2.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		Domain:     "TestRaito",

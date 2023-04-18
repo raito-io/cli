@@ -2,6 +2,8 @@ package file
 
 import (
 	"fmt"
+	"github.com/raito-io/cli/internal/constants"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/raito-io/cli/internal/target"
-	"github.com/raito-io/cli/internal/util/url"
 )
 
 func TestCreateUniqueFileName(t *testing.T) {
@@ -54,7 +55,8 @@ func TestFileUpload(t *testing.T) {
 
 	defer getUrlTestServer.Close()
 
-	url.TestURL = getUrlTestServer.URL
+	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		TargetLogger: hclog.L(),
@@ -90,7 +92,8 @@ func TestFileUploadNotFound(t *testing.T) {
 
 	defer getUrlTestServer.Close()
 
-	url.TestURL = getUrlTestServer.URL
+	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	res, err := UploadFile("testdata/doesntexist.txt", &target.BaseTargetConfig{
 		TargetLogger: hclog.L(),
@@ -118,7 +121,8 @@ func TestFileUploadErrorUploading(t *testing.T) {
 
 	defer getUrlTestServer.Close()
 
-	url.TestURL = getUrlTestServer.URL
+	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		TargetLogger: hclog.L(),
@@ -140,7 +144,8 @@ func TestFileUploadGetUrlFailed(t *testing.T) {
 
 	defer getUrlTestServer.Close()
 
-	url.TestURL = getUrlTestServer.URL
+	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		TargetLogger: hclog.L(),
@@ -161,7 +166,8 @@ func TestFileUploadGetUrlIllegalResult(t *testing.T) {
 
 	defer getUrlTestServer.Close()
 
-	url.TestURL = getUrlTestServer.URL
+	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		TargetLogger: hclog.L(),
@@ -182,7 +188,8 @@ func TestFileUploadGetUrlIllegalUrl(t *testing.T) {
 
 	defer getUrlTestServer.Close()
 
-	url.TestURL = getUrlTestServer.URL
+	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		TargetLogger: hclog.L(),
@@ -203,7 +210,8 @@ func TestFileUploadGetUrlNonExistingUrl(t *testing.T) {
 
 	defer getUrlTestServer.Close()
 
-	url.TestURL = getUrlTestServer.URL
+	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		TargetLogger: hclog.L(),
@@ -217,7 +225,8 @@ func TestFileUploadGetUrlNonExistingUrl(t *testing.T) {
 }
 
 func TestFileUploadNonExistingUrl(t *testing.T) {
-	url.TestURL = "http://localhost:9999"
+	viper.Set(constants.URLOverrideFlag, "http://localhost:9999")
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
 		TargetLogger: hclog.L(),

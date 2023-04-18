@@ -37,8 +37,8 @@ var (
 
 func AddTokenToHeader(h *http.Header, config *target.BaseConfig) error {
 	env := viper.GetString(constants.EnvironmentFlag)
-	if env == constants.EnvironmentDev {
-		config.BaseLogger.Debug("Skipping authentication for development environment.")
+	if viper.GetBool(constants.SkipAuthentication) || env == constants.EnvironmentDev {
+		config.BaseLogger.Debug("Skipping authentication")
 		return nil
 	}
 

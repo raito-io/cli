@@ -9,14 +9,15 @@ import (
 	"github.com/raito-io/cli/internal/constants"
 )
 
-var TestURL = ""
-
 func GetRaitoURL() string {
+	override := viper.GetString(constants.URLOverrideFlag)
+	if override != "" {
+		return override
+	}
+
 	env := viper.GetString(constants.EnvironmentFlag)
 
-	if TestURL != "" {
-		return TestURL
-	} else if env == constants.EnvironmentDev {
+	if env == constants.EnvironmentDev {
 		return "http://localhost:8080/"
 	} else if env == constants.EnvironmentTest {
 		return "https://api.raito.dev/"

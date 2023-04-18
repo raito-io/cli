@@ -29,6 +29,8 @@ var KnownFlags = map[string]struct{}{
 const (
 	DebugFlag                             = "debug"
 	EnvironmentFlag                       = "environment"
+	URLOverrideFlag                       = "raito-url-override"
+	SkipAuthentication                    = "skip-authentication"
 	LogFileFlag                           = "log-file"
 	LogOutputFlag                         = "log-output"
 	DomainFlag                            = "domain"

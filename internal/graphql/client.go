@@ -37,7 +37,7 @@ func (d *authedDoer) Do(req *http.Request) (*http.Response, error) {
 }
 
 func NewClient(config *target.BaseConfig) *graphql.Client {
-	return graphql.NewClient(url.GetRaitoURL()+"query", &authedDoer{config: config})
+	return graphql.NewClient(url.CreateRaitoURL(url.GetRaitoURL(), "query"), &authedDoer{config: config})
 }
 
 func ParseErrors(err error) error {

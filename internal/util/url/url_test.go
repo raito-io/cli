@@ -18,6 +18,9 @@ func TestGetRaitoURL(t *testing.T) {
 	assert.Equal(t, "https://api.staging.raito.dev/", GetRaitoURL())
 	viper.Set(constants.EnvironmentFlag, "blah")
 	assert.Equal(t, "https://api.raito.cloud/", GetRaitoURL())
+
+	viper.Set(constants.URLOverrideFlag, "https://blah.raito.blah")
+	assert.Equal(t, "https://blah.raito.blah", GetRaitoURL())
 }
 
 func TestCreateRaitoURL(t *testing.T) {

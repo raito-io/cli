@@ -63,13 +63,14 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	rootCmd.PersistentFlags().String(constants.EnvironmentFlag, constants.EnvironmentProd, "")
 	rootCmd.PersistentFlags().String(constants.URLOverrideFlag, "", "")
 	rootCmd.PersistentFlags().Bool(constants.SkipAuthentication, false, "")
+	rootCmd.PersistentFlags().Bool(constants.SkipFileUpload, false, "")
 	rootCmd.PersistentFlags().Bool(constants.DebugFlag, false, fmt.Sprintf("If set, extra debug logging is generated. Only useful in combination with %s or %s", constants.LogFileFlag, constants.LogOutputFlag))
 	rootCmd.PersistentFlags().StringP(constants.OnlyTargetsFlag, "t", "", "Can be used to only execute a subset of the defined targets in the configuration file. To specify multiple, use a comma-separated list.")
 	rootCmd.PersistentFlags().String(constants.ConnectorNameFlag, "", "The name of the connector to use. If not set, the CLI will use a configuration file to define the targets.")
 	rootCmd.PersistentFlags().String(constants.ConnectorVersionFlag, "", "The version of the connector to use. This is only relevant if the 'connector' flag is set as well. If not set (but the 'connector' flag is), then 'latest' is used.")
 	rootCmd.PersistentFlags().StringP(constants.NameFlag, "n", "", "The name for the target. This is only relevant if the 'connector' flag is set as well. If not set, the name of the connector will be used.")
 
-	hideConfigOptions(rootCmd, constants.EnvironmentFlag, constants.URLOverrideFlag, constants.SkipAuthentication)
+	hideConfigOptions(rootCmd, constants.EnvironmentFlag, constants.URLOverrideFlag, constants.SkipAuthentication, constants.SkipFileUpload)
 
 	BindFlag(constants.IdentityStoreIdFlag, rootCmd)
 	BindFlag(constants.DataSourceIdFlag, rootCmd)
@@ -84,6 +85,7 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	BindFlag(constants.EnvironmentFlag, rootCmd)
 	BindFlag(constants.URLOverrideFlag, rootCmd)
 	BindFlag(constants.SkipAuthentication, rootCmd)
+	BindFlag(constants.SkipFileUpload, rootCmd)
 	BindFlag(constants.DebugFlag, rootCmd)
 	BindFlag(constants.LogFileFlag, rootCmd)
 	BindFlag(constants.LogOutputFlag, rootCmd)

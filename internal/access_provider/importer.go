@@ -41,7 +41,7 @@ func NewAccessProviderImporter(config *AccessProviderImportConfig, statusUpdater
 
 func (d *accessProviderImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
 	env := viper.GetString(constants.EnvironmentFlag)
-	if env == constants.EnvironmentDev {
+	if viper.GetBool(constants.SkipFileUpload) || env == constants.EnvironmentDev {
 		// In the development environment, we skip the upload and use the local file for the import
 		return d.doImport(jobId, d.config.TargetFile)
 	} else {

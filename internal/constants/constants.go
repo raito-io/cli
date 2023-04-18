@@ -31,6 +31,7 @@ const (
 	EnvironmentFlag                       = "environment"
 	URLOverrideFlag                       = "raito-url-override"
 	SkipAuthentication                    = "skip-authentication"
+	SkipFileUpload                        = "skip-file-upload"
 	LogFileFlag                           = "log-file"
 	LogOutputFlag                         = "log-output"
 	DomainFlag                            = "domain"

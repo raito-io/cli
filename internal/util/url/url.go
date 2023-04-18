@@ -15,17 +15,7 @@ func GetRaitoURL() string {
 		return override
 	}
 
-	env := viper.GetString(constants.EnvironmentFlag)
-
-	if env == constants.EnvironmentDev {
-		return "http://localhost:8080/"
-	} else if env == constants.EnvironmentTest {
-		return "https://api.raito.dev/"
-	} else if env == constants.EnvironmentStaging {
-		return "https://api.staging.raito.dev/"
-	} else {
-		return "https://api.raito.cloud/"
-	}
+	return "https://api.raito.cloud/"
 }
 
 func CreateRaitoURL(schemaAndHost, path string) string {

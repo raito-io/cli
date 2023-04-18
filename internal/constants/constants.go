@@ -2,8 +2,10 @@ package constants
 
 var KnownFlags = map[string]struct{}{
 	DebugFlag:                 {},
-	EnvironmentFlag:           {},
 	LogFileFlag:               {},
+	SkipAuthentication:        {},
+	SkipFileUpload:            {},
+	URLOverrideFlag:           {},
 	DomainFlag:                {},
 	ApiUserFlag:               {},
 	ApiSecretFlag:             {},
@@ -28,7 +30,6 @@ var KnownFlags = map[string]struct{}{
 
 const (
 	DebugFlag                             = "debug"
-	EnvironmentFlag                       = "environment"
 	URLOverrideFlag                       = "raito-url-override"
 	SkipAuthentication                    = "skip-authentication"
 	SkipFileUpload                        = "skip-file-upload"
@@ -60,12 +61,6 @@ const (
 	ConnectorNameFlag    = "connector-name"
 	ConnectorVersionFlag = "connector-version"
 	NameFlag             = "name"
-
-	// Environments
-	EnvironmentProd    = "prod"
-	EnvironmentDev     = "dev"
-	EnvironmentTest    = "test"
-	EnvironmentStaging = "staging"
 
 	// Import specific flags
 	DeleteUntouchedFlag = "delete-untouched"

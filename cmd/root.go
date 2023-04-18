@@ -61,17 +61,15 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	rootCmd.PersistentFlags().String(constants.LogFileFlag, "", "The log file to store structured logs in. If not specified, no logging to file is done.")
 	rootCmd.PersistentFlags().Bool(constants.LogOutputFlag, false, "When set, logging is sent to the command line (stderr) instead of more human readable output.")
 	rootCmd.PersistentFlags().String(constants.EnvironmentFlag, constants.EnvironmentProd, "")
+	rootCmd.PersistentFlags().String(constants.URLOverrideFlag, "", "")
+	rootCmd.PersistentFlags().Bool(constants.SkipAuthentication, false, "")
 	rootCmd.PersistentFlags().Bool(constants.DebugFlag, false, fmt.Sprintf("If set, extra debug logging is generated. Only useful in combination with %s or %s", constants.LogFileFlag, constants.LogOutputFlag))
 	rootCmd.PersistentFlags().StringP(constants.OnlyTargetsFlag, "t", "", "Can be used to only execute a subset of the defined targets in the configuration file. To specify multiple, use a comma-separated list.")
 	rootCmd.PersistentFlags().String(constants.ConnectorNameFlag, "", "The name of the connector to use. If not set, the CLI will use a configuration file to define the targets.")
 	rootCmd.PersistentFlags().String(constants.ConnectorVersionFlag, "", "The version of the connector to use. This is only relevant if the 'connector' flag is set as well. If not set (but the 'connector' flag is), then 'latest' is used.")
 	rootCmd.PersistentFlags().StringP(constants.NameFlag, "n", "", "The name for the target. This is only relevant if the 'connector' flag is set as well. If not set, the name of the connector will be used.")
 
-	err := rootCmd.PersistentFlags().MarkHidden(constants.EnvironmentFlag)
-	if err != nil {
-		// No logger yet
-		fmt.Printf("error while hiding dev flag.\n") //nolint:forbidigo
-	}
+	hideConfigOptions(rootCmd, constants.EnvironmentFlag, constants.URLOverrideFlag, constants.SkipAuthentication)
 
 	BindFlag(constants.IdentityStoreIdFlag, rootCmd)
 	BindFlag(constants.DataSourceIdFlag, rootCmd)
@@ -84,6 +82,8 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	BindFlag(constants.ApiUserFlag, rootCmd)
 	BindFlag(constants.ApiSecretFlag, rootCmd)
 	BindFlag(constants.EnvironmentFlag, rootCmd)
+	BindFlag(constants.URLOverrideFlag, rootCmd)
+	BindFlag(constants.SkipAuthentication, rootCmd)
 	BindFlag(constants.DebugFlag, rootCmd)
 	BindFlag(constants.LogFileFlag, rootCmd)
 	BindFlag(constants.LogOutputFlag, rootCmd)
@@ -97,6 +97,16 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	initInfoCommand(rootCmd)
 
 	return root
+}
+
+func hideConfigOptions(rootCmd *cobra.Command, options ...string) {
+	for _, option := range options {
+		err := rootCmd.PersistentFlags().MarkHidden(option)
+		if err != nil {
+			// No logger yet
+			fmt.Printf("error while hiding %s flag.\n", option) //nolint:forbidigo
+		}
+	}
 }
 
 func BindFlag(flag string, cmd *cobra.Command) {

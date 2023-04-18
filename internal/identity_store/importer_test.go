@@ -2,6 +2,8 @@ package identity_store
 
 import (
 	"context"
+	"github.com/raito-io/cli/internal/constants"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +18,6 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/job/mocks"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/raito-io/cli/internal/util/url"
 )
 
 const GoodImportResult = "{ \"data\": { \"importIdentityRequest\": { \"subtask\" : {\"status\": \"QUEUED\", \"subtaskId\": \"ImportSync\" } } } }"
@@ -33,7 +34,8 @@ func TestIdentityStoreImport(t *testing.T) {
 	testServer := RaitoServer(uploadTestServer.URL, false, false, GoodImportResult, &calledImport, &gotSignedURL)
 	defer testServer.Close()
 
-	url.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
 	defer os.Remove(f1.Name())
@@ -61,7 +63,8 @@ func TestIdentityStoreImportFailUploadUrl(t *testing.T) {
 	testServer := RaitoServer(uploadTestServer.URL, true, false, GoodImportResult, &calledImport, &gotSignedURL)
 	defer testServer.Close()
 
-	url.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
@@ -84,7 +87,8 @@ func TestIdentityStoreImportFailUpload(t *testing.T) {
 	testServer := RaitoServer(uploadTestServer.URL, false, false, GoodImportResult, &calledImport, &gotSignedURL)
 	defer testServer.Close()
 
-	url.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
@@ -107,7 +111,8 @@ func TestIdentityStoreImportFailImport(t *testing.T) {
 	testServer := RaitoServer(uploadTestServer.URL, false, true, GoodImportResult, &calledImport, &gotSignedURL)
 	defer testServer.Close()
 
-	url.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
@@ -130,7 +135,8 @@ func TestIdentityStoreImportFaultyResponse(t *testing.T) {
 	testServer := RaitoServer(uploadTestServer.URL, false, false, FaultyImportResult, &calledImport, &gotSignedURL)
 	defer testServer.Close()
 
-	url.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
@@ -152,7 +158,8 @@ func TestIdentityStoreImportWithErrors(t *testing.T) {
 	testServer := RaitoServer(uploadTestServer.URL, false, false, ImportResultWithErrors, &calledImport, &gotSignedURL)
 	defer testServer.Close()
 
-	url.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
 	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())

@@ -1,6 +1,8 @@
 package graphql
 
 import (
+	"github.com/raito-io/cli/internal/constants"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/raito-io/cli/internal/target"
-	url2 "github.com/raito-io/cli/internal/util/url"
 )
 
 type dataObject struct {
@@ -45,7 +46,8 @@ func TestGraphQL(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	url2.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		Domain:     "TestRaito",
@@ -78,7 +80,8 @@ func TestGraphQLError(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	url2.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		BaseLogger: hclog.Default(),
@@ -92,7 +95,8 @@ func TestGraphQLError(t *testing.T) {
 }
 
 func TestGraphQLIllegalURL(t *testing.T) {
-	url2.TestURL = "//\nbadbadbad"
+	viper.Set(constants.URLOverrideFlag, "//\nbadbadbad")
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		BaseLogger: hclog.Default(),
@@ -137,7 +141,8 @@ func TestGraphQLServerError(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	url2.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		Domain:     "TestRaito",
@@ -194,7 +199,8 @@ func TestGraphQLWithoutResponse(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	url2.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		Domain:     "TestRaito",
@@ -220,7 +226,8 @@ func TestGraphQLErrorWithoutResponse(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	url2.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		BaseLogger: hclog.Default(),
@@ -232,7 +239,8 @@ func TestGraphQLErrorWithoutResponse(t *testing.T) {
 }
 
 func TestGraphQLIllegalURLWithoutReponse(t *testing.T) {
-	url2.TestURL = "//\nbadbadbad"
+	viper.Set(constants.URLOverrideFlag, "//\nbadbadbad")
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		BaseLogger: hclog.Default(),
@@ -275,7 +283,8 @@ func TestGraphQLServerErrorWithoutResponse(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	url2.TestURL = testServer.URL
+	viper.Set(constants.URLOverrideFlag, testServer.URL)
+	defer viper.Set(constants.URLOverrideFlag, "")
 
 	config := target.BaseConfig{
 		Domain:     "TestRaito",

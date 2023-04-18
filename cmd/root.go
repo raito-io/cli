@@ -107,7 +107,6 @@ func hideConfigOptions(rootCmd *cobra.Command, options ...string) {
 			fmt.Printf("error while hiding %s flag.\n", option) //nolint:forbidigo
 		}
 	}
-
 }
 
 func BindFlag(flag string, cmd *cobra.Command) {

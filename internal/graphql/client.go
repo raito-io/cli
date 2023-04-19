@@ -3,15 +3,14 @@ package graphql
 import (
 	"errors"
 	"fmt"
+	"github.com/raito-io/cli/internal/util/connect"
 	"net/http"
 
 	"github.com/hasura/go-graphql-client"
 
-	"github.com/raito-io/cli/internal/auth"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/merror"
 	"github.com/raito-io/cli/internal/util/url"
-	"github.com/raito-io/cli/internal/version"
 )
 
 type authedDoer struct {
@@ -19,11 +18,9 @@ type authedDoer struct {
 }
 
 func (d *authedDoer) Do(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", "Raito CLI "+version.GetVersionString())
-
-	err := auth.AddToken(req, d.config)
+	err := connect.AddHeaders(req, d.config, "")
 	if err != nil {
-		return nil, fmt.Errorf("error while adding authorization token: %s", err.Error())
+		return nil, err
 	}
 
 	client := &http.Client{}

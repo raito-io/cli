@@ -82,4 +82,7 @@ const (
 	DataUsageSync  = "DU"
 
 	SubtaskAccessSync = "AccessSync"
+
+	// HTTP headers
+	DomainHeader = "Raito-Domain"
 )

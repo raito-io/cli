@@ -15,10 +15,11 @@ import (
 )
 
 func TestDoGet(t *testing.T) {
-	var token, url, method string
+	var token, url, method, domain string
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		token = req.Header.Get("Authorization")
+		domain = req.Header.Get(constants.DomainHeader)
 		method = req.Method
 
 		url = req.RequestURI
@@ -41,19 +42,21 @@ func TestDoGet(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, "token idToken", token)
+	assert.Equal(t, "TestRaito", domain)
 
 	assert.Equal(t, "/the/path", url)
 	assert.Equal(t, "GET", method)
 }
 
 func TestDoPost(t *testing.T) {
-	var body, contentType, token, url, method string
+	var body, contentType, token, url, method, domain string
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		buf, _ := ioutil.ReadAll(req.Body)
 		body = string(buf)
 		contentType = req.Header.Get("Content-Type")
 		token = req.Header.Get("Authorization")
+		domain = req.Header.Get(constants.DomainHeader)
 		method = req.Method
 
 		url = req.RequestURI
@@ -76,6 +79,7 @@ func TestDoPost(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, "The body", body)
+	assert.Equal(t, "TestRaito", domain)
 	assert.Equal(t, "application/json", contentType)
 	assert.Equal(t, "token idToken", token)
 	assert.Equal(t, "/the/path", url)

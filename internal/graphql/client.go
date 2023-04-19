@@ -3,8 +3,9 @@ package graphql
 import (
 	"errors"
 	"fmt"
-	"github.com/raito-io/cli/internal/util/connect"
 	"net/http"
+
+	"github.com/raito-io/cli/internal/util/connect"
 
 	"github.com/hasura/go-graphql-client"
 

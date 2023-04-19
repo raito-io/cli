@@ -2,9 +2,10 @@ package connect
 
 import (
 	"fmt"
-	"github.com/raito-io/cli/internal/constants"
 	"net/http"
 	"strings"
+
+	"github.com/raito-io/cli/internal/constants"
 
 	"github.com/raito-io/cli/internal/auth"
 	"github.com/raito-io/cli/internal/target"
@@ -72,6 +73,7 @@ func AddHeaders(req *http.Request, config *target.BaseConfig, contentType string
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
+
 	req.Header.Set("User-Agent", "Raito CLI "+version.GetVersionString())
 	req.Header.Set(constants.DomainHeader, config.Domain)
 

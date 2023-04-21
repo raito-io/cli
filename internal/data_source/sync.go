@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/raito-io/cli/base/data_object_enricher"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	dspc "github.com/raito-io/cli/base/data_source"
 	baseconfig "github.com/raito-io/cli/base/util/config"
@@ -95,9 +98,23 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		return job.Failed, "", errors.New(res.Error.ErrorMessage) //nolint:staticcheck
 	}
 
+	enrichedTargetFile, createdFiles, err := s.enrichDataObjects(ctx, targetFile)
+
+	if s.TargetConfig.DeleteTempFiles && len(createdFiles) > 0 {
+		defer func() {
+			for _, f := range createdFiles {
+				os.RemoveAll(f)
+			}
+		}()
+	}
+
+	if err != nil {
+		return job.Failed, "", err
+	}
+
 	importerConfig := DataSourceImportConfig{
 		BaseTargetConfig: *s.TargetConfig,
-		TargetFile:       targetFile,
+		TargetFile:       enrichedTargetFile,
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
 		ReplaceTags:      s.TargetConfig.ReplaceTags,
 	}
@@ -117,6 +134,73 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status))
 
 	return status, subtaskId, nil
+}
+
+func (s *DataSourceSync) enrichDataObjects(ctx context.Context, sourceFile string) (string, []string, error) {
+	enrichedFile := sourceFile
+
+	var newFiles []string
+
+	var err error
+
+	if len(s.TargetConfig.DataObjectEnrichers) > 0 {
+		for i, enricher := range s.TargetConfig.DataObjectEnrichers {
+			start := time.Now()
+
+			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Calling enricher %q", enricher.Name))
+
+			enrichmentCount := 0
+			enrichedFile, enrichmentCount, err = s.callEnricher(ctx, enricher, enrichedFile, i)
+
+			if enrichedFile != "" {
+				newFiles = append(newFiles, enrichedFile)
+			}
+
+			if err != nil {
+				return "", newFiles, err
+			}
+
+			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("%d data objects enriched (%s) in %s", enrichmentCount, enricher.Name, time.Since(start).Round(time.Millisecond)))
+		}
+	}
+
+	return enrichedFile, newFiles, nil
+}
+
+func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *target.EnricherConfig, sourceFile string, index int) (string, int, error) {
+	client, err := plugin.NewPluginClient(enricher.ConnectorName, enricher.ConnectorVersion, s.TargetConfig.TargetLogger)
+	if err != nil {
+		s.TargetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing enricher plugin %q: %s", enricher.ConnectorName, err.Error()))
+		return "", 0, err
+	}
+	defer client.Close()
+
+	doe, err := client.GetDataObjectEnricher()
+	if err != nil {
+		return "", 0, err
+	}
+
+	targetFile := sourceFile
+	// Generate a unique file name for the enrichment
+	if strings.Contains(targetFile, "-enriched") {
+		targetFile = targetFile[0:strings.LastIndex(targetFile, "-enriched")] + "-enriched" + strconv.Itoa(index) + ".json"
+	} else {
+		targetFile = targetFile[0:strings.LastIndex(targetFile, ".json")] + "-enriched" + strconv.Itoa(index) + ".json"
+	}
+
+	res, err := doe.Enrich(ctx, &data_object_enricher.DataObjectEnricherConfig{
+		ConfigMap: &baseconfig.ConfigMap{
+			Parameters: enricher.Parameters,
+		},
+		InputFile:  sourceFile,
+		OutputFile: targetFile,
+	})
+
+	if err != nil {
+		return targetFile, 0, err
+	}
+
+	return targetFile, int(res.Enriched), nil
 }
 
 func (s *DataSourceSync) ProcessResults(results interface{}) error {

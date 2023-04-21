@@ -3,6 +3,7 @@ package base
 
 import (
 	"errors"
+	"github.com/raito-io/cli/base/data_object_enricher"
 	"sync"
 
 	"github.com/hashicorp/go-hclog"
@@ -74,6 +75,13 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, error) {
 			logger.Debug("Registered Info Plugin")
 
 			infoFound = true
+		case data_object_enricher.DataObjectEnricher:
+			if _, f := pluginMap[data_object_enricher.DataObjectEnricherName]; f {
+				return nil, errors.New("multiple implementations for DataObjectEnricher Plugin found. There should be only one")
+			}
+			pluginMap[data_object_enricher.DataObjectEnricherName] = &data_object_enricher.DataObjectEnricherPlugin{Impl: p}
+
+			logger.Debug("Registered DataObjectEnricher Plugin")
 		}
 	}
 

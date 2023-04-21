@@ -71,8 +71,9 @@ const (
 	// Access specific parameters
 	AccessFileFlag = "access-file"
 
-	Targets      = "targets"
-	Repositories = "repositories"
+	Targets             = "targets"
+	DataObjectEnrichers = "data-object-enrichers"
+	Repositories        = "repositories"
 
 	GitHubToken = "token"
 

@@ -152,7 +152,7 @@ func TestBuildTargetConfigFromMapError(t *testing.T) {
 
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
 
-	config, err := buildTargetConfigFromMap(baseconfig, data)
+	config, err := buildTargetConfigFromMap(baseconfig, data, map[string]*EnricherConfig{})
 	assert.NotNil(t, err)
 	assert.Nil(t, config)
 }
@@ -177,7 +177,7 @@ var baseConfigMap = map[string]interface{}{
 func TestBuildTargetConfigFromMap(t *testing.T) {
 	clearViper()
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap)
+	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1", config.ConnectorName)
@@ -203,7 +203,7 @@ func TestBuildTargetConfigFromMapNoName(t *testing.T) {
 	copier.Copy(&noNameConfigMap, &baseConfigMap)
 	delete(noNameConfigMap, "name")
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, noNameConfigMap)
+	config, err := buildTargetConfigFromMap(baseconfig, noNameConfigMap, map[string]*EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1", config.ConnectorName)
@@ -214,7 +214,7 @@ func TestBuildTargetConfigFromMapOverride(t *testing.T) {
 	clearViper()
 	viper.Set("skip-data-source-sync", true)
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap)
+	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, true, config.SkipIdentityStoreSync)
@@ -228,7 +228,7 @@ func TestBuildTargetConfigFromMapLocalRaitoData(t *testing.T) {
 	viper.Set("domain", "dddd")
 	viper.Set("api-secret", "ssss")
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap)
+	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1user", config.ApiUser)
@@ -250,7 +250,7 @@ func TestBuildTargetConfigFromMapGlobalRaitoData(t *testing.T) {
 	viper.Set("api-secret", "ssss")
 	viper.Set("domain", "dddd")
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, withoutRaitoStuff)
+	config, err := buildTargetConfigFromMap(baseconfig, withoutRaitoStuff, map[string]*EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "uuuu", config.ApiUser)
@@ -527,4 +527,38 @@ func TestRunFromConfigFile(t *testing.T) {
 		}
 		assert.True(t, targetParsed)
 	}
+}
+
+func TestRunFromConfigFile_WithEnrichers(t *testing.T) {
+	clearViper()
+	viper.AddConfigPath("./testdata")
+	viper.AddConfigPath("./internal/target/testdata")
+	viper.SetConfigType("yaml")
+	viper.SetConfigName("test-raito-with-enrichers")
+
+	err := viper.ReadInConfig()
+	assert.Nil(t, err)
+
+	runs := 0
+	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
+		assert.Equal(t, "raito-io/cli-plugin-snowflake", tConfig.ConnectorName)
+		assert.Equal(t, "snowflake1", tConfig.Name)
+		assert.Equal(t, 2, len(tConfig.DataObjectEnrichers))
+		assert.Equal(t, "collibra", tConfig.DataObjectEnrichers[0].Name)
+		assert.Equal(t, "raito-io/cli-plugin-collibra", tConfig.DataObjectEnrichers[0].ConnectorName)
+		assert.Equal(t, "collibra", tConfig.DataObjectEnrichers[0].Name)
+		assert.Equal(t, "https://raito.collibra.com", tConfig.DataObjectEnrichers[0].Parameters["collibra-url"])
+		assert.Equal(t, "raito", tConfig.DataObjectEnrichers[0].Parameters["collibra-user"])
+		assert.Equal(t, "something", tConfig.DataObjectEnrichers[0].Parameters["collibra-password"])
+		assert.Equal(t, "xxx", tConfig.DataObjectEnrichers[0].Parameters["collibra-dataset"])
+		assert.Equal(t, "OVERWRITE", tConfig.DataObjectEnrichers[0].Parameters["collibra-another"])
+
+		assert.Equal(t, "dbt", tConfig.DataObjectEnrichers[1].Name)
+		assert.Equal(t, "blah", tConfig.DataObjectEnrichers[1].Parameters["dbt-location"])
+
+		runs++
+		return nil
+	})
+	assert.Equal(t, 1, runs)
 }

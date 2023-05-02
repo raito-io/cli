@@ -62,6 +62,47 @@ func (_c *DataUsageStatementHandler_AddStatements_Call) RunAndReturn(run func([]
 	return _c
 }
 
+// GetImportFileSize provides a mock function with given fields:
+func (_m *DataUsageStatementHandler) GetImportFileSize() uint64 {
+	ret := _m.Called()
+
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func() uint64); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(uint64)
+	}
+
+	return r0
+}
+
+// DataUsageStatementHandler_GetImportFileSize_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetImportFileSize'
+type DataUsageStatementHandler_GetImportFileSize_Call struct {
+	*mock.Call
+}
+
+// GetImportFileSize is a helper method to define mock.On call
+func (_e *DataUsageStatementHandler_Expecter) GetImportFileSize() *DataUsageStatementHandler_GetImportFileSize_Call {
+	return &DataUsageStatementHandler_GetImportFileSize_Call{Call: _e.mock.On("GetImportFileSize")}
+}
+
+func (_c *DataUsageStatementHandler_GetImportFileSize_Call) Run(run func()) *DataUsageStatementHandler_GetImportFileSize_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DataUsageStatementHandler_GetImportFileSize_Call) Return(_a0 uint64) *DataUsageStatementHandler_GetImportFileSize_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *DataUsageStatementHandler_GetImportFileSize_Call) RunAndReturn(run func() uint64) *DataUsageStatementHandler_GetImportFileSize_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 type mockConstructorTestingTNewDataUsageStatementHandler interface {
 	mock.TestingT
 	Cleanup(func())

@@ -23,6 +23,7 @@ func TestDataUsageSyncFunction_SyncDataUsage(t *testing.T) {
 	fileCreatorMock := du_mocks.NewDataUsageFileCreator(t)
 	fileCreatorMock.EXPECT().Close().Return()
 	fileCreatorMock.EXPECT().GetStatementCount().Return(0)
+	fileCreatorMock.EXPECT().GetImportFileSize().Return(uint64(3))
 
 	syncerMock := NewMockDataUsageSyncer(t)
 	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(nil)

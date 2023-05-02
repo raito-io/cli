@@ -63,14 +63,14 @@ func (_c *DataUsageStatementHandler_AddStatements_Call) RunAndReturn(run func([]
 }
 
 // GetImportFileSize provides a mock function with given fields:
-func (_m *DataUsageStatementHandler) GetImportFileSize() int64 {
+func (_m *DataUsageStatementHandler) GetImportFileSize() uint64 {
 	ret := _m.Called()
 
-	var r0 int64
-	if rf, ok := ret.Get(0).(func() int64); ok {
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func() uint64); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(int64)
+		r0 = ret.Get(0).(uint64)
 	}
 
 	return r0
@@ -93,12 +93,12 @@ func (_c *DataUsageStatementHandler_GetImportFileSize_Call) Run(run func()) *Dat
 	return _c
 }
 
-func (_c *DataUsageStatementHandler_GetImportFileSize_Call) Return(_a0 int64) *DataUsageStatementHandler_GetImportFileSize_Call {
+func (_c *DataUsageStatementHandler_GetImportFileSize_Call) Return(_a0 uint64) *DataUsageStatementHandler_GetImportFileSize_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *DataUsageStatementHandler_GetImportFileSize_Call) RunAndReturn(run func() int64) *DataUsageStatementHandler_GetImportFileSize_Call {
+func (_c *DataUsageStatementHandler_GetImportFileSize_Call) RunAndReturn(run func() uint64) *DataUsageStatementHandler_GetImportFileSize_Call {
 	_c.Call.Return(run)
 	return _c
 }

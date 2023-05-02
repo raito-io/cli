@@ -95,14 +95,14 @@ func (_c *DataUsageFileCreator_Close_Call) RunAndReturn(run func()) *DataUsageFi
 }
 
 // GetImportFileSize provides a mock function with given fields:
-func (_m *DataUsageFileCreator) GetImportFileSize() int64 {
+func (_m *DataUsageFileCreator) GetImportFileSize() uint64 {
 	ret := _m.Called()
 
-	var r0 int64
-	if rf, ok := ret.Get(0).(func() int64); ok {
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func() uint64); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(int64)
+		r0 = ret.Get(0).(uint64)
 	}
 
 	return r0
@@ -125,12 +125,12 @@ func (_c *DataUsageFileCreator_GetImportFileSize_Call) Run(run func()) *DataUsag
 	return _c
 }
 
-func (_c *DataUsageFileCreator_GetImportFileSize_Call) Return(_a0 int64) *DataUsageFileCreator_GetImportFileSize_Call {
+func (_c *DataUsageFileCreator_GetImportFileSize_Call) Return(_a0 uint64) *DataUsageFileCreator_GetImportFileSize_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *DataUsageFileCreator_GetImportFileSize_Call) RunAndReturn(run func() int64) *DataUsageFileCreator_GetImportFileSize_Call {
+func (_c *DataUsageFileCreator_GetImportFileSize_Call) RunAndReturn(run func() uint64) *DataUsageFileCreator_GetImportFileSize_Call {
 	_c.Call.Return(run)
 	return _c
 }

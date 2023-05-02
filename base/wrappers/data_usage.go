@@ -11,7 +11,7 @@ import (
 //go:generate go run github.com/vektra/mockery/v2 --name=DataUsageStatementHandler --with-expecter
 type DataUsageStatementHandler interface {
 	AddStatements(statements []data_usage.Statement) error
-	GetImportFileSize() int64
+	GetImportFileSize() uint64
 }
 
 //go:generate go run github.com/vektra/mockery/v2 --name=DataUsageSyncer --with-expecter --inpackage

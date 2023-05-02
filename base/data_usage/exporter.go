@@ -31,14 +31,14 @@ type DataUsageFileCreator interface {
 	AddStatements(statements []Statement) error
 	Close()
 	GetStatementCount() int
-	GetImportFileSize() int64
+	GetImportFileSize() uint64
 }
 
 type dataUsageFileCreator struct {
 	config         *DataUsageSyncConfig
 	targetFile     *os.File
 	statementCount int
-	fileByteSize   int64
+	fileByteSize   uint64
 }
 
 func NewDataUsageFileCreator(config *DataUsageSyncConfig) (DataUsageFileCreator, error) {
@@ -58,7 +58,7 @@ func NewDataUsageFileCreator(config *DataUsageSyncConfig) (DataUsageFileCreator,
 		return nil, err
 	}
 
-	duI.fileByteSize += int64(1)
+	duI.fileByteSize += 1
 
 	return &duI, nil
 }
@@ -77,11 +77,11 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 
 		if d.statementCount > 0 {
 			d.targetFile.WriteString(",") //nolint:errcheck
-			d.fileByteSize += int64(1)
+			d.fileByteSize += 1
 		}
 
 		d.targetFile.WriteString("\n") //nolint:errcheck
-		d.fileByteSize += int64(1)
+		d.fileByteSize += 1
 
 		doBuf, err := json.Marshal(statement)
 		if err != nil {
@@ -94,7 +94,7 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 			return fmt.Errorf("error while writing to temp file %q", d.targetFile.Name())
 		}
 		d.statementCount++
-		d.fileByteSize += int64(len(doBuf))
+		d.fileByteSize += uint64(len(doBuf))
 	}
 
 	return nil
@@ -114,7 +114,7 @@ func (d *dataUsageFileCreator) GetStatementCount() int {
 }
 
 // GetImportFileSize returns the approximate byte size of the data that has been added to the import file.
-func (d *dataUsageFileCreator) GetImportFileSize() int64 {
+func (d *dataUsageFileCreator) GetImportFileSize() uint64 {
 	return d.fileByteSize
 }
 

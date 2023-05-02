@@ -45,7 +45,7 @@ func NewDataUsageFileCreator(config *DataUsageSyncConfig) (DataUsageFileCreator,
 	duI := dataUsageFileCreator{
 		config:         config,
 		statementCount: 0,
-		fileByteSize:   0,
+		fileByteSize:   2, // 2 bytes for closing the file, '\n]'
 	}
 
 	err := duI.createTargetFile()
@@ -57,6 +57,8 @@ func NewDataUsageFileCreator(config *DataUsageSyncConfig) (DataUsageFileCreator,
 	if err != nil {
 		return nil, err
 	}
+
+	duI.fileByteSize += int64(1)
 
 	return &duI, nil
 }
@@ -75,9 +77,11 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 
 		if d.statementCount > 0 {
 			d.targetFile.WriteString(",") //nolint:errcheck
+			d.fileByteSize += int64(1)
 		}
 
 		d.targetFile.WriteString("\n") //nolint:errcheck
+		d.fileByteSize += int64(1)
 
 		doBuf, err := json.Marshal(statement)
 		if err != nil {

@@ -11,6 +11,7 @@ import (
 //go:generate go run github.com/vektra/mockery/v2 --name=DataUsageStatementHandler --with-expecter
 type DataUsageStatementHandler interface {
 	AddStatements(statements []data_usage.Statement) error
+	GetImportFileSize() int64
 }
 
 //go:generate go run github.com/vektra/mockery/v2 --name=DataUsageSyncer --with-expecter --inpackage
@@ -57,8 +58,8 @@ func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_
 		return nil, err
 	}
 
-	logger.Info(fmt.Sprintf("Retrieved %d rows and written them to file, for a total time of %s",
-		fileCreator.GetStatementCount(), sec))
+	logger.Info(fmt.Sprintf("Retrieved %d rows and written them to file (total size %d bytes), for a total time of %s",
+		fileCreator.GetStatementCount(), fileCreator.GetImportFileSize(), sec))
 
 	return &data_usage.DataUsageSyncResult{
 		Statements: int32(fileCreator.GetStatementCount()),

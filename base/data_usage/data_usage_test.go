@@ -86,6 +86,7 @@ func TestDataUsageFileCreator(t *testing.T) {
 	dufc.Close()
 
 	assert.Equal(t, 3, dufc.GetStatementCount())
+	assert.Equal(t, int64(1045), dufc.GetImportFileSize())
 
 	bytes, err := ioutil.ReadAll(tempFile)
 	assert.Nil(t, err)

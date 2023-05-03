@@ -87,6 +87,7 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 	if err != nil {
 		hclog.L().Warn(fmt.Sprintf("error retrieving first/last usage for data source %s, last used: %s, first used: %s", importerConfig.DataSourceId, lastUsed, firstUsed))
 		timeValue := time.Unix(int64(0), 0)
+
 		if lastUsed == nil {
 			lastUsed = &timeValue
 		}

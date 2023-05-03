@@ -82,16 +82,24 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 
 	s.TargetConfig.TargetLogger.Info("Fetching last synchronization date")
 
-	lastUsed, err := duImporter.GetLastUsage()
+	firstUsed, lastUsed, err := duImporter.GetLastAndFirstUsage()
 
-	if err != nil || lastUsed == nil {
-		hclog.L().Warn(fmt.Sprintf("error retrieving last usage for data source %s, last used: %s", importerConfig.DataSourceId, lastUsed))
+	if err != nil {
+		hclog.L().Warn(fmt.Sprintf("error retrieving first/last usage for data source %s, last used: %s, first used: %s", importerConfig.DataSourceId, lastUsed, firstUsed))
 		timeValue := time.Unix(int64(0), 0)
-		lastUsed = &timeValue
+		if lastUsed == nil {
+			lastUsed = &timeValue
+		}
+
+		if firstUsed == nil {
+			firstUsed = &timeValue
+		}
 	}
 
 	lastUsedValue := *lastUsed
+	firstUsedValue := *firstUsed
 	syncerConfig.ConfigMap.Parameters["lastUsed"] = lastUsedValue.Format(time.RFC3339)
+	syncerConfig.ConfigMap.Parameters["firstUsed"] = firstUsedValue.Format(time.RFC3339)
 
 	s.TargetConfig.TargetLogger.Info("Fetching usage data from the data source")
 

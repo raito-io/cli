@@ -21,14 +21,15 @@ type DataUsageImportConfig struct {
 	TargetFile string
 }
 
-type DataSourceLastUsed struct {
-	Id       string `json:"id"`
-	LastUsed string `json:"usageLastUsed"`
+type DataSourceUsageInfo struct {
+	Id        string `json:"id"`
+	LastUsed  string `json:"usageLastUsed"`
+	FirstUsed string `json:"usageFirstUsed"`
 }
 
 type DataUsageImporter interface {
 	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
-	GetLastUsage() (*time.Time, error)
+	GetLastAndFirstUsage() (*time.Time, *time.Time, error)
 }
 
 type dataUsageImporter struct {
@@ -96,26 +97,34 @@ func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatu
 	return res.Response.Subtask.Status, res.Response.Subtask.SubtaskId, nil
 }
 
-func (d *dataUsageImporter) GetLastUsage() (*time.Time, error) {
-	gqlQuery := fmt.Sprintf(`{"variables":{}, "query": "query {dataSource(id:\"%s\") { ... on DataSource {id usageLastUsed }}}" }`, d.config.DataSourceId)
+func (d *dataUsageImporter) GetLastAndFirstUsage() (*time.Time, *time.Time, error) {
+	gqlQuery := fmt.Sprintf(`{"variables":{}, "query": "query {dataSource(id:\"%s\") { ... on DataSource {id usageLastUsed usageFirstUsed }}}" }`, d.config.DataSourceId)
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 	res := LastUsedResponse{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseConfig, &res)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
+		return nil, nil, fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
 	}
 
-	finalResult := time.Unix(int64(0), 0)
+	finalResultLastUsage := time.Unix(int64(0), 0)
+	finalResultFirstUsage := time.Unix(int64(0), 0)
 
 	if res.DataSourceInfo.LastUsed != "" {
 		finalResultRaw, err := time.Parse(time.RFC3339, res.DataSourceInfo.LastUsed)
 		if err == nil {
-			finalResult = finalResultRaw
+			finalResultLastUsage = finalResultRaw
 		}
 	}
 
-	return &finalResult, nil
+	if res.DataSourceInfo.FirstUsed != "" {
+		finalResultRaw, err := time.Parse(time.RFC3339, res.DataSourceInfo.FirstUsed)
+		if err == nil {
+			finalResultFirstUsage = finalResultRaw
+		}
+	}
+
+	return &finalResultFirstUsage, &finalResultLastUsage, nil
 }
 
 type subtaskResponse struct {
@@ -132,5 +141,5 @@ type Response struct {
 }
 
 type LastUsedResponse struct {
-	DataSourceInfo DataSourceLastUsed `json:"dataSource"`
+	DataSourceInfo DataSourceUsageInfo `json:"dataSource"`
 }

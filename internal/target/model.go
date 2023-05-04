@@ -52,7 +52,6 @@ type BaseTargetConfig struct {
 	SkipDataAccessImport bool
 
 	DeleteUntouched bool
-	ReplaceTags     bool
 	DeleteTempFiles bool
 	ReplaceGroups   bool
 

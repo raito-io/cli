@@ -127,7 +127,6 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 		BaseConfig:      *baseconfig,
 		DeleteUntouched: true,
 		DeleteTempFiles: true,
-		ReplaceTags:     true,
 		ReplaceGroups:   true,
 	}
 
@@ -253,7 +252,6 @@ func buildTargetConfigFromFlags(baseConfig *BaseConfig) *BaseTargetConfig {
 		TargetLogger:          baseConfig.BaseLogger.With("target", name),
 		DeleteUntouched:       true,
 		DeleteTempFiles:       true,
-		ReplaceTags:           true,
 		ReplaceGroups:         true,
 	}
 

@@ -22,7 +22,6 @@ type IdentityStoreImportConfig struct {
 	GroupFile       string
 	DeleteUntouched bool
 	ReplaceGroups   bool
-	ReplaceTags     bool
 }
 
 type IdentityStoreImporter interface {
@@ -81,8 +80,7 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
           importSettings: {
             identityStore: \"%s\",
             deleteUntouched: %t,
-            replaceGroups: %t,
-            replaceTags: %t,  
+            replaceGroups: %t, 
             usersFileKey: \"%s\",
             groupsFileKey: \"%s\"
           }
@@ -92,7 +90,7 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
             subtaskId
           }
         }
-    }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, i.config.ReplaceTags, userKey, groupKey)
+    }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, userKey, groupKey)
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 

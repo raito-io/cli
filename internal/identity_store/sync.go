@@ -112,7 +112,6 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 		GroupFile:        groupFile,
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
 		ReplaceGroups:    s.TargetConfig.ReplaceGroups,
-		ReplaceTags:      s.TargetConfig.ReplaceTags,
 	}
 	isImporter := NewIdentityStoreImporter(&importerConfig, statusUpdater)
 

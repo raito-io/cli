@@ -116,7 +116,6 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		BaseTargetConfig: *s.TargetConfig,
 		TargetFile:       enrichedTargetFile,
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
-		ReplaceTags:      s.TargetConfig.ReplaceTags,
 	}
 	dsImporter := NewDataSourceImporter(&importerConfig, statusUpdater)
 

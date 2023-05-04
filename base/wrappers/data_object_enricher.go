@@ -118,7 +118,18 @@ func createDataObjectFromRow(row *jstream.MetaValue) (*data_source.DataObject, e
 	}
 
 	if t, found := values["tags"]; found && t != nil {
-		do.Tags = t.(map[string]interface{})
+		if tags, ok := t.([]interface{}); ok {
+			do.Tags = make([]*data_source.Tag, 0, len(tags))
+			for _, tag := range tags {
+				if tagObj, tok := tag.(map[string]interface{}); tok {
+					do.Tags = append(do.Tags, &data_source.Tag{
+						Key:    getStringValue(tagObj, "key"),
+						Value:  getStringValue(tagObj, "value"),
+						Source: getStringValue(tagObj, "source"),
+					})
+				}
+			}
+		}
 	}
 
 	return &do, nil

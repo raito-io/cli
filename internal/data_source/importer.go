@@ -20,7 +20,6 @@ type DataSourceImportConfig struct {
 	target.BaseTargetConfig
 	TargetFile      string
 	DeleteUntouched bool
-	ReplaceTags     bool
 }
 
 type DataSourceImporter interface {
@@ -73,8 +72,7 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, str
         jobId: \"%s\",
           importSettings: {
             dataSource: \"%s\",
-            deleteUntouched: %t,
-            replaceTags: %t,  
+            deleteUntouched: %t, 
             fileKey: \"%s\"
           }
         }) {
@@ -83,7 +81,7 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, str
             subtaskId
           }
         }
-    }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, d.config.ReplaceTags, fileKey)
+    }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, fileKey)
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 

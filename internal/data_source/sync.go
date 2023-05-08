@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/raito-io/cli/base/data_object_enricher"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/raito-io/cli/base/data_object_enricher"
 
 	dspc "github.com/raito-io/cli/base/data_source"
 	baseconfig "github.com/raito-io/cli/base/util/config"

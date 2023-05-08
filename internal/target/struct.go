@@ -2,12 +2,13 @@ package target
 
 import (
 	"fmt"
-	"github.com/aws/smithy-go/ptr"
-	iconfig "github.com/raito-io/cli/internal/config"
-	"github.com/raito-io/cli/internal/constants"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/aws/smithy-go/ptr"
+	iconfig "github.com/raito-io/cli/internal/config"
+	"github.com/raito-io/cli/internal/constants"
 )
 
 func fillStruct(o interface{}, m map[string]interface{}) error {

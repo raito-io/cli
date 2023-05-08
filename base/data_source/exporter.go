@@ -11,25 +11,21 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/raito-io/cli/base/tag"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=DataSourceFileCreator --with-expecter
 
 // DataObject represents a data object in the format that is suitable to be imported into a Raito data source.
 type DataObject struct {
-	ExternalId       string `json:"externalId"`
-	Name             string `json:"name"`
-	FullName         string `json:"fullName"`
-	Type             string `json:"type"`
-	Description      string `json:"description"`
-	ParentExternalId string `json:"parentExternalId"`
-	Tags             []*Tag `json:"tags"`
-}
-
-type Tag struct {
-	Key    string `json:"key"`
-	Value  string `json:"value"`
-	Source string `json:"source"`
+	ExternalId       string     `json:"externalId"`
+	Name             string     `json:"name"`
+	FullName         string     `json:"fullName"`
+	Type             string     `json:"type"`
+	Description      string     `json:"description"`
+	ParentExternalId string     `json:"parentExternalId"`
+	Tags             []*tag.Tag `json:"tags"`
 }
 
 // DataObjectReference represents the reference to a DataObject suitable for e.g. defining the What in Access Provider import

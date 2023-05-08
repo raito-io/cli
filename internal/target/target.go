@@ -139,14 +139,14 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 
 	for k, v := range target {
 		if _, f := constants.KnownFlags[k]; !f {
-			cv, err := iconfig.HandleField(v, reflect.String)
-			if err != nil {
-				return nil, err
+			cv, err2 := iconfig.HandleField(v, reflect.String)
+			if err2 != nil {
+				return nil, err2
 			}
 
-			stringvalue := argumentToString(cv)
-			if stringvalue != nil {
-				tConfig.Parameters[k] = *stringvalue
+			stringValue := argumentToString(cv)
+			if stringValue != nil {
+				tConfig.Parameters[k] = *stringValue
 			}
 		}
 	}
@@ -166,25 +166,25 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 
 	// If not set in the target, we take the globally set values.
 	if tConfig.ApiSecret == "" {
-		cv, err := iconfig.HandleField(viper.GetString(constants.ApiSecretFlag), reflect.String)
-		if err != nil {
-			return nil, err
+		cv, err2 := iconfig.HandleField(viper.GetString(constants.ApiSecretFlag), reflect.String)
+		if err2 != nil {
+			return nil, err2
 		}
 		tConfig.ApiSecret = cv.(string)
 	}
 
 	if tConfig.ApiUser == "" {
-		cv, err := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
-		if err != nil {
-			return nil, err
+		cv, err2 := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
+		if err2 != nil {
+			return nil, err2
 		}
 		tConfig.ApiUser = cv.(string)
 	}
 
 	if tConfig.Domain == "" {
-		cv, err := iconfig.HandleField(viper.GetString(constants.DomainFlag), reflect.String)
-		if err != nil {
-			return nil, err
+		cv, err2 := iconfig.HandleField(viper.GetString(constants.DomainFlag), reflect.String)
+		if err2 != nil {
+			return nil, err2
 		}
 		tConfig.Domain = cv.(string)
 	}

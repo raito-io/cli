@@ -10,28 +10,30 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/raito-io/cli/base/tag"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=IdentityStoreFileCreator --with-expecter
 
 // Group represents a user group in the format that is suitable to be imported into a Raito identity store.
 type Group struct {
-	ExternalId             string                 `json:"externalId"`
-	Name                   string                 `json:"name"`
-	DisplayName            string                 `json:"displayName"`
-	Description            string                 `json:"description"`
-	ParentGroupExternalIds []string               `json:"parentGroupExternalIds"`
-	Tags                   map[string]interface{} `json:"tags"`
+	ExternalId             string     `json:"externalId"`
+	Name                   string     `json:"name"`
+	DisplayName            string     `json:"displayName"`
+	Description            string     `json:"description"`
+	ParentGroupExternalIds []string   `json:"parentGroupExternalIds"`
+	Tags                   []*tag.Tag `json:"tags"`
 }
 
 // User represents a user in the format that is suitable to be imported into a Raito identity store.
 type User struct {
-	ExternalId       string                 `json:"externalId"`
-	Name             string                 `json:"name"`
-	UserName         string                 `json:"userName"`
-	Email            string                 `json:"email"`
-	GroupExternalIds []string               `json:"groupExternalIds"`
-	Tags             map[string]interface{} `json:"tags"`
+	ExternalId       string     `json:"externalId"`
+	Name             string     `json:"name"`
+	UserName         string     `json:"userName"`
+	Email            string     `json:"email"`
+	GroupExternalIds []string   `json:"groupExternalIds"`
+	Tags             []*tag.Tag `json:"tags"`
 }
 
 // IdentityStoreFileCreator describes the interface for easily creating the user and group import files

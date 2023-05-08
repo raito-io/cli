@@ -2,6 +2,7 @@ package data_source
 
 import (
 	"encoding/json"
+	"github.com/raito-io/cli/base/tag"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -34,7 +35,18 @@ func TestDataSourceFileCreator(t *testing.T) {
 		FullName:    "Data Object 1",
 		Type:        "table",
 		Description: "The first data object",
-		Tags:        map[string]interface{}{"k1": "v1", "k2": "v2"},
+		Tags: []*tag.Tag{
+			{
+				Key:    "k1",
+				Value:  "v1",
+				Source: "test",
+			},
+			{
+				Key:    "k2",
+				Value:  "v2",
+				Source: "test",
+			},
+		},
 	})
 	dos = append(dos, &DataObject{
 		ExternalId:       "eid2",
@@ -43,7 +55,13 @@ func TestDataSourceFileCreator(t *testing.T) {
 		Type:             "schema",
 		Description:      "The second data object",
 		ParentExternalId: "eid1",
-		Tags:             map[string]interface{}{"k3": "v3"},
+		Tags: []*tag.Tag{
+			{
+				Key:    "k3",
+				Value:  "v3",
+				Source: "test",
+			},
+		},
 	})
 	dos = append(dos, &DataObject{
 		ExternalId:       "eid3",
@@ -83,8 +101,8 @@ func TestDataSourceFileCreator(t *testing.T) {
 	assert.Equal(t, "The first data object", dosr[1].Description)
 	assert.Equal(t, config.DataSourceId, dosr[1].ParentExternalId)
 	assert.Equal(t, 2, len(dosr[1].Tags))
-	assert.Equal(t, "v1", dosr[1].Tags["k1"])
-	assert.Equal(t, "v2", dosr[1].Tags["k2"])
+	assert.Equal(t, "v1", dosr[1].Tags[0].Value)
+	assert.Equal(t, "v2", dosr[1].Tags[1].Value)
 
 	assert.Equal(t, "eid2", dosr[2].ExternalId)
 	assert.Equal(t, "DO2", dosr[2].Name)
@@ -93,8 +111,7 @@ func TestDataSourceFileCreator(t *testing.T) {
 	assert.Equal(t, "The second data object", dosr[2].Description)
 	assert.Equal(t, "eid1", dosr[2].ParentExternalId)
 	assert.Equal(t, 1, len(dosr[2].Tags))
-	assert.Equal(t, "v3", dosr[2].Tags["k3"])
-	assert.Nil(t, dosr[2].Tags["k1"])
+	assert.Equal(t, "v3", dosr[2].Tags[0].Value)
 
 	assert.Equal(t, "eid3", dosr[3].ExternalId)
 	assert.Equal(t, "DO3", dosr[3].Name)
@@ -103,7 +120,6 @@ func TestDataSourceFileCreator(t *testing.T) {
 	assert.Equal(t, "", dosr[3].Description)
 	assert.Equal(t, "eid2", dosr[3].ParentExternalId)
 	assert.Equal(t, 0, len(dosr[3].Tags))
-	assert.Nil(t, dosr[3].Tags["k1"])
 }
 
 func TestDataSourceDetails(t *testing.T) {
@@ -124,7 +140,18 @@ func TestDataSourceDetails(t *testing.T) {
 		FullName:    "Data Object 1",
 		Type:        "table",
 		Description: "The first data object",
-		Tags:        map[string]interface{}{"k1": "v1", "k2": "v2"},
+		Tags: []*tag.Tag{
+			{
+				Key:    "k1",
+				Value:  "v1",
+				Source: "test",
+			},
+			{
+				Key:    "k2",
+				Value:  "v2",
+				Source: "test",
+			},
+		},
 	})
 
 	// set data source specs

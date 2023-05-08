@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+
 	"github.com/bcicen/jstream"
 	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/data_source"
-	"os"
+	"github.com/raito-io/cli/base/tag"
 )
 
 type DataObjectWriter interface {
@@ -70,17 +72,17 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 	for doRow := range decoder.Stream() {
 		logger.Info(fmt.Sprintf("Reading row %d", dataObjectsRead))
 
-		do, err := createDataObjectFromRow(doRow)
+		do, err2 := createDataObjectFromRow(doRow)
 
 		logger.Info(fmt.Sprintf("Start enriching data object %q", do.FullName))
 
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, err.Error())
+		if err2 != nil {
+			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, err2.Error())
 		}
 
-		err = f.enricher.Enrich(ctx, do)
-		if err != nil {
-			return nil, fmt.Errorf("unable to enrich data object (%d): %s", dataObjectsRead, err.Error())
+		err2 = f.enricher.Enrich(ctx, do)
+		if err2 != nil {
+			return nil, fmt.Errorf("unable to enrich data object (%d): %s", dataObjectsRead, err2.Error())
 		}
 
 		dataObjectsRead++
@@ -107,7 +109,6 @@ func createDataObjectFromRow(row *jstream.MetaValue) (*data_source.DataObject, e
 
 	var values = row.Value.(map[string]interface{})
 
-	// TODO better exception handling?
 	do := data_source.DataObject{
 		ExternalId:       getStringValue(values, "externalId"),
 		Name:             getStringValue(values, "name"),
@@ -119,10 +120,11 @@ func createDataObjectFromRow(row *jstream.MetaValue) (*data_source.DataObject, e
 
 	if t, found := values["tags"]; found && t != nil {
 		if tags, ok := t.([]interface{}); ok {
-			do.Tags = make([]*data_source.Tag, 0, len(tags))
-			for _, tag := range tags {
-				if tagObj, tok := tag.(map[string]interface{}); tok {
-					do.Tags = append(do.Tags, &data_source.Tag{
+			do.Tags = make([]*tag.Tag, 0, len(tags))
+
+			for _, tagInput := range tags {
+				if tagObj, tok := tagInput.(map[string]interface{}); tok {
+					do.Tags = append(do.Tags, &tag.Tag{
 						Key:    getStringValue(tagObj, "key"),
 						Value:  getStringValue(tagObj, "value"),
 						Source: getStringValue(tagObj, "source"),

@@ -2,6 +2,7 @@ package identity_store
 
 import (
 	"encoding/json"
+	"github.com/raito-io/cli/base/tag"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -36,7 +37,18 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 		UserName:         "u1",
 		Email:            "u1@raito.io",
 		GroupExternalIds: []string{"geid1"},
-		Tags:             map[string]interface{}{"k1": "v1", "k2": "v2"},
+		Tags: []*tag.Tag{
+			{
+				Key:    "k1",
+				Value:  "v1",
+				Source: "test",
+			},
+			{
+				Key:    "k2",
+				Value:  "v2",
+				Source: "test",
+			},
+		},
 	})
 	users = append(users, &User{
 		ExternalId:       "ueid2",
@@ -44,7 +56,13 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 		UserName:         "u2",
 		Email:            "u2@raito.io",
 		GroupExternalIds: []string{"geid1", "geid2"},
-		Tags:             map[string]interface{}{"k3": "v3"},
+		Tags: []*tag.Tag{
+			{
+				Key:    "k3",
+				Value:  "v3",
+				Source: "test",
+			},
+		},
 	})
 	users = append(users, &User{
 		ExternalId: "ueid3",
@@ -62,13 +80,30 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 		DisplayName:            "Group1",
 		Description:            "A group",
 		ParentGroupExternalIds: []string{"geid2"},
-		Tags:                   map[string]interface{}{"gk1": "gv1", "gk2": "gv2"},
+		Tags: []*tag.Tag{
+			{
+				Key:    "gk1",
+				Value:  "gv1",
+				Source: "test",
+			},
+			{
+				Key:    "gk2",
+				Value:  "gv2",
+				Source: "test",
+			},
+		},
 	})
 	groups = append(groups, &Group{
 		ExternalId:  "geid2",
 		Name:        "g2",
 		DisplayName: "Group2",
-		Tags:        map[string]interface{}{"gk3": "gv3"},
+		Tags: []*tag.Tag{
+			{
+				Key:    "gk3",
+				Value:  "gv3",
+				Source: "test",
+			},
+		},
 	})
 
 	err = isfc.AddGroups(groups...)
@@ -92,8 +127,8 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 	assert.Equal(t, "u1", ur[0].UserName)
 	assert.Equal(t, "u1@raito.io", ur[0].Email)
 	assert.Equal(t, 2, len(ur[0].Tags))
-	assert.Equal(t, "v1", ur[0].Tags["k1"])
-	assert.Equal(t, "v2", ur[0].Tags["k2"])
+	assert.Equal(t, "v1", ur[0].Tags[0].Value)
+	assert.Equal(t, "v2", ur[0].Tags[1].Value)
 	assert.Equal(t, 1, len(ur[0].GroupExternalIds))
 	assert.Equal(t, "geid1", ur[0].GroupExternalIds[0])
 
@@ -102,8 +137,7 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 	assert.Equal(t, "u2", ur[1].UserName)
 	assert.Equal(t, "u2@raito.io", ur[1].Email)
 	assert.Equal(t, 1, len(ur[1].Tags))
-	assert.Equal(t, "v3", ur[1].Tags["k3"])
-	assert.Nil(t, ur[1].Tags["k1"])
+	assert.Equal(t, "v3", ur[1].Tags[0].Value)
 	assert.Equal(t, 2, len(ur[1].GroupExternalIds))
 	assert.Equal(t, "geid1", ur[1].GroupExternalIds[0])
 	assert.Equal(t, "geid2", ur[1].GroupExternalIds[1])
@@ -113,7 +147,6 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 	assert.Equal(t, "u3", ur[2].UserName)
 	assert.Equal(t, "", ur[2].Email)
 	assert.Equal(t, 0, len(ur[2].Tags))
-	assert.Nil(t, ur[2].Tags["k1"])
 	assert.Nil(t, ur[2].GroupExternalIds)
 
 	bytes, err = ioutil.ReadAll(tempFile2)
@@ -129,8 +162,8 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 	assert.Equal(t, "Group1", gr[0].DisplayName)
 	assert.Equal(t, "A group", gr[0].Description)
 	assert.Equal(t, 2, len(gr[0].Tags))
-	assert.Equal(t, "gv1", gr[0].Tags["gk1"])
-	assert.Equal(t, "gv2", gr[0].Tags["gk2"])
+	assert.Equal(t, "gv1", gr[0].Tags[0].Value)
+	assert.Equal(t, "gv2", gr[0].Tags[1].Value)
 	assert.Equal(t, 1, len(gr[0].ParentGroupExternalIds))
 	assert.Equal(t, "geid2", gr[0].ParentGroupExternalIds[0])
 
@@ -139,6 +172,6 @@ func TestIdentityStoreFileCreator_Users(t *testing.T) {
 	assert.Equal(t, "Group2", gr[1].DisplayName)
 	assert.Equal(t, "", gr[1].Description)
 	assert.Equal(t, 1, len(gr[1].Tags))
-	assert.Equal(t, "gv3", gr[1].Tags["gk3"])
+	assert.Equal(t, "gv3", gr[1].Tags[0].Value)
 	assert.Nil(t, gr[1].ParentGroupExternalIds)
 }

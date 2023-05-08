@@ -3,8 +3,9 @@ package base
 
 import (
 	"errors"
-	"github.com/raito-io/cli/base/data_object_enricher"
 	"sync"
+
+	"github.com/raito-io/cli/base/data_object_enricher"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"

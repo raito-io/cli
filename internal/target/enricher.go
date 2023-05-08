@@ -2,13 +2,14 @@ package target
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/barkimedes/go-deepcopy"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/spf13/viper"
-	"reflect"
 )
 
 func buildEnricherConfigFromMap(params map[string]interface{}) (*EnricherConfig, error) {
@@ -125,7 +126,6 @@ func addDataObjectEnrichersToTargetConfig(tConfig *BaseTargetConfig, target map[
 				}
 
 				tConfig.DataObjectEnrichers = append(tConfig.DataObjectEnrichers, newEnricher)
-
 			} else {
 				tConfig.DataObjectEnrichers = append(tConfig.DataObjectEnrichers, eConfig)
 			}

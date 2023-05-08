@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/raito-io/cli/base/data_object_enricher"
 	"io"
 	"io/fs"
 	"os"
@@ -16,6 +15,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/raito-io/cli/base/data_object_enricher"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"

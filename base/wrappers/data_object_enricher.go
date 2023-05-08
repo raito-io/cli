@@ -16,7 +16,7 @@ type DataObjectWriter interface {
 	AddDataObjects(dataObjects ...*data_source.DataObject) error
 }
 
-//go:generate go run github.com/vektra/mockery/v2 --name=DataObjectEnricher --with-expecter --inpackage
+//go:generate go run github.com/vektra/mockery/v2 --name=DataObjectEnricherI --with-expecter --inpackage
 type DataObjectEnricherI interface {
 	// Initialize allows the plugin to do any preparation work (like making a connection to the enrichment source) and store the writer in a variable.
 	Initialize(ctx context.Context, dataObjectWriter DataObjectWriter, config map[string]string) error

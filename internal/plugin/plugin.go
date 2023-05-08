@@ -16,6 +16,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/raito-io/cli/base/data_object_enricher"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -43,6 +45,7 @@ var pluginMap = map[string]plugin.Plugin{
 	"accessSyncer":        &access_provider.AccessSyncerPlugin{},
 	"dataUsageSyncer":     &data_usage.DataUsageSyncerPlugin{},
 	"info":                &plugin2.InfoPlugin{},
+	"dataObjectEnricher":  &data_object_enricher.DataObjectEnricherPlugin{},
 }
 
 func init() {
@@ -62,6 +65,7 @@ func init() {
 type PluginClient interface {
 	Close()
 	GetDataSourceSyncer() (data_source.DataSourceSyncer, error)
+	GetDataObjectEnricher() (data_object_enricher.DataObjectEnricher, error)
 	GetIdentityStoreSyncer() (identity_store.IdentityStoreSyncer, error)
 	GetAccessSyncer() (access_provider.AccessSyncer, error)
 	GetDataUsageSyncer() (data_usage.DataUsageSyncer, error)
@@ -371,6 +375,19 @@ func (c pluginClientImpl) GetDataSourceSyncer() (data_source.DataSourceSyncer, e
 		return syncer, nil
 	} else {
 		return nil, fmt.Errorf("found plugin doesn't correctly implement the DataSourceSyncer interface")
+	}
+}
+
+func (c pluginClientImpl) GetDataObjectEnricher() (data_object_enricher.DataObjectEnricher, error) {
+	raw, err := c.getPlugin(data_object_enricher.DataObjectEnricherName)
+	if err != nil {
+		return nil, err
+	}
+
+	if syncer, ok := raw.(data_object_enricher.DataObjectEnricher); ok {
+		return syncer, nil
+	} else {
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the DataObjectEnricher interface")
 	}
 }
 

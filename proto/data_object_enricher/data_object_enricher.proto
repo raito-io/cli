@@ -1,0 +1,25 @@
+syntax = "proto3";
+package data_object_enricher;
+
+import "google/protobuf/empty.proto";
+import "util/config/config.proto";
+import "util/version/version.proto";
+
+// DataObjectEnricherConfig represents the configuration that is passed from the CLI to the DataObjectEnricher plugin interface.
+// It contains all the necessary configuration parameters for the plugin to function.
+message DataObjectEnricherConfig {
+  util.config.ConfigMap config_map = 1;
+  string input_file = 2;
+  string output_file = 3;
+}
+
+// DataObjectEnricherResult represents the result from the DataObjectEnricher process.
+// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
+message DataObjectEnricherResult {
+  int32 enriched = 1;
+}
+
+service DataObjectEnricherService {
+  rpc CliVersionInformation(google.protobuf.Empty) returns (util.version.CliBuildInformation);
+  rpc Enrich(DataObjectEnricherConfig) returns (DataObjectEnricherResult);
+}

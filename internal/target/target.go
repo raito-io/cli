@@ -4,68 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 
-	"github.com/aws/smithy-go/ptr"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 
-	"github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/base/util/error/grpc_error"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
 )
-
-type ConfigMap struct {
-	Parameters map[string]string
-}
-
-func (c *ConfigMap) ToProtobufConfigMap() *config.ConfigMap {
-	return &config.ConfigMap{
-		Parameters: c.Parameters,
-	}
-}
-
-type BaseConfig struct {
-	ConfigMap
-	ApiUser    string
-	ApiSecret  string
-	Domain     string
-	BaseLogger hclog.Logger
-}
-
-type BaseTargetConfig struct {
-	BaseConfig
-	ConnectorName    string
-	ConnectorVersion string
-	Name             string
-	DataSourceId     string
-	IdentityStoreId  string
-
-	SkipIdentityStoreSync bool
-	SkipDataSourceSync    bool
-	SkipDataAccessSync    bool
-	SkipDataUsageSync     bool
-
-	LockAllWho    bool
-	LockAllWhat   bool
-	LockAllNames  bool
-	LockAllDelete bool
-
-	OnlyOutOfSyncData    bool
-	SkipDataAccessImport bool
-
-	DeleteUntouched bool
-	ReplaceTags     bool
-	DeleteTempFiles bool
-	ReplaceGroups   bool
-
-	TargetLogger hclog.Logger
-}
 
 func RunTargets(baseConfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig) error, opFns ...func(*Options)) error {
 	options := createOptions(opFns...)
@@ -103,6 +53,13 @@ func HandleTargetError(err error, config *BaseTargetConfig, prefix ...string) {
 }
 
 func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig) error, options *Options) error {
+	var errorResult error
+
+	dataObjectEnricherMap, err := buildDataObjectEnricherMap()
+	if err != nil {
+		errorResult = multierror.Append(errorResult, err)
+	}
+
 	targets := viper.Get(constants.Targets)
 	onlyTargets := make(map[string]struct{})
 
@@ -112,8 +69,6 @@ func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTarg
 			onlyTargets[strings.TrimSpace(ot)] = struct{}{}
 		}
 	}
-
-	var errorResult error
 
 	if targetList, ok := targets.([]interface{}); ok {
 		hclog.L().Debug(fmt.Sprintf("Found %d targets to run.", len(targetList)))
@@ -127,10 +82,10 @@ func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTarg
 				continue
 			}
 
-			tConfig, err := buildTargetConfigFromMap(baseconfig, target)
+			tConfig, err := buildTargetConfigFromMap(baseconfig, target, dataObjectEnricherMap)
 			if err != nil {
-				errorResult = multierror.Append(errorResult, fmt.Errorf("error while parsing target configuration: %s", err.Error()))
-				hclog.L().Error(fmt.Sprintf("error while parsing target configuration: %s", err.Error()))
+				errorResult = multierror.Append(errorResult, fmt.Errorf("error while parsing the target configuration: %s", err.Error()))
+				hclog.L().Error(fmt.Sprintf("error while parsing the target configuration: %s", err.Error()))
 
 				continue
 			}
@@ -167,31 +122,31 @@ func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTarg
 	return errorResult
 }
 
-func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interface{}) (*BaseTargetConfig, error) {
+func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*EnricherConfig) (*BaseTargetConfig, error) {
 	tConfig := BaseTargetConfig{
 		BaseConfig:      *baseconfig,
 		DeleteUntouched: true,
 		DeleteTempFiles: true,
-		ReplaceTags:     true,
 		ReplaceGroups:   true,
 	}
-	err := fillStruct(&tConfig, target)
 
+	err := fillStruct(&tConfig, target)
 	if err != nil {
 		return nil, err
 	}
+
 	tConfig.Parameters = make(map[string]string)
 
 	for k, v := range target {
 		if _, f := constants.KnownFlags[k]; !f {
-			cv, err := iconfig.HandleField(v, reflect.String)
-			if err != nil {
-				return nil, err
+			cv, err2 := iconfig.HandleField(v, reflect.String)
+			if err2 != nil {
+				return nil, err2
 			}
 
-			stringvalue := argumentToString(cv)
-			if stringvalue != nil {
-				tConfig.Parameters[k] = *stringvalue
+			stringValue := argumentToString(cv)
+			if stringValue != nil {
+				tConfig.Parameters[k] = *stringValue
 			}
 		}
 	}
@@ -211,72 +166,35 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 
 	// If not set in the target, we take the globally set values.
 	if tConfig.ApiSecret == "" {
-		cv, err := iconfig.HandleField(viper.GetString(constants.ApiSecretFlag), reflect.String)
-		if err != nil {
-			return nil, err
+		cv, err2 := iconfig.HandleField(viper.GetString(constants.ApiSecretFlag), reflect.String)
+		if err2 != nil {
+			return nil, err2
 		}
 		tConfig.ApiSecret = cv.(string)
 	}
 
 	if tConfig.ApiUser == "" {
-		cv, err := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
-		if err != nil {
-			return nil, err
+		cv, err2 := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
+		if err2 != nil {
+			return nil, err2
 		}
 		tConfig.ApiUser = cv.(string)
 	}
 
 	if tConfig.Domain == "" {
-		cv, err := iconfig.HandleField(viper.GetString(constants.DomainFlag), reflect.String)
-		if err != nil {
-			return nil, err
+		cv, err2 := iconfig.HandleField(viper.GetString(constants.DomainFlag), reflect.String)
+		if err2 != nil {
+			return nil, err2
 		}
 		tConfig.Domain = cv.(string)
 	}
 
+	err = addDataObjectEnrichersToTargetConfig(&tConfig, target, dataObjectEnricherMap)
+	if err != nil {
+		return nil, err
+	}
+
 	return &tConfig, nil
-}
-
-func buildParameterMapFromArguments(args []string) map[string]string {
-	params := make(map[string]string)
-
-	for i := 0; i < len(args); i++ {
-		if strings.HasPrefix(args[i], "--") {
-			arg := args[i][2:]
-			if strings.Contains(arg, "=") {
-				// The case where the flag is in the form of "--key=value"
-				key := arg[0:strings.Index(arg, "=")]
-				value := arg[strings.Index(arg, "=")+1:]
-				params[key] = value
-			} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
-				// The case where the flag is in the form of "--key value"
-				params[arg] = args[i+1]
-				i++
-			} else {
-				// Otherwise, we consider this a boolean flag
-				params[arg] = "TRUE"
-			}
-		}
-	}
-
-	return params
-}
-
-func argumentToString(arg interface{}) *string {
-	if arg == nil {
-		return nil
-	}
-
-	switch v := arg.(type) {
-	case string:
-		return &v
-	case int:
-		return ptr.String(strconv.Itoa(v))
-	case bool:
-		return ptr.String(strconv.FormatBool(v))
-	}
-
-	return nil
 }
 
 func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*BaseConfig, error) {
@@ -334,7 +252,6 @@ func buildTargetConfigFromFlags(baseConfig *BaseConfig) *BaseTargetConfig {
 		TargetLogger:          baseConfig.BaseLogger.With("target", name),
 		DeleteUntouched:       true,
 		DeleteTempFiles:       true,
-		ReplaceTags:           true,
 		ReplaceGroups:         true,
 	}
 
@@ -374,92 +291,6 @@ func logTargetConfig(config *BaseTargetConfig) {
 	}
 
 	hclog.L().Debug(fmt.Sprintf("Using target config (censured): %+v", cc))
-}
-
-func fillStruct(o interface{}, m map[string]interface{}) error {
-	for k, v := range m {
-		err := setField(o, k, v)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func setField(obj interface{}, name string, value interface{}) error {
-	structValue := reflect.ValueOf(obj).Elem()
-	structFieldValue := structValue.FieldByName(name)
-
-	if !structFieldValue.IsValid() {
-		structFieldValue = structValue.FieldByName(toCamelInitCase(name, true))
-		if !structFieldValue.IsValid() {
-			// Not returning an error but just skipping = ignoring unknown fields.
-			return nil
-		}
-	}
-
-	if !structFieldValue.CanSet() {
-		return fmt.Errorf("cannot set value of field %q field", name)
-	}
-
-	structFieldType := structFieldValue.Type()
-
-	value, err := iconfig.HandleField(value, structFieldType.Kind())
-	if err != nil {
-		return err
-	}
-
-	val := reflect.ValueOf(value)
-
-	if structFieldType != val.Type() {
-		return fmt.Errorf("provided value type didn't match obj field type for %q", name)
-	}
-
-	structFieldValue.Set(val)
-
-	return nil
-}
-
-// Converts a string to CamelCase
-func toCamelInitCase(s string, initCase bool) string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return s
-	}
-
-	n := strings.Builder{}
-	n.Grow(len(s))
-	capNext := initCase
-
-	for i, v := range []byte(s) {
-		vIsCap := v >= 'A' && v <= 'Z'
-		vIsLow := v >= 'a' && v <= 'z'
-
-		if capNext {
-			if vIsLow {
-				v += 'A'
-				v -= 'a'
-			}
-		} else if i == 0 {
-			if vIsCap {
-				v += 'a'
-				v -= 'A'
-			}
-		}
-
-		if vIsCap || vIsLow {
-			n.WriteByte(v)
-			capNext = false
-		} else if vIsNum := v >= '0' && v <= '9'; vIsNum {
-			n.WriteByte(v)
-			capNext = true
-		} else {
-			capNext = v == '_' || v == ' ' || v == '-' || v == '.'
-		}
-	}
-
-	return n.String()
 }
 
 type Options struct {
@@ -510,4 +341,29 @@ func WithConfigOption(fn func(targetConfig *BaseTargetConfig)) func(o *Options) 
 	return func(o *Options) {
 		o.ConfigOption = fn
 	}
+}
+
+func buildParameterMapFromArguments(args []string) map[string]string {
+	params := make(map[string]string)
+
+	for i := 0; i < len(args); i++ {
+		if strings.HasPrefix(args[i], "--") {
+			arg := args[i][2:]
+			if strings.Contains(arg, "=") {
+				// The case where the flag is in the form of "--key=value"
+				key := arg[0:strings.Index(arg, "=")]
+				value := arg[strings.Index(arg, "=")+1:]
+				params[key] = value
+			} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
+				// The case where the flag is in the form of "--key value"
+				params[arg] = args[i+1]
+				i++
+			} else {
+				// Otherwise, we consider this a boolean flag
+				params[arg] = "TRUE"
+			}
+		}
+	}
+
+	return params
 }

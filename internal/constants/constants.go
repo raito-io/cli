@@ -22,7 +22,6 @@ var KnownFlags = map[string]struct{}{
 	ConnectorVersionFlag:      {},
 	NameFlag:                  {},
 	DeleteUntouchedFlag:       {},
-	ReplaceTagsFlag:           {},
 	DeleteTempFilesFlag:       {},
 	ReplaceGroupsFlag:         {},
 	AccessFileFlag:            {},
@@ -64,15 +63,15 @@ const (
 
 	// Import specific flags
 	DeleteUntouchedFlag = "delete-untouched"
-	ReplaceTagsFlag     = "replace-tags"
 	DeleteTempFilesFlag = "delete-temp-files"
 	ReplaceGroupsFlag   = "replace-groups"
 
 	// Access specific parameters
 	AccessFileFlag = "access-file"
 
-	Targets      = "targets"
-	Repositories = "repositories"
+	Targets             = "targets"
+	DataObjectEnrichers = "data-object-enrichers"
+	Repositories        = "repositories"
 
 	GitHubToken = "token"
 

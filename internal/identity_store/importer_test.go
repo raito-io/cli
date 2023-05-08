@@ -241,7 +241,6 @@ func newIdentityStoreImporter(t *testing.T, f1, f2 string) *IdentityStoreImporte
 		GroupFile:       f2,
 		DeleteUntouched: true,
 		ReplaceGroups:   true,
-		ReplaceTags:     true,
 	}, dummyTaskEventUpdater(t))
 	return &isi
 }

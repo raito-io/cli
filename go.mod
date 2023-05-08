@@ -8,6 +8,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.15
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.22.5
 	github.com/aws/smithy-go v1.13.5
+	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
+	github.com/bcicen/jstream v1.0.1
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.4.9

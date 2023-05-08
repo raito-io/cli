@@ -1,0 +1,29 @@
+api-user: testbot@raito.io
+api-secret: secret
+domain: testbotdomain
+
+data-object-enrichers:
+  - name: collibra
+    connector-name: raito-io/cli-plugin-collibra
+    collibra-url: https://raito.collibra.com
+    collibra-user: raito
+    collibra-password: something
+    collibra-another: "will be overwritten"
+
+targets:
+  - name: snowflake1
+    connector-name: raito-io/cli-plugin-snowflake
+    data-source-id: SnowflakeDataSource
+    identity-store-id: SnowflakeIdentityStore
+
+    # Specifying the Snowflake specific config parameters
+    sf-account: somewhere.eu-central-1
+    sf-user: raito
+    sf-password: "sf-secret"
+
+    data-object-enrichers:
+      - name: collibra
+        collibra-dataset: xxx
+        collibra-another: "OVERWRITE"
+      - name: dbt
+        dbt-location: blah

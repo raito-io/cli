@@ -47,6 +47,12 @@ const (
 	deleteGlobalPermission GlobalPermission = "delete"
 )
 
+const (
+	Read  string = "read"
+	Write string = "write"
+	Admin string = "admin"
+)
+
 type GlobalPermissionSet map[GlobalPermission]struct{}
 
 func CreateGlobalPermissionSet(permissions ...GlobalPermission) GlobalPermissionSet {

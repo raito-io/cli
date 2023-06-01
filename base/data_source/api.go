@@ -40,11 +40,9 @@ const (
 type GlobalPermission string
 
 const (
-	readGlobalPermission   GlobalPermission = "read"
-	writeGlobalPermission  GlobalPermission = "write"
-	insertGlobalPermission GlobalPermission = "insert"
-	updateGlobalPermission GlobalPermission = "update"
-	deleteGlobalPermission GlobalPermission = "delete"
+	readGlobalPermission  GlobalPermission = "read"
+	writeGlobalPermission GlobalPermission = "write"
+	adminGlobalPermission GlobalPermission = "admin"
 )
 
 const (
@@ -127,30 +125,16 @@ The list of global permissions
 */
 
 // WriteGlobalPermission Get all rights to (over)write data
+func AdminGlobalPermission() GlobalPermissionSet {
+	return CreateGlobalPermissionSet(adminGlobalPermission)
+}
+
+// WriteGlobalPermission Get all rights to (over)write data
 func WriteGlobalPermission() GlobalPermissionSet {
-	return CreateGlobalPermissionSet(writeGlobalPermission)
-}
-
-// InsertGlobalPermission Get rights to add data
-func InsertGlobalPermission() GlobalPermissionSet {
-	set := WriteGlobalPermission()
-	set.Append(insertGlobalPermission)
-
-	return set
-}
-
-// UpdateGlobalPermission Get rights to modify data, not to delete a row
-func UpdateGlobalPermission() GlobalPermissionSet {
-	set := WriteGlobalPermission()
-	set.Append(updateGlobalPermission)
-
-	return set
-}
-
-// DeleteGlobalPermission Get all rights to delete data and the table
-func DeleteGlobalPermission() GlobalPermissionSet {
-	set := WriteGlobalPermission()
-	set.Append(deleteGlobalPermission)
+	set := JoinGlobalPermissionsSets(
+		AdminGlobalPermission(),
+	)
+	set.Append(writeGlobalPermission)
 
 	return set
 }
@@ -158,10 +142,8 @@ func DeleteGlobalPermission() GlobalPermissionSet {
 // ReadGlobalPermission Get access to read the data
 func ReadGlobalPermission() GlobalPermissionSet {
 	set := JoinGlobalPermissionsSets(
-		DeleteGlobalPermission(),
-		UpdateGlobalPermission(),
-		InsertGlobalPermission(),
 		WriteGlobalPermission(),
+		AdminGlobalPermission(),
 	)
 	set.Append(readGlobalPermission)
 

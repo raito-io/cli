@@ -47,6 +47,7 @@ message DataObjectTypePermission {
   string description = 3;
   repeated string action = 4;
   repeated string usageGlobalPermissions = 5;
+  bool cannotBeGranted = 6;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

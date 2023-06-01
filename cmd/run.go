@@ -157,6 +157,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 					it++
 				case <-ctx.Done():
+					baseConfig.BaseLogger.Debug("Context done: closing syncing routine.")
 					return
 				}
 
@@ -173,8 +174,11 @@ func executeRun(cmd *cobra.Command, args []string) {
 			for {
 				select {
 				case <-ctx.Done():
+					hclog.L().Debug("Context done: Will stop all running routines...")
 					return
 				case s := <-sigs:
+					hclog.L().Debug("Received signal: %s. Will stop all running routines...", s.String())
+
 					if sysc, ok := s.(syscall.Signal); ok {
 						returnSignal = int(sysc)
 					}
@@ -188,6 +192,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 		hclog.L().Info("All routines finished. Bye!")
 
 		if returnSignal != 0 {
+			hclog.L().Debug("Exit with code: %d", returnSignal)
 			syscall.Exit(returnSignal)
 		}
 	}

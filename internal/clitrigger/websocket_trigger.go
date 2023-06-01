@@ -226,11 +226,11 @@ func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context) <-chan Trigger
 				if err != nil {
 					wserr := &WebsocketMessageError{}
 					if errors.As(err, &wserr) {
-						s.logger.Warn(fmt.Sprintf("Received error: %s", err.Error()))
+						s.logger.Warn(fmt.Sprintf("Received error: %s, Will try to retart websocket.", err.Error()))
 
 						continue
 					} else if websocket.CloseStatus(err) > 0 {
-						s.logger.Warn(fmt.Sprintf("Failed to create websocket. Will try again: %s", err.Error()))
+						s.logger.Warn(fmt.Sprintf("Failed to create websocket: %s. Will try to retart websocket.", err.Error()))
 
 						continue
 					} else {

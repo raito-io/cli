@@ -7,36 +7,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAdminGlobalPermission(t *testing.T) {
+	// When
+	permissions := AdminGlobalPermission()
+
+	// Then
+	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{adminGlobalPermission})
+}
+
 func TestWriteGlobalPermission(t *testing.T) {
 	// When
 	permissions := WriteGlobalPermission()
 
 	// Then
-	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{writeGlobalPermission})
-}
-
-func TestInsertGlobalPermission(t *testing.T) {
-	// When
-	permissions := InsertGlobalPermission()
-
-	// Then
-	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{writeGlobalPermission, insertGlobalPermission})
-}
-
-func TestUpdateGlobalPermission(t *testing.T) {
-	// When
-	permissions := UpdateGlobalPermission()
-
-	// Then
-	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{writeGlobalPermission, updateGlobalPermission})
-}
-
-func TestDeleteGlobalPermission(t *testing.T) {
-	// When
-	permissions := DeleteGlobalPermission()
-
-	// Then
-	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{writeGlobalPermission, deleteGlobalPermission})
+	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{writeGlobalPermission, adminGlobalPermission})
 }
 
 func TestReadGlobalPermission(t *testing.T) {
@@ -44,7 +28,7 @@ func TestReadGlobalPermission(t *testing.T) {
 	permissions := ReadGlobalPermission()
 
 	// Then
-	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{readGlobalPermission, writeGlobalPermission, deleteGlobalPermission, updateGlobalPermission, insertGlobalPermission})
+	assert.ElementsMatch(t, permissions.Values(), []GlobalPermission{readGlobalPermission, writeGlobalPermission, adminGlobalPermission})
 }
 
 func TestCreateGlobalPermissionSet(t *testing.T) {
@@ -144,10 +128,10 @@ func TestJoinGlobalPermissionsSets(t *testing.T) {
 			args: args{
 				sets: []GlobalPermissionSet{
 					GlobalPermissionSet(map[GlobalPermission]struct{}{writeGlobalPermission: {}, readGlobalPermission: {}}),
-					GlobalPermissionSet(map[GlobalPermission]struct{}{writeGlobalPermission: {}, insertGlobalPermission: {}}),
+					GlobalPermissionSet(map[GlobalPermission]struct{}{writeGlobalPermission: {}}),
 				},
 			},
-			want: GlobalPermissionSet(map[GlobalPermission]struct{}{writeGlobalPermission: {}, readGlobalPermission: {}, insertGlobalPermission: {}}),
+			want: GlobalPermissionSet(map[GlobalPermission]struct{}{writeGlobalPermission: {}, readGlobalPermission: {}}),
 		},
 	}
 	for _, tt := range tests {
@@ -161,7 +145,7 @@ func TestGlobalPermissionSet_Json(t *testing.T) {
 	// Marshal //
 
 	// Given
-	original := GlobalPermissionSet(map[GlobalPermission]struct{}{readGlobalPermission: {}, insertGlobalPermission: {}})
+	original := GlobalPermissionSet(map[GlobalPermission]struct{}{readGlobalPermission: {}, writeGlobalPermission: {}})
 
 	// When
 	jsonBytes, err := json.Marshal(original)
@@ -170,7 +154,7 @@ func TestGlobalPermissionSet_Json(t *testing.T) {
 	}
 
 	// Then
-	assert.True(t, `["read","insert"]` == string(jsonBytes) || `["insert","read"]` == string(jsonBytes))
+	assert.True(t, `["read","write"]` == string(jsonBytes) || `["write","read"]` == string(jsonBytes))
 
 	// Unmashal //
 

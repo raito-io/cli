@@ -27,6 +27,7 @@ message MetaData {
   repeated string supportedFeatures = 2;
   string type = 3;
   string icon = 4;
+  UsageMetaInput usageMetaInfo = 5;
 }
 
 message DataObjectType {
@@ -35,7 +36,8 @@ message DataObjectType {
   string label = 3;
   string icon = 4;
   repeated DataObjectTypePermission permissions = 5;
-  repeated string children = 6;
+  repeated DataObjectTypeAction actions = 6;
+  repeated string children = 7;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)
@@ -44,6 +46,24 @@ message DataObjectTypePermission {
   repeated string globalPermissions = 2;
   string description = 3;
   repeated string action = 4;
+  repeated string usageGlobalPermissions = 5;
+  bool cannotBeGranted = 6;
+}
+
+//NoLinting ToSupport GQL schema (temporarily)
+message DataObjectTypeAction {
+  string action = 1;
+  repeated string globalActions = 2;
+}
+
+message UsageMetaInput {
+  string defaultLevel = 1;
+  repeated UsageMetaInputDetail levels = 2;
+}
+
+message UsageMetaInputDetail {
+  string name = 1;
+  repeated string dataObjectTypes = 2;
 }
 
 service DataSourceSyncService {

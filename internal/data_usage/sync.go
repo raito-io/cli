@@ -86,23 +86,20 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 
 	if err != nil {
 		hclog.L().Warn(fmt.Sprintf("error retrieving first/last usage for data source %s, last used: %s, first used: %s", importerConfig.DataSourceId, lastUsed, firstUsed))
-		timeValue := time.Unix(int64(0), 0)
-
-		if lastUsed == nil {
-			lastUsed = &timeValue
-		}
-
-		if firstUsed == nil {
-			firstUsed = &timeValue
-		}
+		return job.Failed, "", err
 	}
 
-	lastUsedValue := *lastUsed
-	firstUsedValue := *firstUsed
-	syncerConfig.ConfigMap.Parameters["lastUsed"] = lastUsedValue.Format(time.RFC3339)
-	syncerConfig.ConfigMap.Parameters["firstUsed"] = firstUsedValue.Format(time.RFC3339)
+	if lastUsed != nil {
+		lastUsedValue := *lastUsed
+		syncerConfig.ConfigMap.Parameters["lastUsed"] = lastUsedValue.Format(time.RFC3339)
+	}
 
-	s.TargetConfig.TargetLogger.Info("Fetching usage data from the data source")
+	if firstUsed != nil {
+		firstUsedValue := *firstUsed
+		syncerConfig.ConfigMap.Parameters["firstUsed"] = firstUsedValue.Format(time.RFC3339)
+	}
+
+	s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Fetching usage data from the data source, using first used %v and last used %v", syncerConfig.ConfigMap.Parameters["firstUsed"], syncerConfig.ConfigMap.Parameters["lastUsed"]))
 
 	res, err := dus.SyncDataUsage(context.Background(), &syncerConfig)
 	if err != nil {

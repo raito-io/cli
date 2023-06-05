@@ -107,24 +107,23 @@ func (d *dataUsageImporter) GetLastAndFirstUsage() (*time.Time, *time.Time, erro
 		return nil, nil, fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
 	}
 
-	finalResultLastUsage := time.Unix(int64(0), 0)
-	finalResultFirstUsage := time.Unix(int64(0), 0)
+	var finalResultFirstUsage, finalResultLastUsage *time.Time
 
 	if res.DataSourceInfo.LastUsed != "" {
 		finalResultRaw, err := time.Parse(time.RFC3339, res.DataSourceInfo.LastUsed)
 		if err == nil {
-			finalResultLastUsage = finalResultRaw
+			finalResultLastUsage = &finalResultRaw
 		}
 	}
 
 	if res.DataSourceInfo.FirstUsed != "" {
 		finalResultRaw, err := time.Parse(time.RFC3339, res.DataSourceInfo.FirstUsed)
 		if err == nil {
-			finalResultFirstUsage = finalResultRaw
+			finalResultFirstUsage = &finalResultRaw
 		}
 	}
 
-	return &finalResultFirstUsage, &finalResultLastUsage, nil
+	return finalResultFirstUsage, finalResultLastUsage, nil
 }
 
 type subtaskResponse struct {

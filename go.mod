@@ -17,6 +17,7 @@ require (
 	github.com/hasura/go-graphql-client v0.9.3
 	github.com/jinzhu/copier v0.3.5
 	github.com/pterm/pterm v0.12.61
+	github.com/raito-io/golang-set v0.0.4
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.3

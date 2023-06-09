@@ -17,11 +17,13 @@ func SetMetaData(config target.BaseTargetConfig, metadata *identity_store.MetaDa
 	gqlQuery := fmt.Sprintf(`{ "operationName": "SetMetaData", "variables":{}, "query": "mutation SetMetaData {
         setIdentityStoreMetaData(id: \"%s\", input: {
           type: \"%s\",
-          icon: \"%s\"
+          icon: \"%s\",
+          canBeLinked: %t,
+          canBeMaster: %t,
         }) {    
           ... on IdentityStore { id }
         }
-    }" }"`, config.IdentityStoreId, metadata.Type, metadata.Icon)
+    }" }"`, config.IdentityStoreId, metadata.Type, metadata.Icon, metadata.CanBeLinked, metadata.CanBeMaster)
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 

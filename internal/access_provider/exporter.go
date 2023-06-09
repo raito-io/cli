@@ -64,6 +64,8 @@ func (d *accessProviderExporter) TriggerExport(ctx context.Context, jobId string
 
 	if subtask.Status == job.Failed {
 		return job.Failed, "", fmt.Errorf("export failed on server: [%s]", strings.Join(subtask.Errors, ", "))
+	} else if subtask.Status == job.TimeOut {
+		return job.TimeOut, "", fmt.Errorf("export timeout on server")
 	}
 
 	result.FileLocation, err = d.download(result.FileLocation)

@@ -25,6 +25,8 @@ message IdentityStoreSyncResult {
 message MetaData {
   string type = 1;
   string icon = 2;
+  bool canBeLinked = 3;
+  bool canBeMaster = 4;
 }
 
 service IdentityStoreSyncService {

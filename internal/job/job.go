@@ -403,6 +403,7 @@ const (
 	Completed
 	Failed
 	Skipped
+	TimeOut
 )
 
 var AllJobStatus = []JobStatus{
@@ -415,9 +416,10 @@ var AllJobStatus = []JobStatus{
 	Completed,
 	Failed,
 	Skipped,
+	TimeOut,
 }
 
-var jobStatusNames = [...]string{"STARTED", "IN_PROGRESS", "DATA_RETRIEVE", "DATA_UPLOAD", "QUEUED", "DATA_PROCESSING", "COMPLETED", "FAILED", "SKIPPED"}
+var jobStatusNames = [...]string{"STARTED", "IN_PROGRESS", "DATA_RETRIEVE", "DATA_UPLOAD", "QUEUED", "DATA_PROCESSING", "COMPLETED", "FAILED", "SKIPPED", "TIMED_OUT"}
 var jobStatusNameMap = map[string]JobStatus{
 	"STARTED":         Started,
 	"IN_PROGRESS":     InProgress,
@@ -428,11 +430,12 @@ var jobStatusNameMap = map[string]JobStatus{
 	"COMPLETED":       Completed,
 	"FAILED":          Failed,
 	"SKIPPED":         Skipped,
+	"TIMED_OUT":       TimeOut,
 }
 
 func (e JobStatus) IsValid() bool {
 	switch e {
-	case Started, InProgress, DataRetrieve, DataUpload, Queued, DataProcessing, Completed, Failed, Skipped:
+	case Started, InProgress, DataRetrieve, DataUpload, Queued, DataProcessing, Completed, Failed, Skipped, TimeOut:
 		return true
 	default:
 		return false
@@ -443,7 +446,7 @@ func (e JobStatus) IsRunning() bool {
 	switch e {
 	case Started, InProgress, DataRetrieve, DataUpload, Queued, DataProcessing:
 		return true
-	case Completed, Failed, Skipped:
+	case Completed, Failed, Skipped, TimeOut:
 		return false
 	default:
 		return false

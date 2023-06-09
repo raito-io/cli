@@ -377,6 +377,8 @@ func runTaskPartSync(ctx context.Context, cfg *target.BaseTargetConfig, syncType
 			subtaskErr = multierror.Append(subtaskErr, array.Map(subtask.Errors, func(err *string) error { return errors.New(*err) })...)
 
 			return subtaskErr
+		} else if subtask.Status == job.TimeOut {
+			return fmt.Errorf("synchronizing %s timed out", syncType)
 		}
 
 		err = taskPart.ProcessResults(syncResult)

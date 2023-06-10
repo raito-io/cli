@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/raito-io/cli/base/util/error/grpc_error"
-	"google.golang.org/grpc/codes"
 	"os"
 	"os/signal"
 	sync2 "sync"
 	"syscall"
 	"time"
+
+	"github.com/raito-io/cli/base/util/error/grpc_error"
+	"google.golang.org/grpc/codes"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
@@ -334,6 +335,7 @@ func sync(ctx context.Context, cfg *target.BaseTargetConfig, syncTypeLabel strin
 	if pluginError, f := err.(*grpc_error.InternalPluginStatusError); f && pluginError.StatusCode() == codes.Unimplemented {
 		cfg.TargetLogger.Info(fmt.Sprintf("Plugin does not implement a syncer for %s. Skipping", syncTypeLabel))
 		taskEventUpdater.SetStatusToSkipped(ctx)
+
 		return nil
 	} else if errors.As(err, &incompatibleVersionError) {
 		return fmt.Errorf("unable to execute %s sync: %w", syncTypeLabel, incompatibleVersionError)

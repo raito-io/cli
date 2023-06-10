@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/raito-io/cli/base/util/error/grpc_error"
+	"google.golang.org/grpc/codes"
 	"os"
 	"os/signal"
 	sync2 "sync"
@@ -329,7 +331,11 @@ func sync(ctx context.Context, cfg *target.BaseTargetConfig, syncTypeLabel strin
 	_, err = syncTask.IsClientValid(ctx, c)
 	incompatibleVersionError := version_management.IncompatiblePluginVersionError{}
 
-	if errors.As(err, &incompatibleVersionError) {
+	if pluginError, f := err.(*grpc_error.InternalPluginStatusError); f && pluginError.StatusCode() == codes.Unimplemented {
+		cfg.TargetLogger.Info(fmt.Sprintf("Plugin does not implement a syncer for %s. Skipping", syncTypeLabel))
+		taskEventUpdater.SetStatusToSkipped(ctx)
+		return nil
+	} else if errors.As(err, &incompatibleVersionError) {
 		return fmt.Errorf("unable to execute %s sync: %w", syncTypeLabel, incompatibleVersionError)
 	} else if err != nil {
 		return err

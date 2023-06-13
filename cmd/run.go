@@ -10,8 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/raito-io/cli/base/util/error/grpc_error"
 	"google.golang.org/grpc/codes"
+
+	"github.com/raito-io/cli/base/util/error/grpc_error"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
@@ -325,19 +326,24 @@ func sync(ctx context.Context, cfg *target.BaseTargetConfig, syncTypeLabel strin
 		}()
 	}
 
-	cfg.TargetLogger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
-
-	taskEventUpdater.SetStatusToStarted(ctx)
-
 	_, err = syncTask.IsClientValid(ctx, c)
 	incompatibleVersionError := version_management.IncompatiblePluginVersionError{}
 
-	if pluginError, f := err.(*grpc_error.InternalPluginStatusError); f && pluginError.StatusCode() == codes.Unimplemented {
-		cfg.TargetLogger.Info(fmt.Sprintf("Plugin does not implement a syncer for %s. Skipping", syncTypeLabel))
-		taskEventUpdater.SetStatusToSkipped(ctx)
+	var internalPluginStatusError *grpc_error.InternalPluginStatusError
 
-		return nil
-	} else if errors.As(err, &incompatibleVersionError) {
+	if errors.As(err, &internalPluginStatusError) {
+		if internalPluginStatusError.StatusCode() == codes.Unimplemented {
+			cfg.TargetLogger.Info(fmt.Sprintf("Plugin does not implement a syncer for %s. Skipping", syncTypeLabel))
+			taskEventUpdater.SetStatusToSkipped(ctx) // Skip should be sent before we send a start status event
+
+			return nil
+		}
+	}
+
+	cfg.TargetLogger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
+	taskEventUpdater.SetStatusToStarted(ctx)
+
+	if errors.As(err, &incompatibleVersionError) {
 		return fmt.Errorf("unable to execute %s sync: %w", syncTypeLabel, incompatibleVersionError)
 	} else if err != nil {
 		return err

@@ -49,7 +49,7 @@ func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdat
 }
 
 func (d *accessProviderExporter) TriggerExport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
-	status, subTaskId, err := d.doExport(jobId)
+	status, subTaskId, err := d.doExport(ctx, jobId)
 
 	if err != nil {
 		return job.Failed, "", err
@@ -115,53 +115,88 @@ func (d *accessProviderExporter) download(url string) (string, error) {
 	return filePath, nil
 }
 
-func (d *accessProviderExporter) doExport(jobId string) (job.JobStatus, string, error) {
+func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
 	start := time.Now()
 
-	filter := ""
-
-	if d.config.OnlyOutOfSyncData && d.syncConfig.SupportPartialSync {
-		filter = `, filter : {
-					status: {
-					   outOfSync: true
-					}
-			    }`
+	var q struct {
+		ExportAccessProvidersRequest struct {
+			Subtask struct {
+				SubtaskId string
+				Status    job.JobStatus
+			}
+		} `graphql:"exportAccessProvidersRequest(input: $input, filter: $filter)"`
 	}
 
-	//TODO add gql options to support name only delete
+	input := AccessProviderExportRequest{
+		JobId: jobId,
+		ExportSettings: exportSettings{
+			DataSource: d.config.DataSourceId,
+		},
+	}
 
-	gqlQuery := fmt.Sprintf(`{ "operationName": "ExportAccessProvidersRequest", "variables":{}, "query": "query ExportAccessProvidersRequest {
-        exportAccessProvidersRequest(input: {
-          jobId: \"%s\",
-          exportSettings: {
-            dataSource: \"%s\"
-          }
-        }%s) {
-          subtask {
-            subtaskId
-            status            
-          }
-         }
-    }" }"`, jobId, d.config.DataSourceId, filter)
+	filter := AccessProviderExportRequestFilter{
+		Status: exportFilterStatus{
+			OutOfSync: d.config.OnlyOutOfSyncData && d.syncConfig.SupportPartialSync,
+		},
+	}
 
-	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
-	gqlQuery = strings.Replace(gqlQuery, "\t", "\\t", -1)
+	if len(d.syncConfig.RequiredExportWhoList) > 0 {
+		filter.ExportFilterProperties.RequiredWhoItemLists = make([]string, len(d.syncConfig.RequiredExportWhoList))
 
-	res := exportResponse{}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseConfig, &res)
+		for _, listType := range d.syncConfig.RequiredExportWhoList {
+			switch listType {
+			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS:
+				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "users")
+			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_GROUPS:
+				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "groups")
+			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_INHERIT_FROM:
+				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "inheritFrom")
+			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_IN_GROUPS:
+				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInGroups")
+			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED:
+				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInherited")
+			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_GROUPS_INHERITED:
+				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "groupsInherited")
+			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED_GROUPS_EXCLUDE:
+				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInGroupsExclude")
+			}
+		}
+	}
+
+	client := graphql.NewClient(&d.config.BaseConfig)
+
+	err := client.Query(ctx, &q, map[string]interface{}{"input": input, "filter": filter})
 
 	if err != nil {
 		return job.Failed, "", fmt.Errorf("error while executing export: %s", err.Error())
 	}
 
-	retStatus := res.Response.Subtask.Status
-	subtaskId := res.Response.Subtask.SubtaskId
+	retStatus := q.ExportAccessProvidersRequest.Subtask.Status
+	subtaskId := q.ExportAccessProvidersRequest.Subtask.SubtaskId
 
 	d.log.Info(fmt.Sprintf("Done submitting export in %s", time.Since(start).Round(time.Millisecond)))
 
 	return retStatus, subtaskId, nil
 }
 
-type exportResponse struct {
-	Response QueryResponse `json:"exportAccessProvidersRequest"`
+type exportSettings struct {
+	DataSource string `json:"dataSource"`
+}
+
+type AccessProviderExportRequest struct {
+	JobId          string         `json:"jobId"`
+	ExportSettings exportSettings `json:"exportSettings"`
+}
+
+type exportFilterStatus struct {
+	OutOfSync bool `json:"outOfSync"`
+}
+
+type exportFilterProperties struct {
+	RequiredWhoItemLists []string `json:"requiredWhoItemLists"`
+}
+
+type AccessProviderExportRequestFilter struct {
+	Status                 exportFilterStatus      `json:"status"`
+	ExportFilterProperties *exportFilterProperties `json:"exportFilterProperties,omitempty"`
 }

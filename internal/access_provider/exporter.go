@@ -155,9 +155,9 @@ func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (jo
 				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInGroups")
 			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED:
 				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInherited")
-			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_GROUPS_INHERITED:
+			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_NATIVE_GROUPS_INHERITED:
 				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "groupsInherited")
-			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED_GROUPS_EXCLUDE:
+			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED_NATIVE_GROUPS_EXCLUDED:
 				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInGroupsExclude")
 			default:
 				return 0, "", fmt.Errorf("unknown who list type: %s", listType)

@@ -41,11 +41,13 @@ type Access struct {
 }
 
 type WhoItem struct {
-	Users          []string `yaml:"users" json:"users"`
-	Groups         []string `yaml:"groups" json:"groups"`
-	InheritFrom    []string `yaml:"inheritFrom" json:"inheritFrom"`
-	UsersInGroups  []string `yaml:"usersInGroups" json:"usersInGroups"`
-	UsersInherited []string `yaml:"usersInherited" json:"usersInherited"`
+	Users                              []string `yaml:"users,omitempty" json:"users,omitempty"`
+	Groups                             []string `yaml:"groups,omitempty" json:"groups,omitempty"`
+	InheritFrom                        []string `yaml:"inheritFrom,omitempty" json:"inheritFrom,omitempty"`
+	UsersInGroups                      []string `yaml:"usersInGroups,omitempty" json:"usersInGroups,omitempty"`
+	UsersInherited                     []string `yaml:"usersInherited,omitempty" json:"usersInherited,omitempty"`
+	NativeGroupsInherited              []string `yaml:"nativeGroupsInherited,omitempty" json:"nativeGroupsInherited,omitempty"`
+	UsersInheritedNativeGroupsExcluded []string `yaml:"usersInheritedNativeGroupsExcluded,omitempty" json:"usersInheritedNativeGroupsExcludedGroupsExcluded,omitempty"`
 }
 
 type WhatItem struct {

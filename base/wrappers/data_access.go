@@ -144,9 +144,3 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 func (s *DataAccessSyncFunction) SyncConfig(_ context.Context) (*access_provider.AccessSyncConfig, error) {
 	return &s.config, nil
 }
-
-func WithAccessProviderExportWhoList(lists ...access_provider.AccessProviderExportWhoList) func(config *access_provider.AccessSyncConfig) {
-	return func(config *access_provider.AccessSyncConfig) {
-		config.RequiredExportWhoList = append(config.RequiredExportWhoList, lists...)
-	}
-}

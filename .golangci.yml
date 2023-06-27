@@ -59,7 +59,7 @@ linters:
   enable:
     - bodyclose
     - deadcode
-    - depguard
+    #- depguard #We should create a correct config to enabe depguard
     - dogsled
     - dupl
     - errcheck

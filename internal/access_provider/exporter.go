@@ -141,6 +141,10 @@ func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (jo
 	}
 
 	if len(d.syncConfig.RequiredExportWhoList) > 0 {
+		if filter.ExportFilterProperties == nil {
+			filter.ExportFilterProperties = &exportFilterProperties{}
+		}
+
 		filter.ExportFilterProperties.RequiredWhoItemLists = make([]string, len(d.syncConfig.RequiredExportWhoList))
 
 		for _, listType := range d.syncConfig.RequiredExportWhoList {
@@ -200,5 +204,5 @@ type exportFilterProperties struct {
 
 type AccessProviderExportRequestFilter struct {
 	Status                 exportFilterStatus      `json:"status"`
-	ExportFilterProperties *exportFilterProperties `json:"exportFilterProperties,omitempty"`
+	ExportFilterProperties *exportFilterProperties `json:"exportProperties,omitempty"`
 }

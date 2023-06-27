@@ -41,25 +41,25 @@ type Access struct {
 }
 
 type WhoItem struct {
-	// Users contains all account names of users assigned to this access provider
+	// Users contains all account names directly assigned to this access provider
 	Users []string `yaml:"users,omitempty" json:"users,omitempty"`
 
-	// Groups contains all account names of groups assigned to this access provider
+	// Groups contains all group names assigned to this access provider
 	Groups []string `yaml:"groups,omitempty" json:"groups,omitempty"`
 
 	// InheritFrom contains all access providers actual names in WHO part of this access provider
 	InheritFrom []string `yaml:"inheritFrom,omitempty" json:"inheritFrom,omitempty"`
 
-	// UsersInGroup contains all account names of users assigned to groups of this access provider
+	// UsersInGroups contains all account names assigned to groups of this access provider directly
 	UsersInGroups []string `yaml:"usersInGroups,omitempty" json:"usersInGroups,omitempty"`
 
-	// UsersInherited contains all account names of users that are in an unpacked who part of a child access provider
+	// UsersInherited contains all account names that part of a child access provider or group recursively
 	UsersInherited []string `yaml:"usersInherited,omitempty" json:"usersInherited,omitempty"`
 
-	// NativeGroupsInherited contains all groups associated with the native IS that are in who part of this or a child access provider
+	// NativeGroupsInherited contains all groups associated with the native IS that are in who part of this or a descendant access provider
 	NativeGroupsInherited []string `yaml:"nativeGroupsInherited,omitempty" json:"nativeGroupsInherited,omitempty"`
 
-	// UsersInheritedNativeGroupsExcluded contains all account names of users that are in who part of this or a child access provider but native groups are excluded
+	// UsersInheritedNativeGroupsExcluded contains all account names of users that are in who part of this or a descendant access provider but native groups are excluded
 	UsersInheritedNativeGroupsExcluded []string `yaml:"usersInheritedNativeGroupsExcluded,omitempty" json:"usersInheritedNativeGroupsExcludedGroupsExcluded,omitempty"`
 }
 

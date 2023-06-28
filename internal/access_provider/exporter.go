@@ -134,10 +134,12 @@ func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (jo
 		},
 	}
 
-	filter := AccessProviderExportRequestFilter{
-		Status: exportFilterStatus{
+	filter := AccessProviderExportRequestFilter{}
+
+	if d.config.OnlyOutOfSyncData && d.syncConfig.SupportPartialSync {
+		filter.Status = &exportFilterStatus{
 			OutOfSync: d.config.OnlyOutOfSyncData && d.syncConfig.SupportPartialSync,
-		},
+		}
 	}
 
 	if len(d.syncConfig.RequiredExportWhoList) > 0 {
@@ -145,7 +147,7 @@ func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (jo
 			filter.ExportFilterProperties = &exportFilterProperties{}
 		}
 
-		filter.ExportFilterProperties.RequiredWhoItemLists = make([]string, len(d.syncConfig.RequiredExportWhoList))
+		filter.ExportFilterProperties.RequiredWhoItemLists = make([]string, 0, len(d.syncConfig.RequiredExportWhoList))
 
 		for _, listType := range d.syncConfig.RequiredExportWhoList {
 			switch listType { //nolint:exhaustive
@@ -162,7 +164,7 @@ func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (jo
 			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_NATIVE_GROUPS_INHERITED:
 				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "groupsInherited")
 			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED_NATIVE_GROUPS_EXCLUDED:
-				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInGroupsExclude")
+				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInheritedGroupsExclude")
 			default:
 				return 0, "", fmt.Errorf("unknown who list type: %s", listType)
 			}
@@ -203,6 +205,6 @@ type exportFilterProperties struct {
 }
 
 type AccessProviderExportRequestFilter struct {
-	Status                 exportFilterStatus      `json:"status"`
+	Status                 *exportFilterStatus     `json:"status,omitempty"`
 	ExportFilterProperties *exportFilterProperties `json:"exportProperties,omitempty"`
 }

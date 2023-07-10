@@ -32,6 +32,9 @@ type AccessProvider struct {
 	ActualName string `yaml:"actualName" json:"actualName"`
 	// Who represents who has access to the 'what'. Nil means that the 'who' is unknown.
 	What []WhatItem `yaml:"what" json:"what"`
+
+	// Allows the plugin to indicate that the access provider is incomplete (because not all who items, what items or permissions could be handled)
+	Incomplete *bool `json:"incomplete"`
 }
 
 type Access struct {

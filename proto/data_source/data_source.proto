@@ -28,6 +28,7 @@ message MetaData {
   string type = 3;
   string icon = 4;
   UsageMetaInput usageMetaInfo = 5;
+  repeated AccessProviderType accessProviderTypes = 6;
 }
 
 message DataObjectType {
@@ -38,6 +39,20 @@ message DataObjectType {
   repeated DataObjectTypePermission permissions = 5;
   repeated DataObjectTypeAction actions = 6;
   repeated string children = 7;
+}
+
+message AccessProviderType {
+  string type = 1;
+  string label = 2;
+  string icon = 3;
+  bool isNamedEntity = 4;
+  bool canBeCreated = 5;
+  bool canBeAssumed = 6;
+  bool canAssumeMultiple = 7;
+  bool containsWhat = 8;
+  bool containsWho = 9;
+  repeated string whoInputTypes = 10;
+  string identityStoreTypeForWho = 11;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

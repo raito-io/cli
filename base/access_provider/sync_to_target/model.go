@@ -19,6 +19,8 @@ type AccessProvider struct {
 	NamingHint  string  `yaml:"namingHint" json:"namingHint"`
 	Type        *string `yaml:"type" json:"type"`
 
+	ExternalId *string `yaml:"externalId" json:"externalId"`
+
 	// Deprecated: use ActualName and What fields directory
 	Access []*Access `yaml:"access" json:"access"`
 
@@ -69,8 +71,9 @@ type WhatItem struct {
 }
 
 type AccessSyncFeedbackInformation struct {
-	AccessId   string `yaml:"accessId" json:"accessId"`
-	ActualName string `yaml:"actualName" json:"actualName"`
+	AccessId   string  `yaml:"accessId" json:"accessId"`
+	ActualName string  `yaml:"actualName" json:"actualName"`
+	ExternalId *string `yaml:"externalId" json:"externalId"`
 }
 
 type accessProviderFeedbackInformation struct {

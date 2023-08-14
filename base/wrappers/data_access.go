@@ -83,7 +83,7 @@ func (s *DataAccessSyncFunction) SyncFromTarget(ctx context.Context, config *acc
 		return nil, err
 	}
 
-	logger.Info(fmt.Sprintf("Fetched %d access provider in %s", fileCreator.GetAccessProviderCount(), sec))
+	logger.Info(fmt.Sprintf("Fetched %d access providers in %s", fileCreator.GetAccessProviderCount(), sec))
 
 	return &access_provider.AccessSyncResult{
 		AccessProviderCount: int32(fileCreator.GetAccessProviderCount()),

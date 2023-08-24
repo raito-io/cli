@@ -48,3 +48,11 @@ func createWebsocketTrigger(config *target.BaseConfig) (*WebsocketCliTrigger, er
 
 	return NewWebsocketCliTrigger(config, result.CliTriggerUrl.Url), nil
 }
+
+func NewApUpdateTrigger(cliTrigger CliTrigger) *ApUpdateTriggerHandler {
+	updateTrigger := NewApUpdateTriggerHandler()
+
+	cliTrigger.Subscribe(updateTrigger)
+
+	return updateTrigger
+}

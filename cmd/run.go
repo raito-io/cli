@@ -112,9 +112,6 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 		waitGroup := sync2.WaitGroup{}
 
-		cliTriggerChannel := make(chan clitrigger.TriggerEvent)
-		defer close(cliTriggerChannel)
-
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGUSR1, os.Interrupt)
 
@@ -127,11 +124,12 @@ func executeRun(cmd *cobra.Command, args []string) {
 			defer ticker.Stop()
 
 			cliTriggerCtx, cliTriggerCancel := context.WithCancel(ctx)
-			cliTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig, cliTriggerChannel)
+			cliTrigger, apUpdateTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig)
 
 			defer func() {
 				cliTriggerCancel()
 				cliTrigger.Wait()
+				apUpdateTrigger.Close()
 			}()
 
 			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
@@ -151,12 +149,16 @@ func executeRun(cmd *cobra.Command, args []string) {
 					}
 
 					it++
-				case cliTrigger := <-cliTriggerChannel:
-					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
+				case <-apUpdateTrigger.TriggerChannel():
+					apUpdate := apUpdateTrigger.Pop()
+					if apUpdate == nil {
+						continue
+					}
 
-					err := handleCliTrigger(baseConfig, &cliTrigger)
+					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
+					err := handleApUpdateTrigger(baseConfig, apUpdate)
 					if err != nil {
-						baseConfig.BaseLogger.Warn("Cli Trigger failed: %s", err.Error())
+						baseConfig.BaseLogger.Warn("Cli ApUpdate Trigger failed: %s", err.Error())
 					}
 
 					it++
@@ -509,14 +511,6 @@ func dataSourceSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 	return nil
 }
 
-func handleCliTrigger(baseConfig *target.BaseConfig, triggerEvent *clitrigger.TriggerEvent) error {
-	if triggerEvent.ApUpdate != nil {
-		return handleApUpdateTrigger(baseConfig, triggerEvent.ApUpdate)
-	}
-
-	return nil
-}
-
 func handleApUpdateTrigger(config *target.BaseConfig, apUpdate *clitrigger.ApUpdate) error {
 	return target.RunTargets(config, runTargetSync, target.WithDataSourceIds(apUpdate.DataSourceNames...), target.WithConfigOption(func(targetConfig *target.BaseTargetConfig) {
 		targetConfig.SkipIdentityStoreSync = true
@@ -528,20 +522,16 @@ func handleApUpdateTrigger(config *target.BaseConfig, apUpdate *clitrigger.ApUpd
 	}))
 }
 
-func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfig, outputChannel chan clitrigger.TriggerEvent) clitrigger.CliTrigger {
+func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfig) (clitrigger.CliTrigger, *clitrigger.ApUpdateTriggerHandler) {
 	cliTrigger, err := clitrigger.CreateCliTrigger(baseConfig)
 	if err != nil {
 		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
-		return nil
+		return nil, nil
 	}
 
-	ch := cliTrigger.TriggerChannel(ctx)
+	apUpdateTriggerHandler := clitrigger.NewApUpdateTrigger(cliTrigger)
 
-	go func() {
-		for i := range ch {
-			outputChannel <- i
-		}
-	}()
+	cliTrigger.Start(ctx)
 
-	return cliTrigger
+	return cliTrigger, apUpdateTriggerHandler
 }

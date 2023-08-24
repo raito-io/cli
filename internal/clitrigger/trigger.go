@@ -5,7 +5,8 @@ import (
 )
 
 type CliTrigger interface {
-	TriggerChannel(ctx context.Context) <-chan TriggerEvent
+	Start(ctx context.Context)
+	Subscribe(handler TriggerHandler)
 	Reset()
 	Wait()
 }
@@ -15,11 +16,11 @@ var _ CliTrigger = (*DummyCliTrigger)(nil)
 type DummyCliTrigger struct {
 }
 
-func (d DummyCliTrigger) TriggerChannel(ctx context.Context) <-chan TriggerEvent {
-	ch := make(chan TriggerEvent)
-	defer close(ch)
+func (d DummyCliTrigger) Start(_ context.Context) {
+}
 
-	return ch
+func (d DummyCliTrigger) Subscribe(_ TriggerHandler) {
+
 }
 
 func (d DummyCliTrigger) Reset() {

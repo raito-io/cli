@@ -71,7 +71,7 @@ func (s *WebsocketClient) Wait() {
 }
 
 func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *websocket.Conn) <-chan interface{} {
-	ch := make(chan interface{})
+	ch := make(chan interface{}, 16) // Small buffer to avoid dropped events
 
 	pushToChannel := func(i interface{}) bool {
 		select {
@@ -196,32 +196,44 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) e
 	return nil
 }
 
+type TriggerHandler interface {
+	HandleTriggerEvent(ctx context.Context, triggerEvent *TriggerEvent)
+}
+
 type WebsocketCliTrigger struct {
 	client *WebsocketClient
 	logger hclog.Logger
 
-	m             sync.Mutex
-	outputChannel chan TriggerEvent
-	cancelFn      func()
+	subscriberMutex sync.Mutex
+	subscribers     []TriggerHandler
+
+	m sync.Mutex
+
+	cancelFn func()
 }
 
 func NewWebsocketCliTrigger(config *target.BaseConfig, websocketUrl string) *WebsocketCliTrigger {
 	return &WebsocketCliTrigger{
 		client: NewWebsocketClient(config, websocketUrl),
 		logger: config.BaseLogger,
-
-		outputChannel: make(chan TriggerEvent),
 	}
 }
 
-func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context) <-chan TriggerEvent {
+func (s *WebsocketCliTrigger) Subscribe(handler TriggerHandler) {
+	s.subscriberMutex.Lock()
+	defer s.subscriberMutex.Unlock()
+
+	s.subscribers = append(s.subscribers, handler)
+}
+
+func (s *WebsocketCliTrigger) Start(ctx context.Context) {
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			default:
-				err := s.readChannel(ctx, s.outputChannel)
+				err := s.readChannel(ctx)
 
 				if err != nil {
 					wserr := &WebsocketMessageError{}
@@ -242,8 +254,6 @@ func (s *WebsocketCliTrigger) TriggerChannel(ctx context.Context) <-chan Trigger
 			}
 		}
 	}()
-
-	return s.outputChannel
 }
 
 func (s *WebsocketCliTrigger) Reset() {
@@ -257,10 +267,9 @@ func (s *WebsocketCliTrigger) Reset() {
 
 func (s *WebsocketCliTrigger) Wait() {
 	s.client.Wait()
-	close(s.outputChannel)
 }
 
-func (s *WebsocketCliTrigger) readChannel(ctx context.Context, outputChannel chan<- TriggerEvent) error {
+func (s *WebsocketCliTrigger) readChannel(ctx context.Context) error {
 	internalCtx, cancelFn := context.WithTimeout(ctx, websocketReset)
 	defer func() {
 		cancelFn()
@@ -295,7 +304,21 @@ func (s *WebsocketCliTrigger) readChannel(ctx context.Context, outputChannel cha
 				return &WebsocketMessageError{err: m}
 
 			case TriggerEvent:
-				outputChannel <- m
+				s.subscriberMutex.Lock()
+				wg := sync.WaitGroup{}
+
+				for i := range s.subscribers {
+					wg.Add(1)
+
+					go func(subscriber TriggerHandler) {
+						defer wg.Done()
+
+						subscriber.HandleTriggerEvent(ctx, &m)
+					}(s.subscribers[i])
+				}
+
+				wg.Wait()
+				s.subscriberMutex.Unlock()
 			}
 		}
 	}

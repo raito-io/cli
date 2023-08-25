@@ -11,6 +11,8 @@ var KnownFlags = map[string]struct{}{
 	ApiSecretFlag:             {},
 	ConfigFileFlag:            {},
 	FrequencyFlag:             {},
+	CronFlag:                  {},
+	SyncAtStartupFlag:         {},
 	SkipIdentityStoreSyncFlag: {},
 	SkipDataSourceSyncFlag:    {},
 	SkipDataAccessSyncFlag:    {},
@@ -39,6 +41,8 @@ const (
 	ApiSecretFlag                         = "api-secret"
 	ConfigFileFlag                        = "config-file"
 	FrequencyFlag                         = "frequency"
+	CronFlag                              = "cron"
+	SyncAtStartupFlag                     = "sync-at-startup"
 	SkipDataSourceSyncFlag                = "skip-data-source-sync"
 	SkipDataAccessSyncFlag                = "skip-data-access-sync"
 	SkipIdentityStoreSyncFlag             = "skip-identity-store-sync"

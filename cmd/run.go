@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/bits"
 	"os"
 	"os/signal"
 	sync2 "sync"
 	"syscall"
 	"time"
 
+	"github.com/robfig/cron/v3"
 	"google.golang.org/grpc/codes"
 
 	"github.com/raito-io/cli/base/util/error/grpc_error"
@@ -42,7 +44,10 @@ func initRunCommand(rootCmd *cobra.Command) {
 		Long:   `Run all the configured synchronizations`,
 		Run:    executeRun,
 	}
-	cmd.PersistentFlags().IntP(constants.FrequencyFlag, "f", 0, "The frequency used to do the sync (in minutes). When not set, the default value '0' is used, which means the sync will run once and quit after.")
+
+	cmd.PersistentFlags().StringP(constants.CronFlag, "c", "", "If set, the cron expression will define when a sync should run. When not set (and no frequency is defined), the sync will run once and quit after. (e.g. '0 0/2 * * *' initiates a sync evey 2 hours)")
+	cmd.PersistentFlags().Bool(constants.SyncAtStartupFlag, false, "If set, a sync will be run at startup independent of the cron expression. Only applicable if cron expression is defined.")
+	cmd.PersistentFlags().IntP(constants.FrequencyFlag, "f", 0, "The frequency used to do the sync (in minutes). When not set (and no cron expression is defined), the default value '0' is used, which means the sync will run once and quit after.")
 	cmd.PersistentFlags().Bool(constants.SkipDataSourceSyncFlag, false, "If set, the data source meta data synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipIdentityStoreSyncFlag, false, "If set, the identity store synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipDataAccessSyncFlag, false, "If set, the data access information from Raito will not be synced to the data sources in the target list.")
@@ -60,6 +65,8 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingIdentityStoreSync, false, "If set, identity store sync logs will not be forwarded to Raito Cloud.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataUsageSync, false, "If set, data usage sync logs will not be forwarded to Raito Cloud.")
 
+	BindFlag(constants.CronFlag, cmd)
+	BindFlag(constants.SyncAtStartupFlag, cmd)
 	BindFlag(constants.FrequencyFlag, cmd)
 	BindFlag(constants.SkipDataSourceSyncFlag, cmd)
 	BindFlag(constants.SkipIdentityStoreSyncFlag, cmd)
@@ -90,8 +97,13 @@ func executeRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	freq := viper.GetInt(constants.FrequencyFlag)
-	if freq <= 0 {
+	executeSyncAtStartup, scheduler, err := createSyncScheduler(baseConfig)
+	if err != nil {
+		hclog.L().Error(err.Error())
+		os.Exit(1)
+	}
+
+	if scheduler == nil {
 		hclog.L().Info("Running synchronization just once.")
 
 		baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 0)
@@ -103,10 +115,8 @@ func executeRun(cmd *cobra.Command, args []string) {
 			os.Exit(0)
 		}
 	} else {
-		hclog.L().Info(fmt.Sprintf("Starting synchronization every %d minutes.", freq))
+		hclog.L().Info("Starting continuous synchronization.")
 		hclog.L().Info("Press 'ctrl+c' to stop the program.")
-
-		ticker := time.NewTicker(time.Duration(freq) * time.Minute)
 
 		ctx, cancelFn := context.WithCancel(context.Background())
 
@@ -121,7 +131,6 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 		go func() {
 			defer waitGroup.Done()
-			defer ticker.Stop()
 
 			cliTriggerCtx, cliTriggerCancel := context.WithCancel(ctx)
 			cliTrigger, apUpdateTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig)
@@ -132,21 +141,33 @@ func executeRun(cmd *cobra.Command, args []string) {
 				apUpdateTrigger.Close()
 			}()
 
-			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 1)
-			if runErr := executeSingleRun(baseConfig); runErr != nil {
-				baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
+			it := 1
+			executionStartTime := time.Now()
+
+			if executeSyncAtStartup {
+				baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
+				if runErr := executeSingleRun(baseConfig); runErr != nil {
+					baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
+				}
+
+				it++
 			}
 
-			it := 2
+			timer := cronTimer(baseConfig.BaseLogger, nil, scheduler, &executionStartTime)
+			defer timer.Stop()
+
 			for {
 				select {
-				case <-ticker.C:
+				case <-timer.C:
+					executionStartTime = time.Now()
 					cliTrigger.Reset()
 
 					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
 					if runErr := executeSingleRun(baseConfig); runErr != nil {
 						baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 					}
+
+					cronTimer(baseConfig.BaseLogger, timer, scheduler, &executionStartTime)
 
 					it++
 				case <-apUpdateTrigger.TriggerChannel():
@@ -201,6 +222,70 @@ func executeRun(cmd *cobra.Command, args []string) {
 			hclog.L().Debug("Exit with code: %d", returnSignal)
 			syscall.Exit(returnSignal)
 		}
+	}
+}
+
+func createSyncScheduler(baseConfig *target.BaseConfig) (bool, cron.Schedule, error) {
+	executeSyncAtStartup := viper.GetBool(constants.SyncAtStartupFlag)
+	var scheduler cron.Schedule
+
+	cronExpression := viper.GetString(constants.CronFlag)
+	freq := viper.GetInt(constants.FrequencyFlag)
+
+	if cronExpression == "" {
+		if freq > 0 {
+			if freq < 60 {
+				return false, nil, fmt.Errorf("the 'frequency' flag must be at least 60 seconds. The value is: %d", freq)
+			}
+
+			executeSyncAtStartup = true
+			scheduler = cron.Every(time.Minute * time.Duration(freq))
+		}
+	} else {
+		if freq > 0 {
+			baseConfig.BaseLogger.Warn("The 'frequency' flag is ignored when the 'cron' flag is set.")
+		}
+
+		var cronParserErr error
+		scheduler, cronParserErr = cron.ParseStandard(cronExpression)
+
+		specSchedule, ok := scheduler.(*cron.SpecSchedule)
+		if ok {
+			if moreThanOneExecutionWithinAnHour(specSchedule) {
+				return false, nil, errors.New("cron expression will trigger sync multiple times within an hour")
+			}
+		}
+
+		if cronParserErr != nil {
+			return false, nil, cronParserErr
+		}
+	}
+
+	return executeSyncAtStartup, scheduler, nil
+}
+
+func moreThanOneExecutionWithinAnHour(cronSchedule *cron.SpecSchedule) bool {
+	prefix := uint64(1) << 63
+
+	if bits.OnesCount64(cronSchedule.Second&^prefix) > 1 || bits.OnesCount64(cronSchedule.Minute&^prefix) > 1 {
+		return true
+	}
+
+	return false
+}
+
+func cronTimer(logger hclog.Logger, timer *time.Timer, scheduler cron.Schedule, previousStartTime *time.Time) *time.Timer {
+	next := scheduler.Next(*previousStartTime)
+
+	logger.Info(fmt.Sprintf("Next execution at %s", next.Format(time.RFC822)))
+
+	waitTime := time.Until(next)
+
+	if timer == nil {
+		return time.NewTimer(waitTime)
+	} else {
+		timer.Reset(waitTime)
+		return timer
 	}
 }
 

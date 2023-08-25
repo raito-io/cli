@@ -45,9 +45,9 @@ func initRunCommand(rootCmd *cobra.Command) {
 		Run:    executeRun,
 	}
 
-	cmd.PersistentFlags().StringP(constants.CronFlag, "c", "", "If set, the cron expression will define when a sync should be run. When not set, the sync will run once and quit after.")
+	cmd.PersistentFlags().StringP(constants.CronFlag, "c", "", "If set, the cron expression will define when a sync should run. When not set (and no frequency is defined), the sync will run once and quit after.")
 	cmd.PersistentFlags().Bool(constants.SyncAtStartupFlag, false, "If set a sync will be run at startup independent of the cron expression.")
-	cmd.PersistentFlags().IntP(constants.FrequencyFlag, "f", 0, "(Deprecated) The frequency used to do the sync (in minutes). When not set (and no cron expression is defined), the default value '0' is used, which means the sync will run once and quit after.")
+	cmd.PersistentFlags().IntP(constants.FrequencyFlag, "f", 0, "The frequency used to do the sync (in minutes). When not set (and no cron expression is defined), the default value '0' is used, which means the sync will run once and quit after.")
 	cmd.PersistentFlags().Bool(constants.SkipDataSourceSyncFlag, false, "If set, the data source meta data synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipIdentityStoreSyncFlag, false, "If set, the identity store synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipDataAccessSyncFlag, false, "If set, the data access information from Raito will not be synced to the data sources in the target list.")
@@ -230,11 +230,10 @@ func createSyncScheduler(baseConfig *target.BaseConfig) (bool, cron.Schedule, er
 	var scheduler cron.Schedule
 
 	cronExpression := viper.GetString(constants.CronFlag)
-	if cronExpression == "" {
-		freq := viper.GetInt(constants.FrequencyFlag)
-		if freq > 0 {
-			baseConfig.BaseLogger.Warn("The 'frequency' flag is deprecated. Please use the 'cron' flag instead.")
+	freq := viper.GetInt(constants.FrequencyFlag)
 
+	if cronExpression == "" {
+		if freq > 0 {
 			if freq < 60 {
 				return false, nil, fmt.Errorf("the 'frequency' flag must be at least 60 seconds. The value is: %d", freq)
 			}
@@ -243,6 +242,10 @@ func createSyncScheduler(baseConfig *target.BaseConfig) (bool, cron.Schedule, er
 			scheduler = cron.Every(time.Minute * time.Duration(freq))
 		}
 	} else {
+		if freq > 0 {
+			baseConfig.BaseLogger.Warn("The 'frequency' flag is ignored when the 'cron' flag is set.")
+		}
+
 		var cronParserErr error
 		scheduler, cronParserErr = cron.ParseStandard(cronExpression)
 

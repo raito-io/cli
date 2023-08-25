@@ -45,7 +45,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 		Run:    executeRun,
 	}
 
-	cmd.PersistentFlags().StringP(constants.CronFlag, "c", "", "If set, the cron expression will define when a sync should run. When not set (and no frequency is defined), the sync will run once and quit after.")
+	cmd.PersistentFlags().StringP(constants.CronFlag, "c", "", "If set, the cron expression will define when a sync should run. When not set (and no frequency is defined), the sync will run once and quit after. (e.g. '0 0/2 * * *' initiates a sync evey 2 hours)")
 	cmd.PersistentFlags().Bool(constants.SyncAtStartupFlag, false, "If set, a sync will be run at startup independent of the cron expression. Only applicable if cron expression is defined.")
 	cmd.PersistentFlags().IntP(constants.FrequencyFlag, "f", 0, "The frequency used to do the sync (in minutes). When not set (and no cron expression is defined), the default value '0' is used, which means the sync will run once and quit after.")
 	cmd.PersistentFlags().Bool(constants.SkipDataSourceSyncFlag, false, "If set, the data source meta data synchronization step to Raito will be skipped for each of the targets.")

@@ -142,7 +142,6 @@ func executeRun(cmd *cobra.Command, args []string) {
 			}()
 
 			it := 1
-			executionStartTime := time.Now()
 
 			if executeSyncAtStartup {
 				baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
@@ -153,13 +152,12 @@ func executeRun(cmd *cobra.Command, args []string) {
 				it++
 			}
 
-			timer := cronTimer(baseConfig.BaseLogger, nil, scheduler, &executionStartTime)
+			timer := cronTimer(baseConfig.BaseLogger, nil, scheduler)
 			defer timer.Stop()
 
 			for {
 				select {
 				case <-timer.C:
-					executionStartTime = time.Now()
 					cliTrigger.Reset()
 
 					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
@@ -167,7 +165,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 						baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 					}
 
-					cronTimer(baseConfig.BaseLogger, timer, scheduler, &executionStartTime)
+					cronTimer(baseConfig.BaseLogger, timer, scheduler)
 
 					it++
 				case <-apUpdateTrigger.TriggerChannel():
@@ -274,8 +272,8 @@ func moreThanOneExecutionWithinAnHour(cronSchedule *cron.SpecSchedule) bool {
 	return false
 }
 
-func cronTimer(logger hclog.Logger, timer *time.Timer, scheduler cron.Schedule, previousStartTime *time.Time) *time.Timer {
-	next := scheduler.Next(*previousStartTime)
+func cronTimer(logger hclog.Logger, timer *time.Timer, scheduler cron.Schedule) *time.Timer {
+	next := scheduler.Next(time.Now())
 
 	logger.Info(fmt.Sprintf("Next execution at %s", next.Format(time.RFC822)))
 
@@ -611,12 +609,7 @@ func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfi
 	cliTrigger, err := clitrigger.CreateCliTrigger(baseConfig)
 	if err != nil {
 		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
-		return nil, nil
-	}
-
-	if cliTrigger == nil {
-		//This is only true running against local appserver
-		cliTrigger = &clitrigger.DummyCliTrigger{}
+		return cliTrigger, nil
 	}
 
 	apUpdateTriggerHandler := clitrigger.NewApUpdateTrigger(cliTrigger)

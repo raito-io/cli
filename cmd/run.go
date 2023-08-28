@@ -614,6 +614,11 @@ func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfi
 		return nil, nil
 	}
 
+	if cliTrigger == nil {
+		//This is only true running against local appserver
+		cliTrigger = &clitrigger.DummyCliTrigger{}
+	}
+
 	apUpdateTriggerHandler := clitrigger.NewApUpdateTrigger(cliTrigger)
 
 	cliTrigger.Start(ctx)

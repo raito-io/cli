@@ -10,12 +10,17 @@ import (
 	"github.com/raito-io/cli/base/identity_store"
 )
 
+type mockConstructorTestingT interface {
+	mock.TestingT
+	Cleanup(func())
+}
+
 type SimpleDataUsageStatementHandler struct {
 	*DataUsageStatementHandler
 	Statements []data_usage.Statement
 }
 
-func NewSimpleDataUsageStatementHandler(t mockConstructorTestingTNewDataUsageStatementHandler) *SimpleDataUsageStatementHandler {
+func NewSimpleDataUsageStatementHandler(t mockConstructorTestingT) *SimpleDataUsageStatementHandler {
 	result := &SimpleDataUsageStatementHandler{
 		DataUsageStatementHandler: NewDataUsageStatementHandler(t),
 		Statements:                make([]data_usage.Statement, 0),
@@ -34,7 +39,7 @@ type SimpleIdentityStoreIdentityHandler struct {
 	Groups []identity_store.Group
 }
 
-func NewSimpleIdentityStoreIdentityHandler(t mockConstructorTestingTNewIdentityStoreIdentityHandler, maxUsersOrGroupsInCall int) *SimpleIdentityStoreIdentityHandler {
+func NewSimpleIdentityStoreIdentityHandler(t mockConstructorTestingT, maxUsersOrGroupsInCall int) *SimpleIdentityStoreIdentityHandler {
 	result := &SimpleIdentityStoreIdentityHandler{
 		IdentityStoreIdentityHandler: NewIdentityStoreIdentityHandler(t),
 		Users:                        make([]identity_store.User, 0),
@@ -71,7 +76,7 @@ type SimpleDataSourceObjectHandler struct {
 	DataSourceDescription string
 }
 
-func NewSimpleDataSourceObjectHandler(t mockConstructorTestingTNewDataSourceObjectHandler, maxDataObjectsPerCall int) *SimpleDataSourceObjectHandler {
+func NewSimpleDataSourceObjectHandler(t mockConstructorTestingT, maxDataObjectsPerCall int) *SimpleDataSourceObjectHandler {
 	result := &SimpleDataSourceObjectHandler{
 		DataSourceObjectHandler: NewDataSourceObjectHandler(t),
 		DataObjects:             make([]data_source.DataObject, 0),
@@ -110,7 +115,7 @@ type SimpleAccessProviderHandler struct {
 	AccessProviders []sync_from_target.AccessProvider
 }
 
-func NewSimpleAccessProviderHandler(t mockConstructorTestingTNewAccessProviderHandler, maxAccessProvidersPerCall int) *SimpleAccessProviderHandler {
+func NewSimpleAccessProviderHandler(t mockConstructorTestingT, maxAccessProvidersPerCall int) *SimpleAccessProviderHandler {
 	result := &SimpleAccessProviderHandler{
 		AccessProviderHandler: NewAccessProviderHandler(t),
 		AccessProviders:       make([]sync_from_target.AccessProvider, 0),
@@ -135,7 +140,7 @@ type SimpleAccessProviderFeedbackHandler struct {
 	AccessProviderFeedback map[string][]sync_to_target.AccessSyncFeedbackInformation
 }
 
-func NewSimpleAccessProviderFeedbackHandler(t mockConstructorTestingTNewAccessProviderFeedbackHandler, maxAccessFeedbackInformationObjectsPerCall int) *SimpleAccessProviderFeedbackHandler {
+func NewSimpleAccessProviderFeedbackHandler(t mockConstructorTestingT, maxAccessFeedbackInformationObjectsPerCall int) *SimpleAccessProviderFeedbackHandler {
 	result := &SimpleAccessProviderFeedbackHandler{
 		AccessProviderFeedbackHandler: NewAccessProviderFeedbackHandler(t),
 		AccessProviderFeedback:        map[string][]sync_to_target.AccessSyncFeedbackInformation{},

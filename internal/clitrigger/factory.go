@@ -24,7 +24,12 @@ func CreateCliTrigger(config *target.BaseConfig) (CliTrigger, error) {
 		return &DummyCliTrigger{}, nil
 	}
 
-	return createWebsocketTrigger(config)
+	cliTrigger, err := createWebsocketTrigger(config)
+	if err != nil || cliTrigger == nil {
+		return &DummyCliTrigger{}, err
+	}
+
+	return cliTrigger, nil
 }
 
 func createWebsocketTrigger(config *target.BaseConfig) (*WebsocketCliTrigger, error) {

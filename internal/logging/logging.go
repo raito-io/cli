@@ -2,14 +2,15 @@ package logging
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-hclog"
-	"github.com/pterm/pterm"
-	"github.com/spf13/viper"
 	"io"
 	"log"
 	"os"
 	"strconv"
 	"sync"
+
+	"github.com/hashicorp/go-hclog"
+	"github.com/pterm/pterm"
+	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/version"
@@ -111,8 +112,10 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 
 				if s.hasSuccess(args) {
 					// Target success message, so we stop the spinner and show the success message separately to keep it visible
+					//nolint:errcheck
 					spinner.Stop()
 					s.progress[spinnerKey] = nil
+
 					pterm.Success.Println(text)
 				} else {
 					// Normal info message during a target run, so just update the text of the spinner
@@ -120,6 +123,7 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 				}
 			} else if (level == hclog.Error || level == hclog.Warn) && spinner != nil {
 				// If we encounter an error or warning, we stop the current spinner if there is any and remove it.
+				//nolint:errcheck
 				spinner.Stop()
 				s.progress[spinnerKey] = nil
 			}

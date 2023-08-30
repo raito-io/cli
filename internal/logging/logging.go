@@ -2,16 +2,14 @@ package logging
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-hclog"
+	"github.com/pterm/pterm"
+	"github.com/spf13/viper"
 	"io"
 	"log"
 	"os"
 	"strconv"
 	"sync"
-	"time"
-
-	"github.com/hashicorp/go-hclog"
-	"github.com/pterm/pterm"
-	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/version"
@@ -100,15 +98,38 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 			spinnerKey := strconv.Itoa(it) + "-" + tar
 
 			spinner := s.progress[spinnerKey]
-			if spinner == nil {
-				spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Running target %s...", tar))
-				s.progress[spinnerKey] = spinner
 
-				// TODO this is to avoid a threading issue with pterm? When not done, fast targets (e.g. when skipped) give weird results in the CLI output (spinner appearing again)
-				time.Sleep(500 * time.Millisecond)
+			text := fmt.Sprintf("Target %s - %s", tar, msg)
+
+			if level == hclog.Info {
+				// During the run of a target, we show info messages in a spinner
+				if spinner == nil {
+					spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Running target %s...", tar))
+					spinner.RemoveWhenDone = true
+					s.progress[spinnerKey] = spinner
+				}
+
+				if s.hasSuccess(args) {
+					// Target success message, so we stop the spinner and show the success message separately to keep it visible
+					spinner.Stop()
+					s.progress[spinnerKey] = nil
+					pterm.Success.Println(text)
+				} else {
+					// Normal info message during a target run, so just update the text of the spinner
+					spinner.UpdateText(text)
+				}
+			} else if (level == hclog.Error || level == hclog.Warn) && spinner != nil {
+				// If we encounter an error or warning, we stop the current spinner if there is any and remove it.
+				spinner.Stop()
+				s.progress[spinnerKey] = nil
 			}
 
-			s.handleProgress(spinner, tar, level, msg, args)
+			// Show error or warning messages separately
+			if level == hclog.Error {
+				pterm.Error.Println(text)
+			} else if level == hclog.Warn {
+				pterm.Warning.Println(text)
+			}
 		} else {
 			s.handleNormalOutput(level, msg)
 		}
@@ -133,26 +154,6 @@ func (s *sinkAdapter) handleNormalOutput(level hclog.Level, msg string) {
 	}
 }
 
-func (s *sinkAdapter) handleProgress(spinner *pterm.SpinnerPrinter, target string, level hclog.Level, msg string, args []interface{}) {
-	text := fmt.Sprintf("Target %s - %s", target, msg)
-
-	if level == hclog.Info {
-		if s.hasSuccess(args) {
-			spinner.Success(text)
-		} else {
-			spinner.UpdateText(text)
-		}
-	} else if level == hclog.Error {
-		if s.hasSuccess(args) {
-			spinner.Fail(text)
-		} else {
-			pterm.Error.Println(text)
-		}
-	} else if level == hclog.Warn {
-		pterm.Warning.Println(text)
-	}
-}
-
 func (s *sinkAdapter) hasSuccess(args []interface{}) bool {
 	for _, arg := range args {
 		if arg == "success" {
@@ -166,7 +167,7 @@ func (s *sinkAdapter) hasSuccess(args []interface{}) bool {
 func (s *sinkAdapter) stopIteration() {
 	if s.progress != nil {
 		for _, spinner := range s.progress {
-			if spinner.IsActive {
+			if spinner != nil && spinner.IsActive {
 				spinner.Stop() //nolint
 			}
 		}

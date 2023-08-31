@@ -243,7 +243,7 @@ func fetchClientAppId(baseConfig *target.BaseConfig) error {
 		}
 
 		clientAppId = org.ClientAppId
-		baseConfig.BaseLogger.Info(fmt.Sprintf("Received clientAppId %q for domain %q", clientAppId, domain))
+		baseConfig.BaseLogger.Debug(fmt.Sprintf("Received clientAppId %q for domain %q", clientAppId, domain))
 	}
 
 	return nil

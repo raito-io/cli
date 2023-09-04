@@ -2,6 +2,8 @@ module github.com/raito-io/cli
 
 go 1.21
 
+toolchain go1.21.0
+
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/aws/aws-sdk-go-v2 v1.21.0

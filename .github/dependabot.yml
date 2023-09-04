@@ -17,6 +17,7 @@ version: 2
 updates:
   # Keep our GitHub actions up to date.
   - package-ecosystem: 'github-actions'
+    target-branch: 'main'
     directory: '/'
     schedule:
       # Every weekday
@@ -30,8 +31,14 @@ updates:
       separator: '-'
     reviewers:
       - '@raito-io/back-end'
+    groups:
+      combined:
+        # Define patterns to include dependencies in the group (based on dependency name)
+        patterns:
+          - "*"
   # Maintain dependencies for npm
   - package-ecosystem: 'gomod'
+    target-branch: 'main'
     directory: '/'
     schedule:
       interval: 'weekly'
@@ -44,4 +51,8 @@ updates:
       separator: '-'
     reviewers:
       - '@raito-io/back-end'
-    target-branch: "dev"
+    groups:
+      combined:
+        # Define patterns to include dependencies in the group (based on dependency name)
+        patterns:
+          - "*"

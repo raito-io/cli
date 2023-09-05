@@ -12,6 +12,15 @@ import (
 	"github.com/raito-io/cli/internal/version_management"
 )
 
+const (
+	/*
+		The list of default access provider types
+	*/
+	Role   = "role"
+	AclSet = "aclSet"
+	Policy = "policy"
+)
+
 // AccessSyncer interface needs to be implemented by any plugin that wants to sync access controls between Raito and the data source.
 // This sync can be in the 2 directions or in just 1 depending on the parameters set in AccessSyncConfig.
 type AccessSyncer interface {

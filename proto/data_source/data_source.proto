@@ -23,51 +23,125 @@ message DataSourceSyncResult {
 
 //NoLinting ToSupport GQL schema (temporarily)
 message MetaData {
+  // DataObjectTypes describes the data object types that are available in the data source
   repeated DataObjectType dataObjectTypes = 1;
+
+  /*
+    SupportedFeatures is a list of features supported by the data source
+    Currently supported features: columnMasking, rowFiltering, columnFiltering
+   */
   repeated string supportedFeatures = 2;
+
+  // Type indicates the type of data source (Snowflake, BigQuery, etc.).
   string type = 3;
+
+  // Icon the name or base64 encoded version of the icon to use for this data source.
   string icon = 4;
+
+  // UsageMetaInfo describes the usage metadata for this data source.
   UsageMetaInput usageMetaInfo = 5;
+
+  // AccessProviderTypes describes the access provider types that are available in the data source
   repeated AccessProviderType accessProviderTypes = 6;
 }
 
 message DataObjectType {
+  // Name, The internal technical name used to reference the data object type. This must be unique.
   string name = 1;
+
+  // Type is used to group conceptually similar data object types. Data object types with the same type will be shown in the same table in the UI. E.g. shared-table and table both have the type table.
   string type = 2;
+
+  // Label, a display name for the type to be used in the UI
   string label = 3;
+
+  // Icon, The name or base64 encoded version of the icon to use for this data source.
   string icon = 4;
+
+  // Permissions describes all the permissions that could be applied on this data object type.
   repeated DataObjectTypePermission permissions = 5;
+
+  // Actions describes all the actions that could be performed on this data object type.
   repeated DataObjectTypeAction actions = 6;
+
+  // Children describes all the data object types that could be a direct child of this data object type.
   repeated string children = 7;
 }
 
 message AccessProviderType {
+  // Type, The (internal) name of the type
   string type = 1;
+
+  // Label, A human readable name for the access provider
   string label = 2;
+
+  // Icon, The name or base64 encoded version of the icon to use for this access provider
   string icon = 3;
+
+  // IsNamedEntity indicates if the access provider represents a named entity (like a role or a policy) in the data source. False, typically means some kind of ACL system (nameless bindings).
   bool isNamedEntity = 4;
+
+  // CanBeCreated indicates whether the access provider can be created from the Raito Cloud UI or not
   bool canBeCreated = 5;
+
+  // CanBeAssumed indicates that this (named entity) is something the user has to ‘assume’ to get these permissions. Typically, a role.
   bool canBeAssumed = 6;
+
+  // CanAssumeMultiple indicates that the user can assume multiple (roles).
   bool canAssumeMultiple = 7;
-  bool containsWhat = 8;
-  bool containsWho = 9;
-  repeated string whoInputTypes = 10;
+
+  bool containsWhat = 8 [deprecated = true];
+  bool containsWho = 9 [deprecated = true];
+  repeated string whoInputTypes = 10 [deprecated = true];
+
+  /*
+    IdentityStoreTypeForWho can be used to specify from which identity store type the WHO can come from.
+    This was specifically called to life for supporting the case of AWS permission sets as they become special roles in the AWS account data sources but should only use users and groups from the AWS organization (which is a linked identity store of the aws account data sources).
+   */
   string identityStoreTypeForWho = 11;
+
+  /*
+    AllowedWhoAccessProviderTypes lists of access provider types that could be in the who list of this access provider type
+    Nil indicates that all access provider types are allowed. Otherwise only defined access provider types are allowed to be part of the who list of this access provider type.
+   */
+  repeated string allowedWhoAccessProviderTypes = 12;
+
+  // ExportSupportsApInheritance is true, access providers will not be unpacked at export time. Otherwise, access providers will be unpacked into native groups and users.
+  bool exportSupportsApInheritance = 13;
+
+  /*
+    ExportSupportsApInheritanceOverWhat is true, ap inheritance will be unpacked over the what link.
+    If true and (do1)<-[WHAT]-(ap1)-[WHO]->(ap2), the export what of ap2 will contain do1.
+  */
+  bool exportRequiresWhatUnpacking = 14;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)
 message DataObjectTypePermission {
+  // Permission defines the name of the permission as used in the datasource
   string permission = 1;
+
+  // GlobalPermissions is a list of global permissions (read, write, admin) that this permission should be included in. This is used when expanding the global permission into its specific ones for the datasource
   repeated string globalPermissions = 2;
+
+  // Description explanations what this permission does (typically from the documentation of the datasource)
   string description = 3;
-  repeated string action = 4;
+
+  repeated string action = 4 [deprecated = true];
+
+  // UsageGlobalPermissions lists the global permissions (read, write, admin) for which this permission should be counted for the usage.
   repeated string usageGlobalPermissions = 5;
+
+  // CannotBeGranted can be set to false if this permission cannot be granted through the Raito Cloud UI.
   bool cannotBeGranted = 6;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)
 message DataObjectTypeAction {
+  // Action name that is defined
   string action = 1;
+
+  // GlobalActions defines the corresponding global actions
   repeated string globalActions = 2;
 }
 

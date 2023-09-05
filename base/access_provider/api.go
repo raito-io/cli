@@ -14,7 +14,7 @@ import (
 
 const (
 	/*
-		The list of default access control types
+		The list of default access provider types
 	*/
 	Role   = "role"
 	AclSet = "aclSet"

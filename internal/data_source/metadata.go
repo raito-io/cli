@@ -9,10 +9,11 @@ import (
 
 	graphql2 "github.com/hasura/go-graphql-client"
 
+	"github.com/raito-io/golang-set/set"
+
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target"
-	"github.com/raito-io/golang-set/set"
 )
 
 func SetMetaData(ctx context.Context, config *target.BaseTargetConfig, metadata *data_source.MetaData) error {

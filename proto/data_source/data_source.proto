@@ -113,7 +113,7 @@ message AccessProviderType {
     ExportSupportsApInheritanceOverWhat is true, ap inheritance will be unpacked over the what link.
     If true and (do1)<-[WHAT]-(ap1)-[WHO]->(ap2), the export what of ap2 will contain do1.
   */
-  bool exportSupportsApInheritanceOverWhat = 14;
+  bool exportRequiresWhatUnpacking = 14;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

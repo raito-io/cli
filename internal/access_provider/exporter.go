@@ -142,14 +142,14 @@ func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (jo
 		}
 	}
 
-	if len(d.syncConfig.RequiredExportWhoList) > 0 {
+	if len(d.syncConfig.RequiredExportWhoList) > 0 { //nolint:staticcheck
 		if filter.ExportFilterProperties == nil {
 			filter.ExportFilterProperties = &exportFilterProperties{}
 		}
 
-		filter.ExportFilterProperties.RequiredWhoItemLists = make([]string, 0, len(d.syncConfig.RequiredExportWhoList))
+		filter.ExportFilterProperties.RequiredWhoItemLists = make([]string, 0, len(d.syncConfig.RequiredExportWhoList)) //nolint:staticcheck
 
-		for _, listType := range d.syncConfig.RequiredExportWhoList {
+		for _, listType := range d.syncConfig.RequiredExportWhoList { //nolint:staticcheck
 			switch listType { //nolint:exhaustive
 			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS:
 				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "users")

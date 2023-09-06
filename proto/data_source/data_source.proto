@@ -43,6 +43,9 @@ message MetaData {
 
   // AccessProviderTypes describes the access provider types that are available in the data source
   repeated AccessProviderType accessProviderTypes = 6;
+
+  // SupportsApInheritance indicates whether the data source supports AP inheritance
+  bool supportsApInheritance = 7;
 }
 
 message DataObjectType {
@@ -105,15 +108,6 @@ message AccessProviderType {
     Nil indicates that all access provider types are allowed. Otherwise only defined access provider types are allowed to be part of the who list of this access provider type.
    */
   repeated string allowedWhoAccessProviderTypes = 12;
-
-  // ExportSupportsApInheritance is true, access providers will not be unpacked at export time. Otherwise, access providers will be unpacked into native groups and users.
-  bool exportSupportsApInheritance = 13;
-
-  /*
-    ExportSupportsApInheritanceOverWhat is true, ap inheritance will be unpacked over the what link.
-    If true and (do1)<-[WHAT]-(ap1)-[WHO]->(ap2), the export what of ap2 will contain do1.
-  */
-  bool exportRequiresWhatUnpacking = 14;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

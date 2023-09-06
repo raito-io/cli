@@ -38,21 +38,23 @@ func SetMetaData(ctx context.Context, config *target.BaseTargetConfig, metadata 
 	}
 
 	type DataSourceMetaDataInput struct {
-		DataObjectTypes     []*data_source.DataObjectType     `json:"dataObjectTypes,omitempty"`
-		AccessProviderTypes []*data_source.AccessProviderType `json:"accessProviderTypes,omitempty"`
-		SupportedFeatures   []string                          `json:"supportedFeatures,omitempty"`
-		Type                string                            `json:"type,omitempty"`
-		Icon                string                            `json:"icon,omitempty"`
-		UsageMetaInfo       *data_source.UsageMetaInput       `json:"usageMetaInfo,omitempty"`
+		DataObjectTypes       []*data_source.DataObjectType     `json:"dataObjectTypes,omitempty"`
+		AccessProviderTypes   []*data_source.AccessProviderType `json:"accessProviderTypes,omitempty"`
+		SupportedFeatures     []string                          `json:"supportedFeatures,omitempty"`
+		Type                  string                            `json:"type,omitempty"`
+		Icon                  string                            `json:"icon,omitempty"`
+		UsageMetaInfo         *data_source.UsageMetaInput       `json:"usageMetaInfo,omitempty"`
+		SupportsApInheritance bool                              `json:"supportsApInheritance"`
 	}
 
 	input := DataSourceMetaDataInput{
-		DataObjectTypes:     metadata.DataObjectTypes,
-		AccessProviderTypes: metadata.AccessProviderTypes,
-		SupportedFeatures:   metadata.SupportedFeatures,
-		Type:                metadata.Type,
-		Icon:                metadata.Icon,
-		UsageMetaInfo:       metadata.UsageMetaInfo,
+		DataObjectTypes:       metadata.DataObjectTypes,
+		AccessProviderTypes:   metadata.AccessProviderTypes,
+		SupportedFeatures:     metadata.SupportedFeatures,
+		Type:                  metadata.Type,
+		Icon:                  metadata.Icon,
+		UsageMetaInfo:         metadata.UsageMetaInfo,
+		SupportsApInheritance: metadata.SupportsApInheritance,
 	}
 
 	err = graphql.NewClient(&config.BaseConfig).Mutate(ctx, &m, map[string]interface{}{"id": graphql2.ID(config.DataSourceId), "input": input})

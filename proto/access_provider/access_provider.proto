@@ -57,9 +57,9 @@ message AccessSyncConfig {
   bool support_partial_sync = 1;
 
   // ImplicitDeleteInAccessProviderUpdate if true, access providers can be deleted by name only
-  bool implicit_delete_in_access_provider_update = 2;
+  bool implicit_delete_in_access_provider_update = 2 [deprecated = true];
 
-  repeated AccessProviderExportWhoList required_export_who_list = 3;
+  repeated AccessProviderExportWhoList required_export_who_list = 3 [deprecated = true];
 }
 
 service AccessProviderSyncService {

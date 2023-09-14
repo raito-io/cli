@@ -119,7 +119,7 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 					pterm.Success.Println(text)
 				} else {
 					// Normal info message during a target run, so just update the text of the spinner
-					spinner.UpdateText(text)
+					spinner.Info(text)
 				}
 			} else if (level == hclog.Error || level == hclog.Warn) && spinner != nil {
 				// If we encounter an error or warning, we stop the current spinner if there is any and remove it.

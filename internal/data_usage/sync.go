@@ -119,7 +119,7 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 		s.TargetConfig.TargetLogger.Info("Successfully queued import job. Wait until remote processing is done.")
 	}
 
-	s.TargetConfig.TargetLogger.Debug("Current status: %s", status.String())
+	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
 }

@@ -40,26 +40,12 @@ message AccessSyncResult {
   int32 access_provider_count = 2;
 }
 
-enum AccessProviderExportWhoList {
-  ACCESSPROVIDER_EXPORT_WHO_LIST_UNSPECIFIED = 0;
-  ACCESSPROVIDER_EXPORT_WHO_LIST_USERS = 1;
-  ACCESSPROVIDER_EXPORT_WHO_LIST_GROUPS = 2;
-  ACCESSPROVIDER_EXPORT_WHO_LIST_INHERIT_FROM = 3;
-  ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_IN_GROUPS = 4;
-  ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED = 5;
-  ACCESSPROVIDER_EXPORT_WHO_LIST_NATIVE_GROUPS_INHERITED = 6;
-  ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED_NATIVE_GROUPS_EXCLUDED = 7;
-}
-
 // AccessSyncConfig gives us information on how the CLI can sync access providers
 message AccessSyncConfig {
   // SupportPartialSync if true, syncing only out of sync access providers is allowed
   bool support_partial_sync = 1;
 
-  // ImplicitDeleteInAccessProviderUpdate if true, access providers can be deleted by name only
-  bool implicit_delete_in_access_provider_update = 2 [deprecated = true];
-
-  repeated AccessProviderExportWhoList required_export_who_list = 3 [deprecated = true];
+  reserved 2, 3; // deprecated old fields
 }
 
 service AccessProviderSyncService {

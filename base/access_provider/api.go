@@ -118,18 +118,6 @@ func WithSupportPartialSync() func(config *AccessSyncConfig) {
 	}
 }
 
-func WithImplicitDeleteInAccessProviderUpdate() func(config *AccessSyncConfig) {
-	return func(config *AccessSyncConfig) {
-		config.ImplicitDeleteInAccessProviderUpdate = true
-	}
-}
-
-func WithAccessProviderExportWhoList(lists ...AccessProviderExportWhoList) func(config *AccessSyncConfig) {
-	return func(config *AccessSyncConfig) {
-		config.RequiredExportWhoList = append(config.RequiredExportWhoList, lists...)
-	}
-}
-
 type AccessSyncerVersionHandler struct {
 }
 

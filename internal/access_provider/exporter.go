@@ -142,35 +142,6 @@ func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (jo
 		}
 	}
 
-	if len(d.syncConfig.RequiredExportWhoList) > 0 { //nolint:staticcheck
-		if filter.ExportFilterProperties == nil {
-			filter.ExportFilterProperties = &exportFilterProperties{}
-		}
-
-		filter.ExportFilterProperties.RequiredWhoItemLists = make([]string, 0, len(d.syncConfig.RequiredExportWhoList)) //nolint:staticcheck
-
-		for _, listType := range d.syncConfig.RequiredExportWhoList { //nolint:staticcheck
-			switch listType { //nolint:exhaustive
-			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS:
-				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "users")
-			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_GROUPS:
-				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "groups")
-			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_INHERIT_FROM:
-				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "inheritFrom")
-			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_IN_GROUPS:
-				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInGroups")
-			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED:
-				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInherited")
-			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_NATIVE_GROUPS_INHERITED:
-				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "groupsInherited")
-			case access_provider.AccessProviderExportWhoList_ACCESSPROVIDER_EXPORT_WHO_LIST_USERS_INHERITED_NATIVE_GROUPS_EXCLUDED:
-				filter.ExportFilterProperties.RequiredWhoItemLists = append(filter.ExportFilterProperties.RequiredWhoItemLists, "usersInheritedGroupsExclude")
-			default:
-				return 0, "", fmt.Errorf("unknown who list type: %s", listType)
-			}
-		}
-	}
-
 	client := graphql.NewClient(&d.config.BaseConfig)
 
 	err := client.Query(ctx, &q, map[string]interface{}{"input": input, "filter": filter})

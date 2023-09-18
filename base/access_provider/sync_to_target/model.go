@@ -51,18 +51,6 @@ type WhoItem struct {
 
 	// InheritFrom contains all access providers actual names in WHO part of this access provider
 	InheritFrom []string `yaml:"inheritFrom,omitempty" json:"inheritFrom,omitempty"`
-
-	// UsersInGroups contains all account names assigned to groups of this access provider directly
-	UsersInGroups []string `yaml:"usersInGroups,omitempty" json:"usersInGroups,omitempty"` // Deprecated: use Users instead
-
-	// UsersInherited contains all account names that part of a child access provider or group recursively
-	UsersInherited []string `yaml:"usersInherited,omitempty" json:"usersInherited,omitempty"` // Deprecated: use Users instead
-
-	// NativeGroupsInherited contains all groups associated with the native IS that are in who part of this or a descendant access provider
-	NativeGroupsInherited []string `yaml:"nativeGroupsInherited,omitempty" json:"nativeGroupsInherited,omitempty"` // Deprecated: use Groups instead
-
-	// UsersInheritedNativeGroupsExcluded contains all account names of users that are in who part of this or a descendant access provider but native groups are excluded
-	UsersInheritedNativeGroupsExcluded []string `yaml:"usersInheritedNativeGroupsExcluded,omitempty" json:"usersInheritedNativeGroupsExcludedGroupsExcluded,omitempty"` // Deprecated: use Users instead
 }
 
 type WhatItem struct {

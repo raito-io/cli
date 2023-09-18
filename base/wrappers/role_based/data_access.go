@@ -20,7 +20,7 @@ type AccessProviderRoleSyncer interface {
 }
 
 func AccessProviderRoleSync(syncer AccessProviderRoleSyncer, namingConstraints naming_hint.NamingConstraints, configOpt ...func(config *access_provider.AccessSyncConfig)) *wrappers.DataAccessSyncFunction {
-	configOpt = append([]func(config *access_provider.AccessSyncConfig){access_provider.WithSupportPartialSync(), access_provider.WithImplicitDeleteInAccessProviderUpdate()}, configOpt...)
+	configOpt = append([]func(config *access_provider.AccessSyncConfig){access_provider.WithSupportPartialSync()}, configOpt...)
 
 	roleSync := &accessProviderRoleSyncFunction{
 		syncer:            syncer,

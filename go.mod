@@ -18,14 +18,14 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.4
 	github.com/hasura/go-graphql-client v0.10.0
 	github.com/jinzhu/copier v0.4.0
-	github.com/pterm/pterm v0.12.67
+	github.com/pterm/pterm v0.12.69
 	github.com/raito-io/golang-set v0.0.4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.4
-	github.com/vektra/mockery/v2 v2.33.2
-	google.golang.org/grpc v1.58.0
+	github.com/vektra/mockery/v2 v2.33.3
+	google.golang.org/grpc v1.58.1
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v2 v2.4.0

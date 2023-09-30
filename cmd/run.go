@@ -121,7 +121,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 		hclog.L().Info("Starting continuous synchronization.")
 		hclog.L().Info("Press 'ctrl+c' to stop the program.")
 
-		ctx, cancelFn := context.WithCancel(ctx)
+		cancelCtx, cancelFn := context.WithCancel(ctx)
 
 		waitGroup := sync2.WaitGroup{}
 
@@ -135,7 +135,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 		go func() {
 			defer waitGroup.Done()
 
-			cliTriggerCtx, cliTriggerCancel := context.WithCancel(ctx)
+			cliTriggerCtx, cliTriggerCancel := context.WithCancel(cancelCtx)
 			cliTrigger, apUpdateTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig)
 
 			defer func() {
@@ -148,7 +148,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 			if executeSyncAtStartup {
 				baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
-				if runErr := executeSingleRun(ctx, baseConfig); runErr != nil {
+				if runErr := executeSingleRun(cancelCtx, baseConfig); runErr != nil {
 					baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 				}
 
@@ -164,7 +164,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 					cliTrigger.Reset()
 
 					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
-					if runErr := executeSingleRun(ctx, baseConfig); runErr != nil {
+					if runErr := executeSingleRun(cancelCtx, baseConfig); runErr != nil {
 						baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 					}
 
@@ -178,13 +178,13 @@ func executeRun(cmd *cobra.Command, args []string) {
 					}
 
 					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
-					err := handleApUpdateTrigger(ctx, baseConfig, apUpdate)
+					err := handleApUpdateTrigger(cancelCtx, baseConfig, apUpdate)
 					if err != nil {
 						baseConfig.BaseLogger.Warn("Cli ApUpdate Trigger failed: %s", err.Error())
 					}
 
 					it++
-				case <-ctx.Done():
+				case <-cancelCtx.Done():
 					baseConfig.BaseLogger.Debug("Context done: closing syncing routine.")
 					return
 				}
@@ -201,7 +201,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 			for {
 				select {
-				case <-ctx.Done():
+				case <-cancelCtx.Done():
 					hclog.L().Debug("Context done: Will stop all running routines...")
 					return
 				case s := <-sigs:

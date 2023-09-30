@@ -15,7 +15,7 @@ import (
 
 	"github.com/raito-io/cli/internal/auth"
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
 const heartbeatTimeout = time.Minute * 5
@@ -23,7 +23,7 @@ const websocketReset = time.Minute * 90
 
 type WebsocketClient struct {
 	wg           sync.WaitGroup
-	config       *target.BaseConfig
+	config       *types.BaseConfig
 	websocketUrl string
 }
 
@@ -35,7 +35,7 @@ func (e *WebsocketMessageError) Error() string {
 	return fmt.Sprintf("websocket message error: %s", e.err.Error())
 }
 
-func NewWebsocketClient(config *target.BaseConfig, websocketUrl string) *WebsocketClient {
+func NewWebsocketClient(config *types.BaseConfig, websocketUrl string) *WebsocketClient {
 	return &WebsocketClient{
 		wg:           sync.WaitGroup{},
 		config:       config,
@@ -212,7 +212,7 @@ type WebsocketCliTrigger struct {
 	cancelFn func()
 }
 
-func NewWebsocketCliTrigger(config *target.BaseConfig, websocketUrl string) *WebsocketCliTrigger {
+func NewWebsocketCliTrigger(config *types.BaseConfig, websocketUrl string) *WebsocketCliTrigger {
 	return &WebsocketCliTrigger{
 		client: NewWebsocketClient(config, websocketUrl),
 		logger: config.BaseLogger,

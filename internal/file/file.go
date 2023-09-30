@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/connect"
 )
 
@@ -29,7 +29,7 @@ func CreateUniqueFileName(hint, ext string) string {
 
 // UploadFile uploads the file from the given path.
 // It returns the key to use to pass to the Raito backend to use the file.
-func UploadFile(file string, config *target.BaseTargetConfig) (string, error) {
+func UploadFile(file string, config *types.BaseTargetConfig) (string, error) {
 	url, key, err := getUploadURL(config)
 	if err != nil {
 		return "", err
@@ -40,7 +40,7 @@ func UploadFile(file string, config *target.BaseTargetConfig) (string, error) {
 
 // UploadLogFile uploads the file from the given path.
 // It returns the key to use to pass to the Raito backend to use the file.
-func UploadLogFile(file string, config *target.BaseTargetConfig, task string) (string, error) {
+func UploadLogFile(file string, config *types.BaseTargetConfig, task string) (string, error) {
 	url, key, err := getUploadLogsURL(config, task)
 	if err != nil {
 		return "", err
@@ -49,7 +49,7 @@ func UploadLogFile(file string, config *target.BaseTargetConfig, task string) (s
 	return uploadFileToBucket(file, config, url, key)
 }
 
-func uploadFileToBucket(file string, config *target.BaseTargetConfig, url string, key string) (string, error) {
+func uploadFileToBucket(file string, config *types.BaseTargetConfig, url string, key string) (string, error) {
 	start := time.Now()
 
 	data, err := os.Open(file)
@@ -94,15 +94,15 @@ func uploadFileToBucket(file string, config *target.BaseTargetConfig, url string
 // GetUploadURL creates an S3 URL to upload a file to.
 // It returns the upload URL and the file key to use to pass to the Raito backend to use it.
 // Returns two empty strings if something went wrong (error logged)
-func getUploadURL(config *target.BaseTargetConfig) (string, string, error) {
+func getUploadURL(config *types.BaseTargetConfig) (string, string, error) {
 	return getUploadUrlAndKey(config, "file/upload/signed-url")
 }
 
-func getUploadLogsURL(config *target.BaseTargetConfig, task string) (string, string, error) {
+func getUploadLogsURL(config *types.BaseTargetConfig, task string) (string, string, error) {
 	return getUploadUrlAndKey(config, "file/upload/logs/signed-url?task="+task)
 }
 
-func getUploadUrlAndKey(config *target.BaseTargetConfig, path string) (string, string, error) {
+func getUploadUrlAndKey(config *types.BaseTargetConfig, path string) (string, string, error) {
 	resp, err := connect.DoGetToRaito(path, &config.BaseConfig)
 	if err != nil {
 		return "", "", fmt.Errorf("error while trying to get a signed upload URL: %s", err.Error())

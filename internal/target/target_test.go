@@ -2,6 +2,7 @@ package target
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
 func TestToCamelCase(t *testing.T) {
@@ -152,7 +154,7 @@ func TestBuildTargetConfigFromMapError(t *testing.T) {
 
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
 
-	config, err := buildTargetConfigFromMap(baseconfig, data, map[string]*EnricherConfig{})
+	config, err := buildTargetConfigFromMap(baseconfig, data, map[string]*types.EnricherConfig{})
 	assert.NotNil(t, err)
 	assert.Nil(t, config)
 }
@@ -177,7 +179,7 @@ var baseConfigMap = map[string]interface{}{
 func TestBuildTargetConfigFromMap(t *testing.T) {
 	clearViper()
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*EnricherConfig{})
+	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1", config.ConnectorName)
@@ -203,7 +205,7 @@ func TestBuildTargetConfigFromMapNoName(t *testing.T) {
 	copier.Copy(&noNameConfigMap, &baseConfigMap)
 	delete(noNameConfigMap, "name")
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, noNameConfigMap, map[string]*EnricherConfig{})
+	config, err := buildTargetConfigFromMap(baseconfig, noNameConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1", config.ConnectorName)
@@ -214,7 +216,7 @@ func TestBuildTargetConfigFromMapOverride(t *testing.T) {
 	clearViper()
 	viper.Set("skip-data-source-sync", true)
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*EnricherConfig{})
+	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, true, config.SkipIdentityStoreSync)
@@ -228,7 +230,7 @@ func TestBuildTargetConfigFromMapLocalRaitoData(t *testing.T) {
 	viper.Set("domain", "dddd")
 	viper.Set("api-secret", "ssss")
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*EnricherConfig{})
+	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1user", config.ApiUser)
@@ -250,7 +252,7 @@ func TestBuildTargetConfigFromMapGlobalRaitoData(t *testing.T) {
 	viper.Set("api-secret", "ssss")
 	viper.Set("domain", "dddd")
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
-	config, err := buildTargetConfigFromMap(baseconfig, withoutRaitoStuff, map[string]*EnricherConfig{})
+	config, err := buildTargetConfigFromMap(baseconfig, withoutRaitoStuff, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "uuuu", config.ApiUser)
@@ -335,10 +337,10 @@ func TestRunSingleTarget(t *testing.T) {
 
 	runs := 0
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
+	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
 		assert.Equal(t, "name1", tConfig.Name)
 		runs++
-		return nil
+		return "jobId", nil
 	})
 	assert.Equal(t, 1, runs)
 }
@@ -364,7 +366,7 @@ func TestRunMultipleTargets(t *testing.T) {
 
 	runs := 0
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
+	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
 		if runs == 0 {
 			assert.Equal(t, "c1", tConfig.ConnectorName)
 			assert.Equal(t, "cn1", tConfig.Name)
@@ -376,7 +378,7 @@ func TestRunMultipleTargets(t *testing.T) {
 			assert.Equal(t, "secret2", tConfig.ApiSecret)
 		}
 		runs++
-		return nil
+		return "jobId", nil
 	})
 	assert.Equal(t, 2, runs)
 }
@@ -401,11 +403,11 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 
 	runs := 0
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
+	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
 		assert.Equal(t, "c1", tConfig.ConnectorName)
 		assert.Equal(t, "name1", tConfig.Name)
 		runs++
-		return nil
+		return "jobId", nil
 	})
 	assert.Equal(t, 1, runs)
 
@@ -413,11 +415,11 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 
 	runs = 0
 	baseconfig, _ = BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
+	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
 		assert.Equal(t, "c2", tConfig.ConnectorName)
 		assert.Equal(t, "c2", tConfig.Name)
 		runs++
-		return nil
+		return "", nil
 	})
 	assert.Equal(t, 1, runs)
 }
@@ -442,10 +444,10 @@ func TestLogTarget(t *testing.T) {
 	old := hclog.L()
 	hclog.SetDefault(intercept)
 
-	config := BaseTargetConfig{
-		BaseConfig: BaseConfig{
+	config := types.BaseTargetConfig{
+		BaseConfig: types.BaseConfig{
 			ApiSecret: "mylittlesecret",
-			ConfigMap: ConfigMap{
+			ConfigMap: types.ConfigMap{
 				Parameters: map[string]string{
 					"password": "anothersecret",
 					"normal":   "readible",
@@ -541,7 +543,7 @@ func TestRunFromConfigFile_WithEnrichers(t *testing.T) {
 
 	runs := 0
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(baseconfig, func(tConfig *BaseTargetConfig) error {
+	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
 		assert.Equal(t, "raito-io/cli-plugin-snowflake", tConfig.ConnectorName)
 		assert.Equal(t, "snowflake1", tConfig.Name)
 		assert.Equal(t, 2, len(tConfig.DataObjectEnrichers))
@@ -558,7 +560,7 @@ func TestRunFromConfigFile_WithEnrichers(t *testing.T) {
 		assert.Equal(t, "blah", tConfig.DataObjectEnrichers[1].Parameters["dbt-location"])
 
 		runs++
-		return nil
+		return "jobId", nil
 	})
 	assert.Equal(t, 1, runs)
 }

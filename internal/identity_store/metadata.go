@@ -7,10 +7,10 @@ import (
 
 	"github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/internal/graphql"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
-func SetMetaData(config target.BaseTargetConfig, metadata *identity_store.MetaData) error {
+func SetMetaData(config types.BaseTargetConfig, metadata *identity_store.MetaData) error {
 	logger := config.TargetLogger.With("identitystore", config.IdentityStoreId)
 	start := time.Now()
 

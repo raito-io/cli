@@ -15,6 +15,7 @@ import (
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
 const defaultAccessFile = "access.yml"
@@ -51,10 +52,10 @@ func executeAccessCmd(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	return target.RunTargets(config, runAccessTarget)
+	return target.RunTargets(context.Background(), config, runAccessTarget)
 }
 
-func runAccessTarget(targetConfig *target.BaseTargetConfig) (err error) {
+func runAccessTarget(ctx context.Context, targetConfig *types.BaseTargetConfig) (_ string, err error) {
 	defer func() {
 		if err != nil {
 			target.HandleTargetError(err, targetConfig)
@@ -76,13 +77,13 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) (err error) {
 
 	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)
 	if err != nil {
-		return fmt.Errorf("initializing connector plugin %q: %w", targetConfig.ConnectorName, err)
+		return "", fmt.Errorf("initializing connector plugin %q: %w", targetConfig.ConnectorName, err)
 	}
 	defer client.Close()
 
 	as, err := client.GetAccessSyncer()
 	if err != nil {
-		return fmt.Errorf("plugin (%s) does not implement the AccessSyncer interface: %w", targetConfig.ConnectorName, err)
+		return "", fmt.Errorf("plugin (%s) does not implement the AccessSyncer interface: %w", targetConfig.ConnectorName, err)
 	}
 
 	res, err := as.SyncToTarget(context.Background(), &access_provider.AccessSyncToTarget{
@@ -91,13 +92,13 @@ func runAccessTarget(targetConfig *target.BaseTargetConfig) (err error) {
 		SourceFile: accessFile,
 	})
 	if err != nil {
-		return fmt.Errorf("synchronizing access information to the data source: %w", err)
+		return "", fmt.Errorf("synchronizing access information to the data source: %w", err)
 	} else if res.Error != nil { //nolint:staticcheck
-		return fmt.Errorf("synchronizing access information to the data source: %w", err)
+		return "", fmt.Errorf("synchronizing access information to the data source: %w", err)
 	}
 
 	sec := time.Since(start).Round(time.Millisecond)
 	targetConfig.TargetLogger.Info(fmt.Sprintf("Finished execution in %s", sec), "success")
 
-	return nil
+	return "", nil
 }

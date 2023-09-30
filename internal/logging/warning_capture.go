@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
 const bufferSize = 1024
@@ -48,7 +48,7 @@ func (s *warningCapturingSink) GetWarnings() []string {
 	return warnings
 }
 
-func CreateWarningCapturingLogger(config *target.BaseTargetConfig) (*target.BaseTargetConfig, WarningCollector, func(), error) {
+func CreateWarningCapturingLogger(config *types.BaseTargetConfig) (*types.BaseTargetConfig, WarningCollector, func(), error) {
 	if logger, ok := config.BaseLogger.(hclog.InterceptLogger); ok {
 		sink := newWarningCapturingSink()
 

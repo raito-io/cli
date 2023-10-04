@@ -2,8 +2,10 @@ package identity_store
 
 import (
 	"context"
+
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/spf13/viper"
+	"github.com/raito-io/cli/internal/target/types"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,13 +13,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/viper"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/job/mocks"
-	"github.com/raito-io/cli/internal/target"
 )
 
 const GoodImportResult = "{ \"data\": { \"importIdentityRequest\": { \"subtask\" : {\"status\": \"QUEUED\", \"subtaskId\": \"ImportSync\" } } } }"
@@ -228,9 +231,9 @@ func newIdentityStoreImporter(t *testing.T, f1, f2 string) *IdentityStoreImporte
 	t.Helper()
 
 	isi := NewIdentityStoreImporter(&IdentityStoreImportConfig{
-		BaseTargetConfig: target.BaseTargetConfig{
+		BaseTargetConfig: types.BaseTargetConfig{
 			TargetLogger: hclog.L(),
-			BaseConfig: target.BaseConfig{
+			BaseConfig: types.BaseConfig{
 				Domain:     "mydomain",
 				ApiUser:    "myuser",
 				ApiSecret:  "mysecret",

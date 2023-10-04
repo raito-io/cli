@@ -6,14 +6,14 @@ import (
 	"strings"
 
 	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/target/types"
 
 	"github.com/raito-io/cli/internal/auth"
-	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/url"
 	"github.com/raito-io/cli/internal/version"
 )
 
-func doPost(host, path, body, contentType string, config *target.BaseConfig) (*http.Response, error) {
+func doPost(host, path, body, contentType string, config *types.BaseConfig) (*http.Response, error) {
 	url := url.CreateRaitoURL(host, path)
 	config.BaseLogger.Debug("Calling HTTP POST", "URL", url)
 	req, err := http.NewRequest("POST", url, strings.NewReader(body))
@@ -37,11 +37,11 @@ func doPost(host, path, body, contentType string, config *target.BaseConfig) (*h
 	return resp, nil
 }
 
-func DoPostToRaito(path, body, contentType string, config *target.BaseConfig) (*http.Response, error) {
+func DoPostToRaito(path, body, contentType string, config *types.BaseConfig) (*http.Response, error) {
 	return doPost(url.GetRaitoURL(), path, body, contentType, config)
 }
 
-func doGet(host, path string, config *target.BaseConfig) (*http.Response, error) {
+func doGet(host, path string, config *types.BaseConfig) (*http.Response, error) {
 	url := url.CreateRaitoURL(host, path)
 	config.BaseLogger.Debug("Calling HTTP GET", "URL", url)
 	req, err := http.NewRequest("GET", url, http.NoBody)
@@ -65,11 +65,11 @@ func doGet(host, path string, config *target.BaseConfig) (*http.Response, error)
 	return resp, nil
 }
 
-func DoGetToRaito(path string, config *target.BaseConfig) (*http.Response, error) {
+func DoGetToRaito(path string, config *types.BaseConfig) (*http.Response, error) {
 	return doGet(url.GetRaitoURL(), path, config)
 }
 
-func AddHeaders(req *http.Request, config *target.BaseConfig, contentType string) error {
+func AddHeaders(req *http.Request, config *types.BaseConfig, contentType string) error {
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}

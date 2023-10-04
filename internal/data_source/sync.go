@@ -11,13 +11,13 @@ import (
 	"time"
 
 	"github.com/raito-io/cli/base/data_object_enricher"
+	"github.com/raito-io/cli/internal/target/types"
 
 	dspc "github.com/raito-io/cli/base/data_source"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
-	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/version_management"
 )
 
@@ -30,7 +30,7 @@ type DataSourceImportResult struct {
 }
 
 type DataSourceSync struct {
-	TargetConfig *target.BaseTargetConfig
+	TargetConfig *types.BaseTargetConfig
 	JobId        string
 
 	result *job.TaskResult
@@ -167,7 +167,7 @@ func (s *DataSourceSync) enrichDataObjects(ctx context.Context, sourceFile strin
 	return enrichedFile, newFiles, nil
 }
 
-func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *target.EnricherConfig, sourceFile string, index int) (string, int, error) {
+func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *types.EnricherConfig, sourceFile string, index int) (string, int, error) {
 	client, err := plugin.NewPluginClient(enricher.ConnectorName, enricher.ConnectorVersion, s.TargetConfig.TargetLogger)
 	if err != nil {
 		s.TargetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing enricher plugin %q: %s", enricher.ConnectorName, err.Error()))

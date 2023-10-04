@@ -13,11 +13,11 @@ import (
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/job"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
 type AccessProviderExportFeedbackConfig struct {
-	target.BaseTargetConfig
+	types.BaseTargetConfig
 	FeedbackFile string
 }
 

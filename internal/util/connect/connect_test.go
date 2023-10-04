@@ -2,16 +2,17 @@ package connect
 
 import (
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/spf13/viper"
+	"github.com/raito-io/cli/internal/target/types"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/spf13/viper"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/raito-io/cli/internal/target"
 )
 
 func TestDoGet(t *testing.T) {
@@ -31,7 +32,7 @@ func TestDoGet(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, testServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	config := target.BaseConfig{
+	config := types.BaseConfig{
 		Domain:     "TestRaito",
 		ApiUser:    "Userke",
 		ApiSecret:  "SecretStuff",
@@ -68,7 +69,7 @@ func TestDoPost(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, testServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	config := target.BaseConfig{
+	config := types.BaseConfig{
 		Domain:     "TestRaito",
 		ApiUser:    "Userke",
 		ApiSecret:  "SecretStuff",
@@ -87,7 +88,7 @@ func TestDoPost(t *testing.T) {
 }
 
 func TestDoPostIllegalURL(t *testing.T) {
-	config := target.BaseConfig{
+	config := types.BaseConfig{
 		BaseLogger: hclog.Default(),
 	}
 	res, err := doPost("\\we\nird", "illegal path", "The body", "application/json", &config)
@@ -96,7 +97,7 @@ func TestDoPostIllegalURL(t *testing.T) {
 }
 
 func TestDoGetIllegalURL(t *testing.T) {
-	config := target.BaseConfig{
+	config := types.BaseConfig{
 		BaseLogger: hclog.Default(),
 	}
 	res, err := doGet("\\we\nird", "illegal path", &config)
@@ -111,7 +112,7 @@ func TestDoGetClosed(t *testing.T) {
 	url := testServer.URL
 	testServer.Close()
 
-	config := target.BaseConfig{
+	config := types.BaseConfig{
 		BaseLogger: hclog.Default(),
 	}
 
@@ -127,7 +128,7 @@ func TestDoPostClosed(t *testing.T) {
 	url := testServer.URL
 	testServer.Close()
 
-	config := target.BaseConfig{
+	config := types.BaseConfig{
 		BaseLogger: hclog.Default(),
 	}
 

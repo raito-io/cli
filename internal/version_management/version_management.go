@@ -11,7 +11,7 @@ import (
 
 	version2 "github.com/raito-io/cli/base/util/version"
 	"github.com/raito-io/cli/internal/graphql"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/version"
 )
 
@@ -124,7 +124,7 @@ func (e IncompatiblePluginVersionError) Error() string {
 	return fmt.Sprintf("Plugin is incompatible with CLI version. Plugin is build with CLI version '%s' while current CLI version is '%s', %s", e.pluginVersion, e.cliVersion, solution)
 }
 
-func IsCompatibleWithRaitoCloud(config *target.BaseConfig) (CompatibilityInformation, error) {
+func IsCompatibleWithRaitoCloud(config *types.BaseConfig) (CompatibilityInformation, error) {
 	if version.GetCliVersion().Equal(version.DevVersion) {
 		return CompatibilityInformation{
 			Compatibility: Supported,
@@ -165,7 +165,7 @@ type SupportedRaitoCloudVersions struct {
 	DeprecatedVersionMsg *string
 }
 
-func getCompatibleRaitoCloudVersions(config *target.BaseConfig) (*SupportedRaitoCloudVersions, error) {
+func getCompatibleRaitoCloudVersions(config *types.BaseConfig) (*SupportedRaitoCloudVersions, error) {
 	var query struct {
 		SupportedCliVersion struct {
 			SupportedVersions  string

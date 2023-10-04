@@ -40,16 +40,14 @@ func validateParsedAccessFile(t *testing.T, parsed *AccessProviderImport, err er
 	assert.Equal(t, "Lots of blah", ap.Description)
 	assert.Equal(t, "Blah_", ap.NamingHint)
 	assert.Equal(t, Mask, ap.Action)
-	assert.Equal(t, 1, len(ap.Access))
 	require.NotNil(t, ap.Type)
 	assert.Equal(t, "role_test", *ap.Type)
 
-	a := ap.Access[0]
-	assert.Equal(t, "Blahkes", *a.ActualName)
+	assert.Equal(t, "Blahkes", *ap.ActualName)
 	assert.Equal(t, 2, len(ap.Who.Users))
-	assert.Equal(t, 2, len(a.What))
-	assert.Equal(t, "zzz.yyy.table1", a.What[0].DataObject.FullName)
-	assert.Equal(t, 2, len(a.What[0].Permissions))
-	assert.Equal(t, "zzz.yyy.table2", a.What[1].DataObject.FullName)
-	assert.Equal(t, 3, len(a.What[1].Permissions))
+	assert.Equal(t, 2, len(ap.What))
+	assert.Equal(t, "zzz.yyy.table1", ap.What[0].DataObject.FullName)
+	assert.Equal(t, 2, len(ap.What[0].Permissions))
+	assert.Equal(t, "zzz.yyy.table2", ap.What[1].DataObject.FullName)
+	assert.Equal(t, 3, len(ap.What[1].Permissions))
 }

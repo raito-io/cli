@@ -11,19 +11,18 @@ accessProviders:
       users:
         - bart
         - dieter
-    access:
-      - actualName: Blahkes
-        what:
-          - dataObject:
-              type: table
-              fullName: zzz.yyy.table1
-            permissions:
-              - select
-              - delete
-          - dataObject:
-              type: table
-              fullName: zzz.yyy.table2
-            permissions:
-              - update
-              - select
-              - delete
+    what:
+      - dataObject:
+          type: table
+          fullName: zzz.yyy.table1
+        permissions:
+          - select
+          - delete
+      - dataObject:
+          type: table
+          fullName: zzz.yyy.table2
+        permissions:
+          - update
+          - select
+          - delete
+    actualName: Blahkes

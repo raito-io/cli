@@ -11,25 +11,21 @@
       "who": {
         "users": [ "bart", "dieter" ]
       },
-      "access": [
+      "actualName": "Blahkes",
+      "what": [
         {
-          "actualName": "Blahkes",
-          "what": [
-            {
-              "dataObject": {
-                "fullName": "zzz.yyy.table1",
-                "type": "table"
-              },
-              "permissions": [ "select", "delete" ]
-            },
-            {
-              "dataObject": {
-                "fullName": "zzz.yyy.table2",
-                "type": "table"
-              },
-              "permissions": [ "update", "select", "delete" ]
-            }
-          ]
+          "dataObject": {
+            "fullName": "zzz.yyy.table1",
+            "type": "table"
+          },
+          "permissions": [ "select", "delete" ]
+        },
+        {
+          "dataObject": {
+            "fullName": "zzz.yyy.table2",
+            "type": "table"
+          },
+          "permissions": [ "update", "select", "delete" ]
         }
       ]
     }

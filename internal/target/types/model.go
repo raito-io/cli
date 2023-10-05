@@ -1,7 +1,8 @@
-package target
+package types
 
 import (
 	"github.com/hashicorp/go-hclog"
+
 	"github.com/raito-io/cli/base/util/config"
 )
 

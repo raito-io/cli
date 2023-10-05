@@ -14,12 +14,12 @@ import (
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/version_management"
 )
 
 type IdentityStoreSync struct {
-	TargetConfig *target.BaseTargetConfig
+	TargetConfig *types.BaseTargetConfig
 	JobId        string
 
 	result []job.TaskResult

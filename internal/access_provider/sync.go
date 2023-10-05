@@ -17,7 +17,7 @@ import (
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/version_management"
 )
 
@@ -38,7 +38,7 @@ type AccessProviderExportFeedbackResult struct {
 var accessLastCalculated = map[string]int64{}
 
 type DataAccessSync struct {
-	TargetConfig *target.BaseTargetConfig
+	TargetConfig *types.BaseTargetConfig
 	JobId        string
 
 	result []job.TaskResult
@@ -50,14 +50,14 @@ type dataAccessRetrieveInformation struct {
 }
 
 type dataAccessExportSubtask struct {
-	TargetConfig *target.BaseTargetConfig
+	TargetConfig *types.BaseTargetConfig
 	JobId        *string
 
 	task *DataAccessSync
 }
 
 type dataAccessImportSubtask struct {
-	TargetConfig *target.BaseTargetConfig
+	TargetConfig *types.BaseTargetConfig
 	JobId        *string
 
 	task *DataAccessSync

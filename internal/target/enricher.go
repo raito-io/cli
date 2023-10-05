@@ -7,13 +7,16 @@ import (
 	"github.com/barkimedes/go-deepcopy"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
+
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/target/types"
+
 	"github.com/spf13/viper"
 )
 
-func buildEnricherConfigFromMap(params map[string]interface{}) (*EnricherConfig, error) {
-	eConfig := EnricherConfig{}
+func buildEnricherConfigFromMap(params map[string]interface{}) (*types.EnricherConfig, error) {
+	eConfig := types.EnricherConfig{}
 	eConfig.Parameters = make(map[string]string)
 
 	err := fillStruct(&eConfig, params)
@@ -42,8 +45,8 @@ func buildEnricherConfigFromMap(params map[string]interface{}) (*EnricherConfig,
 	return &eConfig, nil
 }
 
-func buildDataObjectEnricherMap() (map[string]*EnricherConfig, error) {
-	dataObjectEnricherMap := make(map[string]*EnricherConfig)
+func buildDataObjectEnricherMap() (map[string]*types.EnricherConfig, error) {
+	dataObjectEnricherMap := make(map[string]*types.EnricherConfig)
 
 	dataObjectEnricherData := viper.Get(constants.DataObjectEnrichers)
 
@@ -80,8 +83,8 @@ func buildDataObjectEnricherMap() (map[string]*EnricherConfig, error) {
 	return dataObjectEnricherMap, errorResult
 }
 
-func addDataObjectEnrichersToTargetConfig(tConfig *BaseTargetConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*EnricherConfig) error {
-	tConfig.DataObjectEnrichers = make([]*EnricherConfig, 0)
+func addDataObjectEnrichersToTargetConfig(tConfig *types.BaseTargetConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) error {
+	tConfig.DataObjectEnrichers = make([]*types.EnricherConfig, 0)
 
 	dataObjectEnricherData := target[constants.DataObjectEnrichers]
 
@@ -120,7 +123,7 @@ func addDataObjectEnrichersToTargetConfig(tConfig *BaseTargetConfig, target map[
 					continue
 				}
 
-				newEnricher := newEnricherObj.(*EnricherConfig)
+				newEnricher := newEnricherObj.(*types.EnricherConfig)
 				for k, v := range eConfig.Parameters {
 					newEnricher.Parameters[k] = v
 				}

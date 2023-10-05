@@ -11,7 +11,7 @@ import (
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/logging"
 	"github.com/raito-io/cli/internal/plugin"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=TaskEventUpdater --with-expecter
@@ -54,13 +54,13 @@ type TaskResult struct {
 }
 
 type taskEventUpdater struct {
-	Cfg              *target.BaseTargetConfig
+	Cfg              *types.BaseTargetConfig
 	JobId            string
 	JobType          string
 	warningCollector logging.WarningCollector
 }
 
-func NewTaskEventUpdater(cfg *target.BaseTargetConfig, jobId, jobType string, warningCollector logging.WarningCollector) TaskEventUpdater {
+func NewTaskEventUpdater(cfg *types.BaseTargetConfig, jobId, jobType string, warningCollector logging.WarningCollector) TaskEventUpdater {
 	return &taskEventUpdater{cfg, jobId, jobType, warningCollector}
 }
 
@@ -120,7 +120,7 @@ func (u *taskEventUpdater) GetSubtaskEventUpdater(subtask string) SubtaskEventUp
 }
 
 type subtaskEventUpdater struct {
-	Cfg          *target.BaseTargetConfig
+	Cfg          *types.BaseTargetConfig
 	JobId        string
 	JobType      string
 	Subtask      string
@@ -135,7 +135,7 @@ func (u *subtaskEventUpdater) SetReceivedDate(receivedDate int64) {
 	u.receivedDate = &receivedDate
 }
 
-func StartJob(ctx context.Context, cfg *target.BaseTargetConfig) (string, error) {
+func StartJob(ctx context.Context, cfg *types.BaseTargetConfig) (string, error) {
 	var mutation struct {
 		CreateJob struct {
 			JobId string
@@ -168,7 +168,7 @@ func StartJob(ctx context.Context, cfg *target.BaseTargetConfig) (string, error)
 	return mutation.CreateJob.JobId, nil
 }
 
-func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus, inputErr error) {
+func UpdateJobEvent(cfg *types.BaseTargetConfig, jobID string, status JobStatus, inputErr error) {
 	var mutation struct {
 		UpdateJob struct {
 			JobId string
@@ -206,7 +206,7 @@ func UpdateJobEvent(cfg *target.BaseTargetConfig, jobID string, status JobStatus
 	}
 }
 
-func AddTaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobType string, status JobStatus, taskResults []TaskResult, warnings []string, errors []error) {
+func AddTaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType string, status JobStatus, taskResults []TaskResult, warnings []string, errors []error) {
 	var mutation struct {
 		AddTaskEvent struct {
 			JobId string
@@ -257,7 +257,7 @@ func AddTaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobT
 	}
 }
 
-func AddSubtaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus, receivedDate *int64) {
+func AddSubtaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus, receivedDate *int64) {
 	var mutation struct {
 		AddSubtaskEvent struct {
 			JobId string
@@ -298,7 +298,7 @@ func AddSubtaskEvent(ctx context.Context, cfg *target.BaseTargetConfig, jobID, j
 	}
 }
 
-func GetSubtask(ctx context.Context, cfg *target.BaseTargetConfig, jobID, jobType, subtaskId string, responseResult interface{}) (*Subtask, error) {
+func GetSubtask(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType, subtaskId string, responseResult interface{}) (*Subtask, error) {
 	gqlQuery := fmt.Sprintf(`query jobSubtask{
 		jobSubtask(jobId: "%s", jobType: "%s", subtaskId: "%s") {
             jobId
@@ -479,7 +479,7 @@ func (e JobStatus) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func WaitForJobToComplete(ctx context.Context, jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *target.BaseTargetConfig, currentStatus JobStatus) (*Subtask, error) {
+func WaitForJobToComplete(ctx context.Context, jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *types.BaseTargetConfig, currentStatus JobStatus) (*Subtask, error) {
 	i := 0
 
 	var subtask *Subtask

@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/url"
 )
 
@@ -35,7 +35,7 @@ var (
 	clientAppId string
 )
 
-func AddTokenToHeader(h *http.Header, config *target.BaseConfig) error {
+func AddTokenToHeader(h *http.Header, config *types.BaseConfig) error {
 	if viper.GetBool(constants.SkipAuthentication) {
 		config.BaseLogger.Debug("Skipping authentication")
 		return nil
@@ -57,11 +57,11 @@ func AddTokenToHeader(h *http.Header, config *target.BaseConfig) error {
 	return nil
 }
 
-func AddToken(r *http.Request, config *target.BaseConfig) error {
+func AddToken(r *http.Request, config *types.BaseConfig) error {
 	return AddTokenToHeader(&r.Header, config)
 }
 
-func updateTokens(config *target.BaseConfig, tokens *userTokens) error {
+func updateTokens(config *types.BaseConfig, tokens *userTokens) error {
 	if checkTokenValidity(config, tokens) {
 		config.BaseLogger.Debug(fmt.Sprintf("Token for user %q is still valid", tokens.userName))
 		return nil
@@ -70,7 +70,7 @@ func updateTokens(config *target.BaseConfig, tokens *userTokens) error {
 	return fetchTokens(config, tokens)
 }
 
-func checkTokenValidity(config *target.BaseConfig, tokens *userTokens) bool {
+func checkTokenValidity(config *types.BaseConfig, tokens *userTokens) bool {
 	if tokens.idToken == "" || tokens.refreshToken == "" || tokens.expiration == nil {
 		return false
 	}
@@ -85,7 +85,7 @@ func checkTokenValidity(config *target.BaseConfig, tokens *userTokens) bool {
 	return true
 }
 
-func fetchTokens(config *target.BaseConfig, tokens *userTokens) error {
+func fetchTokens(config *types.BaseConfig, tokens *userTokens) error {
 	if tokens.refreshToken != "" {
 		err := refreshTokens(config, tokens)
 		if err != nil {
@@ -99,7 +99,7 @@ func fetchTokens(config *target.BaseConfig, tokens *userTokens) error {
 	return fetchNewTokens(config, tokens)
 }
 
-func refreshTokens(baseConfig *target.BaseConfig, tokens *userTokens) error {
+func refreshTokens(baseConfig *types.BaseConfig, tokens *userTokens) error {
 	baseConfig.BaseLogger.Debug(fmt.Sprintf("Refreshing tokens for user %q", tokens.userName))
 
 	err := fetchClientAppId(baseConfig)
@@ -139,7 +139,7 @@ func setTestTokens(tokens *userTokens) error {
 	return nil
 }
 
-func fetchNewTokens(baseConfig *target.BaseConfig, tokens *userTokens) error {
+func fetchNewTokens(baseConfig *types.BaseConfig, tokens *userTokens) error {
 	baseConfig.BaseLogger.Debug("Fetching new tokens")
 
 	err := fetchClientAppId(baseConfig)
@@ -191,7 +191,7 @@ func handleAuthOutput(output *idp.InitiateAuthOutput, tokens *userTokens) error 
 	}
 }
 
-func fetchClientAppId(baseConfig *target.BaseConfig) error {
+func fetchClientAppId(baseConfig *types.BaseConfig) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 

@@ -1,6 +1,7 @@
 package target
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -15,10 +16,21 @@ import (
 	"github.com/raito-io/cli/base/util/error/grpc_error"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
+	gql "github.com/raito-io/cli/internal/graphql"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
-func RunTargets(baseConfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig) error, opFns ...func(*Options)) error {
+func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error), opFns ...func(*Options)) (err error) {
 	options := createOptions(opFns...)
+
+	var jobIds []string
+
+	defer func() {
+		notifyErr := sendEndOfTarget(ctx, baseConfig, jobIds, &options)
+		if notifyErr != nil {
+			err = multierror.Append(err, notifyErr)
+		}
+	}()
 
 	if viper.GetString(constants.ConnectorNameFlag) != "" {
 		targetConfig := buildTargetConfigFromFlags(baseConfig)
@@ -29,13 +41,59 @@ func RunTargets(baseConfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig
 
 		logTargetConfig(targetConfig)
 
-		return runTarget(options.TargetOptions(targetConfig))
+		jobId, err := runTarget(ctx, options.TargetOptions(targetConfig))
+		if err != nil {
+			return err
+		}
+
+		jobIds = append(jobIds, jobId)
 	} else {
-		return runMultipleTargets(baseConfig, runTarget, &options)
+		jobs, err := runMultipleTargets(ctx, baseConfig, runTarget, &options)
+		if err != nil {
+			return err
+		}
+
+		jobIds = jobs
 	}
+
+	return nil
 }
 
-func HandleTargetError(err error, config *BaseTargetConfig, prefix ...string) {
+func sendEndOfTarget(ctx context.Context, baseConfig *types.BaseConfig, jobIds []string, options *Options) error {
+	if !options.ExternalTrigger {
+		var mutation struct {
+			EndOfTargetsSyncResult struct {
+				EndOfTargetsSync struct {
+					Success bool
+				} `graphql:"... on EndOfTargetsSync"`
+				PermissionDeniedError struct {
+					message string
+				} `graphql:"... on PermissionDeniedError"`
+			} `graphql:"endOfTargetsSync(input: $input)"`
+		}
+
+		type EndOfTargetsSyncInput struct {
+			JobIds []string `json:"jobIds"`
+		}
+
+		input := EndOfTargetsSyncInput{JobIds: jobIds}
+
+		err := gql.NewClient(baseConfig).Mutate(ctx, &mutation, map[string]interface{}{"input": input})
+		if err != nil {
+			return err
+		}
+
+		if mutation.EndOfTargetsSyncResult.PermissionDeniedError.message != "" {
+			baseConfig.BaseLogger.Error(fmt.Sprintf("Permission denied to notify end of all targets: %s", mutation.EndOfTargetsSyncResult.PermissionDeniedError.message))
+		} else if !mutation.EndOfTargetsSyncResult.EndOfTargetsSync.Success {
+			baseConfig.BaseLogger.Warn("Failed to notify end of all targets")
+		}
+	}
+
+	return nil
+}
+
+func HandleTargetError(err error, config *types.BaseTargetConfig, prefix ...string) {
 	targetError := &grpc_error.InternalPluginStatusError{}
 
 	prefixString := strings.Join(prefix, " ")
@@ -52,7 +110,7 @@ func HandleTargetError(err error, config *BaseTargetConfig, prefix ...string) {
 	config.TargetLogger.Error(fmt.Sprintf("%s%s", prefixString, err.Error()))
 }
 
-func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTargetConfig) error, options *Options) error {
+func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTarget func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error), options *Options) ([]string, error) {
 	var errorResult error
 
 	dataObjectEnricherMap, err := buildDataObjectEnricherMap()
@@ -69,6 +127,8 @@ func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTarg
 			onlyTargets[strings.TrimSpace(ot)] = struct{}{}
 		}
 	}
+
+	var jobIds []string
 
 	if targetList, ok := targets.([]interface{}); ok {
 		hclog.L().Debug(fmt.Sprintf("Found %d targets to run.", len(targetList)))
@@ -109,21 +169,23 @@ func runMultipleTargets(baseconfig *BaseConfig, runTarget func(tConfig *BaseTarg
 
 			logTargetConfig(tConfig)
 
-			err = runTarget(tConfig)
+			jobId, err := runTarget(ctx, tConfig)
 			if err != nil {
 				errorResult = multierror.Append(errorResult, err)
 
 				// In debug as the error should already be outputted, and we are ignoring it here.
 				tConfig.TargetLogger.Debug("Error while executing target", "error", err.Error())
 			}
+
+			jobIds = append(jobIds, jobId)
 		}
 	}
 
-	return errorResult
+	return jobIds, errorResult
 }
 
-func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*EnricherConfig) (*BaseTargetConfig, error) {
-	tConfig := BaseTargetConfig{
+func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, error) {
+	tConfig := types.BaseTargetConfig{
 		BaseConfig:      *baseconfig,
 		DeleteUntouched: true,
 		DeleteTempFiles: true,
@@ -197,7 +259,7 @@ func buildTargetConfigFromMap(baseconfig *BaseConfig, target map[string]interfac
 	return &tConfig, nil
 }
 
-func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*BaseConfig, error) {
+func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*types.BaseConfig, error) {
 	apiUser, err := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
 	if err != nil {
 		return nil, err
@@ -213,7 +275,7 @@ func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*Bas
 		return nil, err
 	}
 
-	config := BaseConfig{
+	config := types.BaseConfig{
 		BaseLogger: baseLogger,
 		ApiUser:    apiUser.(string),
 		ApiSecret:  apiSecret.(string),
@@ -225,7 +287,7 @@ func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*Bas
 	return &config, nil
 }
 
-func buildTargetConfigFromFlags(baseConfig *BaseConfig) *BaseTargetConfig {
+func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) *types.BaseTargetConfig {
 	connector := viper.GetString(constants.ConnectorNameFlag)
 	version := viper.GetString(constants.ConnectorVersionFlag)
 	name := viper.GetString(constants.NameFlag)
@@ -234,7 +296,7 @@ func buildTargetConfigFromFlags(baseConfig *BaseConfig) *BaseTargetConfig {
 		name = connector
 	}
 
-	targetConfig := BaseTargetConfig{
+	targetConfig := types.BaseTargetConfig{
 		BaseConfig:            *baseConfig,
 		ConnectorName:         connector,
 		ConnectorVersion:      version,
@@ -260,11 +322,11 @@ func buildTargetConfigFromFlags(baseConfig *BaseConfig) *BaseTargetConfig {
 
 // logTargetConfig will print out the target configuration in the log (debug level).
 // It will censure the sensitive information (secrets and passwords) if it is set.
-func logTargetConfig(config *BaseTargetConfig) {
+func logTargetConfig(config *types.BaseTargetConfig) {
 	if !hclog.L().IsDebug() {
 		return
 	}
-	cc := BaseTargetConfig{}
+	cc := types.BaseTargetConfig{}
 
 	err := copier.Copy(&cc, config)
 	if err != nil {
@@ -294,8 +356,9 @@ func logTargetConfig(config *BaseTargetConfig) {
 }
 
 type Options struct {
-	DataSourceIds map[string]struct{}
-	ConfigOption  func(targetConfig *BaseTargetConfig)
+	ExternalTrigger bool
+	DataSourceIds   map[string]struct{}
+	ConfigOption    func(targetConfig *types.BaseTargetConfig)
 }
 
 func createOptions(opFns ...func(*Options)) Options {
@@ -317,7 +380,7 @@ func (o *Options) SyncDataSourceId(dataSourceId string) bool {
 	return found
 }
 
-func (o *Options) TargetOptions(targetConfig *BaseTargetConfig) *BaseTargetConfig {
+func (o *Options) TargetOptions(targetConfig *types.BaseTargetConfig) *types.BaseTargetConfig {
 	if o.ConfigOption != nil {
 		o.ConfigOption(targetConfig)
 	}
@@ -337,9 +400,15 @@ func WithDataSourceIds(dataSourceIds ...string) func(o *Options) {
 	}
 }
 
-func WithConfigOption(fn func(targetConfig *BaseTargetConfig)) func(o *Options) {
+func WithConfigOption(fn func(targetConfig *types.BaseTargetConfig)) func(o *Options) {
 	return func(o *Options) {
 		o.ConfigOption = fn
+	}
+}
+
+func WithExternalTrigger() func(o *Options) {
+	return func(o *Options) {
+		o.ExternalTrigger = true
 	}
 }
 

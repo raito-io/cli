@@ -8,7 +8,7 @@ import (
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/graphql"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
 type websocketResult struct {
@@ -18,7 +18,7 @@ type websocketResult struct {
 	} `json:"cliTriggerUrl"`
 }
 
-func CreateCliTrigger(config *target.BaseConfig) (CliTrigger, error) {
+func CreateCliTrigger(config *types.BaseConfig) (CliTrigger, error) {
 	if viper.GetBool(constants.DisableWebsocketFlag) {
 		config.BaseLogger.Info("Websocket sync is disabled. No CLI triggers will be captured")
 		return &DummyCliTrigger{}, nil
@@ -32,7 +32,7 @@ func CreateCliTrigger(config *target.BaseConfig) (CliTrigger, error) {
 	return cliTrigger, nil
 }
 
-func createWebsocketTrigger(config *target.BaseConfig) (*WebsocketCliTrigger, error) {
+func createWebsocketTrigger(config *types.BaseConfig) (*WebsocketCliTrigger, error) {
 	query := "{ \"query\": \"query CliTriggerWebSocket {\n    cliTriggerUrl {\n        ... on CliTriggerUrl {\n            url\n        }\n        ... on PermissionDeniedError {\n            err: message\n        }\n    }\n}\"}"
 	query = strings.ReplaceAll(query, "\n", "\\n")
 

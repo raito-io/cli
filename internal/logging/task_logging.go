@@ -13,10 +13,10 @@ import (
 
 	"github.com/raito-io/cli/internal/file"
 	gql "github.com/raito-io/cli/internal/graphql"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
-func newTaskFileSink(config *target.BaseTargetConfig, jobId, taskId string) (*taskFileSink, error) {
+func newTaskFileSink(config *types.BaseTargetConfig, jobId, taskId string) (*taskFileSink, error) {
 	tmpFile, err := os.CreateTemp("", "*")
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func newTaskFileSink(config *target.BaseTargetConfig, jobId, taskId string) (*ta
 type taskFileSink struct {
 	jobId  string
 	taskId string
-	config *target.BaseTargetConfig
+	config *types.BaseTargetConfig
 	writer *os.File
 }
 
@@ -87,7 +87,7 @@ func (s *taskFileSink) Close() error {
 	return os.Remove(s.writer.Name())
 }
 
-func CreateTaskLogger(config *target.BaseTargetConfig, jobId string, taskId string) (*target.BaseTargetConfig, func() error, error) {
+func CreateTaskLogger(config *types.BaseTargetConfig, jobId string, taskId string) (*types.BaseTargetConfig, func() error, error) {
 	if logger, ok := config.BaseLogger.(hclog.InterceptLogger); ok {
 		sink, err := newTaskFileSink(config, jobId, taskId)
 		if err != nil {

@@ -17,7 +17,7 @@ import (
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/job"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
 type AccessProviderExportResult struct {
@@ -27,7 +27,7 @@ type AccessProviderExportResult struct {
 }
 
 type AccessProviderExporterConfig struct {
-	target.BaseTargetConfig
+	types.BaseTargetConfig
 }
 
 type AccessProviderExporter interface {

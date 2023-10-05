@@ -13,10 +13,10 @@ import (
 
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/internal/graphql"
-	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 )
 
-func SetMetaData(ctx context.Context, config *target.BaseTargetConfig, metadata *data_source.MetaData) error {
+func SetMetaData(ctx context.Context, config *types.BaseTargetConfig, metadata *data_source.MetaData) error {
 	logger := config.TargetLogger.With("datasource", config.DataSourceId)
 	start := time.Now()
 

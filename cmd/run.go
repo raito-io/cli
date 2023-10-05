@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"github.com/raito-io/cli/base/util/error/grpc_error"
+	"github.com/raito-io/cli/internal/target/types"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
@@ -91,6 +92,8 @@ func initRunCommand(rootCmd *cobra.Command) {
 func executeRun(cmd *cobra.Command, args []string) {
 	otherArgs := cmd.Flags().Args()
 
+	ctx := context.Background()
+
 	baseConfig, err := target.BuildBaseConfigFromFlags(hclog.L(), otherArgs)
 	if err != nil {
 		hclog.L().Error(err.Error())
@@ -107,7 +110,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 		hclog.L().Info("Running synchronization just once.")
 
 		baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", 0)
-		err = executeSingleRun(baseConfig)
+		err = executeSingleRun(ctx, baseConfig)
 
 		if err != nil {
 			os.Exit(1)
@@ -118,7 +121,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 		hclog.L().Info("Starting continuous synchronization.")
 		hclog.L().Info("Press 'ctrl+c' to stop the program.")
 
-		ctx, cancelFn := context.WithCancel(context.Background())
+		cancelCtx, cancelFn := context.WithCancel(ctx)
 
 		waitGroup := sync2.WaitGroup{}
 
@@ -132,7 +135,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 		go func() {
 			defer waitGroup.Done()
 
-			cliTriggerCtx, cliTriggerCancel := context.WithCancel(ctx)
+			cliTriggerCtx, cliTriggerCancel := context.WithCancel(cancelCtx)
 			cliTrigger, apUpdateTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig)
 
 			defer func() {
@@ -145,7 +148,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 			if executeSyncAtStartup {
 				baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
-				if runErr := executeSingleRun(baseConfig); runErr != nil {
+				if runErr := executeSingleRun(cancelCtx, baseConfig); runErr != nil {
 					baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 				}
 
@@ -161,7 +164,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 					cliTrigger.Reset()
 
 					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
-					if runErr := executeSingleRun(baseConfig); runErr != nil {
+					if runErr := executeSingleRun(cancelCtx, baseConfig); runErr != nil {
 						baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 					}
 
@@ -175,13 +178,13 @@ func executeRun(cmd *cobra.Command, args []string) {
 					}
 
 					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
-					err := handleApUpdateTrigger(baseConfig, apUpdate)
+					err := handleApUpdateTrigger(cancelCtx, baseConfig, apUpdate)
 					if err != nil {
 						baseConfig.BaseLogger.Warn("Cli ApUpdate Trigger failed: %s", err.Error())
 					}
 
 					it++
-				case <-ctx.Done():
+				case <-cancelCtx.Done():
 					baseConfig.BaseLogger.Debug("Context done: closing syncing routine.")
 					return
 				}
@@ -198,7 +201,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 			for {
 				select {
-				case <-ctx.Done():
+				case <-cancelCtx.Done():
 					hclog.L().Debug("Context done: Will stop all running routines...")
 					return
 				case s := <-sigs:
@@ -223,7 +226,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func createSyncScheduler(baseConfig *target.BaseConfig) (bool, cron.Schedule, error) {
+func createSyncScheduler(baseConfig *types.BaseConfig) (bool, cron.Schedule, error) {
 	executeSyncAtStartup := viper.GetBool(constants.SyncAtStartupFlag)
 	var scheduler cron.Schedule
 
@@ -287,10 +290,10 @@ func cronTimer(logger hclog.Logger, timer *time.Timer, scheduler cron.Schedule) 
 	}
 }
 
-func executeSingleRun(baseconfig *target.BaseConfig) error {
+func executeSingleRun(ctx context.Context, baseconfig *types.BaseConfig) error {
 	start := time.Now()
 
-	err := runSync(baseconfig)
+	err := runSync(ctx, baseconfig)
 
 	sec := time.Since(start).Round(time.Millisecond)
 	baseconfig.BaseLogger.Info(fmt.Sprintf("Finished execution of all targets in %s", sec))
@@ -298,7 +301,7 @@ func executeSingleRun(baseconfig *target.BaseConfig) error {
 	return err
 }
 
-func runSync(baseconfig *target.BaseConfig) error {
+func runSync(ctx context.Context, baseconfig *types.BaseConfig) error {
 	compatibilityInformation, err := version_management.IsCompatibleWithRaitoCloud(baseconfig)
 	if err != nil {
 		baseconfig.BaseLogger.Error(fmt.Sprintf("Failed to check compatibility with Raito Cloud: %s", err.Error()))
@@ -321,7 +324,7 @@ func runSync(baseconfig *target.BaseConfig) error {
 
 		fallthrough
 	case version_management.Supported:
-		return target.RunTargets(baseconfig, runTargetSync)
+		return target.RunTargets(ctx, baseconfig, runTargetSync)
 	case version_management.CompatibilityUnknown:
 	}
 
@@ -329,7 +332,7 @@ func runSync(baseconfig *target.BaseConfig) error {
 }
 
 func execute(targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
-	syncTask job.Task, cfg *target.BaseTargetConfig, c plugin.PluginClient) error {
+	syncTask job.Task, cfg *types.BaseTargetConfig, c plugin.PluginClient) error {
 	ctx := context.Background()
 
 	cfg, warningCollector, loggingCleanUp, err := logging.CreateWarningCapturingLogger(cfg)
@@ -386,7 +389,7 @@ func logForwardingEnabled(syncType string) bool {
 	return !viper.GetBool(cmdFlag)
 }
 
-func sync(ctx context.Context, cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, syncTask job.Task, c plugin.PluginClient, syncType string, jobID string) (err error) {
+func sync(ctx context.Context, cfg *types.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, syncTask job.Task, c plugin.PluginClient, syncType string, jobID string) (err error) {
 	defer func() {
 		if err != nil {
 			taskEventUpdater.SetStatusToFailed(ctx, err)
@@ -448,7 +451,7 @@ func sync(ctx context.Context, cfg *target.BaseTargetConfig, syncTypeLabel strin
 	return nil
 }
 
-func runTaskPartSync(ctx context.Context, cfg *target.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, jobID string, syncType string, taskPart job.TaskPart, i int, syncParts []job.TaskPart, c plugin.PluginClient) error {
+func runTaskPartSync(ctx context.Context, cfg *types.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, jobID string, syncType string, taskPart job.TaskPart, i int, syncParts []job.TaskPart, c plugin.PluginClient) error {
 	cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
 
 	status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(ctx, c, taskEventUpdater)
@@ -491,7 +494,7 @@ func runTaskPartSync(ctx context.Context, cfg *target.BaseTargetConfig, syncType
 	return nil
 }
 
-func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
+func runTargetSync(ctx context.Context, targetConfig *types.BaseTargetConfig) (jobID string, syncError error) {
 	targetConfig.TargetLogger.Info("Executing target...")
 
 	start := time.Now()
@@ -507,13 +510,13 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)
 	if err != nil {
 		targetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
-		return err
+		return "", err
 	}
 	defer client.Close()
 
-	jobID, err := job.StartJob(context.Background(), targetConfig)
+	jobID, err = job.StartJob(ctx, targetConfig)
 	if err != nil {
-		return err
+		return jobID, err
 	}
 
 	targetConfig.TargetLogger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobID))
@@ -529,28 +532,28 @@ func runTargetSync(targetConfig *target.BaseTargetConfig) (syncError error) {
 
 	err = dataSourceSync(targetConfig, jobID, client)
 	if err != nil {
-		return err
+		return jobID, err
 	}
 
 	err = identityStoreSync(targetConfig, jobID, client)
 	if err != nil {
-		return err
+		return jobID, err
 	}
 
 	err = dataAccessSync(targetConfig, jobID, client)
 	if err != nil {
-		return err
+		return jobID, err
 	}
 
 	err = dataUsageSync(targetConfig, jobID, client)
 	if err != nil {
-		return err
+		return jobID, err
 	}
 
-	return nil
+	return jobID, nil
 }
 
-func dataUsageSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
+func dataUsageSync(targetConfig *types.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
 	dataUsageSyncTask := &data_usage.DataUsageSync{TargetConfig: targetConfig, JobId: jobID}
 
 	err := execute(targetConfig.DataSourceId, jobID, constants.DataUsageSync, "data usage", targetConfig.SkipDataUsageSync, dataUsageSyncTask, targetConfig, client)
@@ -561,7 +564,7 @@ func dataUsageSync(targetConfig *target.BaseTargetConfig, jobID string, client p
 	return nil
 }
 
-func dataAccessSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
+func dataAccessSync(targetConfig *types.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
 	dataAccessSyncTask := &access_provider.DataAccessSync{TargetConfig: targetConfig, JobId: jobID}
 
 	err := execute(targetConfig.DataSourceId, jobID, constants.DataAccessSync, "data access", targetConfig.SkipDataAccessSync, dataAccessSyncTask, targetConfig, client)
@@ -572,7 +575,7 @@ func dataAccessSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 	return nil
 }
 
-func identityStoreSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
+func identityStoreSync(targetConfig *types.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
 	identityStoreSyncTask := &identity_store.IdentityStoreSync{TargetConfig: targetConfig, JobId: jobID}
 
 	err := execute(targetConfig.IdentityStoreId, jobID, constants.IdentitySync, "identity store", targetConfig.SkipIdentityStoreSync, identityStoreSyncTask, targetConfig, client)
@@ -583,7 +586,7 @@ func identityStoreSync(targetConfig *target.BaseTargetConfig, jobID string, clie
 	return nil
 }
 
-func dataSourceSync(targetConfig *target.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
+func dataSourceSync(targetConfig *types.BaseTargetConfig, jobID string, client plugin.PluginClient) error {
 	dataSourceSyncTask := &data_source.DataSourceSync{TargetConfig: targetConfig, JobId: jobID}
 
 	err := execute(targetConfig.DataSourceId, jobID, constants.DataSourceSync, "data source metadata", targetConfig.SkipDataSourceSync, dataSourceSyncTask, targetConfig, client)
@@ -594,8 +597,8 @@ func dataSourceSync(targetConfig *target.BaseTargetConfig, jobID string, client 
 	return nil
 }
 
-func handleApUpdateTrigger(config *target.BaseConfig, apUpdate *clitrigger.ApUpdate) error {
-	return target.RunTargets(config, runTargetSync, target.WithDataSourceIds(apUpdate.DataSourceNames...), target.WithConfigOption(func(targetConfig *target.BaseTargetConfig) {
+func handleApUpdateTrigger(ctx context.Context, config *types.BaseConfig, apUpdate *clitrigger.ApUpdate) error {
+	return target.RunTargets(ctx, config, runTargetSync, target.WithDataSourceIds(apUpdate.DataSourceNames...), target.WithConfigOption(func(targetConfig *types.BaseTargetConfig) {
 		targetConfig.SkipIdentityStoreSync = true
 		targetConfig.SkipDataSourceSync = true
 		targetConfig.SkipDataUsageSync = true
@@ -605,7 +608,7 @@ func handleApUpdateTrigger(config *target.BaseConfig, apUpdate *clitrigger.ApUpd
 	}))
 }
 
-func startListingToCliTriggers(ctx context.Context, baseConfig *target.BaseConfig) (clitrigger.CliTrigger, *clitrigger.ApUpdateTriggerHandler) {
+func startListingToCliTriggers(ctx context.Context, baseConfig *types.BaseConfig) (clitrigger.CliTrigger, *clitrigger.ApUpdateTriggerHandler) {
 	cliTrigger, err := clitrigger.CreateCliTrigger(baseConfig)
 	if err != nil {
 		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))

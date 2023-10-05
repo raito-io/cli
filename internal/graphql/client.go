@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/connect"
 
 	"github.com/hasura/go-graphql-client"
 
-	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/util/merror"
 	"github.com/raito-io/cli/internal/util/url"
 )
 
 type authedDoer struct {
-	config *target.BaseConfig
+	config *types.BaseConfig
 }
 
 func (d *authedDoer) Do(req *http.Request) (*http.Response, error) {
@@ -34,7 +34,7 @@ func (d *authedDoer) Do(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-func NewClient(config *target.BaseConfig) *graphql.Client {
+func NewClient(config *types.BaseConfig) *graphql.Client {
 	return graphql.NewClient(url.CreateRaitoURL(url.GetRaitoURL(), "query"), &authedDoer{config: config})
 }
 

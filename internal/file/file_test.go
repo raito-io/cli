@@ -2,8 +2,10 @@ package file
 
 import (
 	"fmt"
+
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/spf13/viper"
+	"github.com/raito-io/cli/internal/target/types"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,10 +13,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/viper"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/raito-io/cli/internal/target"
 )
 
 func TestCreateUniqueFileName(t *testing.T) {
@@ -58,9 +60,9 @@ func TestFileUpload(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
+	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
 		TargetLogger: hclog.L(),
-		BaseConfig: target.BaseConfig{
+		BaseConfig: types.BaseConfig{
 			Domain:     "mydomain",
 			ApiUser:    "api-user",
 			ApiSecret:  "api-secret",
@@ -95,9 +97,9 @@ func TestFileUploadNotFound(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/doesntexist.txt", &target.BaseTargetConfig{
+	res, err := UploadFile("testdata/doesntexist.txt", &types.BaseTargetConfig{
 		TargetLogger: hclog.L(),
-		BaseConfig: target.BaseConfig{
+		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
 	})
@@ -124,9 +126,9 @@ func TestFileUploadErrorUploading(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
+	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
 		TargetLogger: hclog.L(),
-		BaseConfig: target.BaseConfig{
+		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
 	})
@@ -147,9 +149,9 @@ func TestFileUploadGetUrlFailed(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
+	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
 		TargetLogger: hclog.L(),
-		BaseConfig: target.BaseConfig{
+		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
 	})
@@ -169,9 +171,9 @@ func TestFileUploadGetUrlIllegalResult(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
+	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
 		TargetLogger: hclog.L(),
-		BaseConfig: target.BaseConfig{
+		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
 	})
@@ -191,9 +193,9 @@ func TestFileUploadGetUrlIllegalUrl(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
+	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
 		TargetLogger: hclog.L(),
-		BaseConfig: target.BaseConfig{
+		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
 	})
@@ -213,9 +215,9 @@ func TestFileUploadGetUrlNonExistingUrl(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
+	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
 		TargetLogger: hclog.L(),
-		BaseConfig: target.BaseConfig{
+		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
 	})
@@ -228,9 +230,9 @@ func TestFileUploadNonExistingUrl(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, "http://localhost:9999")
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &target.BaseTargetConfig{
+	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
 		TargetLogger: hclog.L(),
-		BaseConfig: target.BaseConfig{
+		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
 	})

@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/raito-io/golang-set/set"
+
+	"github.com/raito-io/cli/base"
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target/naming_hint"
@@ -12,10 +15,15 @@ import (
 	"github.com/raito-io/cli/base/wrappers"
 )
 
+var logger = base.Logger()
+
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderRoleSyncer --with-expecter --inpackage
 type AccessProviderRoleSyncer interface {
 	SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler wrappers.AccessProviderHandler, configMap *config.ConfigMap) error
-	SyncAccessProvidersToTarget(ctx context.Context, rolesToRemove []string, access map[string]*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
+
+	SyncAccessProviderRolesToTarget(ctx context.Context, rolesToRemove []string, access map[string]*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
+	SyncAccessProviderMasksToTarget(ctx context.Context, masksToRemove []string, access []*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
+
 	SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]*sync_to_target.AccessProvider, prefix string, configMap *config.ConfigMap) error
 }
 
@@ -76,32 +84,66 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 
 	apList := accessProviders.AccessProviders
 
-	apMap := make(map[string]*sync_to_target.AccessProvider)
-	rolesToRemove := make([]string, 0)
+	var masksList []*sync_to_target.AccessProvider
+	masksToRemove := set.NewSet[string]()
+
+	rolesMap := make(map[string]*sync_to_target.AccessProvider)
+	rolesToRemove := set.NewSet[string]()
 
 	for _, ap := range apList {
-		if ap.Delete {
-			if ap.ActualName == nil {
-				logger.Warn(fmt.Sprintf("No actualname defined for deleted access provider %q. This will be ignored", ap.Id))
-				continue
-			}
-
-			roleName := *ap.ActualName
-
-			if !find(rolesToRemove, roleName) {
-				rolesToRemove = append(rolesToRemove, roleName)
-			}
+		if ap.Action == sync_to_target.Mask {
+			masksList, masksToRemove = parseMask(ap, masksList, masksToRemove)
 		} else {
-			roleName, err := uniqueRoleNameGenerator.Generate(ap)
+			rolesMap, rolesToRemove, err = parseRole(ap, rolesMap, rolesToRemove, uniqueRoleNameGenerator)
 			if err != nil {
 				return err
-			}
-
-			if _, f := apMap[roleName]; !f {
-				apMap[roleName] = ap
 			}
 		}
 	}
 
-	return s.syncer.SyncAccessProvidersToTarget(ctx, rolesToRemove, apMap, accessProviderFeedbackHandler, configMap)
+	// Step 1 first initiate all the masks
+	err = s.syncer.SyncAccessProviderMasksToTarget(ctx, masksToRemove.Slice(), masksList, accessProviderFeedbackHandler, configMap)
+	if err != nil {
+		return err
+	}
+
+	// Step 2 then initiate all the roles
+	return s.syncer.SyncAccessProviderRolesToTarget(ctx, rolesToRemove.Slice(), rolesMap, accessProviderFeedbackHandler, configMap)
+}
+
+func parseMask(mask *sync_to_target.AccessProvider, masksList []*sync_to_target.AccessProvider, masksToRemove set.Set[string]) ([]*sync_to_target.AccessProvider, set.Set[string]) {
+	if mask.Delete {
+		if mask.ActualName == nil {
+			logger.Warn(fmt.Sprintf("No actualname defined for deleted access provider %q. This will be ignored", mask.Id))
+			return masksList, masksToRemove
+		}
+
+		masksToRemove.Add(*mask.ActualName)
+	} else {
+		masksList = append(masksList, mask)
+	}
+
+	return masksList, masksToRemove
+}
+
+func parseRole(ap *sync_to_target.AccessProvider, rolesMap map[string]*sync_to_target.AccessProvider, rolesToRemove set.Set[string], roleNameGenerator naming_hint.UniqueGenerator) (map[string]*sync_to_target.AccessProvider, set.Set[string], error) {
+	if ap.Delete {
+		if ap.ActualName == nil {
+			logger.Warn(fmt.Sprintf("No actualname defined for deleted access provider %q. This will be ignored", ap.Id))
+			return rolesMap, rolesToRemove, nil
+		}
+
+		rolesToRemove.Add(*ap.ActualName)
+	} else {
+		roleName, err := roleNameGenerator.Generate(ap)
+		if err != nil {
+			return rolesMap, rolesToRemove, err
+		}
+
+		if _, f := rolesMap[roleName]; !f {
+			rolesMap[roleName] = ap
+		}
+	}
+
+	return rolesMap, rolesToRemove, nil
 }

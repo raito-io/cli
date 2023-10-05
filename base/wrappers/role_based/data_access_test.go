@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/smithy-go/ptr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -220,11 +221,38 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 				NamingHint:  "NameHint4",
 				Action:      sync_to_target.Grant,
 			},
+			{
+				Id:          "Mask1",
+				Description: "Mask1Description",
+				Delete:      false,
+				Name:        "Mask1",
+				NamingHint:  "NameHintMask1",
+				Action:      sync_to_target.Mask,
+			},
+			{
+				Id:          "Mask2",
+				Description: "Mask2Description",
+				Delete:      true,
+				Name:        "Mask2",
+				NamingHint:  "NameHintMask2",
+				ActualName:  ptr.String("ActualNameMask2"),
+				Action:      sync_to_target.Mask,
+			},
 		},
 	}
 
 	syncerMock := NewMockAccessProviderRoleSyncer(t)
-	syncerMock.EXPECT().SyncAccessProvidersToTarget(mock.Anything, []string{actualName1}, mock.Anything, accessFeedBackFileCreator, &configMap).Return(nil).Once()
+	maskCall := syncerMock.EXPECT().SyncAccessProviderMasksToTarget(mock.Anything, []string{"ActualNameMask2"}, []*sync_to_target.AccessProvider{
+		{
+			Id:          "Mask1",
+			Description: "Mask1Description",
+			Delete:      false,
+			Name:        "Mask1",
+			NamingHint:  "NameHintMask1",
+			Action:      sync_to_target.Mask,
+		},
+	}, accessFeedBackFileCreator, &configMap).Return(nil).Once()
+	syncerMock.EXPECT().SyncAccessProviderRolesToTarget(mock.Anything, []string{actualName1}, mock.Anything, accessFeedBackFileCreator, &configMap).Return(nil).Once().NotBefore(maskCall)
 
 	syncer := accessProviderRoleSyncFunction{
 		syncer: syncerMock,
@@ -241,7 +269,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 
 	//Then
 	assert.NoError(t, err)
-	syncerMock.AssertCalled(t, "SyncAccessProvidersToTarget", mock.Anything,
+	syncerMock.AssertCalled(t, "SyncAccessProviderRolesToTarget", mock.Anything,
 		[]string{actualName1},
 		map[string]*sync_to_target.AccessProvider{
 			"NAME_HINT1": accessProvidersImport.AccessProviders[0],

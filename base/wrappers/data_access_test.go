@@ -124,14 +124,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 		LastCalculated: time.Now().Unix(),
 		AccessProviders: []*sync_to_target.AccessProvider{
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId1",
-					},
-					{
-						Id: "AccessId2",
-					},
-				},
 				Id:          "AP1",
 				Description: "Descr",
 				Delete:      false,
@@ -140,11 +132,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId3",
-					},
-				},
 				Id:          "AP2",
 				Description: "Descr2",
 				Delete:      false,
@@ -153,12 +140,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id:         "SomeAccessToDelete",
-						ActualName: &actualName1,
-					},
-				},
+				ActualName:  &actualName1,
 				Id:          "AP3",
 				Description: "Descr3",
 				Delete:      true,
@@ -167,11 +149,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AnotherAccessToDelete",
-					},
-				},
 				Id:          "AP4",
 				Description: "Descr4",
 				Delete:      true,
@@ -219,14 +196,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode(t *testing.T) {
 		LastCalculated: time.Now().Unix(),
 		AccessProviders: []*sync_to_target.AccessProvider{
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId1",
-					},
-					{
-						Id: "AccessId2",
-					},
-				},
 				Id:          "AP1",
 				Description: "Descr",
 				Delete:      false,
@@ -235,11 +204,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode(t *testing.T) {
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId3",
-					},
-				},
 				Id:          "AP2",
 				Description: "Descr2",
 				Delete:      false,
@@ -342,14 +306,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFile
 		LastCalculated: time.Now().Unix(),
 		AccessProviders: []*sync_to_target.AccessProvider{
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId1",
-					},
-					{
-						Id: "AccessId2",
-					},
-				},
 				Id:          "AP1",
 				Description: "Descr",
 				Delete:      false,
@@ -358,11 +314,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFile
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId3",
-					},
-				},
 				Id:          "AP2",
 				Description: "Descr2",
 				Delete:      false,
@@ -415,11 +366,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnSync(t *test
 		LastCalculated: time.Now().Unix(),
 		AccessProviders: []*sync_to_target.AccessProvider{
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId1",
-					},
-				},
 				Id:          "AP1",
 				Description: "Descr",
 				Delete:      false,
@@ -428,11 +374,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnSync(t *test
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AnotherAccessToDelete",
-					},
-				},
 				Id:          "AP4",
 				Description: "Descr4",
 				Delete:      true,
@@ -480,14 +421,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode_ErrorOnSync(t *testing
 		LastCalculated: time.Now().Unix(),
 		AccessProviders: []*sync_to_target.AccessProvider{
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId1",
-					},
-					{
-						Id: "AccessId2",
-					},
-				},
 				Id:          "AP1",
 				Description: "Descr",
 				Delete:      false,
@@ -496,11 +429,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode_ErrorOnSync(t *testing
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId3",
-					},
-				},
 				Id:          "AP2",
 				Description: "Descr2",
 				Delete:      false,

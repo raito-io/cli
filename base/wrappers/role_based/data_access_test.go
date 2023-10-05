@@ -125,14 +125,6 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget_NameGeneratorFa
 		LastCalculated: time.Now().Unix(),
 		AccessProviders: []*sync_to_target.AccessProvider{
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId1",
-					},
-					{
-						Id: "AccessId2",
-					},
-				},
 				Id:          "AP1",
 				Description: "Descr",
 				Delete:      false,
@@ -141,11 +133,6 @@ func TestAccessProviderRoleSyncFunction_SyncAccessAsCodeToTarget_NameGeneratorFa
 				Action:      sync_to_target.Grant,
 			},
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId3",
-					},
-				},
 				Id:          "AP2",
 				Description: "Descr2",
 				Delete:      false,
@@ -261,14 +248,6 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget_ErrorOnNameGe
 		LastCalculated: time.Now().Unix(),
 		AccessProviders: []*sync_to_target.AccessProvider{
 			{
-				Access: []*sync_to_target.Access{
-					{
-						Id: "AccessId1",
-					},
-					{
-						Id: "AccessId2",
-					},
-				},
 				Id:          "AP1",
 				Description: "Descr",
 				Delete:      false,

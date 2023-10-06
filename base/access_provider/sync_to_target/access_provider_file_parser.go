@@ -56,20 +56,5 @@ func (p *accessProviderFileParser) ParseAccessProviders() (*AccessProviderImport
 		}
 	}
 
-	// TODO REFACTOR to be cleaned up when removing the old API.
-	// Now this makes sure that the Access stuff is both on the AP layer as on the Access layer
-	for _, ap := range ret.AccessProviders {
-		if ap.Access == nil && ap.What != nil {
-			ap.Access = []*Access{{
-				What:       ap.What,
-				ActualName: ap.ActualName,
-				Id:         ap.Id,
-			}}
-		} else if len(ap.Access) > 0 && ap.What == nil {
-			ap.What = ap.Access[0].What
-			ap.ActualName = ap.Access[0].ActualName
-		}
-	}
-
 	return &ret, nil
 }

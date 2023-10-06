@@ -21,9 +21,6 @@ type AccessProvider struct {
 
 	ExternalId *string `yaml:"externalId" json:"externalId"`
 
-	// Deprecated: use ActualName and What fields directory
-	Access []*Access `yaml:"access" json:"access"`
-
 	Action     Action   `yaml:"action" json:"action"`
 	Who        WhoItem  `yaml:"who" json:"who"`
 	DeletedWho *WhoItem `yaml:"deletedWho" json:"deletedWho"`

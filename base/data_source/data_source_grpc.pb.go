@@ -26,7 +26,7 @@ const _ = grpc.SupportPackageIsVersion7
 type DataSourceSyncServiceClient interface {
 	CliVersionInformation(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*version.CliBuildInformation, error)
 	SyncDataSource(ctx context.Context, in *DataSourceSyncConfig, opts ...grpc.CallOption) (*DataSourceSyncResult, error)
-	GetDataSourceMetaData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*MetaData, error)
+	GetDataSourceMetaData(ctx context.Context, in *DataSourceSyncConfig, opts ...grpc.CallOption) (*MetaData, error)
 }
 
 type dataSourceSyncServiceClient struct {
@@ -55,7 +55,7 @@ func (c *dataSourceSyncServiceClient) SyncDataSource(ctx context.Context, in *Da
 	return out, nil
 }
 
-func (c *dataSourceSyncServiceClient) GetDataSourceMetaData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*MetaData, error) {
+func (c *dataSourceSyncServiceClient) GetDataSourceMetaData(ctx context.Context, in *DataSourceSyncConfig, opts ...grpc.CallOption) (*MetaData, error) {
 	out := new(MetaData)
 	err := c.cc.Invoke(ctx, "/data_source.DataSourceSyncService/GetDataSourceMetaData", in, out, opts...)
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *dataSourceSyncServiceClient) GetDataSourceMetaData(ctx context.Context,
 type DataSourceSyncServiceServer interface {
 	CliVersionInformation(context.Context, *emptypb.Empty) (*version.CliBuildInformation, error)
 	SyncDataSource(context.Context, *DataSourceSyncConfig) (*DataSourceSyncResult, error)
-	GetDataSourceMetaData(context.Context, *emptypb.Empty) (*MetaData, error)
+	GetDataSourceMetaData(context.Context, *DataSourceSyncConfig) (*MetaData, error)
 	mustEmbedUnimplementedDataSourceSyncServiceServer()
 }
 
@@ -84,7 +84,7 @@ func (UnimplementedDataSourceSyncServiceServer) CliVersionInformation(context.Co
 func (UnimplementedDataSourceSyncServiceServer) SyncDataSource(context.Context, *DataSourceSyncConfig) (*DataSourceSyncResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncDataSource not implemented")
 }
-func (UnimplementedDataSourceSyncServiceServer) GetDataSourceMetaData(context.Context, *emptypb.Empty) (*MetaData, error) {
+func (UnimplementedDataSourceSyncServiceServer) GetDataSourceMetaData(context.Context, *DataSourceSyncConfig) (*MetaData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDataSourceMetaData not implemented")
 }
 func (UnimplementedDataSourceSyncServiceServer) mustEmbedUnimplementedDataSourceSyncServiceServer() {}
@@ -137,7 +137,7 @@ func _DataSourceSyncService_SyncDataSource_Handler(srv interface{}, ctx context.
 }
 
 func _DataSourceSyncService_GetDataSourceMetaData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(DataSourceSyncConfig)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func _DataSourceSyncService_GetDataSourceMetaData_Handler(srv interface{}, ctx c
 		FullMethod: "/data_source.DataSourceSyncService/GetDataSourceMetaData",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataSourceSyncServiceServer).GetDataSourceMetaData(ctx, req.(*emptypb.Empty))
+		return srv.(DataSourceSyncServiceServer).GetDataSourceMetaData(ctx, req.(*DataSourceSyncConfig))
 	}
 	return interceptor(ctx, in, info, handler)
 }

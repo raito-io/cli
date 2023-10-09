@@ -76,7 +76,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 
 	s.TargetConfig.TargetLogger.Info("Fetching data source metadata")
 
-	md, err := dss.GetDataSourceMetaData(context.Background())
+	md, err := dss.GetDataSourceMetaData(ctx, &syncerConfig)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -90,7 +90,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 
 	s.TargetConfig.TargetLogger.Info("Gathering data objects from the data source")
 
-	res, err := dss.SyncDataSource(context.Background(), &syncerConfig)
+	res, err := dss.SyncDataSource(ctx, &syncerConfig)
 	if err != nil {
 		return job.Failed, "", err
 	}

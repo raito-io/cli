@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/base/util/error/grpc_error"
 	"github.com/raito-io/cli/base/util/version"
 	"github.com/raito-io/cli/internal/version_management"
@@ -155,7 +156,7 @@ type DataSourceSyncer interface {
 	version.CliVersionHandler
 
 	SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (*DataSourceSyncResult, error)
-	GetDataSourceMetaData(ctx context.Context) (*MetaData, error)
+	GetDataSourceMetaData(ctx context.Context, config *config.ConfigMap) (*MetaData, error)
 }
 
 // DataSourceSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -186,8 +187,8 @@ func (g *dataSourceSyncerGRPC) SyncDataSource(ctx context.Context, config *DataS
 	return grpc_error.ParseErrorResult(g.client.SyncDataSource(ctx, config))
 }
 
-func (g *dataSourceSyncerGRPC) GetDataSourceMetaData(ctx context.Context) (*MetaData, error) {
-	return grpc_error.ParseErrorResult(g.client.GetDataSourceMetaData(ctx, &emptypb.Empty{}))
+func (g *dataSourceSyncerGRPC) GetDataSourceMetaData(ctx context.Context, config *config.ConfigMap) (*MetaData, error) {
+	return grpc_error.ParseErrorResult(g.client.GetDataSourceMetaData(ctx, config))
 }
 
 func (g *dataSourceSyncerGRPC) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
@@ -208,12 +209,12 @@ func (s *dataSourceSyncerGRPCServer) SyncDataSource(ctx context.Context, config 
 	return s.Impl.SyncDataSource(ctx, config)
 }
 
-func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, _ *emptypb.Empty) (_ *MetaData, err error) {
+func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, config *config.ConfigMap) (_ *MetaData, err error) {
 	defer func() {
 		err = grpc_error.GrpcDeferErrorHandling(err)
 	}()
 
-	return s.Impl.GetDataSourceMetaData(ctx)
+	return s.Impl.GetDataSourceMetaData(ctx, config)
 }
 
 func (s *dataSourceSyncerGRPCServer) CliVersionInformation(ctx context.Context, _ *emptypb.Empty) (_ *version.CliBuildInformation, err error) {

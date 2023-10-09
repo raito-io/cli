@@ -8,6 +8,7 @@ package identity_store
 
 import (
 	context "context"
+	config "github.com/raito-io/cli/base/util/config"
 	version "github.com/raito-io/cli/base/util/version"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -26,7 +27,7 @@ const _ = grpc.SupportPackageIsVersion7
 type IdentityStoreSyncServiceClient interface {
 	CliVersionInformation(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*version.CliBuildInformation, error)
 	SyncIdentityStore(ctx context.Context, in *IdentityStoreSyncConfig, opts ...grpc.CallOption) (*IdentityStoreSyncResult, error)
-	GetIdentityStoreMetaData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*MetaData, error)
+	GetIdentityStoreMetaData(ctx context.Context, in *config.ConfigMap, opts ...grpc.CallOption) (*MetaData, error)
 }
 
 type identityStoreSyncServiceClient struct {
@@ -55,7 +56,7 @@ func (c *identityStoreSyncServiceClient) SyncIdentityStore(ctx context.Context, 
 	return out, nil
 }
 
-func (c *identityStoreSyncServiceClient) GetIdentityStoreMetaData(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*MetaData, error) {
+func (c *identityStoreSyncServiceClient) GetIdentityStoreMetaData(ctx context.Context, in *config.ConfigMap, opts ...grpc.CallOption) (*MetaData, error) {
 	out := new(MetaData)
 	err := c.cc.Invoke(ctx, "/identity_store.IdentityStoreSyncService/GetIdentityStoreMetaData", in, out, opts...)
 	if err != nil {
@@ -70,7 +71,7 @@ func (c *identityStoreSyncServiceClient) GetIdentityStoreMetaData(ctx context.Co
 type IdentityStoreSyncServiceServer interface {
 	CliVersionInformation(context.Context, *emptypb.Empty) (*version.CliBuildInformation, error)
 	SyncIdentityStore(context.Context, *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error)
-	GetIdentityStoreMetaData(context.Context, *emptypb.Empty) (*MetaData, error)
+	GetIdentityStoreMetaData(context.Context, *config.ConfigMap) (*MetaData, error)
 	mustEmbedUnimplementedIdentityStoreSyncServiceServer()
 }
 
@@ -84,7 +85,7 @@ func (UnimplementedIdentityStoreSyncServiceServer) CliVersionInformation(context
 func (UnimplementedIdentityStoreSyncServiceServer) SyncIdentityStore(context.Context, *IdentityStoreSyncConfig) (*IdentityStoreSyncResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncIdentityStore not implemented")
 }
-func (UnimplementedIdentityStoreSyncServiceServer) GetIdentityStoreMetaData(context.Context, *emptypb.Empty) (*MetaData, error) {
+func (UnimplementedIdentityStoreSyncServiceServer) GetIdentityStoreMetaData(context.Context, *config.ConfigMap) (*MetaData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetIdentityStoreMetaData not implemented")
 }
 func (UnimplementedIdentityStoreSyncServiceServer) mustEmbedUnimplementedIdentityStoreSyncServiceServer() {
@@ -138,7 +139,7 @@ func _IdentityStoreSyncService_SyncIdentityStore_Handler(srv interface{}, ctx co
 }
 
 func _IdentityStoreSyncService_GetIdentityStoreMetaData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(config.ConfigMap)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -150,7 +151,7 @@ func _IdentityStoreSyncService_GetIdentityStoreMetaData_Handler(srv interface{},
 		FullMethod: "/identity_store.IdentityStoreSyncService/GetIdentityStoreMetaData",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IdentityStoreSyncServiceServer).GetIdentityStoreMetaData(ctx, req.(*emptypb.Empty))
+		return srv.(IdentityStoreSyncServiceServer).GetIdentityStoreMetaData(ctx, req.(*config.ConfigMap))
 	}
 	return interceptor(ctx, in, info, handler)
 }

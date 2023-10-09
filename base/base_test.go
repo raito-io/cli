@@ -9,6 +9,7 @@ import (
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/identity_store"
+	"github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/base/util/plugin"
 )
 
@@ -100,7 +101,7 @@ func (s *identityStoryPlugin) SyncIdentityStore(_ context.Context, _ *identity_s
 	return &identity_store.IdentityStoreSyncResult{}, nil
 }
 
-func (s *identityStoryPlugin) GetIdentityStoreMetaData(_ context.Context) (*identity_store.MetaData, error) {
+func (s *identityStoryPlugin) GetIdentityStoreMetaData(_ context.Context, _ *config.ConfigMap) (*identity_store.MetaData, error) {
 	return &identity_store.MetaData{}, nil
 }
 
@@ -112,7 +113,7 @@ func (s *dataSourcePlugin) SyncDataSource(_ context.Context, _ *data_source.Data
 	return &data_source.DataSourceSyncResult{}, nil
 }
 
-func (s *dataSourcePlugin) GetDataSourceMetaData(_ context.Context) (*data_source.MetaData, error) {
+func (s *dataSourcePlugin) GetDataSourceMetaData(_ context.Context, _ *config.ConfigMap) (*data_source.MetaData, error) {
 	return &data_source.MetaData{}, nil
 }
 

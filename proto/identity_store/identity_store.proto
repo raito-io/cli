@@ -33,5 +33,5 @@ service IdentityStoreSyncService {
   rpc CliVersionInformation(google.protobuf.Empty) returns (util.version.CliBuildInformation);
 
   rpc SyncIdentityStore(IdentityStoreSyncConfig) returns (IdentityStoreSyncResult);
-  rpc GetIdentityStoreMetaData(google.protobuf.Empty) returns (MetaData);
+  rpc GetIdentityStoreMetaData(util.config.ConfigMap) returns (MetaData);
 }

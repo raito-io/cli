@@ -83,7 +83,7 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 
 	s.TargetConfig.TargetLogger.Info("Fetching identity store metadata")
 
-	md, err := iss.GetIdentityStoreMetaData(context.Background())
+	md, err := iss.GetIdentityStoreMetaData(ctx, syncerConfig.ConfigMap)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -97,7 +97,7 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 
 	s.TargetConfig.TargetLogger.Info("Gathering users and groups")
 
-	result, err := iss.SyncIdentityStore(context.Background(), &syncerConfig)
+	result, err := iss.SyncIdentityStore(ctx, &syncerConfig)
 	if err != nil {
 		return job.Failed, "", err
 	}

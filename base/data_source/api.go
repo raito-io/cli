@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/base/util/error/grpc_error"
 	"github.com/raito-io/cli/base/util/version"
 	"github.com/raito-io/cli/internal/version_management"
@@ -155,7 +156,7 @@ type DataSourceSyncer interface {
 	version.CliVersionHandler
 
 	SyncDataSource(ctx context.Context, config *DataSourceSyncConfig) (*DataSourceSyncResult, error)
-	GetDataSourceMetaData(ctx context.Context, config *DataSourceSyncConfig) (*MetaData, error)
+	GetDataSourceMetaData(ctx context.Context, config *config.ConfigMap) (*MetaData, error)
 }
 
 // DataSourceSyncerPlugin is used on the server (CLI) and client (plugin) side to integrate with the plugin system.
@@ -186,7 +187,7 @@ func (g *dataSourceSyncerGRPC) SyncDataSource(ctx context.Context, config *DataS
 	return grpc_error.ParseErrorResult(g.client.SyncDataSource(ctx, config))
 }
 
-func (g *dataSourceSyncerGRPC) GetDataSourceMetaData(ctx context.Context, config *DataSourceSyncConfig) (*MetaData, error) {
+func (g *dataSourceSyncerGRPC) GetDataSourceMetaData(ctx context.Context, config *config.ConfigMap) (*MetaData, error) {
 	return grpc_error.ParseErrorResult(g.client.GetDataSourceMetaData(ctx, config))
 }
 
@@ -208,7 +209,7 @@ func (s *dataSourceSyncerGRPCServer) SyncDataSource(ctx context.Context, config 
 	return s.Impl.SyncDataSource(ctx, config)
 }
 
-func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, config *DataSourceSyncConfig) (_ *MetaData, err error) {
+func (s *dataSourceSyncerGRPCServer) GetDataSourceMetaData(ctx context.Context, config *config.ConfigMap) (_ *MetaData, err error) {
 	defer func() {
 		err = grpc_error.GrpcDeferErrorHandling(err)
 	}()

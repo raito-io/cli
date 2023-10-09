@@ -153,5 +153,5 @@ service DataSourceSyncService {
   rpc CliVersionInformation(google.protobuf.Empty) returns (util.version.CliBuildInformation);
 
   rpc SyncDataSource(DataSourceSyncConfig) returns (DataSourceSyncResult);
-  rpc GetDataSourceMetaData(DataSourceSyncConfig) returns (MetaData);
+  rpc GetDataSourceMetaData(util.config.ConfigMap) returns (MetaData);
 }

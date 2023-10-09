@@ -112,7 +112,7 @@ func (s *dataSourcePlugin) SyncDataSource(_ context.Context, _ *data_source.Data
 	return &data_source.DataSourceSyncResult{}, nil
 }
 
-func (s *dataSourcePlugin) GetDataSourceMetaData(_ context.Context) (*data_source.MetaData, error) {
+func (s *dataSourcePlugin) GetDataSourceMetaData(_ context.Context, _ *data_source.DataSourceSyncConfig) (*data_source.MetaData, error) {
 	return &data_source.MetaData{}, nil
 }
 

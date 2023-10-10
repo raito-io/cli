@@ -56,9 +56,12 @@ type WhatItem struct {
 }
 
 type AccessSyncFeedbackInformation struct {
-	AccessId   string  `yaml:"accessId" json:"accessId"`
-	ActualName string  `yaml:"actualName" json:"actualName"`
-	ExternalId *string `yaml:"externalId" json:"externalId"`
+	AccessId   string   `yaml:"accessId" json:"accessId"`
+	ActualName string   `yaml:"actualName" json:"actualName"`
+	ExternalId *string  `yaml:"externalId" json:"externalId"`
+	Type       *string  `yaml:"type" json:"type"`
+	Errors     []string `yaml:"errors" json:"errors"`
+	Warnings   []string `yaml:"warnings" json:"warnings"`
 }
 
 type accessProviderFeedbackInformation struct {

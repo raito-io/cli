@@ -106,6 +106,9 @@ linters:
 run:
   issues-exit-code: 1
   tests: false
+  skip-files:
+    - ".*mock.*\\.go$"
+    - ".*\\.pb\\.go$"
 
 output:
   path-prefix: ""

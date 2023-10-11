@@ -55,7 +55,17 @@ type WhatItem struct {
 	Permissions []string                         `yaml:"permissions" json:"permissions"`
 }
 
-type AccessSyncFeedbackInformation struct {
+type AccessProviderSyncFeedback struct {
+	AccessProvider string   `yaml:"accessProvider" json:"accessProvider"`
+	ActualName     string   `yaml:"actualName" json:"actualName"`
+	ExternalId     *string  `yaml:"externalId" json:"externalId"`
+	Type           *string  `yaml:"type" json:"type"`
+	Errors         []string `yaml:"errors" json:"errors"`
+	Warnings       []string `yaml:"warnings" json:"warnings"`
+}
+
+// The legacy format that the appserver still supports. The CLI will convert the new format to the old for now until appserver supports the new format.
+type accessSyncFeedbackInformation struct {
 	AccessId   string   `yaml:"accessId" json:"accessId"`
 	ActualName string   `yaml:"actualName" json:"actualName"`
 	ExternalId *string  `yaml:"externalId" json:"externalId"`
@@ -66,7 +76,7 @@ type AccessSyncFeedbackInformation struct {
 
 type accessProviderFeedbackInformation struct {
 	ExternalId            string                          `json:"externalId"`
-	AccessFeedbackObjects []AccessSyncFeedbackInformation `json:"access"`
+	AccessFeedbackObjects []accessSyncFeedbackInformation `json:"access"`
 }
 
 type Action int

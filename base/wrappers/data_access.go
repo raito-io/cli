@@ -21,7 +21,7 @@ type AccessProviderHandler interface {
 
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderFeedbackHandler --with-expecter
 type AccessProviderFeedbackHandler interface {
-	AddAccessProviderFeedback(accessProviderId string, accessFeedback ...sync_to_target.AccessSyncFeedbackInformation) error
+	AddAccessProviderFeedback(accessProviderFeedback sync_to_target.AccessProviderSyncFeedback) error
 }
 
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderSyncer --with-expecter --inpackage

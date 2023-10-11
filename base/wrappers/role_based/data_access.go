@@ -95,6 +95,7 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 		} else {
 			rolesMap, rolesToRemove, err2 = handleAccessProvider(ap, rolesMap, rolesToRemove, uniqueRoleNameGenerator)
 		}
+
 		if err2 != nil {
 			return err2
 		}

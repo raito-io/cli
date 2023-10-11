@@ -182,35 +182,27 @@ func TestNewSimpleAccessProviderHandler(t *testing.T) {
 
 func TestNewSimpleAccessProviderFeedbackHandler(t *testing.T) {
 	//Given
-	mock := NewSimpleAccessProviderFeedbackHandler(t, 2)
+	mock := NewSimpleAccessProviderFeedbackHandler(t)
 
-	accessProviderFeedbackMap := map[string][]sync_to_target.AccessSyncFeedbackInformation{
-		"AP1": {
-			{
-				AccessId:   "AccessId1",
-				ActualName: "ActualName1",
-			},
+	accessProviderFeedbackMap := []sync_to_target.AccessProviderSyncFeedback{
+		{
+			AccessProvider: "AccessId1",
+			ActualName:     "ActualName1",
 		},
-		"AP2": {
-			{
-				AccessId:   "AccessId2",
-				ActualName: "ActualName2",
-			},
-			{
-				AccessId:   "AccessId3",
-				ActualName: "ActualName3",
-			},
+		{
+			AccessProvider: "AccessId2",
+			ActualName:     "ActualName2",
 		},
 	}
 
 	//When
-	err := mock.AddAccessProviderFeedback("AP1", accessProviderFeedbackMap["AP1"]...)
+	err := mock.AddAccessProviderFeedback(accessProviderFeedbackMap[0])
 
 	//Then
 	assert.NoError(t, err)
 
 	//When
-	err = mock.AddAccessProviderFeedback("AP2", accessProviderFeedbackMap["AP2"]...)
+	err = mock.AddAccessProviderFeedback(accessProviderFeedbackMap[1])
 
 	//Then
 	assert.NoError(t, err)

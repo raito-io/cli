@@ -229,17 +229,32 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 	}
 
 	syncerMock := NewMockAccessProviderRoleSyncer(t)
-	maskCall := syncerMock.EXPECT().SyncAccessProviderMasksToTarget(mock.Anything, []string{"ActualNameMask2"}, []*sync_to_target.AccessProvider{
-		{
-			Id:          "Mask1",
-			Description: "Mask1Description",
-			Delete:      false,
-			Name:        "Mask1",
-			NamingHint:  "NameHintMask1",
-			Action:      sync_to_target.Mask,
-		},
+	maskCall := syncerMock.EXPECT().SyncAccessProviderMasksToTarget(mock.Anything, map[string]*sync_to_target.AccessProvider{"ActualNameMask2": {
+		Id:          "Mask2",
+		Description: "Mask2Description",
+		Delete:      true,
+		Name:        "Mask2",
+		NamingHint:  "NameHintMask2",
+		ActualName:  ptr.String("ActualNameMask2"),
+		Action:      sync_to_target.Mask,
+	}}, map[string]*sync_to_target.AccessProvider{"NAME_HINT_MASK1": {
+		Id:          "Mask1",
+		Description: "Mask1Description",
+		Delete:      false,
+		Name:        "Mask1",
+		NamingHint:  "NameHintMask1",
+		Action:      sync_to_target.Mask,
+	},
 	}, accessFeedBackFileCreator, &configMap).Return(nil).Once()
-	syncerMock.EXPECT().SyncAccessProviderRolesToTarget(mock.Anything, []string{actualName1}, mock.Anything, accessFeedBackFileCreator, &configMap).Return(nil).Once().NotBefore(maskCall)
+	syncerMock.EXPECT().SyncAccessProviderRolesToTarget(mock.Anything, map[string]*sync_to_target.AccessProvider{actualName1: {
+		ActualName:  &actualName1,
+		Id:          "AP3",
+		Description: "Descr3",
+		Delete:      true,
+		Name:        "Ap3",
+		NamingHint:  "NameHint3",
+		Action:      sync_to_target.Grant,
+	}}, mock.Anything, accessFeedBackFileCreator, &configMap).Return(nil).Once().NotBefore(maskCall)
 
 	syncer := accessProviderRoleSyncFunction{
 		syncer: syncerMock,
@@ -257,7 +272,15 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 	//Then
 	assert.NoError(t, err)
 	syncerMock.AssertCalled(t, "SyncAccessProviderRolesToTarget", mock.Anything,
-		[]string{actualName1},
+		map[string]*sync_to_target.AccessProvider{actualName1: {
+			ActualName:  &actualName1,
+			Id:          "AP3",
+			Description: "Descr3",
+			Delete:      true,
+			Name:        "Ap3",
+			NamingHint:  "NameHint3",
+			Action:      sync_to_target.Grant,
+		}},
 		map[string]*sync_to_target.AccessProvider{
 			"NAME_HINT1": accessProvidersImport.AccessProviders[0],
 			"NAME_HINT2": accessProvidersImport.AccessProviders[1],

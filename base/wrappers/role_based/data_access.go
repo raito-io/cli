@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/raito-io/golang-set/set"
-
 	"github.com/raito-io/cli/base"
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
@@ -21,8 +19,8 @@ var logger = base.Logger()
 type AccessProviderRoleSyncer interface {
 	SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler wrappers.AccessProviderHandler, configMap *config.ConfigMap) error
 
-	SyncAccessProviderRolesToTarget(ctx context.Context, rolesToRemove []string, access map[string]*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
-	SyncAccessProviderMasksToTarget(ctx context.Context, masksToRemove []string, access []*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
+	SyncAccessProviderRolesToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
+	SyncAccessProviderMasksToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
 
 	SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]*sync_to_target.AccessProvider, prefix string, configMap *config.ConfigMap) error
 }
@@ -84,66 +82,54 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 
 	apList := accessProviders.AccessProviders
 
-	var masksList []*sync_to_target.AccessProvider
-	masksToRemove := set.NewSet[string]()
+	masksMap := make(map[string]*sync_to_target.AccessProvider)
+	masksToRemove := make(map[string]*sync_to_target.AccessProvider)
 
 	rolesMap := make(map[string]*sync_to_target.AccessProvider)
-	rolesToRemove := set.NewSet[string]()
+	rolesToRemove := make(map[string]*sync_to_target.AccessProvider)
 
 	for _, ap := range apList {
+		var err2 error
 		if ap.Action == sync_to_target.Mask {
-			masksList, masksToRemove = parseMask(ap, masksList, masksToRemove)
+			masksMap, masksToRemove, err2 = handleAccessProvider(ap, masksMap, masksToRemove, uniqueRoleNameGenerator)
 		} else {
-			rolesMap, rolesToRemove, err = parseRole(ap, rolesMap, rolesToRemove, uniqueRoleNameGenerator)
-			if err != nil {
-				return err
-			}
+			rolesMap, rolesToRemove, err2 = handleAccessProvider(ap, rolesMap, rolesToRemove, uniqueRoleNameGenerator)
+		}
+
+		if err2 != nil {
+			return err2
 		}
 	}
 
 	// Step 1 first initiate all the masks
-	err = s.syncer.SyncAccessProviderMasksToTarget(ctx, masksToRemove.Slice(), masksList, accessProviderFeedbackHandler, configMap)
+	err = s.syncer.SyncAccessProviderMasksToTarget(ctx, masksToRemove, masksMap, accessProviderFeedbackHandler, configMap)
 	if err != nil {
 		return err
 	}
 
 	// Step 2 then initiate all the roles
-	return s.syncer.SyncAccessProviderRolesToTarget(ctx, rolesToRemove.Slice(), rolesMap, accessProviderFeedbackHandler, configMap)
+	return s.syncer.SyncAccessProviderRolesToTarget(ctx, rolesToRemove, rolesMap, accessProviderFeedbackHandler, configMap)
 }
 
-func parseMask(mask *sync_to_target.AccessProvider, masksList []*sync_to_target.AccessProvider, masksToRemove set.Set[string]) ([]*sync_to_target.AccessProvider, set.Set[string]) {
-	if mask.Delete {
-		if mask.ActualName == nil {
-			logger.Warn(fmt.Sprintf("No actualname defined for deleted access provider %q. This will be ignored", mask.Id))
-			return masksList, masksToRemove
-		}
-
-		masksToRemove.Add(*mask.ActualName)
-	} else {
-		masksList = append(masksList, mask)
-	}
-
-	return masksList, masksToRemove
-}
-
-func parseRole(ap *sync_to_target.AccessProvider, rolesMap map[string]*sync_to_target.AccessProvider, rolesToRemove set.Set[string], roleNameGenerator naming_hint.UniqueGenerator) (map[string]*sync_to_target.AccessProvider, set.Set[string], error) {
+func handleAccessProvider(ap *sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, apToRemoveMap map[string]*sync_to_target.AccessProvider, roleNameGenerator naming_hint.UniqueGenerator) (map[string]*sync_to_target.AccessProvider, map[string]*sync_to_target.AccessProvider, error) {
 	if ap.Delete {
 		if ap.ActualName == nil {
 			logger.Warn(fmt.Sprintf("No actualname defined for deleted access provider %q. This will be ignored", ap.Id))
-			return rolesMap, rolesToRemove, nil
+			return apMap, apToRemoveMap, nil
 		}
 
-		rolesToRemove.Add(*ap.ActualName)
+		apToRemoveMap[*ap.ActualName] = ap
 	} else {
 		roleName, err := roleNameGenerator.Generate(ap)
+
 		if err != nil {
-			return rolesMap, rolesToRemove, err
+			return apMap, apToRemoveMap, err
 		}
 
-		if _, f := rolesMap[roleName]; !f {
-			rolesMap[roleName] = ap
+		if _, f := apMap[roleName]; !f {
+			apMap[roleName] = ap
 		}
 	}
 
-	return rolesMap, rolesToRemove, nil
+	return apMap, apToRemoveMap, nil
 }

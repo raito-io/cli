@@ -47,7 +47,7 @@ func ParseAccessProviderImportFile(config *access_provider.AccessSyncToTarget) (
 }
 
 type SyncFeedbackFileCreator interface {
-	AddAccessProviderFeedback(accessProviderId string, accessFeedback ...AccessSyncFeedbackInformation) error
+	AddAccessProviderFeedback(accessProviderFeedback AccessProviderSyncFeedback) error
 	Close()
 	GetAccessProviderCount() int
 }
@@ -82,23 +82,28 @@ func NewFeedbackFileCreator(config *access_provider.AccessSyncToTarget) (SyncFee
 	return &dsI, nil
 }
 
-func (d *syncFeedbackFileCreator) AddAccessProviderFeedback(accessProviderExternalId string, accessFeedback ...AccessSyncFeedbackInformation) error {
-	if _, found := d.definedAccessProviders[accessProviderExternalId]; found {
+func (d *syncFeedbackFileCreator) AddAccessProviderFeedback(accessProviderFeedback AccessProviderSyncFeedback) error {
+	if _, found := d.definedAccessProviders[accessProviderFeedback.AccessProvider]; found {
 		return errors.New("access provider is already defined in feedback file")
 	}
 
-	if len(accessFeedback) == 0 {
-		return nil
-	}
-
 	apFeedback := accessProviderFeedbackInformation{
-		ExternalId:            accessProviderExternalId,
-		AccessFeedbackObjects: accessFeedback,
+		ExternalId: accessProviderFeedback.AccessProvider,
+		AccessFeedbackObjects: []accessSyncFeedbackInformation{
+			{
+				AccessId:   accessProviderFeedback.AccessProvider,
+				ActualName: accessProviderFeedback.ActualName,
+				ExternalId: accessProviderFeedback.ExternalId,
+				Type:       accessProviderFeedback.Type,
+				Errors:     accessProviderFeedback.Errors,
+				Warnings:   accessProviderFeedback.Warnings,
+			},
+		},
 	}
 
 	doBuf, err := json.Marshal(apFeedback)
 	if err != nil {
-		return fmt.Errorf("error while serialzing access provider feedback data object with ID %q: %s", accessProviderExternalId, err.Error())
+		return fmt.Errorf("error while serialzing access provider feedback data object with ID %q: %s", accessProviderFeedback.AccessProvider, err.Error())
 	}
 
 	newLine := bytes.NewBufferString("")
@@ -125,7 +130,7 @@ func (d *syncFeedbackFileCreator) AddAccessProviderFeedback(accessProviderExtern
 	}
 
 	d.dataAccessCount++
-	d.definedAccessProviders[accessProviderExternalId] = struct{}{}
+	d.definedAccessProviders[accessProviderFeedback.AccessProvider] = struct{}{}
 
 	return nil
 }

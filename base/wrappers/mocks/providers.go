@@ -137,24 +137,18 @@ func NewSimpleAccessProviderHandler(t mockConstructorTestingT, maxAccessProvider
 
 type SimpleAccessProviderFeedbackHandler struct {
 	*AccessProviderFeedbackHandler
-	AccessProviderFeedback map[string][]sync_to_target.AccessSyncFeedbackInformation
+	AccessProviderFeedback []sync_to_target.AccessProviderSyncFeedback
 }
 
-func NewSimpleAccessProviderFeedbackHandler(t mockConstructorTestingT, maxAccessFeedbackInformationObjectsPerCall int) *SimpleAccessProviderFeedbackHandler {
+func NewSimpleAccessProviderFeedbackHandler(t mockConstructorTestingT) *SimpleAccessProviderFeedbackHandler {
 	result := &SimpleAccessProviderFeedbackHandler{
 		AccessProviderFeedbackHandler: NewAccessProviderFeedbackHandler(t),
-		AccessProviderFeedback:        map[string][]sync_to_target.AccessSyncFeedbackInformation{},
+		AccessProviderFeedback:        []sync_to_target.AccessProviderSyncFeedback{},
 	}
 
-	arguments := make([]interface{}, 0)
-
-	for i := 0; i < maxAccessFeedbackInformationObjectsPerCall; i++ {
-		arguments = append(arguments, mock.Anything)
-
-		result.EXPECT().AddAccessProviderFeedback(mock.Anything, arguments...).Run(func(accessProviderId string, accessFeedback ...sync_to_target.AccessSyncFeedbackInformation) {
-			result.AccessProviderFeedback[accessProviderId] = accessFeedback
-		}).Return(nil).Maybe()
-	}
+	result.EXPECT().AddAccessProviderFeedback(mock.Anything).Run(func(accessFeedback sync_to_target.AccessProviderSyncFeedback) {
+		result.AccessProviderFeedback = append(result.AccessProviderFeedback, accessFeedback)
+	}).Return(nil).Maybe()
 
 	return result
 }

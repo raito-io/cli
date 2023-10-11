@@ -26,6 +26,8 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget fun
 	var jobIds []string
 
 	defer func() {
+		baseConfig.BaseLogger.Debug(fmt.Sprintf("Finished targets with jobIds: %v", jobIds))
+
 		notifyErr := sendEndOfTarget(ctx, baseConfig, jobIds, &options)
 		if notifyErr != nil {
 			err = multierror.Append(err, notifyErr)
@@ -42,18 +44,20 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget fun
 		logTargetConfig(targetConfig)
 
 		jobId, err := runTarget(ctx, options.TargetOptions(targetConfig))
+		if jobId != "" {
+			jobIds = append(jobIds, jobId)
+		}
+
 		if err != nil {
 			return err
 		}
-
-		jobIds = append(jobIds, jobId)
 	} else {
 		jobs, err := runMultipleTargets(ctx, baseConfig, runTarget, &options)
+		jobIds = jobs
+
 		if err != nil {
 			return err
 		}
-
-		jobIds = jobs
 	}
 
 	return nil
@@ -177,7 +181,9 @@ func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTa
 				tConfig.TargetLogger.Debug("Error while executing target", "error", err.Error())
 			}
 
-			jobIds = append(jobIds, jobId)
+			if jobId != "" {
+				jobIds = append(jobIds, jobId)
+			}
 		}
 	}
 

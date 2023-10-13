@@ -20,7 +20,7 @@ type AccessProviderRoleSyncer interface {
 	SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler wrappers.AccessProviderHandler, configMap *config.ConfigMap) error
 
 	SyncAccessProviderRolesToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
-	SyncAccessProviderMasksToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
+	SyncAccessProviderMasksToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, roleNameMap map[string]string, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
 
 	SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]*sync_to_target.AccessProvider, prefix string, configMap *config.ConfigMap) error
 }
@@ -82,6 +82,8 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 
 	apList := accessProviders.AccessProviders
 
+	apIdNameMap := make(map[string]string)
+
 	masksMap := make(map[string]*sync_to_target.AccessProvider)
 	masksToRemove := make(map[string]*sync_to_target.AccessProvider)
 
@@ -91,9 +93,11 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 	for _, ap := range apList {
 		var err2 error
 		if ap.Action == sync_to_target.Mask {
-			masksMap, masksToRemove, err2 = handleAccessProvider(ap, masksMap, masksToRemove, uniqueRoleNameGenerator)
+			_, masksMap, masksToRemove, err2 = handleAccessProvider(ap, masksMap, masksToRemove, uniqueRoleNameGenerator)
 		} else {
-			rolesMap, rolesToRemove, err2 = handleAccessProvider(ap, rolesMap, rolesToRemove, uniqueRoleNameGenerator)
+			var roleName string
+			roleName, rolesMap, rolesToRemove, err2 = handleAccessProvider(ap, rolesMap, rolesToRemove, uniqueRoleNameGenerator)
+			apIdNameMap[ap.Id] = roleName
 		}
 
 		if err2 != nil {
@@ -102,7 +106,7 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 	}
 
 	// Step 1 first initiate all the masks
-	err = s.syncer.SyncAccessProviderMasksToTarget(ctx, masksToRemove, masksMap, accessProviderFeedbackHandler, configMap)
+	err = s.syncer.SyncAccessProviderMasksToTarget(ctx, masksToRemove, masksMap, apIdNameMap, accessProviderFeedbackHandler, configMap)
 	if err != nil {
 		return err
 	}
@@ -111,19 +115,24 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 	return s.syncer.SyncAccessProviderRolesToTarget(ctx, rolesToRemove, rolesMap, accessProviderFeedbackHandler, configMap)
 }
 
-func handleAccessProvider(ap *sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, apToRemoveMap map[string]*sync_to_target.AccessProvider, roleNameGenerator naming_hint.UniqueGenerator) (map[string]*sync_to_target.AccessProvider, map[string]*sync_to_target.AccessProvider, error) {
+func handleAccessProvider(ap *sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, apToRemoveMap map[string]*sync_to_target.AccessProvider, roleNameGenerator naming_hint.UniqueGenerator) (string, map[string]*sync_to_target.AccessProvider, map[string]*sync_to_target.AccessProvider, error) {
+	var roleName string
+
 	if ap.Delete {
 		if ap.ActualName == nil {
 			logger.Warn(fmt.Sprintf("No actualname defined for deleted access provider %q. This will be ignored", ap.Id))
-			return apMap, apToRemoveMap, nil
+			return "", apMap, apToRemoveMap, nil
 		}
 
-		apToRemoveMap[*ap.ActualName] = ap
-	} else {
-		roleName, err := roleNameGenerator.Generate(ap)
+		roleName = *ap.ActualName
 
+		apToRemoveMap[roleName] = ap
+	} else {
+		var err error
+
+		roleName, err = roleNameGenerator.Generate(ap)
 		if err != nil {
-			return apMap, apToRemoveMap, err
+			return "", apMap, apToRemoveMap, err
 		}
 
 		if _, f := apMap[roleName]; !f {
@@ -131,5 +140,5 @@ func handleAccessProvider(ap *sync_to_target.AccessProvider, apMap map[string]*s
 		}
 	}
 
-	return apMap, apToRemoveMap, nil
+	return roleName, apMap, apToRemoveMap, nil
 }

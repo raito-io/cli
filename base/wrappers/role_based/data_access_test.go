@@ -245,7 +245,13 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 		NamingHint:  "NameHintMask1",
 		Action:      sync_to_target.Mask,
 	},
-	}, accessFeedBackFileCreator, &configMap).Return(nil).Once()
+	}, map[string]string{
+		"AP1": "NAME_HINT1",
+		"AP2": "NAME_HINT2",
+		"AP3": "ActualName1",
+		"AP4": "",
+	},
+		accessFeedBackFileCreator, &configMap).Return(nil).Once()
 	syncerMock.EXPECT().SyncAccessProviderRolesToTarget(mock.Anything, map[string]*sync_to_target.AccessProvider{actualName1: {
 		ActualName:  &actualName1,
 		Id:          "AP3",

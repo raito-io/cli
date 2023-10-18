@@ -82,11 +82,12 @@ type accessProviderFeedbackInformation struct {
 type Action int
 
 const (
-	Promise Action = iota
+	Promise Action = iota // Deprecated promises are set on who item
 	Grant
 	Deny
 	Mask
 	Filtered
+	Purpose
 )
 
 var actionMap = map[string]Action{
@@ -95,8 +96,9 @@ var actionMap = map[string]Action{
 	"deny":     Deny,
 	"mask":     Mask,
 	"filtered": Filtered,
+	"purpose":  Purpose,
 }
-var actionNames = [...]string{"promise", "grant", "deny", "mask", "filtered"}
+var actionNames = [...]string{"promise", "grant", "deny", "mask", "filtered", "purpose"}
 
 func (a *Action) MarshalYAML() (interface{}, error) {
 	s := actionNames[*a]

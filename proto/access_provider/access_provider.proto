@@ -31,6 +31,7 @@ message AccessSyncFromTarget {
   bool lock_all_what = 5;
   bool lock_all_names = 6;
   bool lock_all_delete = 7;
+  bool lock_all_inheritance = 8;
 }
 
 // AccessSyncResult represents the result from the data access sync process.

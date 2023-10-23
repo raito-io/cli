@@ -21,12 +21,13 @@ type AccessProvider struct {
 
 	ExternalId *string `yaml:"externalId" json:"externalId"`
 
-	Action     Action   `yaml:"action" json:"action"`
-	Who        WhoItem  `yaml:"who" json:"who"`
-	DeletedWho *WhoItem `yaml:"deletedWho" json:"deletedWho"`
-	Delete     bool     `yaml:"delete" json:"delete"`
-	WhoLocked  *bool    `yaml:"whoLocked" json:"whoLocked"`
-	WhatLocked *bool    `yaml:"whatLocked" json:"whatLocked"`
+	Action            Action   `yaml:"action" json:"action"`
+	Who               WhoItem  `yaml:"who" json:"who"`
+	DeletedWho        *WhoItem `yaml:"deletedWho" json:"deletedWho"`
+	Delete            bool     `yaml:"delete" json:"delete"`
+	WhoLocked         *bool    `yaml:"whoLocked" json:"whoLocked"`
+	InheritanceLocked *bool    `yaml:"inheritanceLocked" json:"inheritanceLocked"`
+	WhatLocked        *bool    `yaml:"whatLocked" json:"whatLocked"`
 
 	ActualName *string    `yaml:"actualName" json:"actualName"`
 	What       []WhatItem `yaml:"what" json:"what"`

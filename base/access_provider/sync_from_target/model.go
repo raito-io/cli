@@ -19,15 +19,17 @@ type AccessProvider struct {
 	// Locking properties
 
 	// NotInternalizable means that the entire access provider is locked
-	NotInternalizable  bool    `json:"notInternalizable"`
-	WhoLocked          *bool   `json:"whoLocked"`
-	WhoLockedReason    *string `json:"whoLockedReason"`
-	WhatLocked         *bool   `json:"whatLocked"`
-	WhatLockedReason   *string `json:"whatLockedReason"`
-	NameLocked         *bool   `json:"nameLocked"`
-	NameLockedReason   *string `json:"nameLockedReason"`
-	DeleteLocked       *bool   `json:"deleteLocked"`
-	DeleteLockedReason *string `json:"deleteLockedReason"`
+	NotInternalizable       bool    `json:"notInternalizable"`
+	WhoLocked               *bool   `json:"whoLocked"`
+	WhoLockedReason         *string `json:"whoLockedReason"`
+	InheritanceLocked       *bool   `json:"inheritanceLocked"`
+	InheritanceLockedReason *string `json:"inheritanceLockedReason"`
+	WhatLocked              *bool   `json:"whatLocked"`
+	WhatLockedReason        *string `json:"whatLockedReason"`
+	NameLocked              *bool   `json:"nameLocked"`
+	NameLockedReason        *string `json:"nameLockedReason"`
+	DeleteLocked            *bool   `json:"deleteLocked"`
+	DeleteLockedReason      *string `json:"deleteLockedReason"`
 
 	ActualName string `yaml:"actualName" json:"actualName"`
 	// Who represents who has access to the 'what'. Nil means that the 'who' is unknown.

@@ -162,13 +162,14 @@ func (s *dataAccessImportSubtask) GetResultObject() interface{} {
 // Import data from Raito to DS
 func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, targetFile string) (returnErr error) {
 	syncerConfig := dapc.AccessSyncFromTarget{
-		ConfigMap:     &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		Prefix:        "",
-		TargetFile:    targetFile,
-		LockAllWho:    s.TargetConfig.LockAllWho,
-		LockAllWhat:   s.TargetConfig.LockAllWhat,
-		LockAllNames:  s.TargetConfig.LockAllNames,
-		LockAllDelete: s.TargetConfig.LockAllDelete,
+		ConfigMap:          &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:             "",
+		TargetFile:         targetFile,
+		LockAllWho:         s.TargetConfig.LockAllWho,
+		LockAllInheritance: s.TargetConfig.LockAllInheritance,
+		LockAllWhat:        s.TargetConfig.LockAllWhat,
+		LockAllNames:       s.TargetConfig.LockAllNames,
+		LockAllDelete:      s.TargetConfig.LockAllDelete,
 	}
 
 	das, err := client.GetAccessSyncer()

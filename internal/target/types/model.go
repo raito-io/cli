@@ -44,10 +44,11 @@ type BaseTargetConfig struct {
 	SkipDataAccessSync    bool
 	SkipDataUsageSync     bool
 
-	LockAllWho    bool
-	LockAllWhat   bool
-	LockAllNames  bool
-	LockAllDelete bool
+	LockAllWho         bool
+	LockAllInheritance bool
+	LockAllWhat        bool
+	LockAllNames       bool
+	LockAllDelete      bool
 
 	OnlyOutOfSyncData    bool
 	SkipDataAccessImport bool

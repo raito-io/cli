@@ -76,7 +76,7 @@ func TestNameHintTranslator_TranslateToSnakeCase_UpperCharacter(t *testing.T) {
 		"second_snake_case_string":                               "SECOND_SNAKE_CASE_STRING",
 		"@_Str!ng#With_$pecial.Charact*rs like ?/<> for example": "STR!NG_WITH_PECIAL_CHARACT_RS LIKE _ FOR EXAMPLE",
 		"A string with spaces":                                   "A STRING WITH SPACES",
-		"A7tringW1th4Numbers2":                                   "A7TRING_W1TH4_NUMBERS2",
+		"A7tringW1th4Numbers2":                                   "A7TRING_W1TH4NUMBERS2",
 	}
 
 	executeNameHintTranslatorTest(t, &constraints, testParameters)
@@ -97,7 +97,7 @@ func TestNameHintTranslator_TranslateToSnakeCase_LowerCharacter(t *testing.T) {
 		"second_snake_case_string":                               "second_snake_case_string",
 		"@_Str!ng#With_$pecial.Charact*rs like ?/<> for example": "str!ng_with_pecial_charact_rs_like_for_example",
 		"A string with spaces":                                   "a_string_with_spaces",
-		"A7tringW1th4Numbers2":                                   "a7tring_w1th4_numbers2",
+		"A7tringW1th4Numbers2":                                   "a7tring_w1th4numbers2",
 	}
 
 	executeNameHintTranslatorTest(t, &constraints, testParameters)

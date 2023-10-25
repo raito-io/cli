@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var splitRegex = regexp.MustCompile("([a-z0-9])([A-Z])")
+var splitRegex = regexp.MustCompile("([a-z])([A-Z])")
 
 type Translator interface {
 	Translate(input string) (string, error)

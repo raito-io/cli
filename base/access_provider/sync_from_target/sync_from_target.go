@@ -76,6 +76,10 @@ func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*Acces
 			ap.WhoLocked = ptr.Bool(true)
 		}
 
+		if d.config.LockAllInheritance {
+			ap.InheritanceLocked = ptr.Bool(true)
+		}
+
 		if d.config.LockAllWhat {
 			ap.WhatLocked = ptr.Bool(true)
 		}

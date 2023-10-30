@@ -21,12 +21,13 @@ type AccessProvider struct {
 
 	ExternalId *string `yaml:"externalId" json:"externalId"`
 
-	Action     Action   `yaml:"action" json:"action"`
-	Who        WhoItem  `yaml:"who" json:"who"`
-	DeletedWho *WhoItem `yaml:"deletedWho" json:"deletedWho"`
-	Delete     bool     `yaml:"delete" json:"delete"`
-	WhoLocked  *bool    `yaml:"whoLocked" json:"whoLocked"`
-	WhatLocked *bool    `yaml:"whatLocked" json:"whatLocked"`
+	Action            Action   `yaml:"action" json:"action"`
+	Who               WhoItem  `yaml:"who" json:"who"`
+	DeletedWho        *WhoItem `yaml:"deletedWho" json:"deletedWho"`
+	Delete            bool     `yaml:"delete" json:"delete"`
+	WhoLocked         *bool    `yaml:"whoLocked" json:"whoLocked"`
+	InheritanceLocked *bool    `yaml:"inheritanceLocked" json:"inheritanceLocked"`
+	WhatLocked        *bool    `yaml:"whatLocked" json:"whatLocked"`
 
 	ActualName *string    `yaml:"actualName" json:"actualName"`
 	What       []WhatItem `yaml:"what" json:"what"`
@@ -82,11 +83,12 @@ type accessProviderFeedbackInformation struct {
 type Action int
 
 const (
-	Promise Action = iota
+	Promise Action = iota // Deprecated promises are set on who item
 	Grant
 	Deny
 	Mask
 	Filtered
+	Purpose
 )
 
 var actionMap = map[string]Action{
@@ -95,8 +97,9 @@ var actionMap = map[string]Action{
 	"deny":     Deny,
 	"mask":     Mask,
 	"filtered": Filtered,
+	"purpose":  Purpose,
 }
-var actionNames = [...]string{"promise", "grant", "deny", "mask", "filtered"}
+var actionNames = [...]string{"promise", "grant", "deny", "mask", "filtered", "purpose"}
 
 func (a *Action) MarshalYAML() (interface{}, error) {
 	s := actionNames[*a]

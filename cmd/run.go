@@ -54,7 +54,8 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.SkipDataAccessSyncFlag, false, "If set, the data access information from Raito will not be synced to the data sources in the target list.")
 	cmd.PersistentFlags().Bool(constants.SkipDataUsageSyncFlag, false, "If set, the data usage information synchronization step to Raito will be skipped for each of the targets.")
 
-	cmd.PersistentFlags().Bool(constants.LockAllWhoFlag, false, "If set, the 'who' of all access providers imported into Raito Cloud will be locked.")
+	cmd.PersistentFlags().Bool(constants.LockAllWhoFlag, false, "If set, the 'who' (users and groups) of all access providers imported into Raito Cloud will be locked.")
+	cmd.PersistentFlags().Bool(constants.LockAllInheritanceFlag, false, "If set, the inheritance of all access providers imported into Raito Cloud will be locked.")
 	cmd.PersistentFlags().Bool(constants.LockAllWhatFlag, false, "If set, the 'what' of all access providers imported into Raito Cloud will be locked.")
 	cmd.PersistentFlags().Bool(constants.LockAllNamesFlag, false, "If set, the names of all access providers imported into Raito Cloud will be locked.")
 	cmd.PersistentFlags().Bool(constants.LockAllDeleteFlag, false, "If set, the deletion of all access providers imported into Raito Cloud will be locked.")
@@ -74,6 +75,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.SkipDataAccessSyncFlag, cmd)
 	BindFlag(constants.SkipDataUsageSyncFlag, cmd)
 	BindFlag(constants.LockAllWhoFlag, cmd)
+	BindFlag(constants.LockAllInheritanceFlag, cmd)
 	BindFlag(constants.LockAllWhatFlag, cmd)
 	BindFlag(constants.LockAllNamesFlag, cmd)
 	BindFlag(constants.LockAllDeleteFlag, cmd)

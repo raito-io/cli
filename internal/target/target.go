@@ -318,6 +318,7 @@ func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) *types.BaseTargetC
 		SkipDataAccessSync:    viper.GetBool(constants.SkipDataAccessSyncFlag),
 		SkipDataUsageSync:     viper.GetBool(constants.SkipDataUsageSyncFlag),
 		LockAllWho:            viper.GetBool(constants.LockAllWhoFlag),
+		LockAllInheritance:    viper.GetBool(constants.LockAllInheritanceFlag),
 		LockAllWhat:           viper.GetBool(constants.LockAllWhatFlag),
 		LockAllNames:          viper.GetBool(constants.LockAllNamesFlag),
 		LockAllDelete:         viper.GetBool(constants.LockAllDeleteFlag),

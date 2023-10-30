@@ -25,20 +25,22 @@ func buildEnricherConfigFromMap(params map[string]interface{}) (*types.EnricherC
 	}
 
 	for k, v := range params {
-		if _, f := constants.KnownFlags[k]; !f {
-			cv, err := iconfig.HandleField(v, reflect.String)
-			if err != nil {
-				return nil, err
-			}
+		if _, f := constants.KnownFlags[k]; f {
+			continue
+		}
 
-			stringValue, err := argumentToString(cv)
-			if err != nil {
-				return nil, err
-			}
+		cv, err := iconfig.HandleField(v, reflect.String)
+		if err != nil {
+			return nil, err
+		}
 
-			if stringValue != nil {
-				eConfig.Parameters[k] = *stringValue
-			}
+		stringValue, err := argumentToString(cv)
+		if err != nil {
+			return nil, err
+		}
+
+		if stringValue != nil {
+			eConfig.Parameters[k] = *stringValue
 		}
 	}
 

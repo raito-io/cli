@@ -206,20 +206,22 @@ func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]in
 	tConfig.Parameters = make(map[string]string)
 
 	for k, v := range target {
-		if _, f := constants.KnownFlags[k]; !f {
-			cv, err2 := iconfig.HandleField(v, reflect.String)
-			if err2 != nil {
-				return nil, err2
-			}
+		if _, f := constants.KnownFlags[k]; f {
+			continue
+		}
 
-			stringValue, err2 := argumentToString(cv)
-			if err2 != nil {
-				return nil, err2
-			}
+		cv, err2 := iconfig.HandleField(v, reflect.String)
+		if err2 != nil {
+			return nil, err2
+		}
 
-			if stringValue != nil {
-				tConfig.Parameters[k] = *stringValue
-			}
+		stringValue, err2 := argumentToString(cv)
+		if err2 != nil {
+			return nil, err2
+		}
+
+		if stringValue != nil {
+			tConfig.Parameters[k] = *stringValue
 		}
 	}
 

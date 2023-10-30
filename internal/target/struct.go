@@ -1,12 +1,14 @@
 package target
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/aws/smithy-go/ptr"
+
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
 )
@@ -99,19 +101,24 @@ func toCamelInitCase(s string, initCase bool) string {
 	return n.String()
 }
 
-func argumentToString(arg interface{}) *string {
+func argumentToString(arg interface{}) (*string, error) {
 	if arg == nil {
-		return nil
+		return nil, nil
 	}
 
 	switch v := arg.(type) {
 	case string:
-		return &v
+		return &v, nil
 	case int:
-		return ptr.String(strconv.Itoa(v))
+		return ptr.String(strconv.Itoa(v)), nil
 	case bool:
-		return ptr.String(strconv.FormatBool(v))
-	}
+		return ptr.String(strconv.FormatBool(v)), nil
+	default:
+		jsonb, err := json.Marshal(arg)
+		if err != nil {
+			return nil, err
+		}
 
-	return nil
+		return ptr.String(string(jsonb)), nil
+	}
 }

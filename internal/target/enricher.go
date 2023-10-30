@@ -31,7 +31,11 @@ func buildEnricherConfigFromMap(params map[string]interface{}) (*types.EnricherC
 				return nil, err
 			}
 
-			stringValue := argumentToString(cv)
+			stringValue, err := argumentToString(cv)
+			if err != nil {
+				return nil, err
+			}
+
 			if stringValue != nil {
 				eConfig.Parameters[k] = *stringValue
 			}

@@ -212,7 +212,11 @@ func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]in
 				return nil, err2
 			}
 
-			stringValue := argumentToString(cv)
+			stringValue, err2 := argumentToString(cv)
+			if err2 != nil {
+				return nil, err2
+			}
+
 			if stringValue != nil {
 				tConfig.Parameters[k] = *stringValue
 			}

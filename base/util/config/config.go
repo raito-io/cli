@@ -1,6 +1,9 @@
 package config
 
-import "strconv"
+import (
+	"encoding/json"
+	"strconv"
+)
 
 // GetBool returns the boolean value with the given key in the Parameters map. If not found, or the value cannot be converted to a boolean, false is returned.
 func (c *ConfigMap) GetBool(key string) bool {
@@ -54,4 +57,13 @@ func (c *ConfigMap) GetIntWithDefault(key string, defaultValue int) int {
 	}
 
 	return defaultValue
+}
+
+func (c *ConfigMap) Unmarshal(key string, value interface{}) (bool, error) {
+	config := c.Parameters
+	if v, ok := config[key]; ok {
+		return true, json.Unmarshal([]byte(v), value)
+	}
+
+	return false, nil
 }

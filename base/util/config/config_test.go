@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetBool(t *testing.T) {
@@ -68,4 +69,44 @@ func TestGetInt(t *testing.T) {
 	assert.Equal(t, 555, c.GetInt("int-real"))
 	assert.Equal(t, 777, c.GetIntWithDefault("int64", 666))
 	assert.Equal(t, 777, c.GetInt("int64"))
+}
+
+func TestUnMarshal(t *testing.T) {
+	c := ConfigMap{
+		Parameters: map[string]string{
+			"int-ok":            "123",
+			"int-empty":         "",
+			"int-wrong":         "wrong",
+			"int-real":          "555",
+			"int64":             "777",
+			"marshalled-map":    "{\"a\":\"b\"}",
+			"marshalled-struct": "{\"a\":\"b\"}",
+			"marshalled-array":  "[\"a\",\"b\"]",
+		},
+	}
+
+	mapValue := make(map[string]string)
+	structValue := struct {
+		A string `json:"a"`
+	}{}
+	arrayValue := []string{}
+
+	found, err := c.Unmarshal("marshalled-map", &mapValue)
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, map[string]string{"a": "b"}, mapValue)
+
+	found, err = c.Unmarshal("marshalled-struct", &structValue)
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, "b", structValue.A)
+
+	found, err = c.Unmarshal("marshalled-array", &arrayValue)
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, []string{"a", "b"}, arrayValue)
+
+	found, err = c.Unmarshal("not-exists", &mapValue)
+	require.NoError(t, err)
+	require.False(t, found)
 }

@@ -7,8 +7,8 @@ toolchain go1.21.0
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/aws/aws-sdk-go-v2 v1.21.2
-	github.com/aws/aws-sdk-go-v2/config v1.19.0
-	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.27.2
+	github.com/aws/aws-sdk-go-v2/config v1.19.1
+	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.28.0
 	github.com/aws/smithy-go v1.15.0
 	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
 	github.com/bcicen/jstream v1.0.1
@@ -29,7 +29,7 @@ require (
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v2 v2.4.0
-	nhooyr.io/websocket v1.8.9
+	nhooyr.io/websocket v1.8.10
 )
 
 require (

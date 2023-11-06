@@ -313,7 +313,7 @@ func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
 }
 
 func TestBuildParameterMapFromArguments(t *testing.T) {
-	params := buildParameterMapFromArguments([]string{"--bool-val", "--string-val=blah", "--another-one", "moremoremore"})
+	params := BuildParameterMapFromArguments([]string{"--bool-val", "--string-val=blah", "--another-one", "moremoremore"})
 	assert.Equal(t, 3, len(params))
 	assert.Equal(t, "TRUE", params["bool-val"])
 	assert.Equal(t, "blah", params["string-val"])

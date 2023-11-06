@@ -7,9 +7,11 @@ import (
 	"os"
 
 	"github.com/bcicen/jstream"
+
 	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/tag"
+	"github.com/raito-io/cli/base/util/config"
 )
 
 type DataObjectWriter interface {
@@ -26,19 +28,28 @@ type DataObjectEnricherI interface {
 
 	// Close allows the plugin to close any connections and make sure that all data objects still in the buffer are handled and written to the DataObjectWriter.
 	// The first return parameter is the number of data objects that were actually enriched.
+	// Deprecated: use a DataObjectEnricherFactoryFn with correct cleanup function instead.
 	Close(ctx context.Context) (int, error)
 }
 
+type DataObjectEnricherFactoryFn func(ctx context.Context, config *config.ConfigMap) (DataObjectEnricherI, func(), error)
+
 func DataObjectEnricher(enricher DataObjectEnricherI) *dataObjectEnricherFunction {
+	return DataObjectEnricherFactory(func(_ context.Context, _ *config.ConfigMap) (DataObjectEnricherI, func(), error) {
+		return enricher, func() {}, nil
+	})
+}
+
+func DataObjectEnricherFactory(enricher DataObjectEnricherFactoryFn) *dataObjectEnricherFunction {
 	return &dataObjectEnricherFunction{
-		enricher: enricher,
+		enricher: NewSyncFactory(enricher),
 	}
 }
 
 type dataObjectEnricherFunction struct {
 	data_object_enricher.DataObjectEnricherVersionHandler
 
-	enricher DataObjectEnricherI
+	enricher SyncFactory[DataObjectEnricherI]
 }
 
 func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_object_enricher.DataObjectEnricherConfig) (*data_object_enricher.DataObjectEnricherResult, error) {
@@ -54,7 +65,12 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 
 	logger.Info("File creator initialized")
 
-	err = f.enricher.Initialize(ctx, fileCreator, config.ConfigMap.Parameters)
+	enricher, err := f.enricher.Create(ctx, config.ConfigMap)
+	if err != nil {
+		return nil, fmt.Errorf("create enricher: %w", err)
+	}
+
+	err = enricher.Initialize(ctx, fileCreator, config.ConfigMap.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +96,7 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, err2.Error())
 		}
 
-		err2 = f.enricher.Enrich(ctx, do)
+		err2 = enricher.Enrich(ctx, do)
 		if err2 != nil {
 			return nil, fmt.Errorf("unable to enrich data object (%d): %s", dataObjectsRead, err2.Error())
 		}
@@ -88,7 +104,7 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 		dataObjectsRead++
 	}
 
-	enrichmentCount, err := f.enricher.Close(ctx)
+	enrichmentCount, err := enricher.Close(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +116,10 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 	return &data_object_enricher.DataObjectEnricherResult{
 		Enriched: int32(enrichmentCount),
 	}, nil
+}
+
+func (f *dataObjectEnricherFunction) Close() {
+	f.enricher.Close()
 }
 
 func createDataObjectFromRow(row *jstream.MetaValue) (*data_source.DataObject, error) {

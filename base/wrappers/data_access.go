@@ -31,9 +31,17 @@ type AccessProviderSyncer interface {
 	SyncAccessProviderToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, accessProviderFeedbackHandler AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
 }
 
+type AccessProviderSyncFactoryFn func(ctx context.Context, configMap *config.ConfigMap) (AccessProviderSyncer, func(), error)
+
 func DataAccessSync(syncer AccessProviderSyncer, configOpt ...func(config *access_provider.AccessSyncConfig)) *DataAccessSyncFunction {
+	return DataAccessSyncFactory(func(_ context.Context, _ *config.ConfigMap) (AccessProviderSyncer, func(), error) {
+		return syncer, func() {}, nil
+	}, configOpt...)
+}
+
+func DataAccessSyncFactory(syncer AccessProviderSyncFactoryFn, configOpt ...func(config *access_provider.AccessSyncConfig)) *DataAccessSyncFunction {
 	obj := &DataAccessSyncFunction{
-		Syncer:                           syncer,
+		Syncer:                           NewSyncFactory(syncer),
 		accessFileCreatorFactory:         sync_from_target.NewAccessProviderFileCreator,
 		accessFeedbackFileCreatorFactory: sync_to_target.NewFeedbackFileCreator,
 		accessProviderParserFactory:      sync_to_target.NewAccessProviderFileParser,
@@ -51,7 +59,7 @@ func DataAccessSync(syncer AccessProviderSyncer, configOpt ...func(config *acces
 type DataAccessSyncFunction struct {
 	access_provider.AccessSyncerVersionHandler
 
-	Syncer                           AccessProviderSyncer
+	Syncer                           SyncFactory[AccessProviderSyncer]
 	accessFileCreatorFactory         func(config *access_provider.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error)
 	accessFeedbackFileCreatorFactory func(config *access_provider.AccessSyncToTarget) (sync_to_target.SyncFeedbackFileCreator, error)
 	accessProviderParserFactory      func(config *access_provider.AccessSyncToTarget) (sync_to_target.AccessProviderImportFileParser, error)
@@ -75,8 +83,13 @@ func (s *DataAccessSyncFunction) SyncFromTarget(ctx context.Context, config *acc
 	}
 	defer fileCreator.Close()
 
+	syncer, err := s.Syncer.Create(ctx, config.ConfigMap)
+	if err != nil {
+		return nil, err
+	}
+
 	sec, err := timedExecution(func() error {
-		return s.Syncer.SyncAccessProvidersFromTarget(ctx, fileCreator, config.ConfigMap)
+		return syncer.SyncAccessProvidersFromTarget(ctx, fileCreator, config.ConfigMap)
 	})
 
 	if err != nil {
@@ -99,6 +112,11 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 
 	logger.Info("Starting data access synchronisation to target")
 
+	syncer, err := s.Syncer.Create(ctx, config.ConfigMap)
+	if err != nil {
+		return nil, err
+	}
+
 	accessProviderParser, err := s.accessProviderParserFactory(config)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -116,7 +134,7 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 
 	if accessAsCode {
 		sec, err = timedExecution(func() error {
-			return s.Syncer.SyncAccessAsCodeToTarget(ctx, dar, prefix, config.ConfigMap)
+			return syncer.SyncAccessAsCodeToTarget(ctx, dar, prefix, config.ConfigMap)
 		})
 	} else {
 		feedbackFile, err2 := s.accessFeedbackFileCreatorFactory(config)
@@ -126,7 +144,7 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 		defer feedbackFile.Close()
 
 		sec, err = timedExecution(func() error {
-			return s.Syncer.SyncAccessProviderToTarget(ctx, dar, feedbackFile, config.ConfigMap)
+			return syncer.SyncAccessProviderToTarget(ctx, dar, feedbackFile, config.ConfigMap)
 		})
 	}
 
@@ -143,4 +161,8 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 
 func (s *DataAccessSyncFunction) SyncConfig(_ context.Context) (*access_provider.AccessSyncConfig, error) {
 	return &s.config, nil
+}
+
+func (s *DataAccessSyncFunction) Close() {
+	s.Syncer.Close()
 }

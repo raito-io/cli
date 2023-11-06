@@ -19,9 +19,17 @@ type DataUsageSyncer interface {
 	SyncDataUsage(ctx context.Context, fileCreator DataUsageStatementHandler, configParams *config.ConfigMap) error
 }
 
+type DataUsageSyncFactoryFn func(ctx context.Context, configParams *config.ConfigMap) (DataUsageSyncer, func(), error)
+
 func DataUsageSync(syncer DataUsageSyncer) *dataUsageSyncFunction {
+	return DataUsageSyncFactory(func(_ context.Context, _ *config.ConfigMap) (DataUsageSyncer, func(), error) {
+		return syncer, func() {}, nil
+	})
+}
+
+func DataUsageSyncFactory(syncer DataUsageSyncFactoryFn) *dataUsageSyncFunction {
 	return &dataUsageSyncFunction{
-		syncer:             syncer,
+		syncer:             NewSyncFactory(syncer),
 		fileCreatorFactory: data_usage.NewDataUsageFileCreator,
 	}
 }
@@ -29,7 +37,7 @@ func DataUsageSync(syncer DataUsageSyncer) *dataUsageSyncFunction {
 type dataUsageSyncFunction struct {
 	data_usage.DataUsageSyncerVersionHandler
 
-	syncer             DataUsageSyncer
+	syncer             SyncFactory[DataUsageSyncer]
 	fileCreatorFactory func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error)
 }
 
@@ -50,8 +58,13 @@ func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_
 
 	defer fileCreator.Close()
 
+	syncer, err := s.syncer.Create(ctx, config.ConfigMap)
+	if err != nil {
+		return nil, err
+	}
+
 	sec, err := timedExecution(func() error {
-		return s.syncer.SyncDataUsage(ctx, fileCreator, config.ConfigMap)
+		return syncer.SyncDataUsage(ctx, fileCreator, config.ConfigMap)
 	})
 
 	if err != nil {
@@ -64,4 +77,8 @@ func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_
 	return &data_usage.DataUsageSyncResult{
 		Statements: int32(fileCreator.GetStatementCount()),
 	}, nil
+}
+
+func (s *dataUsageSyncFunction) Close() {
+	s.syncer.Close()
 }

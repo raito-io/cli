@@ -23,9 +23,17 @@ type DataSourceSyncer interface {
 	GetDataSourceMetaData(ctx context.Context, configParams *config.ConfigMap) (*data_source.MetaData, error)
 }
 
-func DataSourceSync(syncer DataSourceSyncer) *dataSourceSyncFunction {
+type DataSourceSyncFactoryFn func(ctx context.Context, configParams *config.ConfigMap) (DataSourceSyncer, func(), error)
+
+func DataSourceSync(syncer DataSourceSyncer) data_source.DataSourceSyncer {
+	return DataSourceSyncFactory(func(_ context.Context, _ *config.ConfigMap) (DataSourceSyncer, func(), error) {
+		return syncer, func() {}, nil
+	})
+}
+
+func DataSourceSyncFactory(syncer DataSourceSyncFactoryFn) data_source.DataSourceSyncer {
 	return &dataSourceSyncFunction{
-		syncer:             syncer,
+		syncer:             NewSyncFactory(syncer),
 		fileCreatorFactory: data_source.NewDataSourceFileCreator,
 	}
 }
@@ -33,7 +41,7 @@ func DataSourceSync(syncer DataSourceSyncer) *dataSourceSyncFunction {
 type dataSourceSyncFunction struct {
 	data_source.DataSourceSyncerVersionHandler
 
-	syncer             DataSourceSyncer
+	syncer             SyncFactory[DataSourceSyncer]
 	fileCreatorFactory func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error)
 }
 
@@ -55,7 +63,12 @@ func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *dat
 
 	start := time.Now()
 
-	err = s.syncer.SyncDataSource(ctx, fileCreator, config.ConfigMap)
+	syncer, err := s.syncer.Create(ctx, config.ConfigMap)
+	if err != nil {
+		return nil, err
+	}
+
+	err = syncer.SyncDataSource(ctx, fileCreator, config.ConfigMap)
 	if err != nil {
 		return nil, err
 	}
@@ -70,5 +83,14 @@ func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *dat
 }
 
 func (s *dataSourceSyncFunction) GetDataSourceMetaData(ctx context.Context, configParams *config.ConfigMap) (*data_source.MetaData, error) {
-	return s.syncer.GetDataSourceMetaData(ctx, configParams)
+	syncer, err := s.syncer.Create(ctx, configParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return syncer.GetDataSourceMetaData(ctx, configParams)
+}
+
+func (s *dataSourceSyncFunction) Close() {
+	s.syncer.Close()
 }

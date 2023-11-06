@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/raito-io/cli/base/data_source"
 	ds_mocks "github.com/raito-io/cli/base/data_source/mocks"
@@ -29,7 +30,7 @@ func TestDataSourceSyncFunction_SyncDataSource(t *testing.T) {
 	syncerMock.EXPECT().SyncDataSource(mock.Anything, fileCreatorMock, config.ConfigMap).Return(nil).Once()
 
 	syncFunction := dataSourceSyncFunction{
-		syncer: syncerMock,
+		syncer: NewSyncFactory(NewDummySyncFactoryFn[DataSourceSyncer](syncerMock)),
 		fileCreatorFactory: func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error) {
 			return fileCreatorMock, nil
 		},
@@ -54,7 +55,7 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorOnFile(t *testing.T) {
 	syncerMock := NewMockDataSourceSyncer(t)
 
 	syncFunction := dataSourceSyncFunction{
-		syncer: syncerMock,
+		syncer: NewSyncFactory(NewDummySyncFactoryFn[DataSourceSyncer](syncerMock)),
 		fileCreatorFactory: func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error) {
 			return nil, errors.New("BOOM!")
 		},
@@ -85,7 +86,7 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorSync(t *testing.T) {
 	syncerMock.EXPECT().SyncDataSource(mock.Anything, fileCreatorMock, config.ConfigMap).Return(errors.New("BOOM!")).Once()
 
 	syncFunction := dataSourceSyncFunction{
-		syncer: syncerMock,
+		syncer: NewSyncFactory(NewDummySyncFactoryFn[DataSourceSyncer](syncerMock)),
 		fileCreatorFactory: func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error) {
 			return fileCreatorMock, nil
 		},
@@ -104,8 +105,9 @@ func TestDataSourceSyncFunctionWrapper(t *testing.T) {
 	syncerMock := NewMockDataSourceSyncer(t)
 
 	//When
-	syncFunction := DataSourceSync(syncerMock)
+	syncFunction, err := DataSourceSync(syncerMock).(*dataSourceSyncFunction).syncer.Create(context.Background(), &config2.ConfigMap{})
 
 	//Then
-	assert.Equal(t, syncerMock, syncFunction.syncer)
+	require.NoError(t, err)
+	assert.Equal(t, syncerMock, syncFunction)
 }

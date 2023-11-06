@@ -22,9 +22,7 @@ type DataUsageSyncer interface {
 type DataUsageSyncFactoryFn func(ctx context.Context, configParams *config.ConfigMap) (DataUsageSyncer, func(), error)
 
 func DataUsageSync(syncer DataUsageSyncer) *dataUsageSyncFunction {
-	return DataUsageSyncFactory(func(_ context.Context, _ *config.ConfigMap) (DataUsageSyncer, func(), error) {
-		return syncer, func() {}, nil
-	})
+	return DataUsageSyncFactory(NewDummySyncFactoryFn(syncer))
 }
 
 func DataUsageSyncFactory(syncer DataUsageSyncFactoryFn) *dataUsageSyncFunction {

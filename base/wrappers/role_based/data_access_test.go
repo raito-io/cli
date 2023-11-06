@@ -9,6 +9,7 @@ import (
 	"github.com/aws/smithy-go/ptr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/raito-io/cli/base/access_provider/sync_from_target/mocks"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
@@ -346,6 +347,8 @@ func TestAccessProviderRoleSync(t *testing.T) {
 	syncer := AccessProviderRoleSync(syncerMock, nameConstraints)
 
 	//Then
-	actualSyncer := syncer.Syncer.(*accessProviderRoleSyncFunction)
-	assert.Equal(t, syncerMock, actualSyncer.syncer)
+	actualSyncer, err := syncer.Syncer.Create(context.Background(), &config.ConfigMap{})
+	require.NoError(t, err)
+
+	assert.Equal(t, syncerMock, actualSyncer.(*accessProviderRoleSyncFunction).syncer)
 }

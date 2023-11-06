@@ -34,9 +34,7 @@ type AccessProviderSyncer interface {
 type AccessProviderSyncFactoryFn func(ctx context.Context, configMap *config.ConfigMap) (AccessProviderSyncer, func(), error)
 
 func DataAccessSync(syncer AccessProviderSyncer, configOpt ...func(config *access_provider.AccessSyncConfig)) *DataAccessSyncFunction {
-	return DataAccessSyncFactory(func(_ context.Context, _ *config.ConfigMap) (AccessProviderSyncer, func(), error) {
-		return syncer, func() {}, nil
-	}, configOpt...)
+	return DataAccessSyncFactory(NewDummySyncFactoryFn(syncer), configOpt...)
 }
 
 func DataAccessSyncFactory(syncer AccessProviderSyncFactoryFn, configOpt ...func(config *access_provider.AccessSyncConfig)) *DataAccessSyncFunction {

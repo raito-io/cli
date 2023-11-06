@@ -20,6 +20,12 @@ func NewSyncFactory[S any](factory func(ctx context.Context, configParams *confi
 	}
 }
 
+func NewDummySyncFactoryFn[S any](syncer S) func(ctx context.Context, configParams *config.ConfigMap) (S, func(), error) {
+	return func(_ context.Context, _ *config.ConfigMap) (S, func(), error) {
+		return syncer, func() {}, nil
+	}
+}
+
 func (s *SyncFactory[S]) Create(ctx context.Context, configParams *config.ConfigMap) (S, error) {
 	if !s.initialized {
 		var err error

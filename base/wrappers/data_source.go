@@ -26,9 +26,7 @@ type DataSourceSyncer interface {
 type DataSourceSyncFactoryFn func(ctx context.Context, configParams *config.ConfigMap) (DataSourceSyncer, func(), error)
 
 func DataSourceSync(syncer DataSourceSyncer) data_source.DataSourceSyncer {
-	return DataSourceSyncFactory(func(_ context.Context, _ *config.ConfigMap) (DataSourceSyncer, func(), error) {
-		return syncer, func() {}, nil
-	})
+	return DataSourceSyncFactory(NewDummySyncFactoryFn(syncer))
 }
 
 func DataSourceSyncFactory(syncer DataSourceSyncFactoryFn) data_source.DataSourceSyncer {

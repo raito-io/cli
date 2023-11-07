@@ -302,13 +302,14 @@ func getLatestVersion(matches []string) string {
 }
 
 func parsePluginRequest(connector string, version string) (*pluginRequest, error) {
-	if strings.Count(connector, "/") != 1 {
-		return nil, errors.New("the connector name is expected to have exactly 1 slash (/) in it")
+	slashCount := strings.Count(connector, "/")
+	if slashCount != 1 && slashCount != 2 {
+		return nil, errors.New("the connector name is expected to have exactly 1 or 2 slashes (/) in it")
 	}
 
 	parts := strings.Split(connector, "/")
-	if len(parts) != 2 {
-		return nil, errors.New("the connector name should be in the format <group>/<name>")
+	if len(parts) < 2 || len(parts) > 3 {
+		return nil, errors.New("the connector name should be in the format <group>/<name>[/<service>]")
 	}
 
 	if parts[0] == "" {
@@ -324,7 +325,12 @@ func parsePluginRequest(connector string, version string) (*pluginRequest, error
 		return nil, errors.New("the connector group should only contain alphanumeric characters and dash (-) characters (not at the start or the end)")
 	}
 
-	name := parts[1]
+	repositoryName := parts[1]
+	if !validateName(repositoryName) {
+		return nil, errors.New("the connector name should only contain alphanumeric characters and dash (-) characters (not at the start or the end)")
+	}
+
+	name := strings.Join(parts[1:], "-")
 	if !validateName(name) {
 		return nil, errors.New("the connector name should only contain alphanumeric characters and dash (-) characters (not at the start or the end)")
 	}
@@ -343,9 +349,10 @@ func parsePluginRequest(connector string, version string) (*pluginRequest, error
 	}
 
 	return &pluginRequest{
-		Name:    name,
-		Group:   group,
-		Version: version,
+		Name:           name,
+		RepositoryName: repositoryName,
+		Group:          group,
+		Version:        version,
 	}, nil
 }
 
@@ -459,9 +466,10 @@ var handshakeConfig = plugin.HandshakeConfig{
 }
 
 type pluginRequest struct {
-	Group   string
-	Name    string
-	Version string
+	Group          string
+	RepositoryName string
+	Name           string
+	Version        string
 }
 
 func (r *pluginRequest) IsLatest() bool {

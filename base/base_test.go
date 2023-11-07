@@ -17,7 +17,7 @@ func TestRegisterIdentityStoreService(t *testing.T) {
 	Logger()
 	issi := identityStoryPlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
-	pluginMap, err := buildPluginMap(&issi, &isi)
+	pluginMap, _, err := buildPluginMap(&issi, &isi)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
@@ -30,7 +30,7 @@ func TestRegisterDataSourceService(t *testing.T) {
 	Logger()
 	dssi := dataSourcePlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
-	pluginMap, err := buildPluginMap(&dssi, &isi)
+	pluginMap, _, err := buildPluginMap(&dssi, &isi)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
@@ -42,7 +42,7 @@ func TestRegisterAccessSyncService(t *testing.T) {
 	Logger()
 	dasi := accessSyncPlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
-	pluginMap, err := buildPluginMap(&dasi, &isi)
+	pluginMap, _, err := buildPluginMap(&dasi, &isi)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
@@ -55,7 +55,7 @@ func TestRegisterDoubleDataAccessService(t *testing.T) {
 	das1 := accessSyncPlugin{}
 	das2 := accessSyncPlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
-	pluginMap, err := buildPluginMap(&das1, &das2, &isi)
+	pluginMap, _, err := buildPluginMap(&das1, &das2, &isi)
 
 	assert.NotNil(t, err)
 	assert.Nil(t, pluginMap)
@@ -64,7 +64,7 @@ func TestRegisterDoubleDataAccessService(t *testing.T) {
 func TestRegisterNoServices(t *testing.T) {
 	Logger()
 	a := another{}
-	pluginMap, err := buildPluginMap(&a)
+	pluginMap, _, err := buildPluginMap(&a)
 
 	assert.NotNil(t, err)
 	assert.Nil(t, pluginMap)
@@ -75,7 +75,7 @@ func TestRegisterIgnoreNoService(t *testing.T) {
 	das1 := accessSyncPlugin{}
 	a := another{}
 	isi := plugin.UnimplementedInfoServiceServer{}
-	pluginMap, err := buildPluginMap(&a, &das1, &isi)
+	pluginMap, _, err := buildPluginMap(&a, &das1, &isi)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
@@ -85,7 +85,7 @@ func TestRegisterIgnoreNoService(t *testing.T) {
 func TestRegisterNoInfoPlugin(t *testing.T) {
 	Logger()
 	das1 := accessSyncPlugin{}
-	pluginMap, err := buildPluginMap(&das1)
+	pluginMap, _, err := buildPluginMap(&das1)
 
 	assert.NotNil(t, err)
 	assert.Nil(t, pluginMap)

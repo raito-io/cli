@@ -20,6 +20,10 @@ import (
 var logger hclog.Logger
 var onlyOnce sync.Once
 
+type Closable interface {
+	Close()
+}
+
 // Logger creates a new logger that should be used as a basis for all logging in the plugin.
 // So it's advised to call this method first and store the logger in a (global) variable.
 func Logger() hclog.Logger {
@@ -32,44 +36,46 @@ func Logger() hclog.Logger {
 	return logger
 }
 
-func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, error) {
+func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error) {
 	var pluginMap = plugin.PluginSet{}
 
 	infoFound := false
+
+	cleanupFns := make([]func(), 0, 6)
 
 	for _, plugin := range pluginImpls {
 		switch p := plugin.(type) {
 		case identity_store.IdentityStoreSyncer:
 			if _, f := pluginMap[identity_store.IdentityStoreSyncerName]; f {
-				return nil, errors.New("multiple implementations for IdentityStoreSyncer Plugin found. There should be only one")
+				return nil, func() {}, errors.New("multiple implementations for IdentityStoreSyncer Plugin found. There should be only one")
 			}
 			pluginMap[identity_store.IdentityStoreSyncerName] = &identity_store.IdentityStoreSyncerPlugin{Impl: p}
 
 			logger.Debug("Registered IdentityStoreSyncer Plugin")
 		case data_source.DataSourceSyncer:
 			if _, f := pluginMap[data_source.DataSourceSyncerName]; f {
-				return nil, errors.New("multiple implementations for DataSourceSyncer Plugin found. There should be only one")
+				return nil, func() {}, errors.New("multiple implementations for DataSourceSyncer Plugin found. There should be only one")
 			}
 			pluginMap[data_source.DataSourceSyncerName] = &data_source.DataSourceSyncerPlugin{Impl: p}
 
 			logger.Debug("Registered DataSourceSyncer Plugin")
 		case access_provider.AccessSyncer:
 			if _, f := pluginMap[access_provider.AccessSyncerName]; f {
-				return nil, errors.New("multiple implementations for AccessSyncer Plugin found. There should be only one")
+				return nil, func() {}, errors.New("multiple implementations for AccessSyncer Plugin found. There should be only one")
 			}
 			pluginMap[access_provider.AccessSyncerName] = &access_provider.AccessSyncerPlugin{Impl: p}
 
 			logger.Debug("Registered AccessSyncer Plugin")
 		case data_usage.DataUsageSyncer:
 			if _, f := pluginMap[data_usage.DataUsageSyncerName]; f {
-				return nil, errors.New("multiple implementations for DataUsageSyncer Plugin found. There should be only one")
+				return nil, func() {}, errors.New("multiple implementations for DataUsageSyncer Plugin found. There should be only one")
 			}
 			pluginMap[data_usage.DataUsageSyncerName] = &data_usage.DataUsageSyncerPlugin{Impl: p}
 
 			logger.Debug("Registered DataUsageSyncer Plugin")
 		case plugin2.InfoServiceServer:
 			if _, f := pluginMap[plugin2.InfoName]; f {
-				return nil, errors.New("multiple implementation for Info Plugin found. There should be only one")
+				return nil, func() {}, errors.New("multiple implementation for Info Plugin found. There should be only one")
 			}
 			pluginMap[plugin2.InfoName] = &plugin2.InfoPlugin{Impl: p}
 
@@ -78,23 +84,33 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, error) {
 			infoFound = true
 		case data_object_enricher.DataObjectEnricher:
 			if _, f := pluginMap[data_object_enricher.DataObjectEnricherName]; f {
-				return nil, errors.New("multiple implementations for DataObjectEnricher Plugin found. There should be only one")
+				return nil, func() {}, errors.New("multiple implementations for DataObjectEnricher Plugin found. There should be only one")
 			}
 			pluginMap[data_object_enricher.DataObjectEnricherName] = &data_object_enricher.DataObjectEnricherPlugin{Impl: p}
 
 			logger.Debug("Registered DataObjectEnricher Plugin")
 		}
+
+		if c, ok := plugin.(Closable); ok {
+			cleanupFns = append(cleanupFns, c.Close)
+		}
 	}
 
 	if len(pluginMap) == 0 {
-		return nil, errors.New("no plugin implementations found")
+		return nil, func() {}, errors.New("no plugin implementations found")
 	}
 
 	if !infoFound {
-		return nil, errors.New("no info plugin implementation found. This infoPlugin mandatory")
+		return nil, func() {}, errors.New("no info plugin implementation found. This infoPlugin mandatory")
 	}
 
-	return pluginMap, nil
+	cleanupFn := func() {
+		for _, f := range cleanupFns {
+			f()
+		}
+	}
+
+	return pluginMap, cleanupFn, nil
 }
 
 // RegisterPlugins takes a list of objects that implement the different plugin API interfaces.
@@ -103,10 +119,12 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, error) {
 func RegisterPlugins(pluginImpls ...interface{}) error {
 	Logger()
 
-	pluginMap, err := buildPluginMap(pluginImpls...)
+	pluginMap, cleanup, err := buildPluginMap(pluginImpls...)
 	if err != nil {
 		return err
 	}
+
+	defer cleanup()
 
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: handshakeConfig,

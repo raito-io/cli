@@ -294,7 +294,7 @@ func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*typ
 		Domain:     domain.(string),
 	}
 
-	config.Parameters = buildParameterMapFromArguments(otherArgs)
+	config.Parameters = BuildParameterMapFromArguments(otherArgs)
 
 	return &config, nil
 }
@@ -425,7 +425,7 @@ func WithExternalTrigger() func(o *Options) {
 	}
 }
 
-func buildParameterMapFromArguments(args []string) map[string]string {
+func BuildParameterMapFromArguments(args []string) map[string]string {
 	params := make(map[string]string)
 
 	for i := 0; i < len(args); i++ {

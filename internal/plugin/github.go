@@ -11,9 +11,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/spf13/viper"
+
 	"github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/spf13/viper"
 )
 
 // downloadAndExtractPluginFromGitHubRepo looks for the plugin with the given information and stores it in the 'targetPath'.
@@ -167,7 +168,7 @@ func downloadGitHubAsset(pluginRequest *pluginRequest, url string, logger hclog.
 
 // getGitHubReleaseURL builds the github URL to fetch the assets of a specific release (either latest or a given version).
 func getGitHubReleaseURL(pluginRequest *pluginRequest) string {
-	url := "https://api.github.com/repos/" + pluginRequest.Group + "/" + pluginRequest.Name + "/releases/"
+	url := "https://api.github.com/repos/" + pluginRequest.Group + "/" + pluginRequest.RepositoryName + "/releases/"
 	if pluginRequest.IsLatest() {
 		url += "latest"
 	} else {

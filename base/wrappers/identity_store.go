@@ -20,9 +20,15 @@ type IdentityStoreSyncer interface {
 	GetIdentityStoreMetaData(ctx context.Context, configParams *config.ConfigMap) (*identity_store.MetaData, error)
 }
 
+type IdentityStoreSyncerFactoryFn func(ctx context.Context, config *config.ConfigMap) (IdentityStoreSyncer, func(), error)
+
 func IdentityStoreSync(syncer IdentityStoreSyncer) *identityStoreSyncFunction {
+	return IdentityStoreSyncFactory(NewDummySyncFactoryFn(syncer))
+}
+
+func IdentityStoreSyncFactory(syncer IdentityStoreSyncerFactoryFn) *identityStoreSyncFunction {
 	return &identityStoreSyncFunction{
-		syncer:                 syncer,
+		syncer:                 NewSyncFactory(syncer),
 		identityHandlerFactory: identity_store.NewIdentityStoreFileCreator,
 	}
 }
@@ -30,7 +36,7 @@ func IdentityStoreSync(syncer IdentityStoreSyncer) *identityStoreSyncFunction {
 type identityStoreSyncFunction struct {
 	identity_store.IdentityStoreSyncerVersionHandler
 
-	syncer                 IdentityStoreSyncer
+	syncer                 SyncFactory[IdentityStoreSyncer]
 	identityHandlerFactory func(config *identity_store.IdentityStoreSyncConfig) (identity_store.IdentityStoreFileCreator, error)
 }
 
@@ -50,8 +56,13 @@ func (s *identityStoreSyncFunction) SyncIdentityStore(ctx context.Context, confi
 	}
 	defer fileCreator.Close()
 
+	syncer, err := s.syncer.Create(ctx, config.ConfigMap)
+	if err != nil {
+		return nil, err
+	}
+
 	sec, err := timedExecution(func() error {
-		return s.syncer.SyncIdentityStore(ctx, fileCreator, config.ConfigMap)
+		return syncer.SyncIdentityStore(ctx, fileCreator, config.ConfigMap)
 	})
 
 	if err != nil {
@@ -67,5 +78,14 @@ func (s *identityStoreSyncFunction) SyncIdentityStore(ctx context.Context, confi
 }
 
 func (s *identityStoreSyncFunction) GetIdentityStoreMetaData(ctx context.Context, configParams *config.ConfigMap) (*identity_store.MetaData, error) {
-	return s.syncer.GetIdentityStoreMetaData(ctx, configParams)
+	syncer, err := s.syncer.Create(ctx, configParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return syncer.GetIdentityStoreMetaData(ctx, configParams)
+}
+
+func (s *identityStoreSyncFunction) Close() {
+	s.syncer.Close()
 }

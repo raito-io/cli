@@ -24,12 +24,8 @@ type DataObjectEnricherI interface {
 	Initialize(ctx context.Context, dataObjectWriter DataObjectWriter, config map[string]string) error
 
 	// Enrich method receives every data object separately. The plugin can decide to skip or buffer things. All data objects must be written to the DataObjectWriter.
-	Enrich(ctx context.Context, dataObject *data_source.DataObject) error
-
-	// Close allows the plugin to close any connections and make sure that all data objects still in the buffer are handled and written to the DataObjectWriter.
-	// The first return parameter is the number of data objects that were actually enriched.
-	// Deprecated: use a DataObjectEnricherFactoryFn with correct cleanup function instead.
-	Close(ctx context.Context) (int, error)
+	// First argument indicates if the data object was enriched
+	Enrich(ctx context.Context, dataObject *data_source.DataObject) (bool, error)
 }
 
 type DataObjectEnricherFactoryFn func(ctx context.Context, config *config.ConfigMap) (DataObjectEnricherI, func(), error)
@@ -82,6 +78,8 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 		return nil, fmt.Errorf("unable to open input file %q: %s", config.InputFile, err.Error())
 	}
 
+	enrichmentCount := 0
+
 	decoder := jstream.NewDecoder(inputFile, 1)
 	for doRow := range decoder.Stream() {
 		logger.Info(fmt.Sprintf("Reading row %d", dataObjectsRead))
@@ -94,17 +92,16 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, err2.Error())
 		}
 
-		err2 = enricher.Enrich(ctx, do)
+		enriched, err2 := enricher.Enrich(ctx, do)
 		if err2 != nil {
 			return nil, fmt.Errorf("unable to enrich data object (%d): %s", dataObjectsRead, err2.Error())
 		}
 
-		dataObjectsRead++
-	}
+		if enriched {
+			enrichmentCount++
+		}
 
-	enrichmentCount, err := enricher.Close(ctx)
-	if err != nil {
-		return nil, err
+		dataObjectsRead++
 	}
 
 	if fileCreator.GetDataObjectCount() != dataObjectsRead {

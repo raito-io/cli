@@ -120,111 +120,132 @@ func executeRun(cmd *cobra.Command, args []string) {
 			os.Exit(0)
 		}
 	} else {
-		hclog.L().Info("Starting continuous synchronization.")
-		hclog.L().Info("Press 'ctrl+c' to stop the program.")
+		executeContinuousRun(ctx, executeSyncAtStartup, scheduler, baseConfig)
+	}
+}
 
-		cancelCtx, cancelFn := context.WithCancel(ctx)
+func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, scheduler cron.Schedule, baseConfig *types.BaseConfig) {
+	hclog.L().Info("Starting continuous synchronization.")
+	hclog.L().Info("Press 'ctrl+c' to stop the program.")
 
-		waitGroup := sync2.WaitGroup{}
+	cancelCtx, cancelFn := context.WithCancel(ctx)
 
-		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGUSR1, os.Interrupt)
+	waitGroup := sync2.WaitGroup{}
 
-		returnSignal := 0
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGUSR1, os.Interrupt)
 
-		waitGroup.Add(1)
+	returnSignal := 0
 
-		go func() {
-			defer waitGroup.Done()
+	waitGroup.Add(1)
 
-			cliTriggerCtx, cliTriggerCancel := context.WithCancel(cancelCtx)
-			cliTrigger, apUpdateTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig)
+	go func() {
+		defer waitGroup.Done()
 
-			defer func() {
-				cliTriggerCancel()
-				cliTrigger.Wait()
-				apUpdateTrigger.Close()
-			}()
+		cliTriggerCtx, cliTriggerCancel := context.WithCancel(cancelCtx)
+		cliTrigger, apUpdateTrigger, syncTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig)
 
-			it := 1
+		defer func() {
+			cliTriggerCancel()
+			cliTrigger.Wait()
+			apUpdateTrigger.Close()
+			syncTrigger.Close()
+		}()
 
-			if executeSyncAtStartup {
+		it := 1
+
+		if executeSyncAtStartup {
+			baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
+			if runErr := executeSingleRun(cancelCtx, baseConfig); runErr != nil {
+				baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
+			}
+
+			it++
+		}
+
+		timer := cronTimer(baseConfig.BaseLogger, nil, scheduler)
+		defer timer.Stop()
+
+		for {
+			select {
+			case <-timer.C:
+				cliTrigger.Reset()
+
 				baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
 				if runErr := executeSingleRun(cancelCtx, baseConfig); runErr != nil {
 					baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
 				}
 
+				cronTimer(baseConfig.BaseLogger, timer, scheduler)
+
 				it++
-			}
-
-			timer := cronTimer(baseConfig.BaseLogger, nil, scheduler)
-			defer timer.Stop()
-
-			for {
-				select {
-				case <-timer.C:
-					cliTrigger.Reset()
-
-					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
-					if runErr := executeSingleRun(cancelCtx, baseConfig); runErr != nil {
-						baseConfig.BaseLogger.Error(fmt.Sprintf("Run failed: %s", runErr.Error()))
-					}
-
-					cronTimer(baseConfig.BaseLogger, timer, scheduler)
-
-					it++
-				case <-apUpdateTrigger.TriggerChannel():
-					apUpdate := apUpdateTrigger.Pop()
-					if apUpdate == nil {
-						continue
-					}
-
-					baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
-					err := handleApUpdateTrigger(cancelCtx, baseConfig, apUpdate)
-					if err != nil {
-						baseConfig.BaseLogger.Warn("Cli ApUpdate Trigger failed: %s", err.Error())
-					}
-
-					it++
-				case <-cancelCtx.Done():
-					baseConfig.BaseLogger.Debug("Context done: closing syncing routine.")
-					return
+			case <-apUpdateTrigger.TriggerChannel():
+				apUpdate := apUpdateTrigger.Pop()
+				if apUpdate == nil {
+					continue
 				}
 
-				hclog.L().Info("Press 'ctrl+c' to stop the program.")
-			}
-		}()
+				baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
+				err := handleApUpdateTrigger(cancelCtx, baseConfig, apUpdate)
 
-		waitGroup.Add(1)
-		go func() {
-			defer waitGroup.Done()
-			defer cancelFn()
-			defer hclog.L().Info("Waiting for the current synchronization run to end ...")
-
-			for {
-				select {
-				case <-cancelCtx.Done():
-					hclog.L().Debug("Context done: Will stop all running routines...")
-					return
-				case s := <-sigs:
-					hclog.L().Debug("Received signal: %s. Will stop all running routines...", s.String())
-
-					if sysc, ok := s.(syscall.Signal); ok {
-						returnSignal = int(sysc)
-					}
-
-					return
+				if err != nil {
+					baseConfig.BaseLogger.Warn("ClI ApUpdate Trigger failed: %s", err.Error())
 				}
+
+				it++
+			case <-syncTrigger.TriggerChannel():
+				syncRequest := syncTrigger.Pop()
+				if syncRequest == nil {
+					continue
+				}
+
+				baseConfig.BaseLogger = baseConfig.BaseLogger.With("iteration", it)
+				err := handleSyncTrigger(cancelCtx, baseConfig, syncRequest)
+
+				if err != nil {
+					baseConfig.BaseLogger.Warn("ClI Sync Trigger failed: %s", err.Error())
+				}
+
+				it++
+			case <-cancelCtx.Done():
+				baseConfig.BaseLogger.Debug("Context done: closing syncing routine.")
+				return
 			}
-		}()
 
-		waitGroup.Wait()
-		hclog.L().Info("All routines finished. Bye!")
-
-		if returnSignal != 0 {
-			hclog.L().Debug("Exit with code: %d", returnSignal)
-			syscall.Exit(returnSignal)
+			hclog.L().Info("Press 'ctrl+c' to stop the program.")
 		}
+	}()
+
+	waitGroup.Add(1)
+
+	go func() {
+		defer waitGroup.Done()
+		defer cancelFn()
+		defer hclog.L().Info("Waiting for the current synchronization run to end ...")
+
+		for {
+			select {
+			case <-cancelCtx.Done():
+				hclog.L().Debug("Context done: Will stop all running routines...")
+				return
+			case s := <-sigs:
+				hclog.L().Debug("Received signal: %s. Will stop all running routines...", s.String())
+
+				if sysc, ok := s.(syscall.Signal); ok {
+					returnSignal = int(sysc)
+				}
+
+				return
+			}
+		}
+	}()
+
+	waitGroup.Wait()
+	hclog.L().Info("All routines finished. Bye!")
+
+	if returnSignal != 0 {
+		hclog.L().Debug("Exit with code: %d", returnSignal)
+		syscall.Exit(returnSignal)
 	}
 }
 
@@ -610,16 +631,40 @@ func handleApUpdateTrigger(ctx context.Context, config *types.BaseConfig, apUpda
 	}))
 }
 
-func startListingToCliTriggers(ctx context.Context, baseConfig *types.BaseConfig) (clitrigger.CliTrigger, *clitrigger.ApUpdateTriggerHandler) {
+func handleSyncTrigger(ctx context.Context, config *types.BaseConfig, syncTrigger *clitrigger.SyncTrigger) error {
+	opts := []func(*target.Options){
+		target.WithConfigOption(func(targetConfig *types.BaseTargetConfig) {
+			targetConfig.SkipIdentityStoreSync = !syncTrigger.IdentityStoreSync
+			targetConfig.SkipDataSourceSync = !syncTrigger.DataSourceSync
+			targetConfig.SkipDataUsageSync = !syncTrigger.DataUsageSync
+			targetConfig.SkipDataAccessSync = !syncTrigger.DataAccessSync
+			targetConfig.DataObjectParent = syncTrigger.DataObjectParent
+			targetConfig.DataObjectExcludes = syncTrigger.DataObjectExcludes
+		}),
+	}
+
+	if syncTrigger.IdentityStore != nil {
+		opts = append(opts, target.WithIdentityStoreIds(*syncTrigger.IdentityStore))
+	}
+
+	if syncTrigger.DataSource != nil {
+		opts = append(opts, target.WithDataSourceIds(*syncTrigger.DataSource))
+	}
+
+	return target.RunTargets(ctx, config, runTargetSync, opts...)
+}
+
+func startListingToCliTriggers(ctx context.Context, baseConfig *types.BaseConfig) (clitrigger.CliTrigger, *clitrigger.ApUpdateTriggerHandler, *clitrigger.SyncTriggerHandler) {
 	cliTrigger, err := clitrigger.CreateCliTrigger(baseConfig)
 	if err != nil {
 		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
-		return cliTrigger, nil
+		return cliTrigger, nil, nil
 	}
 
 	apUpdateTriggerHandler := clitrigger.NewApUpdateTrigger(cliTrigger)
+	syncTriggerHandler := clitrigger.NewSyncTrigger(cliTrigger)
 
 	cliTrigger.Start(ctx)
 
-	return cliTrigger, apUpdateTriggerHandler
+	return cliTrigger, apUpdateTriggerHandler, syncTriggerHandler
 }

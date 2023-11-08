@@ -63,10 +63,17 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		defer os.RemoveAll(targetFile)
 	}
 
+	doParent := ""
+	if s.TargetConfig.DataObjectParent != nil {
+		doParent = *s.TargetConfig.DataObjectParent
+	}
+
 	syncerConfig := dspc.DataSourceSyncConfig{
-		ConfigMap:    &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		TargetFile:   targetFile,
-		DataSourceId: s.TargetConfig.DataSourceId,
+		ConfigMap:          &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		TargetFile:         targetFile,
+		DataSourceId:       s.TargetConfig.DataSourceId,
+		DataObjectParent:   doParent,
+		DataObjectExcludes: s.TargetConfig.DataObjectExcludes,
 	}
 
 	dss, err := client.GetDataSourceSyncer()
@@ -113,10 +120,15 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		return job.Failed, "", err
 	}
 
+	deleteUntouched := s.TargetConfig.DeleteUntouched
+	if deleteUntouched && s.TargetConfig.DataObjectParent != nil && *s.TargetConfig.DataObjectParent != "" {
+		deleteUntouched = false
+	}
+
 	importerConfig := DataSourceImportConfig{
 		BaseTargetConfig: *s.TargetConfig,
 		TargetFile:       enrichedTargetFile,
-		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
+		DeleteUntouched:  deleteUntouched,
 	}
 	dsImporter := NewDataSourceImporter(&importerConfig, statusUpdater)
 

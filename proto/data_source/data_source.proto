@@ -12,6 +12,8 @@ message DataSourceSyncConfig {
   util.config.ConfigMap config_map = 1;
   string target_file = 2;
   string data_source_id = 3;
+  string data_object_parent = 4;
+  repeated string data_object_excludes = 5;
 }
 
 // DataSourceSyncResult represents the result from the data source sync process.

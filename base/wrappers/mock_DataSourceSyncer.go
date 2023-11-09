@@ -80,13 +80,13 @@ func (_c *MockDataSourceSyncer_GetDataSourceMetaData_Call) RunAndReturn(run func
 	return _c
 }
 
-// SyncDataSource provides a mock function with given fields: ctx, dataSourceHandler, configParams
-func (_m *MockDataSourceSyncer) SyncDataSource(ctx context.Context, dataSourceHandler DataSourceObjectHandler, configParams *config.ConfigMap) error {
-	ret := _m.Called(ctx, dataSourceHandler, configParams)
+// SyncDataSource provides a mock function with given fields: ctx, dataSourceHandler, _a2
+func (_m *MockDataSourceSyncer) SyncDataSource(ctx context.Context, dataSourceHandler DataSourceObjectHandler, _a2 *data_source.DataSourceSyncConfig) error {
+	ret := _m.Called(ctx, dataSourceHandler, _a2)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, DataSourceObjectHandler, *config.ConfigMap) error); ok {
-		r0 = rf(ctx, dataSourceHandler, configParams)
+	if rf, ok := ret.Get(0).(func(context.Context, DataSourceObjectHandler, *data_source.DataSourceSyncConfig) error); ok {
+		r0 = rf(ctx, dataSourceHandler, _a2)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -102,14 +102,14 @@ type MockDataSourceSyncer_SyncDataSource_Call struct {
 // SyncDataSource is a helper method to define mock.On call
 //   - ctx context.Context
 //   - dataSourceHandler DataSourceObjectHandler
-//   - configParams *config.ConfigMap
-func (_e *MockDataSourceSyncer_Expecter) SyncDataSource(ctx interface{}, dataSourceHandler interface{}, configParams interface{}) *MockDataSourceSyncer_SyncDataSource_Call {
-	return &MockDataSourceSyncer_SyncDataSource_Call{Call: _e.mock.On("SyncDataSource", ctx, dataSourceHandler, configParams)}
+//   - _a2 *data_source.DataSourceSyncConfig
+func (_e *MockDataSourceSyncer_Expecter) SyncDataSource(ctx interface{}, dataSourceHandler interface{}, _a2 interface{}) *MockDataSourceSyncer_SyncDataSource_Call {
+	return &MockDataSourceSyncer_SyncDataSource_Call{Call: _e.mock.On("SyncDataSource", ctx, dataSourceHandler, _a2)}
 }
 
-func (_c *MockDataSourceSyncer_SyncDataSource_Call) Run(run func(ctx context.Context, dataSourceHandler DataSourceObjectHandler, configParams *config.ConfigMap)) *MockDataSourceSyncer_SyncDataSource_Call {
+func (_c *MockDataSourceSyncer_SyncDataSource_Call) Run(run func(ctx context.Context, dataSourceHandler DataSourceObjectHandler, _a2 *data_source.DataSourceSyncConfig)) *MockDataSourceSyncer_SyncDataSource_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(DataSourceObjectHandler), args[2].(*config.ConfigMap))
+		run(args[0].(context.Context), args[1].(DataSourceObjectHandler), args[2].(*data_source.DataSourceSyncConfig))
 	})
 	return _c
 }
@@ -119,7 +119,7 @@ func (_c *MockDataSourceSyncer_SyncDataSource_Call) Return(_a0 error) *MockDataS
 	return _c
 }
 
-func (_c *MockDataSourceSyncer_SyncDataSource_Call) RunAndReturn(run func(context.Context, DataSourceObjectHandler, *config.ConfigMap) error) *MockDataSourceSyncer_SyncDataSource_Call {
+func (_c *MockDataSourceSyncer_SyncDataSource_Call) RunAndReturn(run func(context.Context, DataSourceObjectHandler, *data_source.DataSourceSyncConfig) error) *MockDataSourceSyncer_SyncDataSource_Call {
 	_c.Call.Return(run)
 	return _c
 }

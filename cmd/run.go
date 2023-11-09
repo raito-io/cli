@@ -189,7 +189,7 @@ func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, schedu
 				err := handleApUpdateTrigger(cancelCtx, baseConfig, apUpdate)
 
 				if err != nil {
-					baseConfig.BaseLogger.Warn("ClI ApUpdate Trigger failed: %s", err.Error())
+					baseConfig.BaseLogger.Warn(fmt.Sprintf("ClI ApUpdate Trigger failed: %s", err.Error()))
 				}
 
 				it++
@@ -203,7 +203,7 @@ func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, schedu
 				err := handleSyncTrigger(cancelCtx, baseConfig, syncRequest)
 
 				if err != nil {
-					baseConfig.BaseLogger.Warn("ClI Sync Trigger failed: %s", err.Error())
+					baseConfig.BaseLogger.Warn(fmt.Sprintf("ClI Sync Trigger failed: %s", err.Error()))
 				}
 
 				it++
@@ -229,7 +229,7 @@ func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, schedu
 				hclog.L().Debug("Context done: Will stop all running routines...")
 				return
 			case s := <-sigs:
-				hclog.L().Debug("Received signal: %s. Will stop all running routines...", s.String())
+				hclog.L().Debug(fmt.Sprintf("Received signal: %s. Will stop all running routines...", s.String()))
 
 				if sysc, ok := s.(syscall.Signal); ok {
 					returnSignal = int(sysc)
@@ -244,7 +244,7 @@ func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, schedu
 	hclog.L().Info("All routines finished. Bye!")
 
 	if returnSignal != 0 {
-		hclog.L().Debug("Exit with code: %d", returnSignal)
+		hclog.L().Debug(fmt.Sprintf("Exit with code: %d", returnSignal))
 		syscall.Exit(returnSignal)
 	}
 }

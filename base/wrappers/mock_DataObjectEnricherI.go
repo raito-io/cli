@@ -22,70 +22,28 @@ func (_m *MockDataObjectEnricherI) EXPECT() *MockDataObjectEnricherI_Expecter {
 	return &MockDataObjectEnricherI_Expecter{mock: &_m.Mock}
 }
 
-// Close provides a mock function with given fields: ctx
-func (_m *MockDataObjectEnricherI) Close(ctx context.Context) (int, error) {
-	ret := _m.Called(ctx)
+// Enrich provides a mock function with given fields: ctx, dataObject
+func (_m *MockDataObjectEnricherI) Enrich(ctx context.Context, dataObject *data_source.DataObject) (bool, error) {
+	ret := _m.Called(ctx, dataObject)
 
-	var r0 int
+	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (int, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, *data_source.DataObject) (bool, error)); ok {
+		return rf(ctx, dataObject)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) int); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, *data_source.DataObject) bool); ok {
+		r0 = rf(ctx, dataObject)
 	} else {
-		r0 = ret.Get(0).(int)
+		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, *data_source.DataObject) error); ok {
+		r1 = rf(ctx, dataObject)
 	} else {
 		r1 = ret.Error(1)
 	}
 
 	return r0, r1
-}
-
-// MockDataObjectEnricherI_Close_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Close'
-type MockDataObjectEnricherI_Close_Call struct {
-	*mock.Call
-}
-
-// Close is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockDataObjectEnricherI_Expecter) Close(ctx interface{}) *MockDataObjectEnricherI_Close_Call {
-	return &MockDataObjectEnricherI_Close_Call{Call: _e.mock.On("Close", ctx)}
-}
-
-func (_c *MockDataObjectEnricherI_Close_Call) Run(run func(ctx context.Context)) *MockDataObjectEnricherI_Close_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
-	})
-	return _c
-}
-
-func (_c *MockDataObjectEnricherI_Close_Call) Return(_a0 int, _a1 error) *MockDataObjectEnricherI_Close_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockDataObjectEnricherI_Close_Call) RunAndReturn(run func(context.Context) (int, error)) *MockDataObjectEnricherI_Close_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Enrich provides a mock function with given fields: ctx, dataObject
-func (_m *MockDataObjectEnricherI) Enrich(ctx context.Context, dataObject *data_source.DataObject) error {
-	ret := _m.Called(ctx, dataObject)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *data_source.DataObject) error); ok {
-		r0 = rf(ctx, dataObject)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
 }
 
 // MockDataObjectEnricherI_Enrich_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Enrich'
@@ -107,12 +65,12 @@ func (_c *MockDataObjectEnricherI_Enrich_Call) Run(run func(ctx context.Context,
 	return _c
 }
 
-func (_c *MockDataObjectEnricherI_Enrich_Call) Return(_a0 error) *MockDataObjectEnricherI_Enrich_Call {
-	_c.Call.Return(_a0)
+func (_c *MockDataObjectEnricherI_Enrich_Call) Return(_a0 bool, _a1 error) *MockDataObjectEnricherI_Enrich_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockDataObjectEnricherI_Enrich_Call) RunAndReturn(run func(context.Context, *data_source.DataObject) error) *MockDataObjectEnricherI_Enrich_Call {
+func (_c *MockDataObjectEnricherI_Enrich_Call) RunAndReturn(run func(context.Context, *data_source.DataObject) (bool, error)) *MockDataObjectEnricherI_Enrich_Call {
 	_c.Call.Return(run)
 	return _c
 }

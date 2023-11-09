@@ -57,6 +57,9 @@ type BaseTargetConfig struct {
 	DeleteTempFiles bool
 	ReplaceGroups   bool
 
+	DataObjectParent   *string
+	DataObjectExcludes []string
+
 	DataObjectEnrichers []*EnricherConfig
 
 	TargetLogger hclog.Logger

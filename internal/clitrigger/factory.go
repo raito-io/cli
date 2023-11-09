@@ -61,3 +61,11 @@ func NewApUpdateTrigger(cliTrigger CliTrigger) *ApUpdateTriggerHandler {
 
 	return updateTrigger
 }
+
+func NewSyncTrigger(cliTrigger CliTrigger) *SyncTriggerHandler {
+	syncTrigger := NewSyncTriggerHandler()
+
+	cliTrigger.Subscribe(syncTrigger)
+
+	return syncTrigger
+}

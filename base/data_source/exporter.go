@@ -103,8 +103,8 @@ func (d *dataSourceFileCreator) AddDataObjects(dataObjects ...*DataObject) error
 		return nil
 	}
 
-	// validate wether the first DataObject represents the Data Source, if not generate one
-	if d.dataObjectCount == 0 {
+	// validate whether the first DataObject represents the Data Source, if not generate one
+	if d.dataObjectCount == 0 && d.config.DataObjectParent == "" {
 		if !strings.EqualFold(dataObjects[0].Type, "datasource") {
 			dataObjects = d.prependDataSourceDataObject(dataObjects)
 		}

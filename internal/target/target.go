@@ -41,6 +41,10 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget fun
 			return nil
 		}
 
+		if !options.SyncIdentityStoreId(targetConfig.IdentityStoreId) {
+			return nil
+		}
+
 		logTargetConfig(targetConfig)
 
 		jobId, err := runTarget(ctx, options.TargetOptions(targetConfig))
@@ -159,6 +163,10 @@ func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTa
 			}
 
 			if !options.SyncDataSourceId(tConfig.DataSourceId) {
+				continue
+			}
+
+			if !options.SyncIdentityStoreId(tConfig.IdentityStoreId) {
 				continue
 			}
 
@@ -369,9 +377,10 @@ func logTargetConfig(config *types.BaseTargetConfig) {
 }
 
 type Options struct {
-	ExternalTrigger bool
-	DataSourceIds   map[string]struct{}
-	ConfigOption    func(targetConfig *types.BaseTargetConfig)
+	ExternalTrigger  bool
+	DataSourceIds    map[string]struct{}
+	IdentityStoreIds map[string]struct{}
+	ConfigOption     func(targetConfig *types.BaseTargetConfig)
 }
 
 func createOptions(opFns ...func(*Options)) Options {
@@ -393,6 +402,16 @@ func (o *Options) SyncDataSourceId(dataSourceId string) bool {
 	return found
 }
 
+func (o *Options) SyncIdentityStoreId(identityStoreId string) bool {
+	if o.IdentityStoreIds == nil {
+		return true
+	}
+
+	_, found := o.IdentityStoreIds[identityStoreId]
+
+	return found
+}
+
 func (o *Options) TargetOptions(targetConfig *types.BaseTargetConfig) *types.BaseTargetConfig {
 	if o.ConfigOption != nil {
 		o.ConfigOption(targetConfig)
@@ -403,12 +422,32 @@ func (o *Options) TargetOptions(targetConfig *types.BaseTargetConfig) *types.Bas
 
 func WithDataSourceIds(dataSourceIds ...string) func(o *Options) {
 	return func(o *Options) {
+		if len(dataSourceIds) == 0 {
+			return
+		}
+
 		if o.DataSourceIds == nil {
 			o.DataSourceIds = map[string]struct{}{}
 		}
 
 		for _, dataSourceId := range dataSourceIds {
 			o.DataSourceIds[dataSourceId] = struct{}{}
+		}
+	}
+}
+
+func WithIdentityStoreIds(identityStoreIds ...string) func(o *Options) {
+	return func(o *Options) {
+		if len(identityStoreIds) == 0 {
+			return
+		}
+
+		if o.IdentityStoreIds == nil {
+			o.IdentityStoreIds = map[string]struct{}{}
+		}
+
+		for _, identityStoreId := range identityStoreIds {
+			o.IdentityStoreIds[identityStoreId] = struct{}{}
 		}
 	}
 }

@@ -122,6 +122,51 @@ func TestDataSourceFileCreator(t *testing.T) {
 	assert.Equal(t, 0, len(dosr[3].Tags))
 }
 
+func TestDataSourceFileCreatorPartial(t *testing.T) {
+	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
+	defer os.Remove(tempFile.Name())
+	config := DataSourceSyncConfig{
+		TargetFile:       tempFile.Name(),
+		DataSourceId:     "myDataSource",
+		DataObjectParent: "myParent",
+	}
+	dsfc, err := NewDataSourceFileCreator(&config)
+	assert.Nil(t, err)
+	assert.NotNil(t, dsfc)
+
+	dos := make([]*DataObject, 0, 3)
+	dos = append(dos, &DataObject{
+		ExternalId:  "eid1",
+		Name:        "DO1",
+		FullName:    "Data Object 1",
+		Type:        "table",
+		Description: "The first data object",
+	})
+	dos = append(dos, &DataObject{
+		ExternalId:       "eid2",
+		Name:             "DO2",
+		FullName:         "Data Object 2",
+		Type:             "schema",
+		Description:      "The second data object",
+		ParentExternalId: "eid1",
+	})
+	dos = append(dos, &DataObject{
+		ExternalId:       "eid3",
+		Name:             "DO3",
+		FullName:         "Data Object 3",
+		Type:             "database",
+		ParentExternalId: "eid2",
+	})
+
+	err = dsfc.AddDataObjects(dos...)
+	assert.Nil(t, err)
+
+	dsfc.Close()
+
+	// The data source node should not have been added as this is a partial sync
+	assert.Equal(t, 3, dsfc.GetDataObjectCount())
+}
+
 func TestDataSourceDetails(t *testing.T) {
 	tempFile, _ := os.Create("tempfile-" + strconv.Itoa(rand.Int()) + ".json")
 	defer os.Remove(tempFile.Name())

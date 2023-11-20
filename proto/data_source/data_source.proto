@@ -48,6 +48,9 @@ message MetaData {
 
   // SupportsApInheritance indicates whether the data source supports AP inheritance
   bool supportsApInheritance = 7;
+
+  // maskingMetadata provides addition information about available column masks
+  MaskingMetadata maskingMetadata = 8;
 }
 
 message DataObjectType {
@@ -110,6 +113,18 @@ message AccessProviderType {
     Nil indicates that all access provider types are allowed. Otherwise only defined access provider types are allowed to be part of the who list of this access provider type.
    */
   repeated string allowedWhoAccessProviderTypes = 12;
+}
+
+message MaskingMetadata {
+  repeated MaskingType maskTypes = 1;
+  string defaultMaskExternalName = 2;
+}
+
+
+message MaskingType {
+  string displayName = 1;
+  string externalName = 2;
+  string description = 3;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

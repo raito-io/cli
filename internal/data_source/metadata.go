@@ -45,6 +45,7 @@ func SetMetaData(ctx context.Context, config *types.BaseTargetConfig, metadata *
 		Icon                  string                            `json:"icon,omitempty"`
 		UsageMetaInfo         *data_source.UsageMetaInput       `json:"usageMetaInfo,omitempty"`
 		SupportsApInheritance bool                              `json:"supportsApInheritance"`
+		MaskingMetadata       *data_source.MaskingMetadata      `json:"maskingMetadata"`
 	}
 
 	input := DataSourceMetaDataInput{

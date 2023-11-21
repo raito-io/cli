@@ -123,7 +123,7 @@ message MaskingMetadata {
 
 message MaskingType {
   string displayName = 1;
-  string externalName = 2;
+  string externalId = 2;
   string description = 3;
 }
 

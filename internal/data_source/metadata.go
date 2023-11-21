@@ -56,6 +56,7 @@ func SetMetaData(ctx context.Context, config *types.BaseTargetConfig, metadata *
 		Icon:                  metadata.Icon,
 		UsageMetaInfo:         metadata.UsageMetaInfo,
 		SupportsApInheritance: metadata.SupportsApInheritance,
+		MaskingMetadata:       metadata.MaskingMetadata,
 	}
 
 	err = graphql.NewClient(&config.BaseConfig).Mutate(ctx, &m, map[string]interface{}{"id": graphql2.ID(config.DataSourceId), "input": input})

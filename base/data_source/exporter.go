@@ -26,6 +26,7 @@ type DataObject struct {
 	Description      string     `json:"description"`
 	ParentExternalId string     `json:"parentExternalId"`
 	Tags             []*tag.Tag `json:"tags"`
+	DataType         *string    `json:"dataType,omitempty"`
 }
 
 // DataObjectReference represents the reference to a DataObject suitable for e.g. defining the What in Access Provider import

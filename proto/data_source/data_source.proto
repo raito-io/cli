@@ -125,6 +125,7 @@ message MaskingType {
   string displayName = 1;
   string externalId = 2;
   string description = 3;
+  repeated string dataTypes = 4;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

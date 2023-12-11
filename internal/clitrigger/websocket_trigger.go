@@ -90,7 +90,6 @@ func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *we
 		defer close(ch)
 
 		for {
-
 			_, msg, err := conn.Read(ctx)
 
 			if err != nil {
@@ -311,7 +310,8 @@ func (s *WebsocketCliTrigger) readChannel(ctx context.Context) error {
 			case error:
 				select {
 				case <-ctx.Done():
-					s.logger.Debug(fmt.Sprintf("Websocket closed. Will try to reconnect"))
+					s.logger.Debug("Websocket closed. Will try to reconnect")
+
 					return nil
 				default:
 					return &WebsocketMessageError{err: m}

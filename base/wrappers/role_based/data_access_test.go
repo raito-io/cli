@@ -273,6 +273,10 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 		},
 	}
 
+	accessFeedBackFileCreator.EXPECT().AddAccessProviderFeedback(sync_to_target.AccessProviderSyncFeedback{
+		AccessProvider: "AP4",
+	}).Return(nil)
+
 	//When
 	err := syncer.SyncAccessProviderToTarget(context.Background(), &accessProvidersImport, accessFeedBackFileCreator, &configMap)
 

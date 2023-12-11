@@ -71,7 +71,7 @@ func (s *WebsocketClient) Wait() {
 }
 
 func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *websocket.Conn) <-chan interface{} {
-	ch := make(chan interface{}, 16) // Small buffer to avoid dropped events
+	ch := make(chan interface{}, 256) // Small buffer to avoid dropped events
 
 	pushToChannel := func(i interface{}) bool {
 		select {
@@ -89,24 +89,29 @@ func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *we
 
 		defer close(ch)
 
-		_, msg, err := conn.Read(ctx)
+		for {
 
-		if err != nil {
-			if !pushToChannel(err) {
+			_, msg, err := conn.Read(ctx)
+
+			if err != nil {
+				if !pushToChannel(err) {
+					return
+				}
+			}
+
+			triggerEvent := TriggerEvent{}
+			err = json.Unmarshal(msg, &triggerEvent)
+
+			if err != nil {
+				if !pushToChannel(err) {
+					return
+				}
+			}
+
+			if !pushToChannel(triggerEvent) {
 				return
 			}
 		}
-
-		triggerEvent := TriggerEvent{}
-		err = json.Unmarshal(msg, &triggerEvent)
-
-		if err != nil {
-			if !pushToChannel(err) {
-				return
-			}
-		}
-
-		pushToChannel(triggerEvent)
 	}()
 
 	return ch
@@ -251,6 +256,8 @@ func (s *WebsocketCliTrigger) Start(ctx context.Context) {
 						return
 					}
 				}
+
+				s.logger.Info("Websocket connection ended. Restart websocket.")
 			}
 		}
 	}()
@@ -296,13 +303,19 @@ func (s *WebsocketCliTrigger) readChannel(ctx context.Context) error {
 			return nil
 		case msg, ok := <-internalChannel:
 			if !ok {
+				s.logger.Info("Websocket message channel closed")
 				return nil
 			}
 
 			switch m := msg.(type) {
 			case error:
-				return &WebsocketMessageError{err: m}
-
+				select {
+				case <-ctx.Done():
+					s.logger.Debug(fmt.Sprintf("Websocket closed. Will try to reconnect"))
+					return nil
+				default:
+					return &WebsocketMessageError{err: m}
+				}
 			case TriggerEvent:
 				s.subscriberMutex.Lock()
 				wg := sync.WaitGroup{}

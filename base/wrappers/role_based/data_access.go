@@ -93,10 +93,10 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 	for _, ap := range apList {
 		var err2 error
 		if ap.Action == sync_to_target.Mask {
-			_, masksMap, masksToRemove, err2 = handleAccessProvider(ap, masksMap, masksToRemove, uniqueRoleNameGenerator)
+			_, masksMap, masksToRemove, err2 = handleAccessProvider(ap, masksMap, masksToRemove, accessProviderFeedbackHandler, uniqueRoleNameGenerator)
 		} else {
 			var roleName string
-			roleName, rolesMap, rolesToRemove, err2 = handleAccessProvider(ap, rolesMap, rolesToRemove, uniqueRoleNameGenerator)
+			roleName, rolesMap, rolesToRemove, err2 = handleAccessProvider(ap, rolesMap, rolesToRemove, accessProviderFeedbackHandler, uniqueRoleNameGenerator)
 			apIdNameMap[ap.Id] = roleName
 		}
 
@@ -115,12 +115,21 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 	return s.syncer.SyncAccessProviderRolesToTarget(ctx, rolesToRemove, rolesMap, accessProviderFeedbackHandler, configMap)
 }
 
-func handleAccessProvider(ap *sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, apToRemoveMap map[string]*sync_to_target.AccessProvider, roleNameGenerator naming_hint.UniqueGenerator) (string, map[string]*sync_to_target.AccessProvider, map[string]*sync_to_target.AccessProvider, error) {
+func handleAccessProvider(ap *sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, apToRemoveMap map[string]*sync_to_target.AccessProvider, accessProviderFeedbackHandler wrappers.AccessProviderFeedbackHandler, roleNameGenerator naming_hint.UniqueGenerator) (string, map[string]*sync_to_target.AccessProvider, map[string]*sync_to_target.AccessProvider, error) {
 	var roleName string
 
 	if ap.Delete {
 		if ap.ActualName == nil {
 			logger.Warn(fmt.Sprintf("No actualname defined for deleted access provider %q. This will be ignored", ap.Id))
+
+			err := accessProviderFeedbackHandler.AddAccessProviderFeedback(sync_to_target.AccessProviderSyncFeedback{
+				AccessProvider: ap.Id,
+				ActualName:     "",
+			})
+			if err != nil {
+				return "", nil, nil, err
+			}
+
 			return "", apMap, apToRemoveMap, nil
 		}
 

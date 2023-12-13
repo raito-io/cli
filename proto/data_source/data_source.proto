@@ -118,6 +118,7 @@ message AccessProviderType {
 message MaskingMetadata {
   repeated MaskingType maskTypes = 1;
   string defaultMaskExternalName = 2;
+  repeated string maskOverridePermissions = 3;
 }
 
 

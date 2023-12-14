@@ -147,9 +147,15 @@ func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, schedu
 
 		defer func() {
 			cliTriggerCancel()
-			cliTrigger.Wait()
-			apUpdateTrigger.Close()
-			syncTrigger.Close()
+
+			if cliTrigger != nil {
+				cliTrigger.Wait()
+				syncTrigger.Close()
+			}
+
+			if apUpdateTrigger != nil {
+				apUpdateTrigger.Close()
+			}
 		}()
 
 		it := 1

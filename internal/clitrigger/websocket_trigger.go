@@ -93,6 +93,11 @@ func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *we
 			_, msg, err := conn.Read(ctx)
 
 			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) {
+					// Do not send any error if the deadline is exceeded
+					return
+				}
+
 				if !pushToChannel(err) {
 					return
 				}
@@ -256,7 +261,7 @@ func (s *WebsocketCliTrigger) Start(ctx context.Context) {
 					}
 				}
 
-				s.logger.Info("Websocket connection ended. Restart websocket.")
+				s.logger.Info("Restart websocket.")
 			}
 		}
 	}()
@@ -302,7 +307,7 @@ func (s *WebsocketCliTrigger) readChannel(ctx context.Context) error {
 			return nil
 		case msg, ok := <-internalChannel:
 			if !ok {
-				s.logger.Info("Websocket message channel closed")
+				s.logger.Debug("Websocket message channel closed")
 				return nil
 			}
 

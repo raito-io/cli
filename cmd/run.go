@@ -145,17 +145,17 @@ func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, schedu
 		cliTriggerCtx, cliTriggerCancel := context.WithCancel(cancelCtx)
 		cliTrigger, apUpdateTrigger, syncTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig)
 
+		defer cliTriggerCancel()
+
+		if syncTrigger == nil {
+			cancelFn()
+			return
+		}
+
 		defer func() {
-			cliTriggerCancel()
-
-			if cliTrigger != nil {
-				cliTrigger.Wait()
-				syncTrigger.Close()
-			}
-
-			if apUpdateTrigger != nil {
-				apUpdateTrigger.Close()
-			}
+			cliTrigger.Wait()
+			syncTrigger.Close()
+			apUpdateTrigger.Close()
 		}()
 
 		it := 1
@@ -663,7 +663,7 @@ func handleSyncTrigger(ctx context.Context, config *types.BaseConfig, syncTrigge
 func startListingToCliTriggers(ctx context.Context, baseConfig *types.BaseConfig) (clitrigger.CliTrigger, *clitrigger.ApUpdateTriggerHandler, *clitrigger.SyncTriggerHandler) {
 	cliTrigger, err := clitrigger.CreateCliTrigger(baseConfig)
 	if err != nil {
-		baseConfig.BaseLogger.Warn(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
+		baseConfig.BaseLogger.Error(fmt.Sprintf("Unable to start asynchronous access provider sync: %s", err.Error()))
 		return cliTrigger, nil, nil
 	}
 

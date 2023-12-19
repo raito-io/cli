@@ -134,3 +134,7 @@ func (a *Action) UnmarshalJSON(b []byte) error {
 
 	return nil
 }
+
+func (a *Action) String() string {
+	return actionNames[*a]
+}

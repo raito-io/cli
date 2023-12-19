@@ -37,7 +37,7 @@ func HandleField(value interface{}, targetType reflect.Kind) (interface{}, error
 }
 
 func convertStringToType(v string, k reflect.Kind) (interface{}, error) {
-	switch k { //nolint:exhaustive
+	switch k {
 	case reflect.String:
 		return v, nil
 	case reflect.Int:

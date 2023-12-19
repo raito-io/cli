@@ -59,6 +59,9 @@ linters-settings:
     skip-tests: true
     package-average: 0.0
 
+  exhaustive:
+    default-signifies-exhaustive: true
+
 linters:
   disable-all: true
   enable:

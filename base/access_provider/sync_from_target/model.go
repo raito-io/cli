@@ -1,6 +1,10 @@
 package sync_from_target
 
-import "github.com/raito-io/cli/base/data_source"
+import (
+	"github.com/raito-io/bexpression"
+
+	"github.com/raito-io/cli/base/data_source"
+)
 
 // AccessProvider describes data access in the format that is suitable to be imported into Raito.x
 type AccessProvider struct {
@@ -34,6 +38,10 @@ type AccessProvider struct {
 	ActualName string `yaml:"actualName" json:"actualName"`
 	// Who represents who has access to the 'what'. Nil means that the 'who' is unknown.
 	What []WhatItem `yaml:"what" json:"what"`
+
+	// Row level filter properties
+	PolicyRule     *string                       `yaml:"policyRule,omitempty" json:"policyRule,omitempty"`
+	FilterCriteria *bexpression.BinaryExpression `yaml:"filterCriteria,omitempty" json:"filterCriteria,omitempty"`
 
 	// Allows the plugin to indicate that the access provider is incomplete (because not all who items, what items or permissions could be handled)
 	Incomplete *bool `json:"incomplete"`

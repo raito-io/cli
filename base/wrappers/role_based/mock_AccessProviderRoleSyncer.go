@@ -76,6 +76,57 @@ func (_c *MockAccessProviderRoleSyncer_SyncAccessAsCodeToTarget_Call) RunAndRetu
 	return _c
 }
 
+// SyncAccessProviderFiltersToTarget provides a mock function with given fields: ctx, apToRemoveMap, apMap, roleNameMap, feedbackHandler, configMap
+func (_m *MockAccessProviderRoleSyncer) SyncAccessProviderFiltersToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, roleNameMap map[string]string, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error {
+	ret := _m.Called(ctx, apToRemoveMap, apMap, roleNameMap, feedbackHandler, configMap)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SyncAccessProviderFiltersToTarget")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, map[string]*sync_to_target.AccessProvider, map[string]*sync_to_target.AccessProvider, map[string]string, wrappers.AccessProviderFeedbackHandler, *config.ConfigMap) error); ok {
+		r0 = rf(ctx, apToRemoveMap, apMap, roleNameMap, feedbackHandler, configMap)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SyncAccessProviderFiltersToTarget'
+type MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call struct {
+	*mock.Call
+}
+
+// SyncAccessProviderFiltersToTarget is a helper method to define mock.On call
+//   - ctx context.Context
+//   - apToRemoveMap map[string]*sync_to_target.AccessProvider
+//   - apMap map[string]*sync_to_target.AccessProvider
+//   - roleNameMap map[string]string
+//   - feedbackHandler wrappers.AccessProviderFeedbackHandler
+//   - configMap *config.ConfigMap
+func (_e *MockAccessProviderRoleSyncer_Expecter) SyncAccessProviderFiltersToTarget(ctx interface{}, apToRemoveMap interface{}, apMap interface{}, roleNameMap interface{}, feedbackHandler interface{}, configMap interface{}) *MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call {
+	return &MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call{Call: _e.mock.On("SyncAccessProviderFiltersToTarget", ctx, apToRemoveMap, apMap, roleNameMap, feedbackHandler, configMap)}
+}
+
+func (_c *MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call) Run(run func(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, roleNameMap map[string]string, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap)) *MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(map[string]*sync_to_target.AccessProvider), args[2].(map[string]*sync_to_target.AccessProvider), args[3].(map[string]string), args[4].(wrappers.AccessProviderFeedbackHandler), args[5].(*config.ConfigMap))
+	})
+	return _c
+}
+
+func (_c *MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call) Return(_a0 error) *MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call) RunAndReturn(run func(context.Context, map[string]*sync_to_target.AccessProvider, map[string]*sync_to_target.AccessProvider, map[string]string, wrappers.AccessProviderFeedbackHandler, *config.ConfigMap) error) *MockAccessProviderRoleSyncer_SyncAccessProviderFiltersToTarget_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SyncAccessProviderMasksToTarget provides a mock function with given fields: ctx, apToRemoveMap, apMap, roleNameMap, feedbackHandler, configMap
 func (_m *MockAccessProviderRoleSyncer) SyncAccessProviderMasksToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, roleNameMap map[string]string, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error {
 	ret := _m.Called(ctx, apToRemoveMap, apMap, roleNameMap, feedbackHandler, configMap)

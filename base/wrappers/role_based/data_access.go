@@ -119,15 +119,19 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 	}
 
 	// Step 1 first initiate all the masks
-	err = s.syncer.SyncAccessProviderMasksToTarget(ctx, masksToRemove, masksMap, apIdNameMap, accessProviderFeedbackHandler, configMap)
-	if err != nil {
-		return fmt.Errorf("sync masks to target: %w", err)
+	if len(masksMap) > 0 || len(masksToRemove) > 0 {
+		err = s.syncer.SyncAccessProviderMasksToTarget(ctx, masksToRemove, masksMap, apIdNameMap, accessProviderFeedbackHandler, configMap)
+		if err != nil {
+			return fmt.Errorf("sync masks to target: %w", err)
+		}
 	}
 
 	// Step 2 then initialize all filters
-	err = s.syncer.SyncAccessProviderFiltersToTarget(ctx, filtersToRemove, filtersMap, apIdNameMap, accessProviderFeedbackHandler, configMap)
-	if err != nil {
-		return fmt.Errorf("sync filters to target: %w", err)
+	if len(filtersMap) > 0 || len(filtersToRemove) > 0 {
+		err = s.syncer.SyncAccessProviderFiltersToTarget(ctx, filtersToRemove, filtersMap, apIdNameMap, accessProviderFeedbackHandler, configMap)
+		if err != nil {
+			return fmt.Errorf("sync filters to target: %w", err)
+		}
 	}
 
 	// Step 3 then initiate all the roles

@@ -8,24 +8,24 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/aws/aws-sdk-go-v2 v1.24.0
 	github.com/aws/aws-sdk-go-v2/config v1.26.1
-	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.31.5
+	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.31.6
 	github.com/aws/smithy-go v1.19.0
 	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
 	github.com/bcicen/jstream v1.0.1
-	github.com/hashicorp/go-hclog v1.6.1
+	github.com/hashicorp/go-hclog v1.6.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hasura/go-graphql-client v0.10.1
 	github.com/jinzhu/copier v0.4.0
-	github.com/pterm/pterm v0.12.71
+	github.com/pterm/pterm v0.12.72
 	github.com/raito-io/golang-set v0.0.4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.8.0
-	github.com/spf13/viper v1.18.1
+	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
 	github.com/vektra/mockery/v2 v2.38.0
-	google.golang.org/grpc v1.59.0
+	google.golang.org/grpc v1.60.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v2 v2.4.0

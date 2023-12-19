@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/raito-io/bexpression"
+
 	"github.com/raito-io/cli/base/data_source"
 )
 
@@ -28,6 +30,10 @@ type AccessProvider struct {
 	WhoLocked         *bool    `yaml:"whoLocked" json:"whoLocked"`
 	InheritanceLocked *bool    `yaml:"inheritanceLocked" json:"inheritanceLocked"`
 	WhatLocked        *bool    `yaml:"whatLocked" json:"whatLocked"`
+
+	// Row level filter properties
+	PolicyRule     *string                       `yaml:"policyRule,omitempty" json:"policyRule,omitempty"`
+	FilterCriteria *bexpression.BinaryExpression `yaml:"filterCriteria,omitempty" json:"filterCriteria,omitempty"`
 
 	ActualName *string    `yaml:"actualName" json:"actualName"`
 	What       []WhatItem `yaml:"what" json:"what"`

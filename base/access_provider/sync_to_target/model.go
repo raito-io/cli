@@ -32,8 +32,8 @@ type AccessProvider struct {
 	WhatLocked        *bool    `yaml:"whatLocked" json:"whatLocked"`
 
 	// Row level filter properties
-	PolicyRule     *string                       `yaml:"policyRule,omitempty" json:"policyRule,omitempty"`
-	FilterCriteria *bexpression.BinaryExpression `yaml:"filterCriteria,omitempty" json:"filterCriteria,omitempty"`
+	PolicyRule     *string                               `yaml:"policyRule,omitempty" json:"policyRule,omitempty"`
+	FilterCriteria *bexpression.DataComparisonExpression `yaml:"filterCriteria,omitempty" json:"filterCriteria,omitempty"`
 
 	ActualName *string    `yaml:"actualName" json:"actualName"`
 	What       []WhatItem `yaml:"what" json:"what"`

@@ -18,8 +18,8 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hasura/go-graphql-client v0.10.1
 	github.com/jinzhu/copier v0.4.0
-	github.com/pterm/pterm v0.12.72
-	github.com/raito-io/bexpression v0.1.0
+	github.com/pterm/pterm v0.12.73
+	github.com/raito-io/bexpression v0.1.1
 	github.com/raito-io/golang-set v0.0.4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.8.0

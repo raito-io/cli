@@ -53,8 +53,16 @@ type WhoItem struct {
 	// Groups contains all group names assigned to this access provider
 	Groups []string `yaml:"groups,omitempty" json:"groups,omitempty"`
 
-	// InheritFrom contains all access providers actual names in WHO part of this access provider
+	// InheritFrom contains all access providers external in WHO part of this access provider
 	InheritFrom []string `yaml:"inheritFrom,omitempty" json:"inheritFrom,omitempty"`
+
+	// InheritFrom contains all access providers actual names in WHO part of this access provider
+	InheritFromExtended []WhoInheritFromItem `yaml:"inheritFromExtended,omitempty" json:"inheritFromExtended,omitempty"`
+}
+
+type WhoInheritFromItem struct {
+	ExternalId string  `json:"externalId" yaml:"externalId"`
+	Type       *string `json:"type" yaml:"type,omitempty"`
 }
 
 type WhatItem struct {

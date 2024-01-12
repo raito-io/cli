@@ -147,12 +147,11 @@ func handleAccessProvider(ap *sync_to_target.AccessProvider, apMap map[string]*s
 	var roleName string
 
 	if ap.Delete {
-		if ap.ActualName == nil {
-			logger.Warn(fmt.Sprintf("No actualname defined for deleted access provider %q. This will be ignored", ap.Id))
+		if ap.ExternalId == nil {
+			logger.Warn(fmt.Sprintf("No externalId defined for deleted access provider %q. This will be ignored", ap.Id))
 
 			err := accessProviderFeedbackHandler.AddAccessProviderFeedback(sync_to_target.AccessProviderSyncFeedback{
 				AccessProvider: ap.Id,
-				ActualName:     "",
 			})
 			if err != nil {
 				return "", nil, nil, err
@@ -161,7 +160,7 @@ func handleAccessProvider(ap *sync_to_target.AccessProvider, apMap map[string]*s
 			return "", apMap, apToRemoveMap, nil
 		}
 
-		roleName = *ap.ActualName
+		roleName = *ap.ExternalId
 
 		apToRemoveMap[roleName] = ap
 	} else {

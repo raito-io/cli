@@ -84,6 +84,8 @@ func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (strin
 		nameHinting = ap.Name
 	}
 
+	// Based on namingHint/name create indirectly the externalId/ActualName for new APs
+	// Use it as key for existing APs
 	name, err := g.translator.Translate(g.prefix + nameHinting)
 	if err != nil {
 		return "", err

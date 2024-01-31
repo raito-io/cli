@@ -2,6 +2,7 @@ package sync_from_target
 
 import (
 	"github.com/raito-io/cli/base/data_source"
+	"github.com/raito-io/cli/base/tag"
 )
 
 // AccessProvider describes data access in the format that is suitable to be imported into Raito.x
@@ -17,6 +18,8 @@ type AccessProvider struct {
 	Action Action   `json:"action"`
 	Policy string   `json:"policy"`
 	Who    *WhoItem `yaml:"who" json:"who"`
+
+	Owner *OwnerInput `json:"owner"`
 
 	// Locking properties
 
@@ -39,6 +42,12 @@ type AccessProvider struct {
 
 	// Allows the plugin to indicate that the access provider is incomplete (because not all who items, what items or permissions could be handled)
 	Incomplete *bool `json:"incomplete"`
+
+	Tags []*tag.Tag `json:"tags"`
+}
+
+type OwnerInput struct {
+	Users []string `yaml:"users" json:"users"`
 }
 
 type Access struct {

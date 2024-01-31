@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/raito-io/cli/base"
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target/naming_hint"
 	"github.com/raito-io/cli/base/util/config"
+	logger_utils "github.com/raito-io/cli/base/util/logger"
 	"github.com/raito-io/cli/base/wrappers"
 )
 
-var logger = base.Logger()
+var logger = logger_utils.InitializeLogger()
 
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderRoleSyncer --with-expecter --inpackage
 type AccessProviderRoleSyncer interface {

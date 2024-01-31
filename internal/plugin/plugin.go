@@ -16,13 +16,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/raito-io/cli/base/data_object_enricher"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 
 	"github.com/raito-io/cli/base/access_provider"
+	"github.com/raito-io/cli/base/access_provider_post_processor"
+	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
@@ -40,12 +40,13 @@ var localPluginFolder = "./raito/plugins/"
 var globalPluginFolder string
 
 var pluginMap = map[string]plugin.Plugin{
-	"identityStoreSyncer": &identity_store.IdentityStoreSyncerPlugin{},
-	"dataSourceSyncer":    &data_source.DataSourceSyncerPlugin{},
-	"accessSyncer":        &access_provider.AccessSyncerPlugin{},
-	"dataUsageSyncer":     &data_usage.DataUsageSyncerPlugin{},
-	"info":                &plugin2.InfoPlugin{},
-	"dataObjectEnricher":  &data_object_enricher.DataObjectEnricherPlugin{},
+	identity_store.IdentityStoreSyncerName:                         &identity_store.IdentityStoreSyncerPlugin{},
+	data_source.DataSourceSyncerName:                               &data_source.DataSourceSyncerPlugin{},
+	access_provider.AccessSyncerName:                               &access_provider.AccessSyncerPlugin{},
+	access_provider_post_processor.AccessProviderPostProcessorName: &access_provider_post_processor.AccessProviderPostProcessorPlugin{},
+	data_usage.DataUsageSyncerName:                                 &data_usage.DataUsageSyncerPlugin{},
+	plugin2.InfoName:                                               &plugin2.InfoPlugin{},
+	data_object_enricher.DataObjectEnricherName:                    &data_object_enricher.DataObjectEnricherPlugin{},
 }
 
 func init() {
@@ -66,6 +67,7 @@ type PluginClient interface {
 	Close()
 	GetDataSourceSyncer() (data_source.DataSourceSyncer, error)
 	GetDataObjectEnricher() (data_object_enricher.DataObjectEnricher, error)
+	GetAccessProviderPostProcessor() (access_provider_post_processor.AccessProviderPostProcessor, error)
 	GetIdentityStoreSyncer() (identity_store.IdentityStoreSyncer, error)
 	GetAccessSyncer() (access_provider.AccessSyncer, error)
 	GetDataUsageSyncer() (data_usage.DataUsageSyncer, error)
@@ -395,6 +397,19 @@ func (c pluginClientImpl) GetDataObjectEnricher() (data_object_enricher.DataObje
 		return syncer, nil
 	} else {
 		return nil, fmt.Errorf("found plugin doesn't correctly implement the DataObjectEnricher interface")
+	}
+}
+
+func (c pluginClientImpl) GetAccessProviderPostProcessor() (access_provider_post_processor.AccessProviderPostProcessor, error) {
+	raw, err := c.getPlugin(access_provider_post_processor.AccessProviderPostProcessorName)
+	if err != nil {
+		return nil, err
+	}
+
+	if syncer, ok := raw.(access_provider_post_processor.AccessProviderPostProcessor); ok {
+		return syncer, nil
+	} else {
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the AccessProviderPostProcessor interface")
 	}
 }
 

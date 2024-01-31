@@ -1,0 +1,29 @@
+syntax = "proto3";
+package access_provider_post_processor;
+
+import "google/protobuf/empty.proto";
+import "util/config/config.proto";
+import "util/version/version.proto";
+
+// AccessProviderPostProcessor contains all necessary configuration parameters to import Data from Raito into DS
+message AccessProviderPostProcessorConfig {
+  util.config.ConfigMap config_map = 1;
+
+  // TargetFile points to the file where the plugin needs to export the access control naming.
+  string input_file = 2;
+  string output_file = 3;
+  string tag_overwrite_key_for_name = 4;
+  string tag_overwrite_key_for_owners = 5;
+}
+
+// AccessSyncResult represents the result from the data access sync process.
+// A potential error is also modeled in here so specific errors remain intact when passed over RPC.
+message AccessProviderPostProcessorResult {
+  int32 access_provider_touched_count = 1;
+}
+
+service AccessProviderPostProcessorService {
+  rpc CliVersionInformation(google.protobuf.Empty) returns (util.version.CliBuildInformation);
+
+  rpc PostProcessFromTarget(AccessProviderPostProcessorConfig) returns (AccessProviderPostProcessorResult);
+}

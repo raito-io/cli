@@ -10,11 +10,13 @@ import (
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/base/util/config"
+	logger_utils "github.com/raito-io/cli/base/util/logger"
 	"github.com/raito-io/cli/base/util/plugin"
 )
 
 func TestRegisterIdentityStoreService(t *testing.T) {
-	Logger()
+	logger = logger_utils.InitializeLogger()
+
 	issi := identityStoryPlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, _, err := buildPluginMap(&issi, &isi)
@@ -22,36 +24,39 @@ func TestRegisterIdentityStoreService(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
 	assert.Equal(t,
-		2, len(pluginMap))
+		3, len(pluginMap))
 	assert.NotNil(t, pluginMap[identity_store.IdentityStoreSyncerName])
 }
 
 func TestRegisterDataSourceService(t *testing.T) {
-	Logger()
+	logger = logger_utils.InitializeLogger()
+
 	dssi := dataSourcePlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, _, err := buildPluginMap(&dssi, &isi)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
-	assert.Equal(t, 2, len(pluginMap))
+	assert.Equal(t, 3, len(pluginMap))
 	assert.NotNil(t, pluginMap[data_source.DataSourceSyncerName])
 }
 
 func TestRegisterAccessSyncService(t *testing.T) {
-	Logger()
+	logger = logger_utils.InitializeLogger()
+
 	dasi := accessSyncPlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, _, err := buildPluginMap(&dasi, &isi)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
-	assert.Equal(t, 2, len(pluginMap))
+	assert.Equal(t, 3, len(pluginMap))
 	assert.NotNil(t, pluginMap[access_provider.AccessSyncerName])
 }
 
 func TestRegisterDoubleDataAccessService(t *testing.T) {
-	Logger()
+	logger = logger_utils.InitializeLogger()
+
 	das1 := accessSyncPlugin{}
 	das2 := accessSyncPlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
@@ -62,7 +67,8 @@ func TestRegisterDoubleDataAccessService(t *testing.T) {
 }
 
 func TestRegisterNoServices(t *testing.T) {
-	Logger()
+	logger = logger_utils.InitializeLogger()
+
 	a := another{}
 	pluginMap, _, err := buildPluginMap(&a)
 
@@ -79,7 +85,7 @@ func TestRegisterIgnoreNoService(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
-	assert.Equal(t, 2, len(pluginMap))
+	assert.Equal(t, 3, len(pluginMap))
 }
 
 func TestRegisterNoInfoPlugin(t *testing.T) {

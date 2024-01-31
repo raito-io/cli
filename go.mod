@@ -7,7 +7,7 @@ toolchain go1.21.0
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/aws/aws-sdk-go-v2 v1.24.1
-	github.com/aws/aws-sdk-go-v2/config v1.26.5
+	github.com/aws/aws-sdk-go-v2/config v1.26.6
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.32.1
 	github.com/aws/smithy-go v1.19.0
 	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
@@ -18,7 +18,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hasura/go-graphql-client v0.10.2
 	github.com/jinzhu/copier v0.4.0
-	github.com/pterm/pterm v0.12.75
+	github.com/pterm/pterm v0.12.76
 	github.com/raito-io/bexpression v0.1.1
 	github.com/raito-io/golang-set v0.0.4
 	github.com/robfig/cron/v3 v3.0.1
@@ -26,7 +26,7 @@ require (
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
 	github.com/vektra/mockery/v2 v2.40.1
-	google.golang.org/grpc v1.60.1
+	google.golang.org/grpc v1.61.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -41,7 +41,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.10 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.10 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.10 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.18.7 // indirect

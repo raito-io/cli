@@ -52,6 +52,7 @@ type BaseTargetConfig struct {
 
 	TagOverwriteKeyForAccessControlName   string
 	TagOverwriteKeyForAccessControlOwners string
+	TagOverwriteKeyForDataObjectsOwners   string
 
 	OnlyOutOfSyncData    bool
 	SkipDataAccessImport bool

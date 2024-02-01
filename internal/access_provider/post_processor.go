@@ -14,7 +14,6 @@ import (
 	"github.com/raito-io/cli/base/access_provider/sync_from_target"
 	"github.com/raito-io/cli/base/tag"
 	"github.com/raito-io/cli/internal/access_provider/post_processing"
-	"github.com/raito-io/cli/internal/util/array"
 )
 
 const nameTagOverrideLockedReason = "This Snowflake role cannot be renamed because it has a name tag override attached to it"
@@ -28,10 +27,6 @@ type PostProcessorResult struct {
 	AccessProviderTouchedCount int
 }
 
-type PostProcessorOutputFileWriter interface {
-	AddAccessProviders(accessProviders ...*sync_from_target.AccessProvider) error
-}
-
 type PostProcessor struct {
 	accessFileCreatorFactory    func(config *baseAp.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error)
 	accessProviderParserFactory func(sourceFile string) (post_processing.PostProcessorSourceFileParser, error)
@@ -39,7 +34,7 @@ type PostProcessor struct {
 	config *PostProcessorConfig
 }
 
-func NewAccessProviderPostProcessorGeneral(config *PostProcessorConfig) PostProcessor {
+func NewPostProcessor(config *PostProcessorConfig) PostProcessor {
 	return PostProcessor{
 		accessProviderParserFactory: post_processing.NewPostProcessorSourceFileParser,
 		accessFileCreatorFactory:    sync_from_target.NewAccessProviderFileCreator,
@@ -99,29 +94,27 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 }
 
 func (p *PostProcessor) postProcessAp(accessProvider *sync_from_target.AccessProvider, outputWriter sync_from_target.AccessProviderFileCreator) (bool, error) {
-	overwrittenOn := make(map[string]bool)
+	touched := false
 
 	if len(accessProvider.Tags) > 0 {
 		for _, tag := range accessProvider.Tags {
-			if !overwrittenOn["name"] && p.matchedWithTagKey(p.config.TagOverwriteKeyForName, tag) {
-				touched := p.overwriteName(accessProvider, tag)
-				if touched {
-					overwrittenOn["name"] = true
+			if p.matchedWithTagKey(p.config.TagOverwriteKeyForName, tag) {
+				nameOverwritten := p.overwriteName(accessProvider, tag)
+				if nameOverwritten {
+					touched = true
 					continue
 				}
 			}
 
-			if !overwrittenOn["owners"] && p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, tag) {
-				touched := p.overwriteOwners(accessProvider, tag)
-				if touched {
-					overwrittenOn["owners"] = true
+			if p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, tag) {
+				ownersOverwritten := p.overwriteOwners(accessProvider, tag)
+				if ownersOverwritten {
+					touched = ownersOverwritten
 					continue
 				}
 			}
 		}
 	}
-
-	touched := len(array.Keys(overwrittenOn)) > 0
 
 	err := outputWriter.AddAccessProviders(accessProvider)
 	if err != nil {
@@ -147,15 +140,18 @@ func (p *PostProcessor) overwriteName(accessProvider *sync_from_target.AccessPro
 }
 func (p *PostProcessor) overwriteOwners(accessProvider *sync_from_target.AccessProvider, tag *tag.Tag) bool {
 	if tag.Value != "" {
-		overwrittenOwners := strings.Split(tag.Value, ",")
+		overwrittenOwners := []string{}
+		for _, owner := range strings.Split(tag.Value, ",") {
+			overwrittenOwners = append(overwrittenOwners, strings.TrimSpace(owner))
+		}
 
 		p.config.TargetLogger.Debug(fmt.Sprintf("adjusting owners for AP (externalId: %v) to %v", accessProvider.ExternalId, overwrittenOwners))
 
-		if accessProvider.Owner == nil {
-			accessProvider.Owner = &sync_from_target.OwnerInput{}
+		if accessProvider.Owners == nil {
+			accessProvider.Owners = &sync_from_target.OwnersInput{}
 		}
 
-		accessProvider.Owner.Users = overwrittenOwners
+		accessProvider.Owners.Users = overwrittenOwners
 
 		return true
 	}

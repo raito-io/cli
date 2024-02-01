@@ -19,7 +19,7 @@ type AccessProvider struct {
 	Policy string   `json:"policy"`
 	Who    *WhoItem `yaml:"who" json:"who"`
 
-	Owner *OwnerInput `json:"owner"`
+	Owners *OwnersInput `json:"owners"`
 
 	// Locking properties
 
@@ -46,7 +46,7 @@ type AccessProvider struct {
 	Tags []*tag.Tag `json:"tags"`
 }
 
-type OwnerInput struct {
+type OwnersInput struct {
 	Users []string `yaml:"users" json:"users"`
 }
 

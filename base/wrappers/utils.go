@@ -3,10 +3,10 @@ package wrappers
 import (
 	"time"
 
-	logger_utils "github.com/raito-io/cli/base/util/logger"
+	"github.com/raito-io/cli/base"
 )
 
-var logger = logger_utils.InitializeLogger()
+var logger = base.Logger()
 
 func timedExecution(f func() error) (time.Duration, error) {
 	start := time.Now()

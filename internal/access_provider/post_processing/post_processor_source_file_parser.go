@@ -1,4 +1,4 @@
-package sync_from_target
+package post_processing
 
 import (
 	"encoding/json"
@@ -8,25 +8,27 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"gopkg.in/yaml.v2"
+
+	"github.com/raito-io/cli/base/access_provider/sync_from_target"
 )
 
-//go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderSyncFromTargetFileParser --with-expecter
-type AccessProviderSyncFromTargetFileParser interface {
-	ParseAccessProviders() ([]*AccessProvider, error)
+//go:generate go run github.com/vektra/mockery/v2 --name=PostProcessorSourceFileParser --with-expecter
+type PostProcessorSourceFileParser interface {
+	ParseAccessProviders() ([]*sync_from_target.AccessProvider, error)
 }
 
-func NewAccessProviderSyncFromTargetFileParser(sourceFile string) (AccessProviderSyncFromTargetFileParser, error) {
-	return &accessProviderSyncFromTargetFileParser{
+func NewPostProcessorSourceFileParser(sourceFile string) (PostProcessorSourceFileParser, error) {
+	return &postProcessorSourceFileParser{
 		SourceFile: sourceFile,
 	}, nil
 }
 
-type accessProviderSyncFromTargetFileParser struct {
+type postProcessorSourceFileParser struct {
 	SourceFile string
 }
 
-func (p *accessProviderSyncFromTargetFileParser) ParseAccessProviders() ([]*AccessProvider, error) {
-	var ret []*AccessProvider
+func (p *postProcessorSourceFileParser) ParseAccessProviders() ([]*sync_from_target.AccessProvider, error) {
+	var ret []*sync_from_target.AccessProvider
 
 	af, err := os.Open(p.SourceFile)
 	if err != nil {

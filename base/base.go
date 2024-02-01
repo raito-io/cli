@@ -3,23 +3,21 @@ package base
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 
 	"github.com/raito-io/cli/base/access_provider"
-	"github.com/raito-io/cli/base/access_provider_post_processor"
 	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
-	logger_utils "github.com/raito-io/cli/base/util/logger"
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
-	"github.com/raito-io/cli/base/wrappers"
-	"github.com/raito-io/cli/base/wrappers/implementations"
 )
 
 var logger hclog.Logger
+var onlyOnce sync.Once
 
 type Closable interface {
 	Close()
@@ -28,7 +26,13 @@ type Closable interface {
 // Logger creates a new logger that should be used as a basis for all logging in the plugin.
 // So it's advised to call this method first and store the logger in a (global) variable.
 func Logger() hclog.Logger {
-	return logger_utils.InitializeLogger()
+	onlyOnce.Do(func() {
+		logger = hclog.New(&hclog.LoggerOptions{
+			JSONFormat: true,
+		})
+	})
+
+	return logger
 }
 
 func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error) {
@@ -99,11 +103,6 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error
 		return nil, func() {}, errors.New("no info plugin implementation found. This infoPlugin mandatory")
 	}
 
-	logger.Debug("Registered generic AccessSyncerPostProcessor Plugin")
-	pluginMap[access_provider_post_processor.AccessProviderPostProcessorName] = &access_provider_post_processor.AccessProviderPostProcessorPlugin{
-		Impl: wrappers.AccessProviderPostProcessor(implementations.NewAccessProviderPostProcessorGeneral()),
-	}
-
 	cleanupFn := func() {
 		for _, f := range cleanupFns {
 			f()
@@ -117,7 +116,7 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error
 // It will automatically detect which of the interfaces are implemented and will register them as plugins.
 // This way, the underlying plugin system infoPlugin abstracted away for everybody implementing plugins for the Raito CLI.
 func RegisterPlugins(pluginImpls ...interface{}) error {
-	logger = logger_utils.InitializeLogger()
+	Logger()
 
 	pluginMap, cleanup, err := buildPluginMap(pluginImpls...)
 	if err != nil {

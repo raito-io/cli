@@ -11,7 +11,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	dapc "github.com/raito-io/cli/base/access_provider"
-	"github.com/raito-io/cli/base/access_provider_post_processor"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	error1 "github.com/raito-io/cli/base/util/error"
 	"github.com/raito-io/cli/internal/constants"
@@ -108,14 +107,23 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context,
 		return job.Failed, "", err
 	}
 
-	postProcessedTargetFile, _, err := s.postProcessAccessProviders(ctx, client, targetFile)
-	if err != nil {
-		return job.Failed, "", err
+	postProcessor := NewAccessProviderPostProcessorGeneral(&PostProcessorConfig{
+		TagOverwriteKeyForName:   s.TargetConfig.TagOverwriteKeyForAccessControlName,
+		TagOverwriteKeyForOwners: s.TargetConfig.TagOverwriteKeyForAccessControlOwners,
+		TargetLogger:             s.TargetConfig.TargetLogger,
+	})
+
+	toProcessFile := targetFile
+	if postProcessor.NeedsPostProcessing() {
+		toProcessFile, _, err = s.postProcessAccessProviders(postProcessor, targetFile)
+		if err != nil {
+			return job.Failed, "", err
+		}
 	}
 
 	importerConfig := AccessProviderImportConfig{
 		BaseTargetConfig: *s.TargetConfig,
-		TargetFile:       postProcessedTargetFile,
+		TargetFile:       toProcessFile,
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
 	}
 
@@ -135,17 +143,9 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context,
 	return status, subtaskId, nil
 }
 
-func (s *dataAccessImportSubtask) postProcessAccessProviders(ctx context.Context, client plugin.PluginClient, sourceFile string) (string, int, error) {
-	postProcessedFile := sourceFile
-
+func (s *dataAccessImportSubtask) postProcessAccessProviders(postProcessor PostProcessor, toProcessFile string) (string, int, error) {
+	postProcessedFile := toProcessFile
 	fileSuffix := "-post-processed"
-
-	var err error
-
-	apPostProcessor, err := client.GetAccessProviderPostProcessor()
-	if err != nil || apPostProcessor == nil {
-		return postProcessedFile, 0, err
-	}
 
 	// Generate a unique file name for the post processing
 	if strings.Contains(postProcessedFile, fileSuffix) {
@@ -154,21 +154,12 @@ func (s *dataAccessImportSubtask) postProcessAccessProviders(ctx context.Context
 		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, ".json")] + fileSuffix + ".json"
 	}
 
-	postProcessorConfig := access_provider_post_processor.AccessProviderPostProcessorConfig{
-		ConfigMap:                &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		InputFile:                sourceFile,
-		OutputFile:               postProcessedFile,
-		TagOverwriteKeyForName:   s.TargetConfig.TagOverwriteKeyForAccessControlName,
-		TagOverwriteKeyForOwners: s.TargetConfig.TagOverwriteKeyForAccessControlOwners,
-	}
-
-	res, err := apPostProcessor.PostProcessFromTarget(ctx, &postProcessorConfig)
-
+	res, err := postProcessor.PostProcess(toProcessFile, postProcessedFile)
 	if err != nil {
-		return postProcessedFile, 0, err
+		return toProcessFile, 0, err
 	}
 
-	return postProcessedFile, int(res.AccessProviderTouchedCount), nil
+	return postProcessedFile, res.AccessProviderTouchedCount, nil
 }
 
 func (s *dataAccessImportSubtask) ProcessResults(results interface{}) error {

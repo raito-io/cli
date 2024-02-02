@@ -122,7 +122,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 	}
 
 	postProcessor := NewPostProcessor(&PostProcessorConfig{
-		TagOverwriteKeyForOwners: s.TargetConfig.TagOverwriteKeyForDataObjectsOwners,
+		TagOverwriteKeyForOwners: s.TargetConfig.TagOverwriteKeyForDataObjectOwners,
 		DataSourceId:             syncerConfig.DataSourceId,
 		DataObjectParent:         syncerConfig.DataObjectParent,
 		DataObjectExcludes:       syncerConfig.DataObjectExcludes,

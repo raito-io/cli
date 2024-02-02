@@ -108,8 +108,8 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context,
 	}
 
 	postProcessor := NewPostProcessor(&PostProcessorConfig{
-		TagOverwriteKeyForName:   s.TargetConfig.TagOverwriteKeyForAccessControlName,
-		TagOverwriteKeyForOwners: s.TargetConfig.TagOverwriteKeyForAccessControlOwners,
+		TagOverwriteKeyForName:   s.TargetConfig.TagOverwriteKeyForAccessProviderName,
+		TagOverwriteKeyForOwners: s.TargetConfig.TagOverwriteKeyForAccessProviderOwners,
 		TargetLogger:             s.TargetConfig.TargetLogger,
 	})
 

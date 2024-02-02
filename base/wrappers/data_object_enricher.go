@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bcicen/jstream"
-
 	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/util/config"
+	"github.com/raito-io/cli/internal/util/jsonstream"
 )
 
 type DataObjectWriter interface {
@@ -75,20 +74,19 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 	if err != nil {
 		return nil, fmt.Errorf("unable to open input file %q: %s", config.InputFile, err.Error())
 	}
+	defer inputFile.Close()
 
 	enrichmentCount := 0
 
-	decoder := jstream.NewDecoder(inputFile, 1)
-	for doRow := range decoder.Stream() {
+	decoder := jsonstream.NewJsonArrayStream[data_source.DataObject](inputFile)
+	for jsonStreamResult := range decoder.Stream() {
 		logger.Info(fmt.Sprintf("Reading row %d", dataObjectsRead))
 
-		do, err2 := data_source.CreateDataObjectFromRow(doRow)
-
-		logger.Info(fmt.Sprintf("Start enriching data object %q", do.FullName))
-
-		if err2 != nil {
-			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, err2.Error())
+		if jsonStreamResult.Err != nil {
+			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, jsonStreamResult.Err.Error())
 		}
+
+		do := jsonStreamResult.Result
 
 		enriched, err2 := enricher.Enrich(ctx, do)
 		if err2 != nil {

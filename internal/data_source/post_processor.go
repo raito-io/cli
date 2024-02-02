@@ -6,13 +6,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bcicen/jstream"
 	"github.com/hashicorp/go-hclog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/tag"
+	"github.com/raito-io/cli/internal/util/jsonstream"
 )
 
 type PostProcessorConfig struct {
@@ -65,18 +65,20 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 	if err != nil {
 		return nil, fmt.Errorf("unable to open input file %q: %s", inputFilePath, err.Error())
 	}
+	defer inputFile.Close()
+
 	dataObjectsRead := 0
 	dataObjectsTouched := 0
 
-	decoder := jstream.NewDecoder(inputFile, 1)
-	for doRow := range decoder.Stream() {
+	decoder := jsonstream.NewJsonArrayStream[data_source.DataObject](inputFile)
+	for jsonStreamResult := range decoder.Stream() {
 		p.config.TargetLogger.Debug(fmt.Sprintf("Start post processing data object %d", dataObjectsRead))
 
-		do, err2 := data_source.CreateDataObjectFromRow(doRow)
-		if err2 != nil {
-			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, err2.Error())
+		if jsonStreamResult.Err != nil {
+			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, jsonStreamResult.Err.Error())
 		}
 
+		do := jsonStreamResult.Result
 		p.config.TargetLogger.Info(fmt.Sprintf("Start enriching data object %q", do.FullName))
 
 		enriched, err2 := p.postProcessDataObject(do, outputWriter)

@@ -65,9 +65,9 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingIdentityStoreSync, false, "If set, identity store sync logs will not be forwarded to Raito Cloud.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataUsageSync, false, "If set, data usage sync logs will not be forwarded to Raito Cloud.")
 
-	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessControlName, "", "If set, will determine the tag-key used for overwriting the display-name of the Access Control when imported in to Raito Cloud.")
-	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessControlOwners, "", "If set, will determine the tag-key used for assigning owners of the Access Control when imported in to Raito Cloud.")
-	cmd.PersistentFlags().String(constants.TagOverwriteKeyForDataObjectsOwners, "", "If set, will determine the tag-key used for assigning owners of the Data Objects when imported in to Raito Cloud.")
+	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessProviderName, "", "If set, will determine the tag-key used for overwriting the display-name of the Access Control when imported in to Raito Cloud.")
+	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessProviderOwners, "", "If set, will determine the tag-key used for assigning owners of the Access Control when imported in to Raito Cloud.")
+	cmd.PersistentFlags().String(constants.TagOverwriteKeyForDataObjectOwners, "", "If set, will determine the tag-key used for assigning owners of the Data Objects when imported in to Raito Cloud.")
 
 	BindFlag(constants.CronFlag, cmd)
 	BindFlag(constants.SyncAtStartupFlag, cmd)
@@ -88,9 +88,9 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.DisableLogForwardingIdentityStoreSync, cmd)
 	BindFlag(constants.DisableLogForwardingDataUsageSync, cmd)
 
-	BindFlag(constants.TagOverwriteKeyForAccessControlName, cmd)
-	BindFlag(constants.TagOverwriteKeyForAccessControlOwners, cmd)
-	BindFlag(constants.TagOverwriteKeyForDataObjectsOwners, cmd)
+	BindFlag(constants.TagOverwriteKeyForAccessProviderName, cmd)
+	BindFlag(constants.TagOverwriteKeyForAccessProviderOwners, cmd)
+	BindFlag(constants.TagOverwriteKeyForDataObjectOwners, cmd)
 
 	cmd.FParseErrWhitelist.UnknownFlags = true
 

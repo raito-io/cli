@@ -62,9 +62,9 @@ const (
 	DisableLogForwardingIdentityStoreSync = "disable-log-forwarding-identity-store-sync"
 	DisableLogForwardingDataUsageSync     = "disable-log-forwarding-data-usage-sync"
 
-	TagOverwriteKeyForAccessControlName   = "tag-overwrite-key-for-access-control-name"
-	TagOverwriteKeyForAccessControlOwners = "tag-overwrite-key-for-access-control-owners"
-	TagOverwriteKeyForDataObjectsOwners   = "tag-overwrite-key-for-data-objects-owners"
+	TagOverwriteKeyForAccessProviderName   = "tag-overwrite-key-for-access-provider-name"
+	TagOverwriteKeyForAccessProviderOwners = "tag-overwrite-key-for-access-provider-owners"
+	TagOverwriteKeyForDataObjectOwners     = "tag-overwrite-key-for-data-object-owners"
 
 	ConnectorNameFlag    = "connector-name"
 	ConnectorVersionFlag = "connector-version"

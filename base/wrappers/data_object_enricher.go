@@ -2,16 +2,13 @@ package wrappers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
-	"github.com/bcicen/jstream"
-
 	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/data_source"
-	"github.com/raito-io/cli/base/tag"
 	"github.com/raito-io/cli/base/util/config"
+	"github.com/raito-io/cli/internal/util/jsonstream"
 )
 
 type DataObjectWriter interface {
@@ -77,20 +74,19 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 	if err != nil {
 		return nil, fmt.Errorf("unable to open input file %q: %s", config.InputFile, err.Error())
 	}
+	defer inputFile.Close()
 
 	enrichmentCount := 0
 
-	decoder := jstream.NewDecoder(inputFile, 1)
-	for doRow := range decoder.Stream() {
+	decoder := jsonstream.NewJsonArrayStream[data_source.DataObject](inputFile)
+	for jsonStreamResult := range decoder.Stream() {
 		logger.Info(fmt.Sprintf("Reading row %d", dataObjectsRead))
 
-		do, err2 := createDataObjectFromRow(doRow)
-
-		logger.Info(fmt.Sprintf("Start enriching data object %q", do.FullName))
-
-		if err2 != nil {
-			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, err2.Error())
+		if jsonStreamResult.Err != nil {
+			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, jsonStreamResult.Err.Error())
 		}
+
+		do := jsonStreamResult.Result
 
 		enriched, err2 := enricher.Enrich(ctx, do)
 		if err2 != nil {
@@ -115,49 +111,4 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 
 func (f *dataObjectEnricherFunction) Close() {
 	f.enricher.Close()
-}
-
-func createDataObjectFromRow(row *jstream.MetaValue) (*data_source.DataObject, error) {
-	if row.ValueType != jstream.Object {
-		return nil, errors.New("illegal format for data object definition in source file")
-	}
-
-	var values = row.Value.(map[string]interface{})
-
-	do := data_source.DataObject{
-		ExternalId:       getStringValue(values, "externalId"),
-		Name:             getStringValue(values, "name"),
-		FullName:         getStringValue(values, "fullName"),
-		Type:             getStringValue(values, "type"),
-		Description:      getStringValue(values, "description"),
-		ParentExternalId: getStringValue(values, "parentExternalId"),
-	}
-
-	if t, found := values["tags"]; found && t != nil {
-		if tags, ok := t.([]interface{}); ok {
-			do.Tags = make([]*tag.Tag, 0, len(tags))
-
-			for _, tagInput := range tags {
-				if tagObj, tok := tagInput.(map[string]interface{}); tok {
-					do.Tags = append(do.Tags, &tag.Tag{
-						Key:    getStringValue(tagObj, "key"),
-						Value:  getStringValue(tagObj, "value"),
-						Source: getStringValue(tagObj, "source"),
-					})
-				}
-			}
-		}
-	}
-
-	return &do, nil
-}
-
-func getStringValue(row map[string]interface{}, key string) string {
-	if v, found := row[key]; found {
-		if vs, ok := v.(string); ok {
-			return vs
-		}
-	}
-
-	return ""
 }

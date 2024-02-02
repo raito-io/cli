@@ -50,6 +50,10 @@ type BaseTargetConfig struct {
 	LockAllNames       bool
 	LockAllDelete      bool
 
+	TagOverwriteKeyForAccessControlName   string
+	TagOverwriteKeyForAccessControlOwners string
+	TagOverwriteKeyForDataObjectsOwners   string
+
 	OnlyOutOfSyncData    bool
 	SkipDataAccessImport bool
 

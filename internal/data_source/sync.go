@@ -11,15 +11,16 @@ import (
 	"time"
 
 	"github.com/raito-io/cli/base/data_object_enricher"
-	"github.com/raito-io/cli/internal/target/types"
-
 	dspc "github.com/raito-io/cli/base/data_source"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
+	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/version_management"
 )
+
+const JSON_EXTENSION = ".json"
 
 type DataSourceImportResult struct {
 	DataObjectsAdded   int `json:"dataObjectsAdded"`
@@ -120,6 +121,22 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		return job.Failed, "", err
 	}
 
+	postProcessor := NewPostProcessor(&PostProcessorConfig{
+		TagOverwriteKeyForOwners: s.TargetConfig.TagOverwriteKeyForDataObjectsOwners,
+		DataSourceId:             syncerConfig.DataSourceId,
+		DataObjectParent:         syncerConfig.DataObjectParent,
+		DataObjectExcludes:       syncerConfig.DataObjectExcludes,
+		TargetLogger:             s.TargetConfig.TargetLogger,
+	})
+
+	toProcessFile := enrichedTargetFile
+	if postProcessor.NeedsPostProcessing() {
+		toProcessFile, _, err = s.postProcessDataObjects(postProcessor, enrichedTargetFile)
+		if err != nil {
+			return job.Failed, "", err
+		}
+	}
+
 	deleteUntouched := s.TargetConfig.DeleteUntouched
 	if deleteUntouched && s.TargetConfig.DataObjectParent != nil && *s.TargetConfig.DataObjectParent != "" {
 		deleteUntouched = false
@@ -127,7 +144,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 
 	importerConfig := DataSourceImportConfig{
 		BaseTargetConfig: *s.TargetConfig,
-		TargetFile:       enrichedTargetFile,
+		TargetFile:       toProcessFile,
 		DeleteUntouched:  deleteUntouched,
 	}
 	dsImporter := NewDataSourceImporter(&importerConfig, statusUpdater)
@@ -179,6 +196,25 @@ func (s *DataSourceSync) enrichDataObjects(ctx context.Context, sourceFile strin
 	return enrichedFile, newFiles, nil
 }
 
+func (s *DataSourceSync) postProcessDataObjects(postProcessor PostProcessor, toProcessFile string) (string, int, error) {
+	postProcessedFile := toProcessFile
+	fileSuffix := "-post-processed"
+
+	// Generate a unique file name for the post processing
+	if strings.Contains(postProcessedFile, fileSuffix) {
+		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, fileSuffix)] + fileSuffix + JSON_EXTENSION
+	} else {
+		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, JSON_EXTENSION)] + fileSuffix + JSON_EXTENSION
+	}
+
+	res, err := postProcessor.PostProcess(toProcessFile, postProcessedFile)
+	if err != nil {
+		return toProcessFile, 0, err
+	}
+
+	return postProcessedFile, res.DataObjectsTouchedCount, nil
+}
+
 func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *types.EnricherConfig, sourceFile string, index int) (string, int, error) {
 	client, err := plugin.NewPluginClient(enricher.ConnectorName, enricher.ConnectorVersion, s.TargetConfig.TargetLogger)
 	if err != nil {
@@ -195,9 +231,9 @@ func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *types.Enric
 	targetFile := sourceFile
 	// Generate a unique file name for the enrichment
 	if strings.Contains(targetFile, "-enriched") {
-		targetFile = targetFile[0:strings.LastIndex(targetFile, "-enriched")] + "-enriched" + strconv.Itoa(index) + ".json"
+		targetFile = targetFile[0:strings.LastIndex(targetFile, "-enriched")] + "-enriched" + strconv.Itoa(index) + JSON_EXTENSION
 	} else {
-		targetFile = targetFile[0:strings.LastIndex(targetFile, ".json")] + "-enriched" + strconv.Itoa(index) + ".json"
+		targetFile = targetFile[0:strings.LastIndex(targetFile, JSON_EXTENSION)] + "-enriched" + strconv.Itoa(index) + JSON_EXTENSION
 	}
 
 	res, err := doe.Enrich(ctx, &data_object_enricher.DataObjectEnricherConfig{

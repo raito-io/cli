@@ -107,9 +107,23 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context,
 		return job.Failed, "", err
 	}
 
+	postProcessor := NewPostProcessor(&PostProcessorConfig{
+		TagOverwriteKeyForName:   s.TargetConfig.TagOverwriteKeyForAccessControlName,
+		TagOverwriteKeyForOwners: s.TargetConfig.TagOverwriteKeyForAccessControlOwners,
+		TargetLogger:             s.TargetConfig.TargetLogger,
+	})
+
+	toProcessFile := targetFile
+	if postProcessor.NeedsPostProcessing() {
+		toProcessFile, _, err = s.postProcessAccessProviders(postProcessor, targetFile)
+		if err != nil {
+			return job.Failed, "", err
+		}
+	}
+
 	importerConfig := AccessProviderImportConfig{
 		BaseTargetConfig: *s.TargetConfig,
-		TargetFile:       targetFile,
+		TargetFile:       toProcessFile,
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
 	}
 
@@ -127,6 +141,25 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context,
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
+}
+
+func (s *dataAccessImportSubtask) postProcessAccessProviders(postProcessor PostProcessor, toProcessFile string) (string, int, error) {
+	postProcessedFile := toProcessFile
+	fileSuffix := "-post-processed"
+
+	// Generate a unique file name for the post processing
+	if strings.Contains(postProcessedFile, fileSuffix) {
+		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, fileSuffix)] + fileSuffix + ".json"
+	} else {
+		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, ".json")] + fileSuffix + ".json"
+	}
+
+	res, err := postProcessor.PostProcess(toProcessFile, postProcessedFile)
+	if err != nil {
+		return toProcessFile, 0, err
+	}
+
+	return postProcessedFile, res.AccessProviderTouchedCount, nil
 }
 
 func (s *dataAccessImportSubtask) ProcessResults(results interface{}) error {

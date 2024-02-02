@@ -11,17 +11,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-multierror"
 	"github.com/robfig/cron/v3"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 
 	"github.com/raito-io/cli/base/util/error/grpc_error"
-	"github.com/raito-io/cli/internal/target/types"
-
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-multierror"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
 	"github.com/raito-io/cli/internal/access_provider"
 	"github.com/raito-io/cli/internal/clitrigger"
 	"github.com/raito-io/cli/internal/constants"
@@ -32,6 +29,7 @@ import (
 	"github.com/raito-io/cli/internal/logging"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
+	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/array"
 	"github.com/raito-io/cli/internal/version"
 	"github.com/raito-io/cli/internal/version_management"
@@ -67,6 +65,10 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingIdentityStoreSync, false, "If set, identity store sync logs will not be forwarded to Raito Cloud.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataUsageSync, false, "If set, data usage sync logs will not be forwarded to Raito Cloud.")
 
+	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessControlName, "", "If set, will determine the tag-key used for overwriting the display-name of the Access Control when imported in to Raito Cloud.")
+	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessControlOwners, "", "If set, will determine the tag-key used for assigning owners of the Access Control when imported in to Raito Cloud.")
+	cmd.PersistentFlags().String(constants.TagOverwriteKeyForDataObjectsOwners, "", "If set, will determine the tag-key used for assigning owners of the Data Objects when imported in to Raito Cloud.")
+
 	BindFlag(constants.CronFlag, cmd)
 	BindFlag(constants.SyncAtStartupFlag, cmd)
 	BindFlag(constants.FrequencyFlag, cmd)
@@ -85,6 +87,10 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.DisableLogForwardingDataAccessSync, cmd)
 	BindFlag(constants.DisableLogForwardingIdentityStoreSync, cmd)
 	BindFlag(constants.DisableLogForwardingDataUsageSync, cmd)
+
+	BindFlag(constants.TagOverwriteKeyForAccessControlName, cmd)
+	BindFlag(constants.TagOverwriteKeyForAccessControlOwners, cmd)
+	BindFlag(constants.TagOverwriteKeyForDataObjectsOwners, cmd)
 
 	cmd.FParseErrWhitelist.UnknownFlags = true
 

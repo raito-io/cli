@@ -3,7 +3,6 @@ package role_based
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/raito-io/cli/base"
 	"github.com/raito-io/cli/base/access_provider"
@@ -22,8 +21,6 @@ type AccessProviderRoleSyncer interface {
 	SyncAccessProviderRolesToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
 	SyncAccessProviderMasksToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, roleNameMap map[string]string, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
 	SyncAccessProviderFiltersToTarget(ctx context.Context, apToRemoveMap map[string]*sync_to_target.AccessProvider, apMap map[string]*sync_to_target.AccessProvider, roleNameMap map[string]string, feedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
-
-	SyncAccessAsCodeToTarget(ctx context.Context, accesses map[string]*sync_to_target.AccessProvider, prefix string, configMap *config.ConfigMap) error
 }
 
 func AccessProviderRoleSync(syncer AccessProviderRoleSyncer, namingConstraints naming_hint.NamingConstraints, configOpt ...func(config *access_provider.AccessSyncConfig)) *wrappers.DataAccessSyncFunction {
@@ -44,35 +41,6 @@ type accessProviderRoleSyncFunction struct {
 
 func (s *accessProviderRoleSyncFunction) SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler wrappers.AccessProviderHandler, configMap *config.ConfigMap) error {
 	return s.syncer.SyncAccessProvidersFromTarget(ctx, accessProviderHandler, configMap)
-}
-
-func (s *accessProviderRoleSyncFunction) SyncAccessAsCodeToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, prefix string, configMap *config.ConfigMap) error {
-	roleSeparator := string(s.namingConstraints.SplitCharacter())
-	if !strings.HasSuffix(prefix, roleSeparator) {
-		prefix += roleSeparator
-	}
-
-	logger.Info(fmt.Sprintf("Using prefix %q", prefix))
-
-	uniqueRoleNameGenerator, err := naming_hint.NewUniqueNameGenerator(logger, prefix, &s.namingConstraints)
-	if err != nil {
-		return err
-	}
-
-	apList := accessProviders.AccessProviders
-	apMap := make(map[string]*sync_to_target.AccessProvider)
-
-	for _, ap := range apList {
-		roleName, err := uniqueRoleNameGenerator.Generate(ap)
-		if err != nil {
-			return err
-		}
-
-		logger.Info(fmt.Sprintf("Generated rolename %q", roleName))
-		apMap[roleName] = ap
-	}
-
-	return s.syncer.SyncAccessAsCodeToTarget(ctx, apMap, prefix, configMap)
 }
 
 func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, accessProviderFeedbackHandler wrappers.AccessProviderFeedbackHandler, configMap *config.ConfigMap) error {

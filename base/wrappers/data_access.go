@@ -3,7 +3,6 @@ package wrappers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,7 +26,6 @@ type AccessProviderFeedbackHandler interface {
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderSyncer --with-expecter --inpackage
 type AccessProviderSyncer interface {
 	SyncAccessProvidersFromTarget(ctx context.Context, accessProviderHandler AccessProviderHandler, configMap *config.ConfigMap) error
-	SyncAccessAsCodeToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, prefix string, configMap *config.ConfigMap) error
 	SyncAccessProviderToTarget(ctx context.Context, accessProviders *sync_to_target.AccessProviderImport, accessProviderFeedbackHandler AccessProviderFeedbackHandler, configMap *config.ConfigMap) error
 }
 
@@ -125,26 +123,15 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 		return nil, err
 	}
 
-	prefix := config.Prefix
-	accessAsCode := config.Prefix != ""
-
-	var sec time.Duration
-
-	if accessAsCode {
-		sec, err = timedExecution(func() error {
-			return syncer.SyncAccessAsCodeToTarget(ctx, dar, prefix, config.ConfigMap)
-		})
-	} else {
-		feedbackFile, err2 := s.accessFeedbackFileCreatorFactory(config)
-		if err2 != nil {
-			return nil, err2
-		}
-		defer feedbackFile.Close()
-
-		sec, err = timedExecution(func() error {
-			return syncer.SyncAccessProviderToTarget(ctx, dar, feedbackFile, config.ConfigMap)
-		})
+	feedbackFile, err2 := s.accessFeedbackFileCreatorFactory(config)
+	if err2 != nil {
+		return nil, err2
 	}
+	defer feedbackFile.Close()
+
+	sec, err := timedExecution(func() error {
+		return syncer.SyncAccessProviderToTarget(ctx, dar, feedbackFile, config.ConfigMap)
+	})
 
 	if err != nil {
 		return nil, err

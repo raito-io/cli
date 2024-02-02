@@ -184,58 +184,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 	assert.Nil(t, result.Error)
 }
 
-func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode(t *testing.T) {
-	//Given
-	config := &access_provider.AccessSyncToTarget{
-		Prefix:             "R",
-		SourceFile:         "SourceFile",
-		FeedbackTargetFile: "FeedbackTargetFile",
-		ConfigMap:          &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
-	}
-
-	accessProvidersImport := sync_to_target.AccessProviderImport{
-		LastCalculated: time.Now().Unix(),
-		AccessProviders: []*sync_to_target.AccessProvider{
-			{
-				Id:          "AP1",
-				Description: "Descr",
-				Delete:      false,
-				Name:        "Ap1",
-				NamingHint:  "NameHint1",
-				Action:      sync_to_target.Grant,
-			},
-			{
-				Id:          "AP2",
-				Description: "Descr2",
-				Delete:      false,
-				Name:        "Ap2",
-				NamingHint:  "NameHint2",
-				Action:      sync_to_target.Grant,
-			},
-		},
-	}
-
-	accessProviderParser := mocks2.NewAccessProviderImportFileParser(t)
-	accessProviderParser.EXPECT().ParseAccessProviders().Return(&accessProvidersImport, nil).Once()
-
-	syncerMock := NewMockAccessProviderSyncer(t)
-	syncerMock.EXPECT().SyncAccessAsCodeToTarget(mock.Anything, &accessProvidersImport, "R", config.ConfigMap).Return(nil).Once()
-
-	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
-		accessProviderParserFactory: func(config *access_provider.AccessSyncToTarget) (sync_to_target.AccessProviderImportFileParser, error) {
-			return accessProviderParser, nil
-		},
-	}
-
-	//When
-	result, err := syncFunction.SyncToTarget(context.Background(), config)
-
-	//Then
-	assert.NoError(t, err)
-	assert.Nil(t, result.Error)
-}
-
 func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsingFactory(t *testing.T) {
 	//Given
 	config := &access_provider.AccessSyncToTarget{
@@ -260,7 +208,6 @@ func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsingFactory(t *testin
 	assert.Error(t, err)
 	assert.Nil(t, result)
 
-	syncerMock.AssertNotCalled(t, "SyncAccessAsCodeToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	syncerMock.AssertNotCalled(t, "SyncAccessProvidersToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
@@ -292,7 +239,6 @@ func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsing(t *testing.T) {
 	assert.Nil(t, result)
 
 	syncerMock.AssertNotCalled(t, "SyncAccessProvidersToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
-	syncerMock.AssertNotCalled(t, "SyncAccessAsCodeToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFileCreation(t *testing.T) {
@@ -348,7 +294,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFile
 	assert.Nil(t, result)
 
 	syncerMock.AssertNotCalled(t, "SyncAccessProvidersToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
-	syncerMock.AssertNotCalled(t, "SyncAccessAsCodeToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	syncerMock.AssertNotCalled(t, "SyncAccessProvidersToTarget", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
@@ -396,58 +341,6 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnSync(t *test
 		accessFeedbackFileCreatorFactory: func(config *access_provider.AccessSyncToTarget) (sync_to_target.SyncFeedbackFileCreator, error) {
 			return accessFeedBackFileCreator, nil
 		},
-		accessProviderParserFactory: func(config *access_provider.AccessSyncToTarget) (sync_to_target.AccessProviderImportFileParser, error) {
-			return accessProviderParser, nil
-		},
-	}
-
-	//When
-	result, err := syncFunction.SyncToTarget(context.Background(), config)
-
-	//Then
-	assert.Error(t, err)
-	assert.Nil(t, result)
-}
-
-func TestDataAccessSyncFunction_SyncToTarget_AccessAsCode_ErrorOnSync(t *testing.T) {
-	//Given
-	config := &access_provider.AccessSyncToTarget{
-		Prefix:             "R",
-		SourceFile:         "SourceFile",
-		FeedbackTargetFile: "FeedbackTargetFile",
-		ConfigMap:          &config2.ConfigMap{Parameters: map[string]string{"key": "value"}},
-	}
-
-	accessProvidersImport := sync_to_target.AccessProviderImport{
-		LastCalculated: time.Now().Unix(),
-		AccessProviders: []*sync_to_target.AccessProvider{
-			{
-				Id:          "AP1",
-				Description: "Descr",
-				Delete:      false,
-				Name:        "Ap1",
-				NamingHint:  "NameHint1",
-				Action:      sync_to_target.Grant,
-			},
-			{
-				Id:          "AP2",
-				Description: "Descr2",
-				Delete:      false,
-				Name:        "Ap2",
-				NamingHint:  "NameHint2",
-				Action:      sync_to_target.Grant,
-			},
-		},
-	}
-
-	accessProviderParser := mocks2.NewAccessProviderImportFileParser(t)
-	accessProviderParser.EXPECT().ParseAccessProviders().Return(&accessProvidersImport, nil).Once()
-
-	syncerMock := NewMockAccessProviderSyncer(t)
-	syncerMock.EXPECT().SyncAccessAsCodeToTarget(mock.Anything, &accessProvidersImport, "R", config.ConfigMap).Return(fmt.Errorf("boom")).Once()
-
-	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
 		accessProviderParserFactory: func(config *access_provider.AccessSyncToTarget) (sync_to_target.AccessProviderImportFileParser, error) {
 			return accessProviderParser, nil
 		},

@@ -51,13 +51,15 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	outputWriter, err := p.accessFileCreatorFactory(&baseAp.AccessSyncFromTarget{
 		TargetFile: outputFile,
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	defer outputWriter.Close()
 
 	p.config.TargetLogger.Debug("Post processor parsing APs")
 

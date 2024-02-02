@@ -15,20 +15,19 @@ import (
 
 func TestRegisterIdentityStoreService(t *testing.T) {
 	Logger()
-
 	issi := identityStoryPlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, _, err := buildPluginMap(&issi, &isi)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginMap)
-	assert.Equal(t, 2, len(pluginMap))
+	assert.Equal(t,
+		2, len(pluginMap))
 	assert.NotNil(t, pluginMap[identity_store.IdentityStoreSyncerName])
 }
 
 func TestRegisterDataSourceService(t *testing.T) {
 	Logger()
-
 	dssi := dataSourcePlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, _, err := buildPluginMap(&dssi, &isi)
@@ -41,7 +40,6 @@ func TestRegisterDataSourceService(t *testing.T) {
 
 func TestRegisterAccessSyncService(t *testing.T) {
 	Logger()
-
 	dasi := accessSyncPlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
 	pluginMap, _, err := buildPluginMap(&dasi, &isi)
@@ -54,7 +52,6 @@ func TestRegisterAccessSyncService(t *testing.T) {
 
 func TestRegisterDoubleDataAccessService(t *testing.T) {
 	Logger()
-
 	das1 := accessSyncPlugin{}
 	das2 := accessSyncPlugin{}
 	isi := plugin.UnimplementedInfoServiceServer{}
@@ -66,7 +63,6 @@ func TestRegisterDoubleDataAccessService(t *testing.T) {
 
 func TestRegisterNoServices(t *testing.T) {
 	Logger()
-
 	a := another{}
 	pluginMap, _, err := buildPluginMap(&a)
 

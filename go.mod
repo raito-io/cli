@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/config v1.26.6
-	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.32.1
+	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.33.0
 	github.com/aws/smithy-go v1.19.0
 	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
 	github.com/bcicen/jstream v1.0.1
@@ -16,9 +16,9 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.5
-	github.com/hasura/go-graphql-client v0.10.2
+	github.com/hasura/go-graphql-client v0.11.0
 	github.com/jinzhu/copier v0.4.0
-	github.com/pterm/pterm v0.12.76
+	github.com/pterm/pterm v0.12.78
 	github.com/raito-io/bexpression v0.1.1
 	github.com/raito-io/golang-set v0.0.4
 	github.com/robfig/cron/v3 v3.0.1

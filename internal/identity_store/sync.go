@@ -109,6 +109,9 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 
 	// Fetching the tagSource from the plugin
 	tagSourcesScope, err := tag.FetchTagSourceFromPlugin(ctx, client, nil)
+	if err != nil {
+		return job.Failed, "", err
+	}
 
 	importerConfig := IdentityStoreImportConfig{
 		BaseTargetConfig: *s.TargetConfig,

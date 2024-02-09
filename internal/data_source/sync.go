@@ -110,6 +110,9 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 
 	// Fetching the tagSource from the plugin
 	tagSourcesScope, err := tag.FetchTagSourceFromPlugin(ctx, client, nil)
+	if err != nil {
+		return job.Failed, "", err
+	}
 
 	enrichedTargetFile, createdFiles, tagSourcesScope, err := s.enrichDataObjects(ctx, targetFile, tagSourcesScope)
 

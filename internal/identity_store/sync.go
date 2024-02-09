@@ -15,6 +15,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/raito-io/cli/internal/version_management"
 )
 
@@ -106,12 +107,16 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 		return job.Failed, "", s.mapErrorResult(result.Error) //nolint:staticcheck
 	}
 
+	// Fetching the tagSource from the plugin
+	tagSourcesScope, err := tag.FetchTagSourceFromPlugin(ctx, client, nil)
+
 	importerConfig := IdentityStoreImportConfig{
 		BaseTargetConfig: *s.TargetConfig,
 		UserFile:         userFile,
 		GroupFile:        groupFile,
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
 		ReplaceGroups:    s.TargetConfig.ReplaceGroups,
+		TagSourcesScope:  tagSourcesScope,
 	}
 	isImporter := NewIdentityStoreImporter(&importerConfig, statusUpdater)
 

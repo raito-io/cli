@@ -10,6 +10,7 @@ message PluginInfo {
   string description = 2;
   util.version.SemVer version = 3;
   repeated ParameterInfo parameters = 4;
+  string tagSource = 5;
 }
 
 // ParameterInfo contains the information about a parameter.

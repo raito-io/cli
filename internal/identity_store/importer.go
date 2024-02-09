@@ -22,6 +22,10 @@ type IdentityStoreImportConfig struct {
 	GroupFile       string
 	DeleteUntouched bool
 	ReplaceGroups   bool
+
+	// TagSourcesScope is the set of sources that will be looked at when merging the tags. Tags with other sources will remain untouched.
+	// If not specified, the default is to take all sources for which tags are defined in the import file.
+	TagSourcesScope []string `json:"tagSourcesScope"`
 }
 
 type IdentityStoreImporter interface {
@@ -82,7 +86,8 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
             deleteUntouched: %t,
             replaceGroups: %t, 
             usersFileKey: \"%s\",
-            groupsFileKey: \"%s\"
+            groupsFileKey: \"%s\",
+            tagSourcesScope: %s
           }
         }) {
           subtask {
@@ -90,7 +95,7 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
             subtaskId
           }
         }
-    }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, userKey, groupKey)
+    }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, userKey, groupKey, strings.Replace(fmt.Sprintf("%v", i.config.TagSourcesScope), "\"", "\\\"", -1))
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 

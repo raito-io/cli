@@ -164,7 +164,7 @@ func (x *DataSourceSyncResult) GetDataObjects() int32 {
 	return 0
 }
 
-//NoLinting ToSupport GQL schema (temporarily)
+// NoLinting ToSupport GQL schema (temporarily)
 type MetaData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -668,7 +668,7 @@ func (x *MaskingType) GetDataTypes() []string {
 	return nil
 }
 
-//NoLinting ToSupport GQL schema (temporarily)
+// NoLinting ToSupport GQL schema (temporarily)
 type DataObjectTypePermission struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -763,7 +763,7 @@ func (x *DataObjectTypePermission) GetCannotBeGranted() bool {
 	return false
 }
 
-//NoLinting ToSupport GQL schema (temporarily)
+// NoLinting ToSupport GQL schema (temporarily)
 type DataObjectTypeAction struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

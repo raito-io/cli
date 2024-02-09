@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/internal/constants"
@@ -95,7 +96,7 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
             subtaskId
           }
         }
-    }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, userKey, groupKey, strings.Replace(fmt.Sprintf("%v", i.config.TagSourcesScope), "\"", "\\\"", -1))
+    }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, userKey, groupKey, strings.Replace(tag.SerializeTagList(i.config.TagSourcesScope), "\"", "\\\"", -1))
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 

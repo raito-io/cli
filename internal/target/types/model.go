@@ -68,3 +68,9 @@ type BaseTargetConfig struct {
 
 	TargetLogger hclog.Logger
 }
+
+type DbtConfig struct {
+	BaseConfig
+	DataSourceId string
+	DbtFilePath  string
+}

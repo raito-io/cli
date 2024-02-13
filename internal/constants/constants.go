@@ -91,6 +91,8 @@ const (
 
 	SubtaskAccessSync = "AccessSync"
 
+	DbtManifestFile = "dbt-manifest"
+
 	// HTTP headers
 	DomainHeader = "Raito-Domain"
 )

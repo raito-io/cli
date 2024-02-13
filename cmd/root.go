@@ -95,6 +95,7 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	initRunCommand(rootCmd)
 	initAccessCommand(rootCmd)
 	initInfoCommand(rootCmd)
+	initDbtCommand(rootCmd)
 
 	return root
 }

@@ -128,6 +128,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 	for key := range grants {
 		grant := grants[key]
 		name := key
+
 		wg.Go(func() error {
 			return createOrUpdateAp(name, grant, grantIds)
 		})
@@ -136,6 +137,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 	for key := range masks {
 		mask := masks[key]
 		name := key
+
 		wg.Go(func() error {
 			return createOrUpdateAp(name, mask, maskIds)
 		})
@@ -144,6 +146,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 	for key := range filters {
 		filter := filters[key]
 		name := key
+
 		wg.Go(func() error {
 			return createOrUpdateAp(name, filter, filterIds)
 		})
@@ -151,6 +154,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 
 	for key := range apsToRemove {
 		oldAp := key
+
 		wg.Go(func() error {
 			return s.accessProviderClient.DeleteAccessProvider(ctx, oldAp)
 		})
@@ -240,20 +244,20 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 
 	var err error
 
-	for _, node := range manifest.Nodes {
-		if node.ResourceType != "model" {
+	for i := range manifest.Nodes {
+		if manifest.Nodes[i].ResourceType != "model" {
 			continue
 		}
 
-		databaseName := node.Database
-		schemaName := node.Schema
-		modelName := node.Name
+		databaseName := manifest.Nodes[i].Database
+		schemaName := manifest.Nodes[i].Schema
+		modelName := manifest.Nodes[i].Name
 		doName := fmt.Sprintf("%s.%s.%s", databaseName, schemaName, modelName)
 
-		for _, grant := range node.Meta.Raito.Grant {
+		for grantIdx, grant := range manifest.Nodes[i].Meta.Raito.Grant {
 			if _, found := grants[grant.Name]; !found {
 				grants[grant.Name] = &sdkTypes.AccessProviderInput{
-					Name:       &grant.Name,
+					Name:       &manifest.Nodes[i].Meta.Raito.Grant[grantIdx].Name,
 					Action:     utils.Ptr(models.AccessProviderActionGrant),
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
@@ -273,14 +277,14 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 			})
 		}
 
-		for _, filter := range node.Meta.Raito.Filter {
+		for filterIdx, filter := range manifest.Nodes[i].Meta.Raito.Filter {
 			if _, found := filters[filter.Name]; !found {
 				filters[filter.Name] = &sdkTypes.AccessProviderInput{
-					Name:       &filter.Name,
+					Name:       &manifest.Nodes[i].Meta.Raito.Filter[filterIdx].Name,
 					Action:     utils.Ptr(models.AccessProviderActionFiltered),
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
-					PolicyRule: &filter.PolicyRule,
+					PolicyRule: &manifest.Nodes[i].Meta.Raito.Filter[filterIdx].PolicyRule,
 					Source:     utils.Ptr(dbtSource),
 					WhatDataObjects: []sdkTypes.AccessProviderWhatInputDO{
 						{
@@ -298,7 +302,7 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 			}
 		}
 
-		for _, column := range node.Columns {
+		for columnIdx, column := range manifest.Nodes[i].Columns {
 			if column.Meta.Raito.Mask == nil {
 				continue
 			}
@@ -332,12 +336,12 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 				}
 			} else {
 				masks[column.Meta.Raito.Mask.Name] = &sdkTypes.AccessProviderInput{
-					Name:       &column.Meta.Raito.Mask.Name,
+					Name:       &manifest.Nodes[i].Columns[columnIdx].Meta.Raito.Mask.Name,
 					Action:     utils.Ptr(models.AccessProviderActionMask),
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
 					Source:     utils.Ptr(dbtSource),
-					Type:       &column.Meta.Raito.Mask.Type,
+					Type:       &manifest.Nodes[i].Columns[columnIdx].Meta.Raito.Mask.Type,
 				}
 			}
 

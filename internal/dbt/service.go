@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
@@ -80,8 +81,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 	var successUpdate uint32
 	var failed uint32
 
-	logChannel := make(chan bool) // channel will be true if ap is updated successfully
-	defer close(logChannel)
+	logChannel := make(chan bool) // channel will be true if ap is updated successfully.
 
 	createOrUpdateAp := func(name string, apInput *sdkTypes.AccessProviderInput, apIds map[string]string) (err error) {
 		defer func() {
@@ -111,7 +111,12 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 		return nil
 	}
 
+	var logWg = sync.WaitGroup{}
+	logWg.Add(1)
+
 	go func() {
+		defer logWg.Done()
+
 		for apUpdate := range logChannel {
 			if apUpdate {
 				successUpdate++
@@ -160,7 +165,12 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 		})
 	}
 
-	return successUpdate, failed, wg.Wait().ErrorOrNil()
+	err := wg.Wait().ErrorOrNil()
+
+	close(logChannel)
+	logWg.Wait()
+
+	return successUpdate, failed, err
 }
 
 func (s *DbtService) loadExistingAps(ctx context.Context, grants map[string]*sdkTypes.AccessProviderInput, filters map[string]*sdkTypes.AccessProviderInput, masks map[string]*sdkTypes.AccessProviderInput) (map[string]string, map[string]string, map[string]string, set.Set[string], error) {

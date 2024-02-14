@@ -19,8 +19,8 @@ func initDbtCommand(rootCmd *cobra.Command) {
 	var cmd = &cobra.Command{
 		Hidden: true,
 		Use:    "dbt",
-		Short:  "Run dbt integration tests",
-		Long:   "Run dbt integration tests",
+		Short:  "Run dbt integration",
+		Long:   "Run dbt integration",
 		Run:    executeDbt,
 	}
 

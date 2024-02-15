@@ -261,6 +261,8 @@ func (s *DbtService) loadDbtFile(dbtFilePath string) (*types.Manifest, error) {
 }
 
 func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (map[string]*sdkTypes.AccessProviderInput, map[string]*sdkTypes.AccessProviderInput, map[string]*sdkTypes.AccessProviderInput, error) {
+	source := _source(manifest.Metadata.ProjectName)
+
 	grants := make(map[string]*sdkTypes.AccessProviderInput)
 	filters := make(map[string]*sdkTypes.AccessProviderInput)
 	masks := make(map[string]*sdkTypes.AccessProviderInput)
@@ -299,7 +301,7 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 					Action:     utils.Ptr(models.AccessProviderActionGrant),
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
-					Source:     utils.Ptr(dbtSource),
+					Source:     &source,
 					Locks:      defaultLocks,
 				}
 			}
@@ -324,7 +326,7 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
 					PolicyRule: &manifest.Nodes[i].Meta.Raito.Filter[filterIdx].PolicyRule,
-					Source:     utils.Ptr(dbtSource),
+					Source:     &source,
 					WhatDataObjects: []sdkTypes.AccessProviderWhatInputDO{
 						{
 							DataObjectByName: []sdkTypes.AccessProviderWhatDoByNameInput{
@@ -380,7 +382,7 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 					Action:     utils.Ptr(models.AccessProviderActionMask),
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
-					Source:     utils.Ptr(dbtSource),
+					Source:     &source,
 					Type:       manifest.Nodes[i].Columns[columnIdx].Meta.Raito.Mask.Type,
 					Locks:      defaultLocks,
 				}
@@ -402,4 +404,8 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 	}
 
 	return grants, filters, masks, nil
+}
+
+func _source(projectName string) string {
+	return fmt.Sprintf("%s-%s", dbtSource, projectName)
 }

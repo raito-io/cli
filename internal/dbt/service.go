@@ -28,11 +28,14 @@ import (
 type accessProviderClient interface {
 	CreateAccessProvider(ctx context.Context, ap sdkTypes.AccessProviderInput) (*sdkTypes.AccessProvider, error)
 	UpdateAccessProvider(ctx context.Context, id string, ap sdkTypes.AccessProviderInput, ops ...func(options *services.UpdateAccessProviderOptions)) (*sdkTypes.AccessProvider, error)
-	DeleteAccessProvider(ctx context.Context, id string) error
+	DeleteAccessProvider(ctx context.Context, id string, ops ...func(options *services.UpdateAccessProviderOptions)) error
 	ListAccessProviders(ctx context.Context, ops ...func(options *services.AccessProviderListOptions)) <-chan sdkTypes.ListItem[sdkTypes.AccessProvider]
 }
 
-const dbtSource = "dbt"
+const (
+	dbtSource  = "dbt"
+	lockReason = "locked by dbt"
+)
 
 type DbtService struct {
 	dataSourceId         string
@@ -63,7 +66,7 @@ func (s *DbtService) RunDbt(ctx context.Context, dbtFile string) (uint32, uint32
 		return 0, 0, fmt.Errorf("load file %s: %w", dbtFile, err)
 	}
 
-	grants, masks, filters, err := s.loadAccessProvidersFromManifest(manifest)
+	grants, filters, masks, err := s.loadAccessProvidersFromManifest(manifest)
 	if err != nil {
 		return 0, 0, fmt.Errorf("load access providers from manifest: %w", err)
 	}
@@ -95,7 +98,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 		if id, found := apIds[name]; found {
 			s.logger.Debug(fmt.Sprintf("update access provider %q (%q)", name, id))
 
-			_, updateErr := s.accessProviderClient.UpdateAccessProvider(ctx, id, *apInput)
+			_, updateErr := s.accessProviderClient.UpdateAccessProvider(ctx, id, *apInput, services.WithAccessProviderOverrideLocks())
 			if updateErr != nil {
 				return fmt.Errorf("update access provider %q (%q): %w", name, id, updateErr)
 			}
@@ -160,8 +163,18 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 	for key := range apsToRemove {
 		oldAp := key
 
-		wg.Go(func() error {
-			return s.accessProviderClient.DeleteAccessProvider(ctx, oldAp)
+		wg.Go(func() (err error) {
+			defer func() {
+				if err != nil {
+					logChannel <- false
+				} else {
+					logChannel <- true
+				}
+			}()
+
+			s.logger.Debug(fmt.Sprintf("delete access provider %q", oldAp))
+
+			return s.accessProviderClient.DeleteAccessProvider(ctx, oldAp, services.WithAccessProviderOverrideLocks())
 		})
 	}
 
@@ -254,8 +267,23 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 
 	var err error
 
+	defaultLocks := []sdkTypes.AccessProviderLockDataInput{
+		{
+			LockKey: sdkTypes.AccessProviderLockWhatlock,
+			Details: &sdkTypes.AccessProviderLockDetailsInput{
+				Reason: utils.Ptr(lockReason),
+			},
+		},
+		{
+			LockKey: sdkTypes.AccessProviderLockNamelock,
+			Details: &sdkTypes.AccessProviderLockDetailsInput{
+				Reason: utils.Ptr(lockReason),
+			},
+		},
+	}
+
 	for i := range manifest.Nodes {
-		if manifest.Nodes[i].ResourceType != "model" {
+		if manifest.Nodes[i].ResourceType != "model" && manifest.Nodes[i].ResourceType != "seed" {
 			continue
 		}
 
@@ -272,6 +300,7 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
 					Source:     utils.Ptr(dbtSource),
+					Locks:      defaultLocks,
 				}
 			}
 
@@ -306,6 +335,7 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 							},
 						},
 					},
+					Locks: defaultLocks,
 				}
 			} else {
 				err = multierror.Append(err, fmt.Errorf("filter %s already exists", filter.Name))
@@ -351,7 +381,8 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
 					Source:     utils.Ptr(dbtSource),
-					Type:       &manifest.Nodes[i].Columns[columnIdx].Meta.Raito.Mask.Type,
+					Type:       manifest.Nodes[i].Columns[columnIdx].Meta.Raito.Mask.Type,
+					Locks:      defaultLocks,
 				}
 			}
 

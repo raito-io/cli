@@ -21,7 +21,7 @@ require (
 	github.com/pterm/pterm v0.12.79
 	github.com/raito-io/bexpression v0.1.1
 	github.com/raito-io/golang-set v0.0.4
-	github.com/raito-io/sdk v0.0.5-dev.2
+	github.com/raito-io/sdk v0.0.5-dev.3
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2

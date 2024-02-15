@@ -76,6 +76,7 @@ func uploadFileToBucket(file string, config *types.BaseTargetConfig, url string,
 	if err != nil {
 		return "", fmt.Errorf("error while executing upload: %s", err.Error())
 	}
+
 	defer res.Body.Close()
 
 	if res.StatusCode >= 300 {

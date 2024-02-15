@@ -196,6 +196,7 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) e
 					continue
 				} else {
 					failed = 0
+
 					timer.Reset(heartbeatTimeout)
 				}
 			}

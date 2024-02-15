@@ -148,6 +148,7 @@ func findMatchingPlugin(connector string, version string, logger hclog.Logger) (
 	} else {
 		path := localPluginFolder + pluginRequest.Path()
 		matches, err := filepath.Glob(path)
+
 		if len(matches) > 0 && err == nil {
 			latestPath, latestVersion = getLatestVersionFromFiles(matches)
 			logger.Debug(fmt.Sprintf("Found version for plugin %s locally at path %s", pluginRequest.GroupAndName(), latestPath))
@@ -156,6 +157,7 @@ func findMatchingPlugin(connector string, version string, logger hclog.Logger) (
 		if latestVersion == "" {
 			path = globalPluginFolder + pluginRequest.Path()
 			matches, err = filepath.Glob(path)
+
 			if len(matches) > 0 && err == nil {
 				latestPath, latestVersion = getLatestVersionFromFiles(matches)
 				logger.Debug(fmt.Sprintf("Found version for plugin %s globally at path %s", pluginRequest.GroupAndName(), latestPath))
@@ -192,6 +194,7 @@ func extractFromDownloadFile(pluginRequest *pluginRequest, downloadedFile, targe
 			if err := os.Chmod(extractedFile, 0750); err != nil {
 				return "", fmt.Errorf("error while setting the right permissions for plugin file %q: %s", extractedFile, err.Error())
 			}
+
 			return extractedFile, nil
 		}
 	}
@@ -294,6 +297,7 @@ func getLatestVersion(matches []string) string {
 	sort.SliceStable(versions, func(i, j int) bool {
 		v1 := versions[i]
 		v2 := versions[j]
+
 		return v1.LessThan(v2)
 	})
 

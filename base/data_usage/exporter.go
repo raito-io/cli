@@ -93,6 +93,7 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 		if err != nil {
 			return fmt.Errorf("error while writing to temp file %q", d.targetFile.Name())
 		}
+
 		d.statementCount++
 		d.fileByteSize += uint64(len(doBuf))
 	}

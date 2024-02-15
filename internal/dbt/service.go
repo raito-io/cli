@@ -294,10 +294,10 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 		modelName := manifest.Nodes[i].Name
 		doName := fmt.Sprintf("%s.%s.%s", databaseName, schemaName, modelName)
 
-		for grantIdx, grant := range manifest.Nodes[i].Meta.Raito.Grant {
+		for _, grant := range manifest.Nodes[i].Meta.Raito.Grant {
 			if _, found := grants[grant.Name]; !found {
 				grants[grant.Name] = &sdkTypes.AccessProviderInput{
-					Name:       &manifest.Nodes[i].Meta.Raito.Grant[grantIdx].Name,
+					Name:       &grant.Name,
 					Action:     utils.Ptr(models.AccessProviderActionGrant),
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
@@ -318,14 +318,14 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 			})
 		}
 
-		for filterIdx, filter := range manifest.Nodes[i].Meta.Raito.Filter {
+		for _, filter := range manifest.Nodes[i].Meta.Raito.Filter {
 			if _, found := filters[filter.Name]; !found {
 				filters[filter.Name] = &sdkTypes.AccessProviderInput{
-					Name:       &manifest.Nodes[i].Meta.Raito.Filter[filterIdx].Name,
+					Name:       &filter.Name,
 					Action:     utils.Ptr(models.AccessProviderActionFiltered),
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
-					PolicyRule: &manifest.Nodes[i].Meta.Raito.Filter[filterIdx].PolicyRule,
+					PolicyRule: &filter.PolicyRule,
 					Source:     &source,
 					WhatDataObjects: []sdkTypes.AccessProviderWhatInputDO{
 						{
@@ -344,7 +344,7 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 			}
 		}
 
-		for columnIdx, column := range manifest.Nodes[i].Columns {
+		for _, column := range manifest.Nodes[i].Columns {
 			if column.Meta.Raito.Mask == nil {
 				continue
 			}
@@ -378,12 +378,12 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 				}
 			} else {
 				masks[column.Meta.Raito.Mask.Name] = &sdkTypes.AccessProviderInput{
-					Name:       &manifest.Nodes[i].Columns[columnIdx].Meta.Raito.Mask.Name,
+					Name:       &column.Meta.Raito.Mask.Name,
 					Action:     utils.Ptr(models.AccessProviderActionMask),
 					WhatType:   utils.Ptr(sdkTypes.WhoAndWhatTypeStatic),
 					DataSource: &s.dataSourceId,
 					Source:     &source,
-					Type:       manifest.Nodes[i].Columns[columnIdx].Meta.Raito.Mask.Type,
+					Type:       column.Meta.Raito.Mask.Type,
 					Locks:      defaultLocks,
 				}
 			}

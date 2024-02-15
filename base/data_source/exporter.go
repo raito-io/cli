@@ -143,6 +143,7 @@ func (d *dataSourceFileCreator) AddDataObjects(dataObjects ...*DataObject) error
 		if err != nil {
 			return fmt.Errorf("error while writing to temp file %q", d.targetFile.Name())
 		}
+
 		d.dataObjectCount++
 	}
 

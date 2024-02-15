@@ -348,7 +348,7 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 			}
 
 			if mask, found := masks[column.Meta.Raito.Mask.Name]; found {
-				if mask.Type != nil && column.Meta.Raito.Mask.Type != *mask.Type {
+				if mask.Type != nil && column.Meta.Raito.Mask.Type != nil && *column.Meta.Raito.Mask.Type != *mask.Type {
 					err = multierror.Append(err, fmt.Errorf("mask %s already exists with different type", column.Meta.Raito.Mask.Name))
 
 					continue

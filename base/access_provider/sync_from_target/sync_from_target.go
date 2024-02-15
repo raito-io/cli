@@ -120,6 +120,7 @@ func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*Acces
 		if err != nil {
 			return fmt.Errorf("error while writing to temp file %q", d.targetFile.Name())
 		}
+
 		d.dataAccessCount++
 	}
 

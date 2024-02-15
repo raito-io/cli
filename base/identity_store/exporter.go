@@ -123,6 +123,7 @@ func (i *identityStoreImporter) AddGroups(groups ...*Group) error {
 		if err != nil {
 			return fmt.Errorf("error while writing to temp file %q", i.groupsFile.Name())
 		}
+
 		i.groupCount++
 	}
 
@@ -159,6 +160,7 @@ func (i *identityStoreImporter) AddUsers(users ...*User) error {
 		if err != nil {
 			return fmt.Errorf("error while writing to temp file %q", i.usersFile.Name())
 		}
+
 		i.userCount++
 	}
 

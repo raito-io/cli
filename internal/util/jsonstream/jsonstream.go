@@ -114,6 +114,7 @@ func parseValue(fieldValue *reflect.Value, value interface{}) error {
 	} else if fieldKind == reflect.Slice {
 		innerValues := value.([]interface{})
 		innerObjects := reflect.New(fieldValue.Type()).Elem()
+
 		for _, innerValue := range innerValues {
 			innerObject := reflect.New(fieldValue.Type().Elem())
 			innerObjectElem := innerObject.Elem()
@@ -125,6 +126,7 @@ func parseValue(fieldValue *reflect.Value, value interface{}) error {
 
 			innerObjects = reflect.Append(innerObjects, innerObject.Elem())
 		}
+
 		fieldValue.Set(innerObjects)
 	} else {
 		fieldValue.Set(reflect.ValueOf(value).Convert(fieldValue.Type()))

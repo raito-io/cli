@@ -22,6 +22,7 @@ import (
 	"github.com/raito-io/cli/internal/dbt/types"
 	types2 "github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/array"
+	"github.com/raito-io/cli/internal/workerpool"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=accessProviderClient --with-expecter --inpackage --replace-type github.com/raito-io/sdk/internal/schema=github.com/raito-io/sdk/types
@@ -35,6 +36,8 @@ type accessProviderClient interface {
 const (
 	dbtSource  = "dbt"
 	lockReason = "locked by dbt"
+
+	maxWorkerPoolSize = uint(16)
 )
 
 type DbtService struct {
@@ -131,13 +134,13 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 		}
 	}()
 
-	var wg = multierror.Group{}
+	workerPool := workerpool.NewWorkerPool(ctx, maxWorkerPoolSize)
 
 	for key := range grants {
 		grant := grants[key]
 		name := key
 
-		wg.Go(func() error {
+		workerPool.Go(func() error {
 			return createOrUpdateAp(name, grant, grantIds)
 		})
 	}
@@ -146,7 +149,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 		mask := masks[key]
 		name := key
 
-		wg.Go(func() error {
+		workerPool.Go(func() error {
 			return createOrUpdateAp(name, mask, maskIds)
 		})
 	}
@@ -155,7 +158,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 		filter := filters[key]
 		name := key
 
-		wg.Go(func() error {
+		workerPool.Go(func() error {
 			return createOrUpdateAp(name, filter, filterIds)
 		})
 	}
@@ -163,7 +166,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 	for key := range apsToRemove {
 		oldAp := key
 
-		wg.Go(func() (err error) {
+		workerPool.Go(func() (err error) {
 			defer func() {
 				if err != nil {
 					logChannel <- false
@@ -178,7 +181,7 @@ func (s *DbtService) createAndUpdateAccessProviders(ctx context.Context, grants 
 		})
 	}
 
-	err := wg.Wait().ErrorOrNil()
+	err := workerPool.Wait()
 
 	close(logChannel)
 	logWg.Wait()

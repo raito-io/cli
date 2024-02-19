@@ -284,8 +284,10 @@ func (s *DbtService) loadAccessProvidersFromManifest(manifest *types.Manifest) (
 		},
 	}
 
+	supportedResourceTypes := set.NewSet("model", "seed", "snapshot")
+
 	for i := range manifest.Nodes {
-		if manifest.Nodes[i].ResourceType != "model" && manifest.Nodes[i].ResourceType != "seed" {
+		if !supportedResourceTypes.Contains(manifest.Nodes[i].ResourceType) {
 			continue
 		}
 

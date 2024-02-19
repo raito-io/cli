@@ -20,6 +20,7 @@ func Append(err error, errs ...error) error {
 	} else if err == nil {
 		merr := &Errors{}
 		*merr = append(*merr, errs...)
+
 		return merr
 	}
 

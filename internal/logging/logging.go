@@ -144,6 +144,7 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 			pterm.Println()
 			s.wasIteration = false
 		}
+
 		s.handleNormalOutput(level, msg)
 	}
 }

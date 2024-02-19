@@ -37,7 +37,7 @@ const (
 	dbtSource  = "dbt"
 	lockReason = "locked by dbt"
 
-	maxWorkerPoolSize = uint(16)
+	maxWorkerPoolSize = uint(4)
 )
 
 type DbtService struct {

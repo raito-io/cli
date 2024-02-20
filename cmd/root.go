@@ -93,7 +93,6 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	root.cmd = rootCmd
 
 	initRunCommand(rootCmd)
-	initAccessCommand(rootCmd)
 	initInfoCommand(rootCmd)
 
 	return root

@@ -17,6 +17,7 @@ import (
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/raito-io/cli/internal/version_management"
 )
 
@@ -50,7 +51,7 @@ func (s *DataSourceSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) { //nolint:cyclop
 	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
@@ -107,7 +108,13 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		return job.Failed, "", errors.New(res.Error.ErrorMessage) //nolint:staticcheck
 	}
 
-	enrichedTargetFile, createdFiles, err := s.enrichDataObjects(ctx, targetFile)
+	// Fetching the tagSource from the plugin
+	tagSourcesScope, err := tag.FetchTagSourceFromPlugin(ctx, client, nil)
+	if err != nil {
+		return job.Failed, "", err
+	}
+
+	enrichedTargetFile, createdFiles, tagSourcesScope, err := s.enrichDataObjects(ctx, targetFile, tagSourcesScope)
 
 	if s.TargetConfig.DeleteTempFiles && len(createdFiles) > 0 {
 		defer func() {
@@ -146,6 +153,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		BaseTargetConfig: *s.TargetConfig,
 		TargetFile:       toProcessFile,
 		DeleteUntouched:  deleteUntouched,
+		TagSourcesScope:  tagSourcesScope,
 	}
 	dsImporter := NewDataSourceImporter(&importerConfig, statusUpdater)
 
@@ -165,7 +173,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 	return status, subtaskId, nil
 }
 
-func (s *DataSourceSync) enrichDataObjects(ctx context.Context, sourceFile string) (string, []string, error) {
+func (s *DataSourceSync) enrichDataObjects(ctx context.Context, sourceFile string, tagSourcesScope []string) (string, []string, []string, error) {
 	enrichedFile := sourceFile
 
 	var newFiles []string
@@ -179,21 +187,21 @@ func (s *DataSourceSync) enrichDataObjects(ctx context.Context, sourceFile strin
 			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Calling enricher %q", enricher.Name))
 
 			enrichmentCount := 0
-			enrichedFile, enrichmentCount, err = s.callEnricher(ctx, enricher, enrichedFile, i)
+			enrichedFile, enrichmentCount, tagSourcesScope, err = s.callEnricher(ctx, enricher, enrichedFile, i, tagSourcesScope)
 
 			if enrichedFile != "" {
 				newFiles = append(newFiles, enrichedFile)
 			}
 
 			if err != nil {
-				return "", newFiles, err
+				return "", newFiles, tagSourcesScope, err
 			}
 
 			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("%d data objects enriched (%s) in %s", enrichmentCount, enricher.Name, time.Since(start).Round(time.Millisecond)))
 		}
 	}
 
-	return enrichedFile, newFiles, nil
+	return enrichedFile, newFiles, tagSourcesScope, nil
 }
 
 func (s *DataSourceSync) postProcessDataObjects(postProcessor PostProcessor, toProcessFile string) (string, int, error) {
@@ -215,17 +223,17 @@ func (s *DataSourceSync) postProcessDataObjects(postProcessor PostProcessor, toP
 	return postProcessedFile, res.DataObjectsTouchedCount, nil
 }
 
-func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *types.EnricherConfig, sourceFile string, index int) (string, int, error) {
+func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *types.EnricherConfig, sourceFile string, index int, tagSourcesScope []string) (string, int, []string, error) {
 	client, err := plugin.NewPluginClient(enricher.ConnectorName, enricher.ConnectorVersion, s.TargetConfig.TargetLogger)
 	if err != nil {
 		s.TargetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing enricher plugin %q: %s", enricher.ConnectorName, err.Error()))
-		return "", 0, err
+		return "", 0, tagSourcesScope, fmt.Errorf("creating client for plugin %s: %w", enricher.ConnectorName, err)
 	}
 	defer client.Close()
 
 	doe, err := client.GetDataObjectEnricher()
 	if err != nil {
-		return "", 0, err
+		return "", 0, tagSourcesScope, fmt.Errorf("fetching enricher interface from plugin %s: %w", enricher.ConnectorName, err)
 	}
 
 	targetFile := sourceFile
@@ -245,10 +253,16 @@ func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *types.Enric
 	})
 
 	if err != nil {
-		return targetFile, 0, err
+		return targetFile, 0, tagSourcesScope, fmt.Errorf("calling enricher plugin %s: %w", enricher.ConnectorName, err)
 	}
 
-	return targetFile, int(res.Enriched), nil
+	// Fetching the tagSource from the plugin
+	tagSourcesScope, err = tag.FetchTagSourceFromPlugin(ctx, client, tagSourcesScope)
+	if err != nil {
+		return "", 0, tagSourcesScope, fmt.Errorf("fetching tag source from plugin %s: %w", enricher.ConnectorName, err)
+	}
+
+	return targetFile, int(res.Enriched), tagSourcesScope, nil
 }
 
 func (s *DataSourceSync) ProcessResults(results interface{}) error {

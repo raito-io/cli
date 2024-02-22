@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/aws/smithy-go/ptr"
 
@@ -90,6 +91,10 @@ func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*Acces
 
 		if d.config.LockAllDelete {
 			ap.DeleteLocked = ptr.Bool(true)
+		}
+
+		if len(d.config.MakeNotInternalizable) > 0 && slices.Contains(d.config.MakeNotInternalizable, ap.Name) {
+			ap.NotInternalizable = true
 		}
 
 		// TODO REFACTOR to be removed once the old API is removed

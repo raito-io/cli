@@ -76,6 +76,8 @@ func (s *ResourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client plu
 		Failed:     int(result.Failures),
 	}
 
+	s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced resource objects. Added: %d - Updated: %d - Removed: %d - Failures: %d", result.AddedObjects, result.UpdatedObjects, result.DeletedObjects, result.Failures))
+
 	return job.Completed, "", nil
 }
 

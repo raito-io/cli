@@ -22,9 +22,9 @@ message ApiCredentials {
 }
 
 message UpdateResourceResult {
-  int32 addedObjects = 1;
-  int32 updatedObjects = 2;
-  int32 deletedObjects = 3;
+  int32 added_objects = 1;
+  int32 updated_objects = 2;
+  int32 deleted_objects = 3;
   int32 failures = 4;
 }
 

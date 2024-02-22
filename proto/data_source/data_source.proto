@@ -29,9 +29,9 @@ message MetaData {
   repeated DataObjectType dataObjectTypes = 1;
 
   /*
-    SupportedFeatures is a list of features supported by the data source
-    Currently supported features: columnMasking, rowFiltering, columnFiltering
-   */
+     SupportedFeatures is a list of features supported by the data source
+     Currently supported features: columnMasking, rowFiltering, columnFiltering
+  */
   repeated string supportedFeatures = 2;
 
   // Type indicates the type of data source (Snowflake, BigQuery, etc.).
@@ -103,15 +103,15 @@ message AccessProviderType {
   repeated string whoInputTypes = 10 [deprecated = true];
 
   /*
-    IdentityStoreTypeForWho can be used to specify from which identity store type the WHO can come from.
-    This was specifically called to life for supporting the case of AWS permission sets as they become special roles in the AWS account data sources but should only use users and groups from the AWS organization (which is a linked identity store of the aws account data sources).
-   */
+     IdentityStoreTypeForWho can be used to specify from which identity store type the WHO can come from.
+     This was specifically called to life for supporting the case of AWS permission sets as they become special roles in the AWS account data sources but should only use users and groups from the AWS organization (which is a linked identity store of the aws account data sources).
+  */
   string identityStoreTypeForWho = 11;
 
   /*
-    AllowedWhoAccessProviderTypes lists of access provider types that could be in the who list of this access provider type
-    Nil indicates that all access provider types are allowed. Otherwise only defined access provider types are allowed to be part of the who list of this access provider type.
-   */
+     AllowedWhoAccessProviderTypes lists of access provider types that could be in the who list of this access provider type
+     Nil indicates that all access provider types are allowed. Otherwise only defined access provider types are allowed to be part of the who list of this access provider type.
+  */
   repeated string allowedWhoAccessProviderTypes = 12;
 }
 
@@ -120,7 +120,6 @@ message MaskingMetadata {
   string defaultMaskExternalName = 2;
   repeated string maskOverridePermissions = 3;
 }
-
 
 message MaskingType {
   string displayName = 1;

@@ -10,6 +10,8 @@ message PluginInfo {
   string description = 2;
   util.version.SemVer version = 3;
   repeated ParameterInfo parameters = 4;
+  string tag_source = 5;
+  repeated PluginType type = 6;
 }
 
 // ParameterInfo contains the information about a parameter.
@@ -22,4 +24,37 @@ message ParameterInfo {
 
 service InfoService {
   rpc GetInfo(google.protobuf.Empty) returns (PluginInfo);
+}
+
+enum PluginType {
+  /*
+     UNKNOWN plugin type. Avoid this type.
+     If type is unknown CLI will fallback on FULL_DS_SYNC
+  */
+  PLUGIN_TYPE_UNKNOWN = 0;
+
+  /*
+     FULL_DS_SYNC execute data source sync, identity store sync, access provider sync and data usage sync.
+     This type should be used for most data sources such as snowflake, bigquery, databricks, and so on.
+     A websocket may be initialized for this type.
+  */
+  PLUGIN_TYPE_FULL_DS_SYNC = 1;
+
+  /*
+     IS_SYNC execute only an identity store sync.
+     This type should be used for syncing identity providers (such as okta).
+  */
+  PLUGIN_TYPE_IS_SYNC = 2;
+
+  /*
+     TAG_SYNC execute only a tag sync.
+     This type should be used for syncing tags on external sources (such as catalogs).
+  */
+  PLUGIN_TYPE_TAG_SYNC = 3;
+
+  /*
+     AC_PROVIDER execute only an access provider sync.
+     This type should be used for plugins that provide Raito Cloud Resources.
+  */
+  PLUGIN_TYPE_RESOURCE_PROVIDER = 4;
 }

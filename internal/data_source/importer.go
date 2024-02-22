@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/internal/constants"
@@ -20,6 +21,10 @@ type DataSourceImportConfig struct {
 	types.BaseTargetConfig
 	TargetFile      string
 	DeleteUntouched bool
+
+	// TagSourcesScope is the set of sources that will be looked at when merging the tags. Tags with other sources will remain untouched.
+	// If not specified, the default is to take all sources for which tags are defined in the import file.
+	TagSourcesScope []string `json:"tagSourcesScope"`
 }
 
 type DataSourceImporter interface {
@@ -72,8 +77,9 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, str
         jobId: \"%s\",
           importSettings: {
             dataSource: \"%s\",
-            deleteUntouched: %t, 
-            fileKey: \"%s\"
+            deleteUntouched: %t,
+            fileKey: \"%s\",
+            tagSourcesScope: %s
           }
         }) {
           subtask {
@@ -81,7 +87,7 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, str
             subtaskId
           }
         }
-    }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, fileKey)
+    }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, fileKey, strings.Replace(tag.SerializeTagList(d.config.TagSourcesScope), "\"", "\\\"", -1))
 
 	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
 

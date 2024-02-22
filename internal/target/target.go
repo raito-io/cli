@@ -16,19 +16,20 @@ import (
 	"github.com/raito-io/cli/base/util/error/grpc_error"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
-	gql "github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target/types"
 )
 
-func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error), opFns ...func(*Options)) (err error) {
+//go:generate go run github.com/vektra/mockery/v2 --name=TargetRunner --with-expecter --inpackage
+type TargetRunner interface {
+	TargetSync(ctx context.Context, targetConfig *types.BaseTargetConfig) (syncError error)
+	Finalize(ctx context.Context, baseConfig *types.BaseConfig, options *Options) error
+}
+
+func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget TargetRunner, opFns ...func(*Options)) (err error) {
 	options := createOptions(opFns...)
 
-	var jobIds []string
-
 	defer func() {
-		baseConfig.BaseLogger.Debug(fmt.Sprintf("Finished targets with jobIds: %v", jobIds))
-
-		notifyErr := sendEndOfTarget(ctx, baseConfig, jobIds, &options)
+		notifyErr := runTarget.Finalize(ctx, baseConfig, &options)
 		if notifyErr != nil {
 			err = multierror.Append(err, notifyErr)
 		}
@@ -47,54 +48,15 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget fun
 
 		logTargetConfig(targetConfig)
 
-		jobId, err := runTarget(ctx, options.TargetOptions(targetConfig))
-		if jobId != "" {
-			jobIds = append(jobIds, jobId)
+		err2 := runTarget.TargetSync(ctx, options.TargetOptions(targetConfig))
+		if err2 != nil {
+			return err2
 		}
 
-		if err != nil {
-			return err
-		}
 	} else {
-		jobs, err := runMultipleTargets(ctx, baseConfig, runTarget, &options)
-		jobIds = jobs
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func sendEndOfTarget(ctx context.Context, baseConfig *types.BaseConfig, jobIds []string, options *Options) error {
-	if !options.ExternalTrigger {
-		var mutation struct {
-			EndOfTargetsSyncResult struct {
-				EndOfTargetsSync struct {
-					Success bool
-				} `graphql:"... on EndOfTargetsSync"`
-				PermissionDeniedError struct {
-					message string
-				} `graphql:"... on PermissionDeniedError"`
-			} `graphql:"endOfTargetsSync(input: $input)"`
-		}
-
-		type EndOfTargetsSyncInput struct {
-			JobIds []string `json:"jobIds"`
-		}
-
-		input := EndOfTargetsSyncInput{JobIds: jobIds}
-
-		err := gql.NewClient(baseConfig).Mutate(ctx, &mutation, map[string]interface{}{"input": input})
-		if err != nil {
-			return err
-		}
-
-		if mutation.EndOfTargetsSyncResult.PermissionDeniedError.message != "" {
-			baseConfig.BaseLogger.Error(fmt.Sprintf("Permission denied to notify end of all targets: %s", mutation.EndOfTargetsSyncResult.PermissionDeniedError.message))
-		} else if !mutation.EndOfTargetsSyncResult.EndOfTargetsSync.Success {
-			baseConfig.BaseLogger.Warn("Failed to notify end of all targets")
+		err2 := runMultipleTargets(ctx, baseConfig, runTarget.TargetSync, &options)
+		if err2 != nil {
+			return err2
 		}
 	}
 
@@ -118,7 +80,7 @@ func HandleTargetError(err error, config *types.BaseTargetConfig, prefix ...stri
 	config.TargetLogger.Error(fmt.Sprintf("%s%s", prefixString, err.Error()))
 }
 
-func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTarget func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error), options *Options) ([]string, error) {
+func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTarget func(ctx context.Context, tConfig *types.BaseTargetConfig) error, options *Options) error {
 	var errorResult error
 
 	dataObjectEnricherMap, err := buildDataObjectEnricherMap()
@@ -135,8 +97,6 @@ func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTa
 			onlyTargets[strings.TrimSpace(ot)] = struct{}{}
 		}
 	}
-
-	var jobIds []string
 
 	if targetList, ok := targets.([]interface{}); ok {
 		hclog.L().Debug(fmt.Sprintf("Found %d targets to run.", len(targetList)))
@@ -181,21 +141,17 @@ func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTa
 
 			logTargetConfig(tConfig)
 
-			jobId, err := runTarget(ctx, tConfig)
-			if err != nil {
-				errorResult = multierror.Append(errorResult, err)
+			runErr := runTarget(ctx, tConfig)
+			if runErr != nil {
+				errorResult = multierror.Append(errorResult, runErr)
 
 				// In debug as the error should already be outputted, and we are ignoring it here.
-				tConfig.TargetLogger.Debug("Error while executing target", "error", err.Error())
-			}
-
-			if jobId != "" {
-				jobIds = append(jobIds, jobId)
+				tConfig.TargetLogger.Debug("Error while executing target", "error", runErr.Error())
 			}
 		}
 	}
 
-	return jobIds, errorResult
+	return errorResult
 }
 
 func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, error) {
@@ -245,6 +201,7 @@ func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]in
 	tConfig.SkipDataSourceSync = tConfig.SkipDataSourceSync || viper.GetBool(constants.SkipDataSourceSyncFlag)
 	tConfig.SkipIdentityStoreSync = tConfig.SkipIdentityStoreSync || viper.GetBool(constants.SkipIdentityStoreSyncFlag)
 	tConfig.SkipDataUsageSync = tConfig.SkipDataUsageSync || viper.GetBool(constants.SkipDataUsageSyncFlag)
+	tConfig.SkipResourceProvider = tConfig.SkipResourceProvider || viper.GetBool(constants.SkipResourceProviderFlag)
 
 	// If not set in the target, we take the globally set values.
 	if tConfig.ApiSecret == "" {
@@ -327,6 +284,7 @@ func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) *types.BaseTargetC
 		SkipDataSourceSync:    viper.GetBool(constants.SkipDataSourceSyncFlag),
 		SkipDataAccessSync:    viper.GetBool(constants.SkipDataAccessSyncFlag),
 		SkipDataUsageSync:     viper.GetBool(constants.SkipDataUsageSyncFlag),
+		SkipResourceProvider:  viper.GetBool(constants.SkipResourceProviderFlag),
 		LockAllWho:            viper.GetBool(constants.LockAllWhoFlag),
 		LockAllInheritance:    viper.GetBool(constants.LockAllInheritanceFlag),
 		LockAllWhat:           viper.GetBool(constants.LockAllWhatFlag),

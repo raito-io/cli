@@ -1,0 +1,35 @@
+syntax = "proto3";
+package resource_provider;
+
+import "google/protobuf/empty.proto";
+import "util/config/config.proto";
+import "util/version/version.proto";
+
+message UpdateResourceInput {
+  util.config.ConfigMap config_map = 1;
+
+  string domain = 11;
+  string data_source_id = 12;
+  string identity_store_id = 13;
+  optional string url_override = 14;
+
+  ApiCredentials credentials = 101;
+}
+
+message ApiCredentials {
+  string username = 1;
+  string password = 2;
+}
+
+message UpdateResourceResult {
+  int32 addedObjects = 1;
+  int32 updatedObjects = 2;
+  int32 deletedObjects = 3;
+  int32 failures = 4;
+}
+
+service ResourceProviderService {
+  rpc CliVersionInformation(google.protobuf.Empty) returns (util.version.CliBuildInformation);
+
+  rpc UpdateResources(UpdateResourceInput) returns (UpdateResourceResult);
+}

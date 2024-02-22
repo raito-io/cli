@@ -20,6 +20,8 @@ type SyncTrigger struct {
 	DataAccessSync bool `json:"accessSync"`
 	// Boolean to indicate if usage needs to be synced or not
 	DataUsageSync bool `json:"usageSync"`
+	// Boolean to indicate if a resource provider needs to be synced or not
+	ResourceProviderSync bool `json:"resourceProviderSync"`
 	// Optional: the fullName of the data object to sync.
 	// That means that, if this is specified, the import will be run with `DeleteUntouched=false`, so no cleanup will be done of removed data objects.
 	DataObjectParent *string `json:"dataObjectParent"`

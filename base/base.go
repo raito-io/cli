@@ -91,8 +91,6 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error
 
 			logger.Debug("Registered DataObjectEnricher Plugin")
 		case resource_provider.ResourceProviderSyncer:
-			logger.Info("Registered ResourceProviderSyncer")
-
 			if _, f := pluginMap[resource_provider.ResourceProviderSyncerName]; f {
 				return nil, func() {}, errors.New("multiple implementations for ResourceProvider Syncer Plugin found. There should be only one")
 			}

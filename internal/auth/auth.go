@@ -41,13 +41,19 @@ func AddTokenToHeader(h *http.Header, config *types.BaseConfig) error {
 		return nil
 	}
 
+	// Reloading the configuration to make sure we have the latest info.
+	err := config.ReloadConfig()
+	if err != nil {
+		return fmt.Errorf("error while reloading configuration: %s", err.Error())
+	}
+
 	tokens, found := tokenMap[config.ApiUser]
 	if !found {
 		tokens = &userTokens{userName: config.ApiUser}
 		tokenMap[config.ApiUser] = tokens
 	}
 
-	err := updateTokens(config, tokens)
+	err = updateTokens(config, tokens)
 	if err != nil {
 		return err
 	}

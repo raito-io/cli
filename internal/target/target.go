@@ -332,6 +332,7 @@ func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) *types.BaseTargetC
 		LockAllWhat:           viper.GetBool(constants.LockAllWhatFlag),
 		LockAllNames:          viper.GetBool(constants.LockAllNamesFlag),
 		LockAllDelete:         viper.GetBool(constants.LockAllDeleteFlag),
+		MakeNotInternalizable: strings.TrimSpace(viper.GetString(constants.MakeNotInternalizableFlag)),
 		TargetLogger:          baseConfig.BaseLogger.With("target", name),
 		DeleteUntouched:       true,
 		DeleteTempFiles:       true,

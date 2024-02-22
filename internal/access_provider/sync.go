@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/raito-io/cli/base/util/slice"
 	"gopkg.in/yaml.v2"
 
 	dapc "github.com/raito-io/cli/base/access_provider"
@@ -194,15 +195,18 @@ func (s *dataAccessImportSubtask) GetResultObject() interface{} {
 
 // Import data from Raito to DS
 func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, targetFile string) (returnErr error) {
+	apsToMakeNotInternalizable := slice.ParseCommaSeparatedList(s.TargetConfig.MakeNotInternalizable)
+
 	syncerConfig := dapc.AccessSyncFromTarget{
-		ConfigMap:          &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		Prefix:             "",
-		TargetFile:         targetFile,
-		LockAllWho:         s.TargetConfig.LockAllWho,
-		LockAllInheritance: s.TargetConfig.LockAllInheritance,
-		LockAllWhat:        s.TargetConfig.LockAllWhat,
-		LockAllNames:       s.TargetConfig.LockAllNames,
-		LockAllDelete:      s.TargetConfig.LockAllDelete,
+		ConfigMap:             &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:                "",
+		TargetFile:            targetFile,
+		LockAllWho:            s.TargetConfig.LockAllWho,
+		LockAllInheritance:    s.TargetConfig.LockAllInheritance,
+		LockAllWhat:           s.TargetConfig.LockAllWhat,
+		LockAllNames:          s.TargetConfig.LockAllNames,
+		LockAllDelete:         s.TargetConfig.LockAllDelete,
+		MakeNotInternalizable: apsToMakeNotInternalizable.Slice(),
 	}
 
 	das, err := client.GetAccessSyncer()

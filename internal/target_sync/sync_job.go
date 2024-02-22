@@ -103,6 +103,8 @@ func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTarget
 			if err != nil {
 				return fmt.Errorf("resource provider sync: %w", err)
 			}
+		default:
+			return fmt.Errorf("unsupported plugin type: %s", pluginType)
 		}
 	}
 
@@ -113,9 +115,7 @@ func (s *SyncJob) Finalize(ctx context.Context, baseConfig *types.BaseConfig, op
 	return sendEndOfTarget(ctx, baseConfig, s.jobIds, options)
 }
 
-func execute(ctx context.Context, targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool,
-	syncTask job.Task, cfg *types.BaseTargetConfig, c plugin.PluginClient) error {
-
+func execute(ctx context.Context, targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool, syncTask job.Task, cfg *types.BaseTargetConfig, c plugin.PluginClient) error {
 	cfg, warningCollector, loggingCleanUp, err := logging.CreateWarningCapturingLogger(cfg)
 	if err != nil {
 		return err

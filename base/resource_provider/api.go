@@ -72,7 +72,7 @@ func (g *resourceProviderSyncerGRPC) CliVersionInformation(ctx context.Context) 
 	return grpc_error.ParseErrorResult(g.client.CliVersionInformation(ctx, &emptypb.Empty{}))
 }
 
-type ResourceProviderSyncerVersionHandler struct {}
+type ResourceProviderSyncerVersionHandler struct{}
 
 func (h *ResourceProviderSyncerVersionHandler) CliVersionInformation(ctx context.Context) (*version.CliBuildInformation, error) {
 	return version_management.CreateSyncerCliBuildInformation(MinimalCliVersion), nil

@@ -52,7 +52,6 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget Tar
 		if err2 != nil {
 			return err2
 		}
-
 	} else {
 		err2 := runMultipleTargets(ctx, baseConfig, runTarget.TargetSync, &options)
 		if err2 != nil {

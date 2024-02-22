@@ -45,11 +45,12 @@ type BaseTargetConfig struct {
 	SkipDataUsageSync     bool
 	SkipResourceProvider  bool
 
-	LockAllWho         bool
-	LockAllInheritance bool
-	LockAllWhat        bool
-	LockAllNames       bool
-	LockAllDelete      bool
+	LockAllWho            bool
+	LockAllInheritance    bool
+	LockAllWhat           bool
+	LockAllNames          bool
+	LockAllDelete         bool
+	MakeNotInternalizable string
 
 	TagOverwriteKeyForAccessProviderName   string
 	TagOverwriteKeyForAccessProviderOwners string

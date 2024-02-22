@@ -138,7 +138,7 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) e
 		DataSources []string `json:"datasources"`
 	}{
 		Message:     "heartbeat",
-		DataSources: hbTargetSync.DataSource,
+		DataSources: hbTargetSync.DataSources,
 	}
 
 	heartbeatMsg, err := json.Marshal(heartbeatMsgObject)
@@ -324,7 +324,7 @@ func (s *WebsocketCliTrigger) readChannel(ctx context.Context) error {
 }
 
 type heartBeatTargetSync struct {
-	DataSource []string
+	DataSources []string
 }
 
 func (s *heartBeatTargetSync) TargetSync(ctx context.Context, tConfig *types.BaseTargetConfig) error {
@@ -347,14 +347,14 @@ func (s *heartBeatTargetSync) TargetSync(ctx context.Context, tConfig *types.Bas
 
 	if len(pluginInfo.Type) == 0 {
 		// Fallback
-		s.DataSource = append(s.DataSource, tConfig.Name)
+		s.DataSources = append(s.DataSources, tConfig.Name)
 
 		return nil
 	}
 
 	for _, pluginType := range pluginInfo.Type {
 		if pluginType == plugin2.PluginType_PLUGIN_TYPE_FULL_DS_SYNC {
-			s.DataSource = append(s.DataSource, tConfig.Name)
+			s.DataSources = append(s.DataSources, tConfig.Name)
 
 			return nil
 		}

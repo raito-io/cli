@@ -53,6 +53,7 @@ const (
 	LockAllWhatFlag                          = "lock-all-what"
 	LockAllNamesFlag                         = "lock-all-names"
 	LockAllDeleteFlag                        = "lock-all-delete"
+	MakeNotInternalizableFlag                = "make-not-internalizable"
 	DataSourceIdFlag                         = "data-source-id"
 	IdentityStoreIdFlag                      = "identity-store-id"
 	OnlyTargetsFlag                          = "only-targets"

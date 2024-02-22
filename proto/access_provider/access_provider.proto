@@ -32,6 +32,7 @@ message AccessSyncFromTarget {
   bool lock_all_names = 6;
   bool lock_all_delete = 7;
   bool lock_all_inheritance = 8;
+  repeated string make_not_internalizable = 9;
 }
 
 // AccessSyncResult represents the result from the data access sync process.

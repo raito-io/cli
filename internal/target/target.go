@@ -280,29 +280,15 @@ func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]in
 }
 
 func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*types.BaseConfig, error) {
-	apiUser, err := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
-	if err != nil {
-		return nil, err
-	}
-
-	apiSecret, err := iconfig.HandleField(viper.GetString(constants.ApiSecretFlag), reflect.String)
-	if err != nil {
-		return nil, err
-	}
-
-	domain, err := iconfig.HandleField(viper.GetString(constants.DomainFlag), reflect.String)
-	if err != nil {
-		return nil, err
-	}
-
 	config := types.BaseConfig{
 		BaseLogger: baseLogger,
-		ApiUser:    apiUser.(string),
-		ApiSecret:  apiSecret.(string),
-		Domain:     domain.(string),
+		OtherArgs:  otherArgs,
 	}
 
-	config.Parameters = BuildParameterMapFromArguments(otherArgs)
+	err := config.ReloadConfig()
+	if err != nil {
+		return nil, err
+	}
 
 	return &config, nil
 }
@@ -463,29 +449,4 @@ func WithExternalTrigger() func(o *Options) {
 	return func(o *Options) {
 		o.ExternalTrigger = true
 	}
-}
-
-func BuildParameterMapFromArguments(args []string) map[string]string {
-	params := make(map[string]string)
-
-	for i := 0; i < len(args); i++ {
-		if strings.HasPrefix(args[i], "--") {
-			arg := args[i][2:]
-			if strings.Contains(arg, "=") {
-				// The case where the flag is in the form of "--key=value"
-				key := arg[0:strings.Index(arg, "=")]
-				value := arg[strings.Index(arg, "=")+1:]
-				params[key] = value
-			} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
-				// The case where the flag is in the form of "--key value"
-				params[arg] = args[i+1]
-				i++
-			} else {
-				// Otherwise, we consider this a boolean flag
-				params[arg] = "TRUE"
-			}
-		}
-	}
-
-	return params
 }

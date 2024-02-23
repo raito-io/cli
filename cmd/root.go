@@ -144,6 +144,8 @@ func (cmd *rootCmd) initConfig() {
 		cmd.exitForError()
 	}
 
+	viper.WatchConfig()
+
 	logging.SetupLogging()
 
 	if viper.ConfigFileUsed() != "" {

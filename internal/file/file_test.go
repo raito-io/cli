@@ -5,6 +5,7 @@ import (
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/test"
 
 	"io/ioutil"
 	"net/http"
@@ -60,14 +61,12 @@ func TestFileUpload(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
+	baseConfig, closer := test.CreateBaseConfig("mydomain", "api-user", "api-secret", "")
+	defer closer()
+
 	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
 		TargetLogger: hclog.L(),
-		BaseConfig: types.BaseConfig{
-			Domain:     "mydomain",
-			ApiUser:    "api-user",
-			ApiSecret:  "api-secret",
-			BaseLogger: hclog.L(),
-		},
+		BaseConfig:   *baseConfig,
 	})
 
 	assert.Nil(t, err)

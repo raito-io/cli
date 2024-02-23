@@ -20,7 +20,10 @@ func CreateBaseConfig(domain, apiUser, apiSecret, urlOverride string) (*types.Ba
 		BaseLogger: hclog.Default(),
 	}
 
-	config.ReloadConfig()
+	err := config.ReloadConfig()
+	if err != nil {
+		panic(err)
+	}
 
 	return &config, func() {
 		if urlOverride != "" {

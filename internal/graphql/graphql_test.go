@@ -3,6 +3,7 @@ package graphql
 import (
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/test"
 
 	"io/ioutil"
 	"net/http"
@@ -50,15 +51,11 @@ func TestGraphQL(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, testServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	config := types.BaseConfig{
-		Domain:     "TestRaito",
-		ApiUser:    "Userke",
-		ApiSecret:  "SecretStuff",
-		BaseLogger: hclog.Default(),
-	}
+	config, closer := test.CreateBaseConfig("TestRaito", "Userke", "SecretStuff", "")
+	defer closer()
 
 	data := dataObject{}
-	gqlResponse, err := ExecuteGraphQL("{ \"operationName\": \"nastyOperation\" }", &config, &data)
+	gqlResponse, err := ExecuteGraphQL("{ \"operationName\": \"nastyOperation\" }", config, &data)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, gqlResponse)
@@ -142,18 +139,11 @@ func TestGraphQLServerError(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	viper.Set(constants.URLOverrideFlag, testServer.URL)
-	defer viper.Set(constants.URLOverrideFlag, "")
-
-	config := types.BaseConfig{
-		Domain:     "TestRaito",
-		ApiUser:    "Userke",
-		ApiSecret:  "SecretStuff",
-		BaseLogger: hclog.Default(),
-	}
+	config, closer := test.CreateBaseConfig("TestRaito", "Userke", "SecretStuff", testServer.URL)
+	defer closer()
 
 	data := dataObject{}
-	gqlResponse, err := ExecuteGraphQL("{ \"operationName\": \"nastyOperation\" }", &config, &data)
+	gqlResponse, err := ExecuteGraphQL("{ \"operationName\": \"nastyOperation\" }", config, &data)
 
 	assert.NotNil(t, err)
 	assert.NotNil(t, gqlResponse)
@@ -200,17 +190,10 @@ func TestGraphQLWithoutResponse(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	viper.Set(constants.URLOverrideFlag, testServer.URL)
-	defer viper.Set(constants.URLOverrideFlag, "")
+	config, closer := test.CreateBaseConfig("TestRaito", "Userke", "SecretStuff", testServer.URL)
+	defer closer()
 
-	config := types.BaseConfig{
-		Domain:     "TestRaito",
-		ApiUser:    "Userke",
-		ApiSecret:  "SecretStuff",
-		BaseLogger: hclog.Default(),
-	}
-
-	err := ExecuteGraphQLWithoutResponse("{ \"operationName\": \"nastyOperation\" }", &config)
+	err := ExecuteGraphQLWithoutResponse("{ \"operationName\": \"nastyOperation\" }", config)
 
 	assert.Nil(t, err)
 	assert.Equal(t, "{ \"operationName\": \"nastyOperation\" }", body)
@@ -284,17 +267,10 @@ func TestGraphQLServerErrorWithoutResponse(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	viper.Set(constants.URLOverrideFlag, testServer.URL)
-	defer viper.Set(constants.URLOverrideFlag, "")
+	config, closer := test.CreateBaseConfig("TestRaito", "Userke", "SecretStuff", testServer.URL)
+	defer closer()
 
-	config := types.BaseConfig{
-		Domain:     "TestRaito",
-		ApiUser:    "Userke",
-		ApiSecret:  "SecretStuff",
-		BaseLogger: hclog.Default(),
-	}
-
-	err := ExecuteGraphQLWithoutResponse("{ \"operationName\": \"nastyOperation\" }", &config)
+	err := ExecuteGraphQLWithoutResponse("{ \"operationName\": \"nastyOperation\" }", config)
 
 	assert.NotNil(t, err)
 	assert.Equal(t, "{ \"operationName\": \"nastyOperation\" }", body)

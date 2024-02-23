@@ -3,13 +3,12 @@ package connect
 import (
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/test"
 
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/spf13/viper"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
@@ -29,17 +28,10 @@ func TestDoGet(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	viper.Set(constants.URLOverrideFlag, testServer.URL)
-	defer viper.Set(constants.URLOverrideFlag, "")
+	config, closer := test.CreateBaseConfig("TestRaito", "Userke", "SecretStuff", testServer.URL)
+	defer closer()
 
-	config := types.BaseConfig{
-		Domain:     "TestRaito",
-		ApiUser:    "Userke",
-		ApiSecret:  "SecretStuff",
-		BaseLogger: hclog.Default(),
-	}
-
-	res, err := DoGetToRaito("the/path", &config)
+	res, err := DoGetToRaito("the/path", config)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, "token idToken", token)
@@ -66,17 +58,10 @@ func TestDoPost(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	viper.Set(constants.URLOverrideFlag, testServer.URL)
-	defer viper.Set(constants.URLOverrideFlag, "")
+	config, closer := test.CreateBaseConfig("TestRaito", "Userke", "SecretStuff", testServer.URL)
+	defer closer()
 
-	config := types.BaseConfig{
-		Domain:     "TestRaito",
-		ApiUser:    "Userke",
-		ApiSecret:  "SecretStuff",
-		BaseLogger: hclog.Default(),
-	}
-
-	res, err := DoPostToRaito("the/path", "The body", "application/json", &config)
+	res, err := DoPostToRaito("the/path", "The body", "application/json", config)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, "The body", body)

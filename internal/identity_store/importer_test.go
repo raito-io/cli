@@ -5,6 +5,7 @@ import (
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/test"
 
 	"io/ioutil"
 	"net/http"
@@ -43,7 +44,8 @@ func TestIdentityStoreImport(t *testing.T) {
 	f1, f2 := writeTempFiles()
 	defer os.Remove(f1.Name())
 	defer os.Remove(f2.Name())
-	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	defer closer()
 
 	status, subtaskId, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
@@ -70,7 +72,8 @@ func TestIdentityStoreImportFailUploadUrl(t *testing.T) {
 	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	defer closer()
 
 	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
@@ -94,7 +97,8 @@ func TestIdentityStoreImportFailUpload(t *testing.T) {
 	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	defer closer()
 
 	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
@@ -118,7 +122,8 @@ func TestIdentityStoreImportFailImport(t *testing.T) {
 	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	defer closer()
 
 	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
@@ -142,7 +147,8 @@ func TestIdentityStoreImportFaultyResponse(t *testing.T) {
 	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	defer closer()
 
 	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
@@ -165,7 +171,8 @@ func TestIdentityStoreImportWithErrors(t *testing.T) {
 	defer viper.Set(constants.URLOverrideFlag, "")
 
 	f1, f2 := writeTempFiles()
-	isi := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
+	defer closer()
 
 	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
 
@@ -227,25 +234,22 @@ func writeTempFiles() (*os.File, *os.File) {
 	return f1, f2
 }
 
-func newIdentityStoreImporter(t *testing.T, f1, f2 string) *IdentityStoreImporter {
+func newIdentityStoreImporter(t *testing.T, f1, f2 string) (*IdentityStoreImporter, func()) {
 	t.Helper()
+
+	baseConfig, closer := test.CreateBaseConfig("mydomain", "myuser", "mysecret", "")
 
 	isi := NewIdentityStoreImporter(&IdentityStoreImportConfig{
 		BaseTargetConfig: types.BaseTargetConfig{
 			TargetLogger: hclog.L(),
-			BaseConfig: types.BaseConfig{
-				Domain:     "mydomain",
-				ApiUser:    "myuser",
-				ApiSecret:  "mysecret",
-				BaseLogger: hclog.L(),
-			},
+			BaseConfig:   *baseConfig,
 		},
 		UserFile:        f1,
 		GroupFile:       f2,
 		DeleteUntouched: true,
 		ReplaceGroups:   true,
 	}, dummyTaskEventUpdater(t))
-	return &isi
+	return &isi, closer
 }
 
 func dummyTaskEventUpdater(t *testing.T) *mocks.TaskEventUpdater {

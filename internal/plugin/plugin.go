@@ -25,6 +25,7 @@ import (
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
+	"github.com/raito-io/cli/base/resource_provider"
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
 )
 
@@ -39,12 +40,13 @@ var localPluginFolder = "./raito/plugins/"
 var globalPluginFolder string
 
 var pluginMap = map[string]plugin.Plugin{
-	identity_store.IdentityStoreSyncerName:      &identity_store.IdentityStoreSyncerPlugin{},
-	data_source.DataSourceSyncerName:            &data_source.DataSourceSyncerPlugin{},
-	access_provider.AccessSyncerName:            &access_provider.AccessSyncerPlugin{},
-	data_usage.DataUsageSyncerName:              &data_usage.DataUsageSyncerPlugin{},
-	plugin2.InfoName:                            &plugin2.InfoPlugin{},
-	data_object_enricher.DataObjectEnricherName: &data_object_enricher.DataObjectEnricherPlugin{},
+	identity_store.IdentityStoreSyncerName:       &identity_store.IdentityStoreSyncerPlugin{},
+	data_source.DataSourceSyncerName:             &data_source.DataSourceSyncerPlugin{},
+	access_provider.AccessSyncerName:             &access_provider.AccessSyncerPlugin{},
+	data_usage.DataUsageSyncerName:               &data_usage.DataUsageSyncerPlugin{},
+	plugin2.InfoName:                             &plugin2.InfoPlugin{},
+	data_object_enricher.DataObjectEnricherName:  &data_object_enricher.DataObjectEnricherPlugin{},
+	resource_provider.ResourceProviderSyncerName: &resource_provider.ResourceProviderSyncerPlugin{},
 }
 
 func init() {
@@ -68,6 +70,7 @@ type PluginClient interface {
 	GetIdentityStoreSyncer() (identity_store.IdentityStoreSyncer, error)
 	GetAccessSyncer() (access_provider.AccessSyncer, error)
 	GetDataUsageSyncer() (data_usage.DataUsageSyncer, error)
+	GetResourceProvider() (resource_provider.ResourceProviderSyncer, error)
 	GetInfo() (plugin2.Info, error)
 }
 
@@ -450,6 +453,19 @@ func (c pluginClientImpl) GetInfo() (plugin2.Info, error) {
 		return info, nil
 	} else {
 		return nil, fmt.Errorf("found plugin doesn't correctly implement the Info interface")
+	}
+}
+
+func (c pluginClientImpl) GetResourceProvider() (resource_provider.ResourceProviderSyncer, error) {
+	raw, err := c.getPlugin(resource_provider.ResourceProviderSyncerName)
+	if err != nil {
+		return nil, err
+	}
+
+	if syncer, ok := raw.(resource_provider.ResourceProviderSyncer); ok {
+		return syncer, nil
+	} else {
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the ResourceProviderServiceServer interface")
 	}
 }
 

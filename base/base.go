@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/raito-io/cli/base/data_object_enricher"
+	"github.com/raito-io/cli/base/resource_provider"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -89,6 +90,11 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error
 			pluginMap[data_object_enricher.DataObjectEnricherName] = &data_object_enricher.DataObjectEnricherPlugin{Impl: p}
 
 			logger.Debug("Registered DataObjectEnricher Plugin")
+		case resource_provider.ResourceProviderSyncer:
+			if _, f := pluginMap[resource_provider.ResourceProviderSyncerName]; f {
+				return nil, func() {}, errors.New("multiple implementations for ResourceProvider Syncer Plugin found. There should be only one")
+			}
+			pluginMap[resource_provider.ResourceProviderSyncerName] = &resource_provider.ResourceProviderSyncerPlugin{Impl: p}
 		}
 
 		if c, ok := plugin.(Closable); ok {

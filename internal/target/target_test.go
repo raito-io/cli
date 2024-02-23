@@ -12,6 +12,8 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target/types"
@@ -337,11 +339,16 @@ func TestRunSingleTarget(t *testing.T) {
 
 	runs := 0
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
-		assert.Equal(t, "name1", tConfig.Name)
+
+	targetRunner := NewMockTargetRunner(t)
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).Run(func(ctx context.Context, targetConfig *types.BaseTargetConfig) {
 		runs++
-		return "jobId", nil
-	})
+	}).Return(nil)
+	targetRunner.EXPECT().Finalize(mock.Anything, baseconfig, mock.Anything).Return(nil)
+
+	err := RunTargets(context.Background(), baseconfig, targetRunner)
+
+	require.NoError(t, err)
 	assert.Equal(t, 1, runs)
 }
 
@@ -366,7 +373,9 @@ func TestRunMultipleTargets(t *testing.T) {
 
 	runs := 0
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
+
+	targetRunner := NewMockTargetRunner(t)
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
 		if runs == 0 {
 			assert.Equal(t, "c1", tConfig.ConnectorName)
 			assert.Equal(t, "cn1", tConfig.Name)
@@ -378,8 +387,14 @@ func TestRunMultipleTargets(t *testing.T) {
 			assert.Equal(t, "secret2", tConfig.ApiSecret)
 		}
 		runs++
-		return "jobId", nil
+
+		return nil
 	})
+	targetRunner.EXPECT().Finalize(mock.Anything, baseconfig, mock.Anything).Return(nil)
+
+	err := RunTargets(context.Background(), baseconfig, targetRunner)
+
+	require.NoError(t, err)
 	assert.Equal(t, 2, runs)
 }
 
@@ -403,24 +418,40 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 
 	runs := 0
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
+
+	targetRunner := NewMockTargetRunner(t)
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
 		assert.Equal(t, "c1", tConfig.ConnectorName)
 		assert.Equal(t, "name1", tConfig.Name)
 		runs++
-		return "jobId", nil
+
+		return nil
 	})
+	targetRunner.EXPECT().Finalize(mock.Anything, baseconfig, mock.Anything).Return(nil)
+
+	err := RunTargets(context.Background(), baseconfig, targetRunner)
+
+	require.NoError(t, err)
 	assert.Equal(t, 1, runs)
 
 	viper.Set("only-targets", "c2")
 
 	runs = 0
 	baseconfig, _ = BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
+
+	targetRunner = NewMockTargetRunner(t)
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
 		assert.Equal(t, "c2", tConfig.ConnectorName)
 		assert.Equal(t, "c2", tConfig.Name)
 		runs++
-		return "", nil
+
+		return nil
 	})
+	targetRunner.EXPECT().Finalize(mock.Anything, baseconfig, mock.Anything).Return(nil)
+
+	err = RunTargets(context.Background(), baseconfig, targetRunner)
+
+	require.NoError(t, err)
 	assert.Equal(t, 1, runs)
 }
 
@@ -543,7 +574,9 @@ func TestRunFromConfigFile_WithEnrichers(t *testing.T) {
 
 	runs := 0
 	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
-	RunTargets(context.Background(), baseconfig, func(ctx context.Context, tConfig *types.BaseTargetConfig) (string, error) {
+
+	targetRunner := NewMockTargetRunner(t)
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
 		assert.Equal(t, "raito-io/cli-plugin-snowflake", tConfig.ConnectorName)
 		assert.Equal(t, "snowflake1", tConfig.Name)
 		assert.Equal(t, 2, len(tConfig.DataObjectEnrichers))
@@ -560,7 +593,13 @@ func TestRunFromConfigFile_WithEnrichers(t *testing.T) {
 		assert.Equal(t, "blah", tConfig.DataObjectEnrichers[1].Parameters["dbt-location"])
 
 		runs++
-		return "jobId", nil
+
+		return nil
 	})
+	targetRunner.EXPECT().Finalize(mock.Anything, baseconfig, mock.Anything).Return(nil)
+
+	err = RunTargets(context.Background(), baseconfig, targetRunner)
+
+	require.NoError(t, err)
 	assert.Equal(t, 1, runs)
 }

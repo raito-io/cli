@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/spf13/viper"
 	"nhooyr.io/websocket"
 
+	plugin2 "github.com/raito-io/cli/base/util/plugin"
 	"github.com/raito-io/cli/internal/auth"
-	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/plugin"
+	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/target/types"
 )
 
@@ -124,33 +124,13 @@ func (s *WebsocketClient) readMessageFromWebsocket(ctx context.Context, conn *we
 func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) error {
 	s.wg.Add(1)
 
-	var datasources []string
-	var onlyTargets map[string]struct{}
-	targets := viper.Get(constants.Targets).([]interface{})
+	hbTargetSync := heartBeatTargetSync{}
 
-	onlyTargetsS := viper.GetString(constants.OnlyTargetsFlag)
-	if onlyTargetsS != "" {
-		onlyTargets = make(map[string]struct{})
-		for _, ot := range strings.Split(onlyTargetsS, ",") {
-			onlyTargets[strings.TrimSpace(ot)] = struct{}{}
-		}
-	}
+	// Get the list of full ds sync targets
+	err := target.RunTargets(ctx, s.config, &hbTargetSync)
 
-	for _, targetObj := range targets {
-		target, ok := targetObj.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		if dsId, found := target["data-source-id"]; found {
-			if onlyTargets != nil {
-				if _, onlyTargetsFound := onlyTargets[target["name"].(string)]; !onlyTargetsFound {
-					continue
-				}
-			}
-
-			datasources = append(datasources, dsId.(string))
-		}
+	if err != nil {
+		return fmt.Errorf("target info: %w", err)
 	}
 
 	heartbeatMsgObject := struct {
@@ -158,7 +138,7 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) e
 		DataSources []string `json:"datasources"`
 	}{
 		Message:     "heartbeat",
-		DataSources: datasources,
+		DataSources: hbTargetSync.DataSources,
 	}
 
 	heartbeatMsg, err := json.Marshal(heartbeatMsgObject)
@@ -341,4 +321,48 @@ func (s *WebsocketCliTrigger) readChannel(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+type heartBeatTargetSync struct {
+	DataSources []string
+}
+
+func (s *heartBeatTargetSync) TargetSync(ctx context.Context, tConfig *types.BaseTargetConfig) error {
+	client, err := plugin.NewPluginClient(tConfig.ConnectorName, tConfig.ConnectorVersion, tConfig.TargetLogger)
+	if err != nil {
+		return fmt.Errorf("new plugin: %w", err)
+	}
+
+	defer client.Close()
+
+	infoClient, err := client.GetInfo()
+	if err != nil {
+		return fmt.Errorf("get info: %w", err)
+	}
+
+	pluginInfo, err := infoClient.GetInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("get info: %w", err)
+	}
+
+	if len(pluginInfo.Type) == 0 {
+		// Fallback
+		s.DataSources = append(s.DataSources, tConfig.Name)
+
+		return nil
+	}
+
+	for _, pluginType := range pluginInfo.Type {
+		if pluginType == plugin2.PluginType_PLUGIN_TYPE_FULL_DS_SYNC {
+			s.DataSources = append(s.DataSources, tConfig.Name)
+
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (s *heartBeatTargetSync) Finalize(_ context.Context, _ *types.BaseConfig, _ *target.Options) error {
+	return nil
 }

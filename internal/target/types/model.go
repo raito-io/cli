@@ -103,6 +103,7 @@ type BaseTargetConfig struct {
 	SkipDataSourceSync    bool
 	SkipDataAccessSync    bool
 	SkipDataUsageSync     bool
+	SkipResourceProvider  bool
 
 	LockAllWho            bool
 	LockAllInheritance    bool

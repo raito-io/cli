@@ -13,7 +13,7 @@ type TagHandler interface {
 }
 
 type TagSyncer interface {
-	SyncTags(ctx context.Context, tagsHandler TagHandler, config *tag.TagSyncConfig) error
+	SyncTags(ctx context.Context, tagsHandler TagHandler, config *tag.TagSyncConfig) ([]string, error)
 }
 
 type TagSyncFactoryFn func(ctx context.Context, configParams *tag.TagSyncConfig) (TagSyncer, func(), error)
@@ -56,7 +56,7 @@ func (t *tagSyncFunction) SyncTags(ctx context.Context, config *tag.TagSyncConfi
 		return nil, fmt.Errorf("create syncer: %w", err)
 	}
 
-	err = syncer.SyncTags(ctx, fileCreator, config)
+	tagSources, err := syncer.SyncTags(ctx, fileCreator, config)
 	if err != nil {
 		return nil, fmt.Errorf("sync tags: %w", err)
 	}
@@ -66,7 +66,8 @@ func (t *tagSyncFunction) SyncTags(ctx context.Context, config *tag.TagSyncConfi
 	logger.Info(fmt.Sprintf("Finished synchronising %d tags in %s", fileCreator.GetTagCount(), sec))
 
 	return &tag.TagSyncResult{
-		Tags: int32(fileCreator.GetTagCount()),
+		Tags:            int32(fileCreator.GetTagCount()),
+		TagSourcesScope: tagSources,
 	}, nil
 }
 

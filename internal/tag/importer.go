@@ -73,8 +73,8 @@ func (t tagImporter) doImport(ctx context.Context, jobId, fileKey string) (statu
 		}
 	}()
 
-	type importGqlVariable struct {
-		JobId          string `json:"JobId"`
+	type TagImportRequest struct {
+		JobId          string `json:"JobID"`
 		ImportSettings struct {
 			DataSource      *string  `json:"dataSource,omitempty"`
 			IdentitySource  *string  `json:"identitySource,omitempty"`
@@ -83,7 +83,7 @@ func (t tagImporter) doImport(ctx context.Context, jobId, fileKey string) (statu
 		} `json:"importSettings"`
 	}
 
-	variables := importGqlVariable{
+	variables := TagImportRequest{
 		JobId: jobId,
 		ImportSettings: struct {
 			DataSource      *string  `json:"dataSource,omitempty"`
@@ -105,8 +105,8 @@ func (t tagImporter) doImport(ctx context.Context, jobId, fileKey string) (statu
 			Subtask struct {
 				Status    job.JobStatus `graphql:"status"`
 				SubtaskId string        `graphql:"subtaskId"`
-			} `graphql:"importTagsRequest(input: $input)"`
-		}
+			}
+		} `graphql:"importTagsRequest(input: $input)"`
 	}
 
 	err = gqlClient.Mutate(ctx, &importTagRequestMutation, map[string]interface{}{"input": variables})

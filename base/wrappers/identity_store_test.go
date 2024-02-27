@@ -31,7 +31,7 @@ func TestIdentityStoreSyncFunction_SyncIdentityStore(t *testing.T) {
 	syncerMock.EXPECT().SyncIdentityStore(mock.Anything, fileCreatorMock, config.ConfigMap).Return(nil).Once()
 
 	syncFunction := identityStoreSyncFunction{
-		syncer: NewSyncFactory(NewDummySyncFactoryFn[IdentityStoreSyncer](syncerMock)),
+		syncer: NewSyncFactory[config2.ConfigMap, IdentityStoreSyncer](NewDummySyncFactoryFn[config2.ConfigMap, IdentityStoreSyncer](syncerMock)),
 		identityHandlerFactory: func(config *identity_store.IdentityStoreSyncConfig) (identity_store.IdentityStoreFileCreator, error) {
 			return fileCreatorMock, nil
 		},
@@ -56,7 +56,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOfFileCreation(t *testing.T) {
 	syncerMock := NewMockIdentityStoreSyncer(t)
 
 	syncFunction := identityStoreSyncFunction{
-		syncer: NewSyncFactory(NewDummySyncFactoryFn[IdentityStoreSyncer](syncerMock)),
+		syncer: NewSyncFactory[config2.ConfigMap, IdentityStoreSyncer](NewDummySyncFactoryFn[config2.ConfigMap, IdentityStoreSyncer](syncerMock)),
 		identityHandlerFactory: func(config *identity_store.IdentityStoreSyncConfig) (identity_store.IdentityStoreFileCreator, error) {
 			return nil, errors.New("BOOM!")
 		},
@@ -87,7 +87,7 @@ func TestMockDataUsageSyncer_SyncDataUsage_ErrorSync(t *testing.T) {
 	syncerMock.EXPECT().SyncIdentityStore(mock.Anything, fileCreatorMock, config.ConfigMap).Return(errors.New("BOOM!")).Once()
 
 	syncFunction := identityStoreSyncFunction{
-		syncer: NewSyncFactory(NewDummySyncFactoryFn[IdentityStoreSyncer](syncerMock)),
+		syncer: NewSyncFactory[config2.ConfigMap, IdentityStoreSyncer](NewDummySyncFactoryFn[config2.ConfigMap, IdentityStoreSyncer](syncerMock)),
 		identityHandlerFactory: func(config *identity_store.IdentityStoreSyncConfig) (identity_store.IdentityStoreFileCreator, error) {
 			return fileCreatorMock, nil
 		},

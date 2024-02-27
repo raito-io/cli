@@ -38,7 +38,7 @@ func Logger() hclog.Logger {
 	return logger
 }
 
-func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error) {
+func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error) { //nolint:cyclop
 	var pluginMap = plugin.PluginSet{}
 
 	infoFound := false

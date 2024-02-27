@@ -57,8 +57,8 @@ func (t *tagFileCreator) AddTags(tags ...*TagImportObject) error {
 }
 
 func (t *tagFileCreator) Close() {
-	t.targetFile.WriteString("\n]")
-	t.targetFile.Close()
+	_, _ = t.targetFile.WriteString("\n]")
+	_ = t.targetFile.Close()
 }
 
 func (t *tagFileCreator) GetTagCount() int {

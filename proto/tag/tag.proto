@@ -3,7 +3,6 @@ package tag;
 
 import "google/protobuf/empty.proto";
 import "util/config/config.proto";
-import "util/error/error.proto";
 import "util/version/version.proto";
 
 message TagSyncConfig {

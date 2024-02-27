@@ -74,12 +74,12 @@ func (t tagImporter) doImport(ctx context.Context, jobId, fileKey string) (statu
 	}()
 
 	type TagImportRequest struct {
-		JobId          string `json:"JobID"`
+		JobId          string `json:"jobId"`
 		ImportSettings struct {
 			DataSource      *string  `json:"dataSource,omitempty"`
 			IdentitySource  *string  `json:"identitySource,omitempty"`
 			FileKey         string   `json:"fileKey"`
-			TagSourcesScope []string `json:"TagSourcesScope"`
+			TagSourcesScope []string `json:"tagSourcesScope"`
 		} `json:"importSettings"`
 	}
 
@@ -89,7 +89,7 @@ func (t tagImporter) doImport(ctx context.Context, jobId, fileKey string) (statu
 			DataSource      *string  `json:"dataSource,omitempty"`
 			IdentitySource  *string  `json:"identitySource,omitempty"`
 			FileKey         string   `json:"fileKey"`
-			TagSourcesScope []string `json:"TagSourcesScope"`
+			TagSourcesScope []string `json:"tagSourcesScope"`
 		}{
 			DataSource:      &t.config.DataSourceId,
 			IdentitySource:  &t.config.IdentityStoreId,

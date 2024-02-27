@@ -201,6 +201,7 @@ func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]in
 	tConfig.SkipIdentityStoreSync = tConfig.SkipIdentityStoreSync || viper.GetBool(constants.SkipIdentityStoreSyncFlag)
 	tConfig.SkipDataUsageSync = tConfig.SkipDataUsageSync || viper.GetBool(constants.SkipDataUsageSyncFlag)
 	tConfig.SkipResourceProvider = tConfig.SkipResourceProvider || viper.GetBool(constants.SkipResourceProviderFlag)
+	tConfig.SkipTagSync = tConfig.SkipTagSync || viper.GetBool(constants.SkipTagsFlag)
 
 	// If not set in the target, we take the globally set values.
 	if tConfig.ApiSecret == "" {

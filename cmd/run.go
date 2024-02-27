@@ -42,6 +42,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.SkipDataAccessSyncFlag, false, "If set, the data access information from Raito will not be synced to the data sources in the target list.")
 	cmd.PersistentFlags().Bool(constants.SkipDataUsageSyncFlag, false, "If set, the data usage information synchronization step to Raito will be skipped for each of the targets.")
 	cmd.PersistentFlags().Bool(constants.SkipResourceProviderFlag, false, "If set, the resource provider synchronization step to Raito will be skipped for each of the targets.")
+	cmd.PersistentFlags().Bool(constants.SkipTagsFlag, false, "If set, the tags synchronization step to Raito will be skipped for each of the targets")
 
 	cmd.PersistentFlags().Bool(constants.LockAllWhoFlag, false, "If set, the 'who' (users and groups) of all access providers imported into Raito Cloud will be locked.")
 	cmd.PersistentFlags().Bool(constants.LockAllInheritanceFlag, false, "If set, the inheritance of all access providers imported into Raito Cloud will be locked.")
@@ -57,6 +58,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingIdentityStoreSync, false, "If set, identity store sync logs will not be forwarded to Raito Cloud.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingDataUsageSync, false, "If set, data usage sync logs will not be forwarded to Raito Cloud.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwardingResourceProviderSync, false, "If set, resource provider synchronization logs will not be forwarded to Raito Cloud.")
+	cmd.PersistentFlags().Bool(constants.DisableLogForwardingTagSync, false, "If set, tag synchronization logs will not be forwarded to Raito Cloud.")
 
 	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessProviderName, "", "If set, will determine the tag-key used for overwriting the display-name of the Access Control when imported in to Raito Cloud.")
 	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessProviderOwners, "", "If set, will determine the tag-key used for assigning owners of the Access Control when imported in to Raito Cloud.")
@@ -70,6 +72,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.SkipDataAccessSyncFlag, cmd)
 	BindFlag(constants.SkipDataUsageSyncFlag, cmd)
 	BindFlag(constants.SkipResourceProviderFlag, cmd)
+	BindFlag(constants.SkipTagsFlag, cmd)
 	BindFlag(constants.LockAllWhoFlag, cmd)
 	BindFlag(constants.LockAllInheritanceFlag, cmd)
 	BindFlag(constants.LockAllWhatFlag, cmd)
@@ -83,6 +86,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.DisableLogForwardingIdentityStoreSync, cmd)
 	BindFlag(constants.DisableLogForwardingDataUsageSync, cmd)
 	BindFlag(constants.DisableLogForwardingResourceProviderSync, cmd)
+	BindFlag(constants.DisableLogForwardingTagSync, cmd)
 
 	BindFlag(constants.TagOverwriteKeyForAccessProviderName, cmd)
 	BindFlag(constants.TagOverwriteKeyForAccessProviderOwners, cmd)

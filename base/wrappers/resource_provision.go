@@ -6,19 +6,18 @@ import (
 	"time"
 
 	"github.com/raito-io/cli/base/resource_provider"
-	"github.com/raito-io/cli/base/util/config"
 )
 
 type ResourceProviderSyncer interface {
 	UpdateResources(ctx context.Context, config *resource_provider.UpdateResourceInput) (*resource_provider.UpdateResourceResult, error)
 }
 
-type ResourceSyncFactoryFn func(ctx context.Context, configParams *config.ConfigMap) (ResourceProviderSyncer, func(), error)
+type ResourceSyncFactoryFn func(ctx context.Context, configParams *resource_provider.UpdateResourceInput) (ResourceProviderSyncer, func(), error)
 
 type ResourceProvisionSyncFunction struct {
 	resource_provider.ResourceProviderSyncerVersionHandler
 
-	syncer SyncFactory[ResourceProviderSyncer]
+	syncer SyncFactory[resource_provider.UpdateResourceInput, ResourceProviderSyncer]
 }
 
 func ResourceProviderSyncFactory(syncer ResourceSyncFactoryFn) resource_provider.ResourceProviderSyncer {
@@ -28,7 +27,7 @@ func ResourceProviderSyncFactory(syncer ResourceSyncFactoryFn) resource_provider
 }
 
 func ResourceProviderSync(syncer ResourceProviderSyncer) resource_provider.ResourceProviderSyncer {
-	return ResourceProviderSyncFactory(NewDummySyncFactoryFn(syncer))
+	return ResourceProviderSyncFactory(NewDummySyncFactoryFn[resource_provider.UpdateResourceInput](syncer))
 }
 
 func (r *ResourceProvisionSyncFunction) UpdateResources(ctx context.Context, config *resource_provider.UpdateResourceInput) (*resource_provider.UpdateResourceResult, error) {
@@ -40,7 +39,7 @@ func (r *ResourceProvisionSyncFunction) UpdateResources(ctx context.Context, con
 		logger.Info(fmt.Sprintf("Finished resource provisioning in %s", time.Since(start)))
 	}()
 
-	syncer, err := r.syncer.Create(ctx, config.ConfigMap)
+	syncer, err := r.syncer.Create(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("create syncer: %w", err)
 	}

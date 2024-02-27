@@ -32,7 +32,7 @@ type AccessProviderSyncer interface {
 type AccessProviderSyncFactoryFn func(ctx context.Context, configMap *config.ConfigMap) (AccessProviderSyncer, func(), error)
 
 func DataAccessSync(syncer AccessProviderSyncer, configOpt ...func(config *access_provider.AccessSyncConfig)) *DataAccessSyncFunction {
-	return DataAccessSyncFactory(NewDummySyncFactoryFn(syncer), configOpt...)
+	return DataAccessSyncFactory(NewDummySyncFactoryFn[config.ConfigMap](syncer), configOpt...)
 }
 
 func DataAccessSyncFactory(syncer AccessProviderSyncFactoryFn, configOpt ...func(config *access_provider.AccessSyncConfig)) *DataAccessSyncFunction {
@@ -55,7 +55,7 @@ func DataAccessSyncFactory(syncer AccessProviderSyncFactoryFn, configOpt ...func
 type DataAccessSyncFunction struct {
 	access_provider.AccessSyncerVersionHandler
 
-	Syncer                           SyncFactory[AccessProviderSyncer]
+	Syncer                           SyncFactory[config.ConfigMap, AccessProviderSyncer]
 	accessFileCreatorFactory         func(config *access_provider.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error)
 	accessFeedbackFileCreatorFactory func(config *access_provider.AccessSyncToTarget) (sync_to_target.SyncFeedbackFileCreator, error)
 	accessProviderParserFactory      func(config *access_provider.AccessSyncToTarget) (sync_to_target.AccessProviderImportFileParser, error)

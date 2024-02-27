@@ -48,6 +48,7 @@ const (
 	SkipIdentityStoreSyncFlag                = "skip-identity-store-sync"
 	SkipDataUsageSyncFlag                    = "skip-data-usage-sync"
 	SkipResourceProviderFlag                 = "skip-resource-provider-sync"
+	SkipTagsFlag                             = "skip-tags-sync"
 	LockAllWhoFlag                           = "lock-all-who"
 	LockAllInheritanceFlag                   = "lock-all-inheritance"
 	LockAllWhatFlag                          = "lock-all-what"
@@ -64,6 +65,7 @@ const (
 	DisableLogForwardingIdentityStoreSync    = "disable-log-forwarding-identity-store-sync"
 	DisableLogForwardingDataUsageSync        = "disable-log-forwarding-data-usage-sync"
 	DisableLogForwardingResourceProviderSync = "disable-log-forwarding-resource-provider-sync"
+	DisableLogForwardingTagSync              = "disable-log-forwarding-tag-sync"
 
 	TagOverwriteKeyForAccessProviderName   = "tag-overwrite-key-for-access-provider-name"
 	TagOverwriteKeyForAccessProviderOwners = "tag-overwrite-key-for-access-provider-owners"
@@ -92,6 +94,7 @@ const (
 	DataAccessSync       = "DA"
 	DataUsageSync        = "DU"
 	ResourceProviderSync = "RP"
+	TagSync              = "TAG"
 
 	SubtaskAccessSync = "AccessSync"
 

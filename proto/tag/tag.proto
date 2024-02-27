@@ -1,0 +1,24 @@
+syntax = "proto3";
+package tag;
+
+import "google/protobuf/empty.proto";
+import "util/config/config.proto";
+import "util/error/error.proto";
+import "util/version/version.proto";
+
+message TagSyncConfig {
+  util.config.ConfigMap config_map = 1;
+  string target_file = 2;
+  string data_source_id = 3;
+  string identity_store_id = 4;
+}
+
+message TagSyncResult {
+  int32 tags = 1;
+  repeated string tag_sources_scope = 2;
+}
+
+service TagSyncService {
+  rpc CliVersionInformation(google.protobuf.Empty) returns (util.version.CliBuildInformation);
+  rpc SyncTags(TagSyncConfig) returns (TagSyncResult);
+}

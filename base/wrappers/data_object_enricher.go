@@ -28,7 +28,7 @@ type DataObjectEnricherI interface {
 type DataObjectEnricherFactoryFn func(ctx context.Context, config *config.ConfigMap) (DataObjectEnricherI, func(), error)
 
 func DataObjectEnricher(enricher DataObjectEnricherI) *dataObjectEnricherFunction {
-	return DataObjectEnricherFactory(NewDummySyncFactoryFn(enricher))
+	return DataObjectEnricherFactory(NewDummySyncFactoryFn[config.ConfigMap](enricher))
 }
 
 func DataObjectEnricherFactory(enricher DataObjectEnricherFactoryFn) *dataObjectEnricherFunction {
@@ -40,7 +40,7 @@ func DataObjectEnricherFactory(enricher DataObjectEnricherFactoryFn) *dataObject
 type dataObjectEnricherFunction struct {
 	data_object_enricher.DataObjectEnricherVersionHandler
 
-	enricher SyncFactory[DataObjectEnricherI]
+	enricher SyncFactory[config.ConfigMap, DataObjectEnricherI]
 }
 
 func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_object_enricher.DataObjectEnricherConfig) (*data_object_enricher.DataObjectEnricherResult, error) {

@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/spf13/viper"
+
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/base/util/config"
 )
@@ -104,6 +105,7 @@ type BaseTargetConfig struct {
 	SkipDataAccessSync    bool
 	SkipDataUsageSync     bool
 	SkipResourceProvider  bool
+	SkipTagSync           bool
 
 	LockAllWho            bool
 	LockAllInheritance    bool

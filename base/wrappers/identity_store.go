@@ -23,7 +23,7 @@ type IdentityStoreSyncer interface {
 type IdentityStoreSyncerFactoryFn func(ctx context.Context, config *config.ConfigMap) (IdentityStoreSyncer, func(), error)
 
 func IdentityStoreSync(syncer IdentityStoreSyncer) *identityStoreSyncFunction {
-	return IdentityStoreSyncFactory(NewDummySyncFactoryFn(syncer))
+	return IdentityStoreSyncFactory(NewDummySyncFactoryFn[config.ConfigMap](syncer))
 }
 
 func IdentityStoreSyncFactory(syncer IdentityStoreSyncerFactoryFn) *identityStoreSyncFunction {
@@ -36,7 +36,7 @@ func IdentityStoreSyncFactory(syncer IdentityStoreSyncerFactoryFn) *identityStor
 type identityStoreSyncFunction struct {
 	identity_store.IdentityStoreSyncerVersionHandler
 
-	syncer                 SyncFactory[IdentityStoreSyncer]
+	syncer                 SyncFactory[config.ConfigMap, IdentityStoreSyncer]
 	identityHandlerFactory func(config *identity_store.IdentityStoreSyncConfig) (identity_store.IdentityStoreFileCreator, error)
 }
 

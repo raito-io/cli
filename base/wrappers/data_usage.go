@@ -22,7 +22,7 @@ type DataUsageSyncer interface {
 type DataUsageSyncFactoryFn func(ctx context.Context, configParams *config.ConfigMap) (DataUsageSyncer, func(), error)
 
 func DataUsageSync(syncer DataUsageSyncer) *dataUsageSyncFunction {
-	return DataUsageSyncFactory(NewDummySyncFactoryFn(syncer))
+	return DataUsageSyncFactory(NewDummySyncFactoryFn[config.ConfigMap](syncer))
 }
 
 func DataUsageSyncFactory(syncer DataUsageSyncFactoryFn) *dataUsageSyncFunction {
@@ -35,7 +35,7 @@ func DataUsageSyncFactory(syncer DataUsageSyncFactoryFn) *dataUsageSyncFunction 
 type dataUsageSyncFunction struct {
 	data_usage.DataUsageSyncerVersionHandler
 
-	syncer             SyncFactory[DataUsageSyncer]
+	syncer             SyncFactory[config.ConfigMap, DataUsageSyncer]
 	fileCreatorFactory func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error)
 }
 

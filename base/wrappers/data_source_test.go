@@ -30,7 +30,7 @@ func TestDataSourceSyncFunction_SyncDataSource(t *testing.T) {
 	syncerMock.EXPECT().SyncDataSource(mock.Anything, fileCreatorMock, config).Return(nil).Once()
 
 	syncFunction := dataSourceSyncFunction{
-		syncer: NewSyncFactory(NewDummySyncFactoryFn[DataSourceSyncer](syncerMock)),
+		syncer: NewSyncFactory[config2.ConfigMap, DataSourceSyncer](NewDummySyncFactoryFn[config2.ConfigMap, DataSourceSyncer](syncerMock)),
 		fileCreatorFactory: func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error) {
 			return fileCreatorMock, nil
 		},
@@ -55,7 +55,7 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorOnFile(t *testing.T) {
 	syncerMock := NewMockDataSourceSyncer(t)
 
 	syncFunction := dataSourceSyncFunction{
-		syncer: NewSyncFactory(NewDummySyncFactoryFn[DataSourceSyncer](syncerMock)),
+		syncer: NewSyncFactory[config2.ConfigMap, DataSourceSyncer](NewDummySyncFactoryFn[config2.ConfigMap, DataSourceSyncer](syncerMock)),
 		fileCreatorFactory: func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error) {
 			return nil, errors.New("BOOM!")
 		},
@@ -86,7 +86,7 @@ func TestDataSourceSyncFunction_SyncDataSource_ErrorSync(t *testing.T) {
 	syncerMock.EXPECT().SyncDataSource(mock.Anything, fileCreatorMock, config).Return(errors.New("BOOM!")).Once()
 
 	syncFunction := dataSourceSyncFunction{
-		syncer: NewSyncFactory(NewDummySyncFactoryFn[DataSourceSyncer](syncerMock)),
+		syncer: NewSyncFactory[config2.ConfigMap, DataSourceSyncer](NewDummySyncFactoryFn[config2.ConfigMap, DataSourceSyncer](syncerMock)),
 		fileCreatorFactory: func(config *data_source.DataSourceSyncConfig) (data_source.DataSourceFileCreator, error) {
 			return fileCreatorMock, nil
 		},

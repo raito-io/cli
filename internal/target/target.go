@@ -153,7 +153,7 @@ func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTa
 	return errorResult
 }
 
-func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, error) {
+func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, error) { //nolint:cyclop
 	tConfig := types.BaseTargetConfig{
 		BaseConfig:      *baseconfig,
 		DeleteUntouched: true,
@@ -201,6 +201,7 @@ func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]in
 	tConfig.SkipIdentityStoreSync = tConfig.SkipIdentityStoreSync || viper.GetBool(constants.SkipIdentityStoreSyncFlag)
 	tConfig.SkipDataUsageSync = tConfig.SkipDataUsageSync || viper.GetBool(constants.SkipDataUsageSyncFlag)
 	tConfig.SkipResourceProvider = tConfig.SkipResourceProvider || viper.GetBool(constants.SkipResourceProviderFlag)
+	tConfig.SkipTagSync = tConfig.SkipTagSync || viper.GetBool(constants.SkipTagsFlag)
 
 	// If not set in the target, we take the globally set values.
 	if tConfig.ApiSecret == "" {

@@ -30,7 +30,7 @@ func TestDataUsageSyncFunction_SyncDataUsage(t *testing.T) {
 	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(nil)
 
 	syncFunction := dataUsageSyncFunction{
-		syncer: NewSyncFactory(NewDummySyncFactoryFn[DataUsageSyncer](syncerMock)),
+		syncer: NewSyncFactory[config2.ConfigMap, DataUsageSyncer](NewDummySyncFactoryFn[config2.ConfigMap, DataUsageSyncer](syncerMock)),
 		fileCreatorFactory: func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error) {
 			return fileCreatorMock, nil
 		},
@@ -56,7 +56,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorOnFileCreation(t *testing.T) {
 	syncerMock := NewMockDataUsageSyncer(t)
 
 	syncFunction := dataUsageSyncFunction{
-		syncer: NewSyncFactory(NewDummySyncFactoryFn[DataUsageSyncer](syncerMock)),
+		syncer: NewSyncFactory[config2.ConfigMap, DataUsageSyncer](NewDummySyncFactoryFn[config2.ConfigMap, DataUsageSyncer](syncerMock)),
 		fileCreatorFactory: func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error) {
 			return nil, errors.New("BOOM!")
 		},
@@ -86,7 +86,7 @@ func TestDataUsageSyncFunction_SyncDataUsage_ErrorSync(t *testing.T) {
 	syncerMock.EXPECT().SyncDataUsage(mock.Anything, fileCreatorMock, config.ConfigMap).Return(errors.New("BOOM!"))
 
 	syncFunction := dataUsageSyncFunction{
-		syncer: NewSyncFactory(NewDummySyncFactoryFn[DataUsageSyncer](syncerMock)),
+		syncer: NewSyncFactory[config2.ConfigMap, DataUsageSyncer](NewDummySyncFactoryFn[config2.ConfigMap, DataUsageSyncer](syncerMock)),
 		fileCreatorFactory: func(config *data_usage.DataUsageSyncConfig) (data_usage.DataUsageFileCreator, error) {
 			return fileCreatorMock, nil
 		},

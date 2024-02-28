@@ -98,6 +98,11 @@ func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTarget
 			if err != nil {
 				return fmt.Errorf("identity store sync: %w", err)
 			}
+		case plugin2.PluginType_PLUGIN_TYPE_TAG_SYNC:
+			err = tagSyncTargetSync(ctx, targetConfig, client, jobId)
+			if err != nil {
+				return fmt.Errorf("tag sync: %w", err)
+			}
 		case plugin2.PluginType_PLUGIN_TYPE_RESOURCE_PROVIDER:
 			err = resourceProviderSync(ctx, targetConfig, client, jobId)
 			if err != nil {
@@ -167,6 +172,8 @@ func logForwardingEnabled(syncType string) bool {
 		cmdFlag = constants.DisableLogForwardingDataUsageSync
 	case constants.ResourceProviderSync:
 		cmdFlag = constants.DisableLogForwardingResourceProviderSync
+	case constants.TagSync:
+		cmdFlag = constants.DisableLogForwardingTagSync
 	}
 
 	return !viper.GetBool(cmdFlag)

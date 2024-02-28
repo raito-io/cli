@@ -26,6 +26,7 @@ import (
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/base/resource_provider"
+	"github.com/raito-io/cli/base/tag"
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
 )
 
@@ -47,6 +48,7 @@ var pluginMap = map[string]plugin.Plugin{
 	plugin2.InfoName:                             &plugin2.InfoPlugin{},
 	data_object_enricher.DataObjectEnricherName:  &data_object_enricher.DataObjectEnricherPlugin{},
 	resource_provider.ResourceProviderSyncerName: &resource_provider.ResourceProviderSyncerPlugin{},
+	tag.TagSyncerName:                            &tag.TagSyncerPlugin{},
 }
 
 func init() {
@@ -71,6 +73,7 @@ type PluginClient interface {
 	GetAccessSyncer() (access_provider.AccessSyncer, error)
 	GetDataUsageSyncer() (data_usage.DataUsageSyncer, error)
 	GetResourceProvider() (resource_provider.ResourceProviderSyncer, error)
+	GetTagSyncer() (tag.TagSyncer, error)
 	GetInfo() (plugin2.Info, error)
 }
 
@@ -466,6 +469,19 @@ func (c pluginClientImpl) GetResourceProvider() (resource_provider.ResourceProvi
 		return syncer, nil
 	} else {
 		return nil, fmt.Errorf("found plugin doesn't correctly implement the ResourceProviderServiceServer interface")
+	}
+}
+
+func (c pluginClientImpl) GetTagSyncer() (tag.TagSyncer, error) {
+	raw, err := c.getPlugin(tag.TagSyncerName)
+	if err != nil {
+		return nil, err
+	}
+
+	if syncer, ok := raw.(tag.TagSyncer); ok {
+		return syncer, nil
+	} else {
+		return nil, fmt.Errorf("found plugin doesn't correctly implement the TagSyncer interface")
 	}
 }
 

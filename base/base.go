@@ -7,6 +7,7 @@ import (
 
 	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/resource_provider"
+	"github.com/raito-io/cli/base/tag"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -37,7 +38,7 @@ func Logger() hclog.Logger {
 	return logger
 }
 
-func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error) {
+func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error) { //nolint:cyclop
 	var pluginMap = plugin.PluginSet{}
 
 	infoFound := false
@@ -95,6 +96,11 @@ func buildPluginMap(pluginImpls ...interface{}) (plugin.PluginSet, func(), error
 				return nil, func() {}, errors.New("multiple implementations for ResourceProvider Syncer Plugin found. There should be only one")
 			}
 			pluginMap[resource_provider.ResourceProviderSyncerName] = &resource_provider.ResourceProviderSyncerPlugin{Impl: p}
+		case tag.TagSyncer:
+			if _, f := pluginMap[tag.TagSyncerName]; f {
+				return nil, func() {}, errors.New("multiple implementations for Tag Syncer Plugin found. There should be only one")
+			}
+			pluginMap[tag.TagSyncerName] = &tag.TagSyncerPlugin{Impl: p}
 		}
 
 		if c, ok := plugin.(Closable); ok {

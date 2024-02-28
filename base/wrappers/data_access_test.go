@@ -36,7 +36,7 @@ func TestDataAccessSyncFunction_SyncFromTarget(t *testing.T) {
 	syncerMock.EXPECT().SyncAccessProvidersFromTarget(mock.Anything, accessProviderFileCreator, config.ConfigMap).Return(nil).Once()
 
 	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
+		Syncer: NewSyncFactory[config2.ConfigMap, AccessProviderSyncer](NewDummySyncFactoryFn[config2.ConfigMap, AccessProviderSyncer](syncerMock)),
 		accessFileCreatorFactory: func(config *access_provider.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error) {
 			return accessProviderFileCreator, nil
 		},
@@ -62,7 +62,7 @@ func TestDataAccessSyncFunction_SyncFromTarget_ErrorOnFileCreation(t *testing.T)
 	syncerMock := NewMockAccessProviderSyncer(t)
 
 	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
+		Syncer: NewSyncFactory[config2.ConfigMap, AccessProviderSyncer](NewDummySyncFactoryFn[config2.ConfigMap, AccessProviderSyncer](syncerMock)),
 		accessFileCreatorFactory: func(config *access_provider.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error) {
 			return nil, errors.New("BOOM!")
 		},
@@ -94,7 +94,7 @@ func TestDataAccessSyncFunction_SyncFromTarget_ErrorOnSync(t *testing.T) {
 		errors.New("BOOM!")).Once()
 
 	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
+		Syncer: NewSyncFactory[config2.ConfigMap, AccessProviderSyncer](NewDummySyncFactoryFn[config2.ConfigMap, AccessProviderSyncer](syncerMock)),
 		accessFileCreatorFactory: func(config *access_provider.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error) {
 			return accessProviderFilCreator, nil
 		},
@@ -167,7 +167,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 	syncerMock.EXPECT().SyncAccessProviderToTarget(mock.Anything, &accessProvidersImport, accessFeedBackFileCreator, config.ConfigMap).Return(nil).Once()
 
 	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
+		Syncer: NewSyncFactory[config2.ConfigMap, AccessProviderSyncer](NewDummySyncFactoryFn[config2.ConfigMap, AccessProviderSyncer](syncerMock)),
 		accessFeedbackFileCreatorFactory: func(config *access_provider.AccessSyncToTarget) (sync_to_target.SyncFeedbackFileCreator, error) {
 			return accessFeedBackFileCreator, nil
 		},
@@ -195,7 +195,7 @@ func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsingFactory(t *testin
 	syncerMock := NewMockAccessProviderSyncer(t)
 
 	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
+		Syncer: NewSyncFactory[config2.ConfigMap, AccessProviderSyncer](NewDummySyncFactoryFn[config2.ConfigMap, AccessProviderSyncer](syncerMock)),
 		accessProviderParserFactory: func(config *access_provider.AccessSyncToTarget) (sync_to_target.AccessProviderImportFileParser, error) {
 			return nil, error2.ToErrorResult(fmt.Errorf("boom"))
 		},
@@ -225,7 +225,7 @@ func TestDataAccessSyncFunction_SyncToTarget_ErrorOnFileParsing(t *testing.T) {
 	syncerMock := NewMockAccessProviderSyncer(t)
 
 	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
+		Syncer: NewSyncFactory[config2.ConfigMap, AccessProviderSyncer](NewDummySyncFactoryFn[config2.ConfigMap, AccessProviderSyncer](syncerMock)),
 		accessProviderParserFactory: func(config *access_provider.AccessSyncToTarget) (sync_to_target.AccessProviderImportFileParser, error) {
 			return accessProviderParser, nil
 		},
@@ -277,7 +277,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFile
 	syncerMock := NewMockAccessProviderSyncer(t)
 
 	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
+		Syncer: NewSyncFactory[config2.ConfigMap, AccessProviderSyncer](NewDummySyncFactoryFn[config2.ConfigMap, AccessProviderSyncer](syncerMock)),
 		accessFeedbackFileCreatorFactory: func(config *access_provider.AccessSyncToTarget) (sync_to_target.SyncFeedbackFileCreator, error) {
 			return nil, fmt.Errorf("boom")
 		},
@@ -337,7 +337,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnSync(t *test
 	syncerMock.EXPECT().SyncAccessProviderToTarget(mock.Anything, &accessProvidersImport, accessFeedBackFileCreator, config.ConfigMap).Return(fmt.Errorf("boom")).Once()
 
 	syncFunction := DataAccessSyncFunction{
-		Syncer: NewSyncFactory(NewDummySyncFactoryFn[AccessProviderSyncer](syncerMock)),
+		Syncer: NewSyncFactory[config2.ConfigMap, AccessProviderSyncer](NewDummySyncFactoryFn[config2.ConfigMap, AccessProviderSyncer](syncerMock)),
 		accessFeedbackFileCreatorFactory: func(config *access_provider.AccessSyncToTarget) (sync_to_target.SyncFeedbackFileCreator, error) {
 			return accessFeedBackFileCreator, nil
 		},

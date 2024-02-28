@@ -8,6 +8,7 @@ import (
 	"github.com/raito-io/cli/base/tag"
 )
 
+//go:generate go run github.com/vektra/mockery/v2 --name=TagHandler --with-expecter
 type TagHandler interface {
 	AddTags(tags ...*tag.TagImportObject) error
 }

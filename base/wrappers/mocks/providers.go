@@ -8,6 +8,7 @@ import (
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
+	"github.com/raito-io/cli/base/tag"
 )
 
 type mockConstructorTestingT interface {
@@ -58,7 +59,7 @@ func NewSimpleIdentityStoreIdentityHandler(t mockConstructorTestingT, maxUsersOr
 		}
 	}
 
-	arguments := make([]interface{}, 0)
+	arguments := make([]interface{}, 0, maxUsersOrGroupsInCall)
 	for i := 0; i < maxUsersOrGroupsInCall; i++ {
 		arguments = append(arguments, mock.Anything)
 		result.EXPECT().AddUsers(arguments...).Run(addUsers).Return(nil).Maybe()
@@ -82,7 +83,7 @@ func NewSimpleDataSourceObjectHandler(t mockConstructorTestingT, maxDataObjectsP
 		DataObjects:             make([]data_source.DataObject, 0),
 	}
 
-	arguments := make([]interface{}, 0)
+	arguments := make([]interface{}, 0, maxDataObjectsPerCall)
 
 	addDataObject := func(dataObjects ...*data_source.DataObject) {
 		for _, do := range dataObjects {
@@ -121,7 +122,7 @@ func NewSimpleAccessProviderHandler(t mockConstructorTestingT, maxAccessProvider
 		AccessProviders:       make([]sync_from_target.AccessProvider, 0),
 	}
 
-	arguments := make([]interface{}, 0)
+	arguments := make([]interface{}, 0, maxAccessProvidersPerCall)
 
 	for i := 0; i < maxAccessProvidersPerCall; i++ {
 		arguments = append(arguments, mock.Anything)
@@ -151,4 +152,29 @@ func NewSimpleAccessProviderFeedbackHandler(t mockConstructorTestingT) *SimpleAc
 	}).Return(nil).Maybe()
 
 	return result
+}
+
+type SimpleTagHandler struct {
+	*TagHandler
+	Tags []tag.TagImportObject
+}
+
+func NewSimpleTagHandler(t mockConstructorTestingT, maxTagsPerCall int) *SimpleTagHandler {
+	result := SimpleTagHandler{
+		TagHandler: NewTagHandler(t),
+		Tags:       []tag.TagImportObject{},
+	}
+
+	arguments := make([]interface{}, 0, maxTagsPerCall)
+
+	for i := 0; i < maxTagsPerCall; i++ {
+		arguments = append(arguments, mock.Anything)
+		result.EXPECT().AddTags(arguments...).Run(func(tags ...*tag.TagImportObject) {
+			for _, t := range tags {
+				result.Tags = append(result.Tags, *t)
+			}
+		}).Return(nil).Maybe()
+	}
+
+	return &result
 }

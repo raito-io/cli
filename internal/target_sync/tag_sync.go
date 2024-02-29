@@ -15,7 +15,7 @@ func tagSyncTargetSync(ctx context.Context, targetConfig *types.BaseTargetConfig
 		JobId:        jobId,
 	}
 
-	err := execute(ctx, targetConfig.DataSourceId, jobId, constants.TagSync, "tags", targetConfig.SkipTagSync, tagSyncTask, targetConfig, client)
+	err := execute(ctx, targetConfig.DataSourceId, jobId, constants.TagSync, "tags", targetConfig.SkipTagsSync, tagSyncTask, targetConfig, client)
 	if err != nil {
 		return err
 	}

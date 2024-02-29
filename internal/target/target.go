@@ -201,7 +201,7 @@ func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]in
 	tConfig.SkipIdentityStoreSync = tConfig.SkipIdentityStoreSync || viper.GetBool(constants.SkipIdentityStoreSyncFlag)
 	tConfig.SkipDataUsageSync = tConfig.SkipDataUsageSync || viper.GetBool(constants.SkipDataUsageSyncFlag)
 	tConfig.SkipResourceProvider = tConfig.SkipResourceProvider || viper.GetBool(constants.SkipResourceProviderFlag)
-	tConfig.SkipTagSync = tConfig.SkipTagSync || viper.GetBool(constants.SkipTagsFlag)
+	tConfig.SkipTagsSync = tConfig.SkipTagsSync || viper.GetBool(constants.SkipTagsFlag)
 
 	// If not set in the target, we take the globally set values.
 	if tConfig.ApiSecret == "" {
@@ -271,6 +271,7 @@ func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) *types.BaseTargetC
 		SkipDataAccessSync:    viper.GetBool(constants.SkipDataAccessSyncFlag),
 		SkipDataUsageSync:     viper.GetBool(constants.SkipDataUsageSyncFlag),
 		SkipResourceProvider:  viper.GetBool(constants.SkipResourceProviderFlag),
+		SkipTagsSync:          viper.GetBool(constants.SkipTagsFlag),
 		LockAllWho:            viper.GetBool(constants.LockAllWhoFlag),
 		LockAllInheritance:    viper.GetBool(constants.LockAllInheritanceFlag),
 		LockAllOwners:         viper.GetBool(constants.LockAllOwnersFlag),

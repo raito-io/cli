@@ -104,7 +104,7 @@ type BaseTargetConfig struct {
 	SkipDataAccessSync    bool
 	SkipDataUsageSync     bool
 	SkipResourceProvider  bool
-	SkipTagSync           bool
+	SkipTagsSync          bool
 
 	LockAllWho            bool
 	LockAllInheritance    bool

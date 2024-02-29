@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/raito-io/cli/base/util/slice"
 	"gopkg.in/yaml.v2"
 
 	dapc "github.com/raito-io/cli/base/access_provider"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	error1 "github.com/raito-io/cli/base/util/error"
+	"github.com/raito-io/cli/base/util/slice"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
@@ -206,6 +206,7 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 		LockAllWhat:           s.TargetConfig.LockAllWhat,
 		LockAllNames:          s.TargetConfig.LockAllNames,
 		LockAllDelete:         s.TargetConfig.LockAllDelete,
+		LockAllOwners:         s.TargetConfig.LockAllOwners,
 		MakeNotInternalizable: apsToMakeNotInternalizable.Slice(),
 	}
 

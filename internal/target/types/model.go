@@ -7,10 +7,9 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/viper"
 
+	"github.com/raito-io/cli/base/util/config"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
-
-	"github.com/raito-io/cli/base/util/config"
 )
 
 type ConfigMap struct {
@@ -112,6 +111,7 @@ type BaseTargetConfig struct {
 	LockAllWhat           bool
 	LockAllNames          bool
 	LockAllDelete         bool
+	LockAllOwners         bool
 	MakeNotInternalizable string
 
 	TagOverwriteKeyForAccessProviderName   string

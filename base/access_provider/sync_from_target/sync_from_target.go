@@ -93,6 +93,10 @@ func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*Acces
 			ap.DeleteLocked = ptr.Bool(true)
 		}
 
+		if d.config.LockAllOwners {
+			ap.OwnersLocked = ptr.Bool(true)
+		}
+
 		if len(d.config.MakeNotInternalizable) > 0 && slices.Contains(d.config.MakeNotInternalizable, ap.Name) {
 			ap.NotInternalizable = true
 		}

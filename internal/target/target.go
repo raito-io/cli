@@ -273,6 +273,7 @@ func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) *types.BaseTargetC
 		SkipResourceProvider:  viper.GetBool(constants.SkipResourceProviderFlag),
 		LockAllWho:            viper.GetBool(constants.LockAllWhoFlag),
 		LockAllInheritance:    viper.GetBool(constants.LockAllInheritanceFlag),
+		LockAllOwners:         viper.GetBool(constants.LockAllOwnersFlag),
 		LockAllWhat:           viper.GetBool(constants.LockAllWhatFlag),
 		LockAllNames:          viper.GetBool(constants.LockAllNamesFlag),
 		LockAllDelete:         viper.GetBool(constants.LockAllDeleteFlag),

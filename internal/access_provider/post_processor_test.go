@@ -389,6 +389,8 @@ func TestPostProcessor_overwriteOwners(t *testing.T) {
 					Owners: &sync_from_target.OwnersInput{
 						Users: []string{"name1", "email:test@test.be"},
 					},
+					OwnersLocked:       ptr.Bool(true),
+					OwnersLockedReason: ptr.String(ownersTagOverrideLockedReason),
 				},
 			},
 		},
@@ -420,6 +422,8 @@ func TestPostProcessor_overwriteOwners(t *testing.T) {
 					Owners: &sync_from_target.OwnersInput{
 						Users: []string{"name1", "email:test@test.be"},
 					},
+					OwnersLocked:       ptr.Bool(true),
+					OwnersLockedReason: ptr.String(ownersTagOverrideLockedReason),
 				},
 			},
 		},

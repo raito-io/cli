@@ -35,6 +35,8 @@ type AccessProvider struct {
 	NameLockedReason        *string `json:"nameLockedReason"`
 	DeleteLocked            *bool   `json:"deleteLocked"`
 	DeleteLockedReason      *string `json:"deleteLockedReason"`
+	OwnersLocked            *bool   `json:"ownersLocked"`
+	OwnersLockedReason      *string `json:"ownersLockedReason"`
 
 	ActualName string `yaml:"actualName" json:"actualName"`
 	// Who represents who has access to the 'what'. Nil means that the 'who' is unknown.

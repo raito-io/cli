@@ -16,7 +16,8 @@ import (
 	"github.com/raito-io/cli/internal/access_provider/post_processing"
 )
 
-const nameTagOverrideLockedReason = "This Snowflake role cannot be renamed because it has a name tag override attached to it"
+const nameTagOverrideLockedReason = "This Snowflake role can't be renamed because it has a name tag override attached to it"
+const ownersTagOverrideLockedReason = "This Snowflake role can't update its owners as it has an owners tag override attached to it"
 
 type PostProcessorConfig struct {
 	TagOverwriteKeyForName   string
@@ -154,6 +155,9 @@ func (p *PostProcessor) overwriteOwners(accessProvider *sync_from_target.AccessP
 		}
 
 		accessProvider.Owners.Users = overwrittenOwners
+
+		accessProvider.OwnersLocked = ptr.Bool(true)
+		accessProvider.OwnersLockedReason = ptr.String(ownersTagOverrideLockedReason)
 
 		return true
 	}

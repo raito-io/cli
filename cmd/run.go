@@ -106,7 +106,7 @@ func executeRun(cmd *cobra.Command, args []string) {
 	ctx := context.Background()
 
 	baseLogger := hclog.L()
-	healthChecker := health_check.NewDummyHealthChecker(baseLogger)
+	healthChecker := createHealthChecker(baseLogger)
 
 	baseConfig, err := target.BuildBaseConfigFromFlags(baseLogger, healthChecker, otherArgs)
 	if err != nil {
@@ -154,8 +154,6 @@ func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, schedu
 	go func() {
 		defer waitGroup.Done()
 
-		baseConfig.HealthChecker = createHealthChecker(baseConfig.BaseLogger)
-
 		cliTriggerCtx, cliTriggerCancel := context.WithCancel(cancelCtx)
 		cliTrigger, apUpdateTrigger, syncTrigger := startListingToCliTriggers(cliTriggerCtx, baseConfig)
 
@@ -170,7 +168,6 @@ func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, schedu
 			cliTrigger.Wait()
 			syncTrigger.Close()
 			apUpdateTrigger.Close()
-			baseConfig.HealthChecker.Cleanup()
 		}()
 
 		it := 1

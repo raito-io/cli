@@ -13,6 +13,7 @@ import (
 
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
 	"github.com/raito-io/cli/internal/auth"
+	"github.com/raito-io/cli/internal/health_check"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/target/types"
@@ -175,11 +176,6 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) e
 					timer.Reset(time.Duration(2) * time.Second)
 
 					if failed >= 5 {
-						healthErr := s.config.HealthChecker.RemoveLivenessMark()
-						if healthErr != nil {
-							s.config.BaseLogger.Warn(fmt.Sprintf("Unable to set liveness marker: %s", err.Error()))
-						}
-
 						return
 					}
 
@@ -201,8 +197,9 @@ type TriggerHandler interface {
 }
 
 type WebsocketCliTrigger struct {
-	client *WebsocketClient
-	logger hclog.Logger
+	client        *WebsocketClient
+	logger        hclog.Logger
+	healthChecker health_check.HealthChecker
 
 	subscriberMutex sync.Mutex
 	subscribers     []TriggerHandler
@@ -214,8 +211,9 @@ type WebsocketCliTrigger struct {
 
 func NewWebsocketCliTrigger(config *types.BaseConfig, websocketUrl string) *WebsocketCliTrigger {
 	return &WebsocketCliTrigger{
-		client: NewWebsocketClient(config, websocketUrl),
-		logger: config.BaseLogger,
+		client:        NewWebsocketClient(config, websocketUrl),
+		logger:        config.BaseLogger,
+		healthChecker: config.HealthChecker,
 	}
 }
 
@@ -291,6 +289,18 @@ func (s *WebsocketCliTrigger) readChannel(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	healthErr := s.healthChecker.MarkLiveness()
+	if healthErr != nil {
+		s.logger.Warn(fmt.Sprintf("Unable to set liveness marker: %s", healthErr.Error()))
+	}
+
+	defer func() {
+		healthErr := s.healthChecker.RemoveLivenessMark()
+		if healthErr != nil {
+			s.logger.Warn(fmt.Sprintf("Unable to cleanup liveness marker: %s", healthErr.Error()))
+		}
+	}()
 
 	for {
 		select {

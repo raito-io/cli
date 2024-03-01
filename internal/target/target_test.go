@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/health_check"
 	"github.com/raito-io/cli/internal/target/types"
 )
 
@@ -154,7 +155,8 @@ func TestBuildTargetConfigFromMapError(t *testing.T) {
 		"connector-name": 666,
 	}
 
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
 
 	config, err := buildTargetConfigFromMap(baseconfig, data, map[string]*types.EnricherConfig{})
 	assert.NotNil(t, err)
@@ -180,7 +182,8 @@ var baseConfigMap = map[string]interface{}{
 
 func TestBuildTargetConfigFromMap(t *testing.T) {
 	clearViper()
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
 	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
@@ -206,7 +209,8 @@ func TestBuildTargetConfigFromMapNoName(t *testing.T) {
 	var noNameConfigMap = make(map[string]interface{})
 	copier.Copy(&noNameConfigMap, &baseConfigMap)
 	delete(noNameConfigMap, "name")
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
 	config, err := buildTargetConfigFromMap(baseconfig, noNameConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
@@ -217,7 +221,8 @@ func TestBuildTargetConfigFromMapNoName(t *testing.T) {
 func TestBuildTargetConfigFromMapOverride(t *testing.T) {
 	clearViper()
 	viper.Set("skip-data-source-sync", true)
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
 	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
@@ -231,7 +236,8 @@ func TestBuildTargetConfigFromMapLocalRaitoData(t *testing.T) {
 	viper.Set("api-user", "uuuu")
 	viper.Set("domain", "dddd")
 	viper.Set("api-secret", "ssss")
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
 	config, err := buildTargetConfigFromMap(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
@@ -253,7 +259,8 @@ func TestBuildTargetConfigFromMapGlobalRaitoData(t *testing.T) {
 	viper.Set("api-user", "uuuu")
 	viper.Set("api-secret", "ssss")
 	viper.Set("domain", "dddd")
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), nil)
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
 	config, err := buildTargetConfigFromMap(baseconfig, withoutRaitoStuff, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
@@ -283,7 +290,8 @@ func TestBuildTargetConfigFromFlags(t *testing.T) {
 	viper.Set("skip-data-source-sync", true)
 	viper.Set("skip-data-access-sync", true)
 
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{"--custom1", "ok"})
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{"--custom1", "ok"})
 	config := buildTargetConfigFromFlags(baseconfig)
 	assert.NotNil(t, config)
 
@@ -306,7 +314,8 @@ func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
 
 	viper.Set(constants.ConnectorNameFlag, "conn1")
 
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 	config := buildTargetConfigFromFlags(baseconfig)
 	assert.NotNil(t, config)
 
@@ -338,7 +347,8 @@ func TestRunSingleTarget(t *testing.T) {
 	viper.Set("skip-data-access-sync", true)
 
 	runs := 0
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner := NewMockTargetRunner(t)
 	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).Run(func(ctx context.Context, targetConfig *types.BaseTargetConfig) {
@@ -372,7 +382,8 @@ func TestRunMultipleTargets(t *testing.T) {
 	viper.Set("targets", targets)
 
 	runs := 0
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner := NewMockTargetRunner(t)
 	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
@@ -417,7 +428,8 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	viper.Set("only-targets", "name1")
 
 	runs := 0
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner := NewMockTargetRunner(t)
 	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
@@ -437,7 +449,7 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	viper.Set("only-targets", "c2")
 
 	runs = 0
-	baseconfig, _ = BuildBaseConfigFromFlags(hclog.L(), []string{})
+	baseconfig, _ = BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner = NewMockTargetRunner(t)
 	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
@@ -573,7 +585,8 @@ func TestRunFromConfigFile_WithEnrichers(t *testing.T) {
 	assert.Nil(t, err)
 
 	runs := 0
-	baseconfig, _ := BuildBaseConfigFromFlags(hclog.L(), []string{})
+	logger := hclog.L()
+	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner := NewMockTargetRunner(t)
 	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {

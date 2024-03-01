@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-hclog"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -68,8 +67,9 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	rootCmd.PersistentFlags().String(constants.ConnectorNameFlag, "", "The name of the connector to use. If not set, the CLI will use a configuration file to define the targets.")
 	rootCmd.PersistentFlags().String(constants.ConnectorVersionFlag, "", "The version of the connector to use. This is only relevant if the 'connector' flag is set as well. If not set (but the 'connector' flag is), then 'latest' is used.")
 	rootCmd.PersistentFlags().StringP(constants.NameFlag, "n", "", "The name for the target. This is only relevant if the 'connector' flag is set as well. If not set, the name of the connector will be used.")
+	rootCmd.PersistentFlags().String(constants.ContainerLivenessFile, "", "If set, we will create/remove a health-check file based on the webhook state. This is only relevant if you are running the CLI in long running mode.")
 
-	hideConfigOptions(rootCmd, constants.URLOverrideFlag, constants.SkipAuthentication, constants.SkipFileUpload)
+	hideConfigOptions(rootCmd, constants.URLOverrideFlag, constants.SkipAuthentication, constants.SkipFileUpload, constants.ContainerLivenessFile)
 
 	BindFlag(constants.IdentityStoreIdFlag, rootCmd)
 	BindFlag(constants.DataSourceIdFlag, rootCmd)
@@ -87,6 +87,7 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	BindFlag(constants.DebugFlag, rootCmd)
 	BindFlag(constants.LogFileFlag, rootCmd)
 	BindFlag(constants.LogOutputFlag, rootCmd)
+	BindFlag(constants.ContainerLivenessFile, rootCmd)
 
 	viper.SetDefault(constants.LogFileFlag, "")
 

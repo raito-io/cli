@@ -58,6 +58,11 @@ func (s *WebsocketClient) Start(ctx context.Context) (<-chan interface{}, error)
 		return nil, err
 	}
 
+	err = s.config.HealthChecker.MarkLiveness()
+	if err != nil {
+		s.config.BaseLogger.Warn(fmt.Sprintf("Unable to set liveness marker: %s", err.Error()))
+	}
+
 	err = s.heartbeat(ctx, conn)
 	if err != nil {
 		return nil, err
@@ -170,6 +175,11 @@ func (s *WebsocketClient) heartbeat(ctx context.Context, conn *websocket.Conn) e
 					timer.Reset(time.Duration(2) * time.Second)
 
 					if failed >= 5 {
+						healthErr := s.config.HealthChecker.RemoveLivenessMark()
+						if healthErr != nil {
+							s.config.BaseLogger.Warn(fmt.Sprintf("Unable to set liveness marker: %s", err.Error()))
+						}
+
 						return
 					}
 

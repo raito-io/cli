@@ -10,6 +10,7 @@ import (
 	"github.com/raito-io/cli/base/util/config"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/health_check"
 )
 
 type ConfigMap struct {
@@ -24,11 +25,12 @@ func (c *ConfigMap) ToProtobufConfigMap() *config.ConfigMap {
 
 type BaseConfig struct {
 	ConfigMap
-	ApiUser    string
-	ApiSecret  string
-	Domain     string
-	BaseLogger hclog.Logger
-	OtherArgs  []string
+	ApiUser       string
+	ApiSecret     string
+	Domain        string
+	BaseLogger    hclog.Logger
+	HealthChecker health_check.HealthChecker
+	OtherArgs     []string
 }
 
 func (c *BaseConfig) ReloadConfig() error {

@@ -297,6 +297,8 @@ func (s *WebsocketCliTrigger) readChannel(ctx context.Context) error {
 
 	defer func() {
 		healthErr := s.healthChecker.RemoveLivenessMark()
+		s.logger.Info("Going to remove liveness mark")
+
 		if healthErr != nil {
 			s.logger.Warn(fmt.Sprintf("Unable to cleanup liveness marker: %s", healthErr.Error()))
 		}

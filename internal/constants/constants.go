@@ -101,4 +101,7 @@ const (
 
 	// HTTP headers
 	DomainHeader = "Raito-Domain"
+
+	// Docker flags
+	ContainerLivenessFile = "cli-container-liveness-file"
 )

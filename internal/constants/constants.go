@@ -48,7 +48,7 @@ const (
 	SkipIdentityStoreSyncFlag                = "skip-identity-store-sync"
 	SkipDataUsageSyncFlag                    = "skip-data-usage-sync"
 	SkipResourceProviderFlag                 = "skip-resource-provider-sync"
-	SkipTagsFlag                             = "skip-tags-sync"
+	SkipTagFlag                              = "skip-tag-sync"
 	LockAllWhoFlag                           = "lock-all-who"
 	LockAllInheritanceFlag                   = "lock-all-inheritance"
 	LockAllWhatFlag                          = "lock-all-what"

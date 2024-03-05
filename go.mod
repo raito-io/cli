@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.5
-	github.com/hasura/go-graphql-client v0.12.0
+	github.com/hasura/go-graphql-client v0.12.1
 	github.com/jinzhu/copier v0.4.0
 	github.com/pterm/pterm v0.12.79
 	github.com/raito-io/bexpression v0.1.1
@@ -24,7 +24,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/vektra/mockery/v2 v2.42.0
 	google.golang.org/grpc v1.62.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
@@ -83,7 +83,7 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/objx v0.5.1 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.uber.org/atomic v1.9.0 // indirect

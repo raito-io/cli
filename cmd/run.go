@@ -18,6 +18,7 @@ import (
 
 	"github.com/raito-io/cli/internal/clitrigger"
 	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/health_check"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/target_sync"
@@ -104,7 +105,10 @@ func executeRun(cmd *cobra.Command, args []string) {
 
 	ctx := context.Background()
 
-	baseConfig, err := target.BuildBaseConfigFromFlags(hclog.L(), otherArgs)
+	baseLogger := hclog.L()
+	healthChecker := createHealthChecker(baseLogger)
+
+	baseConfig, err := target.BuildBaseConfigFromFlags(baseLogger, healthChecker, otherArgs)
 	if err != nil {
 		hclog.L().Error(err.Error())
 		os.Exit(1)
@@ -261,6 +265,12 @@ func executeContinuousRun(ctx context.Context, executeSyncAtStartup bool, schedu
 		hclog.L().Debug(fmt.Sprintf("Exit with code: %d", returnSignal))
 		syscall.Exit(returnSignal)
 	}
+}
+
+func createHealthChecker(baseLogger hclog.Logger) health_check.HealthChecker {
+	livenessFilePath := viper.GetString(constants.ContainerLivenessFile)
+
+	return health_check.NewHealthChecker(baseLogger, livenessFilePath)
 }
 
 func createSyncScheduler(baseConfig *types.BaseConfig) (bool, cron.Schedule, error) {

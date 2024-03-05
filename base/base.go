@@ -5,17 +5,16 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/raito-io/cli/base/data_object_enricher"
-	"github.com/raito-io/cli/base/resource_provider"
-	"github.com/raito-io/cli/base/tag"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 
 	"github.com/raito-io/cli/base/access_provider"
+	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/identity_store"
+	"github.com/raito-io/cli/base/resource_provider"
+	"github.com/raito-io/cli/base/tag"
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
 )
 

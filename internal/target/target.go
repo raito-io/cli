@@ -16,6 +16,7 @@ import (
 	"github.com/raito-io/cli/base/util/error/grpc_error"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/health_check"
 	"github.com/raito-io/cli/internal/target/types"
 )
 
@@ -236,10 +237,11 @@ func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]in
 	return &tConfig, nil
 }
 
-func BuildBaseConfigFromFlags(baseLogger hclog.Logger, otherArgs []string) (*types.BaseConfig, error) {
+func BuildBaseConfigFromFlags(baseLogger hclog.Logger, healthChecker health_check.HealthChecker, otherArgs []string) (*types.BaseConfig, error) {
 	config := types.BaseConfig{
-		BaseLogger: baseLogger,
-		OtherArgs:  otherArgs,
+		BaseLogger:    baseLogger,
+		HealthChecker: healthChecker,
+		OtherArgs:     otherArgs,
 	}
 
 	err := config.ReloadConfig()

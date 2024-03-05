@@ -45,7 +45,8 @@ func SetMetaData(ctx context.Context, config *types.BaseTargetConfig, metadata *
 		Icon                  string                            `json:"icon,omitempty"`
 		UsageMetaInfo         *data_source.UsageMetaInput       `json:"usageMetaInfo,omitempty"`
 		SupportsApInheritance bool                              `json:"supportsApInheritance"`
-		MaskingMetadata       *data_source.MaskingMetadata      `json:"maskingMetadata"`
+		MaskingMetadata       *data_source.MaskingMetadata      `json:"maskingMetadata,omitempty"`
+		FilterMetadata        *data_source.FilterMetadata       `json:"filterMetadata,omitempty"`
 	}
 
 	input := DataSourceMetaDataInput{
@@ -57,6 +58,7 @@ func SetMetaData(ctx context.Context, config *types.BaseTargetConfig, metadata *
 		UsageMetaInfo:         metadata.UsageMetaInfo,
 		SupportsApInheritance: metadata.SupportsApInheritance,
 		MaskingMetadata:       metadata.MaskingMetadata,
+		FilterMetadata:        metadata.FilterMetadata,
 	}
 
 	err = graphql.NewClient(&config.BaseConfig).Mutate(ctx, &m, map[string]interface{}{"id": graphql2.ID(config.DataSourceId), "input": input})

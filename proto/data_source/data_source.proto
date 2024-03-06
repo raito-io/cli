@@ -51,6 +51,9 @@ message MetaData {
 
   // maskingMetadata provides addition information about available column masks
   MaskingMetadata maskingMetadata = 8;
+
+  // filterMetadata provides addition information about available row filters
+  FilterMetadata filterMetadata = 9;
 }
 
 message DataObjectType {
@@ -126,6 +129,10 @@ message MaskingType {
   string externalId = 2;
   string description = 3;
   repeated string dataTypes = 4;
+}
+
+message FilterMetadata {
+  repeated string filterOverridePermissions = 1;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

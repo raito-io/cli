@@ -11,9 +11,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"slices"
 
 	"github.com/aws/smithy-go/ptr"
+	"github.com/raito-io/cli/base/util/match"
+	"github.com/raito-io/cli/internal/constants"
 
 	"github.com/raito-io/cli/base/access_provider"
 	error2 "github.com/raito-io/cli/base/util/error"
@@ -97,7 +98,14 @@ func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*Acces
 			ap.OwnersLocked = ptr.Bool(true)
 		}
 
-		if len(d.config.MakeNotInternalizable) > 0 && slices.Contains(d.config.MakeNotInternalizable, ap.Name) {
+		var err error
+
+		shouldMakeNonInternalizable, err := match.MatchesAny(ap.Name, d.config.MakeNotInternalizable)
+		if err != nil {
+			return fmt.Errorf("parsing parameter %q: %s", constants.MakeNotInternalizableFlag, err.Error())
+		}
+
+		if shouldMakeNonInternalizable {
 			ap.NotInternalizable = true
 		}
 
@@ -108,8 +116,6 @@ func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*Acces
 			ap.ActualName = ap.Access[0].ActualName
 			ap.Access = nil
 		}
-
-		var err error
 
 		if d.dataAccessCount > 0 {
 			d.targetFile.WriteString(",") //nolint:errcheck

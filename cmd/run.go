@@ -51,7 +51,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(constants.LockAllNamesFlag, false, "If set, the names of all access providers imported into Raito Cloud will be locked.")
 	cmd.PersistentFlags().Bool(constants.LockAllDeleteFlag, false, "If set, the deletion of all access providers imported into Raito Cloud will be locked.")
 	cmd.PersistentFlags().Bool(constants.LockAllOwnersFlag, false, "If set, the owners of all access providers imported into Raito Cloud will be locked.")
-	cmd.PersistentFlags().String(constants.MakeNotInternalizableFlag, "", "Allows you to specify a comma-separated list of access provider names that should be made not-internalizable when imported into Raito Cloud. This means that these access providers will not be editable in Raito Cloud.")
+	cmd.PersistentFlags().String(constants.MakeNotInternalizableFlag, "", "Allows you to specify a comma-separated list of access provider names that should be made not-internalizable when imported into Raito Cloud. This means that these access providers will not be editable in Raito Cloud. The names in the list are interpreted as regular expressions so allow for partial matches. (e.g. '.+-prod,.+-dev' will match all access providers ending with '-prod' or '-dev')")
 
 	cmd.PersistentFlags().Bool(constants.DisableWebsocketFlag, false, "If set, raito will not setup a websocket to trigger new syncs. This flag has only effect if frequency is set.")
 	cmd.PersistentFlags().Bool(constants.DisableLogForwarding, false, "If set, sync logs will not be forwarded to Raito Cloud.")

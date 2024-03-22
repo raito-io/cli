@@ -10,7 +10,7 @@ generate: protobuf-generate
 	go generate ./...
 
 build: generate
-	go build main.go
+	go build -o raito main.go
 
 test:
 	$(gotestsum) --debug --format pkgname -- -mod=readonly -tags=integration -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt ./...

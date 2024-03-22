@@ -8,10 +8,21 @@ COPY go.sum ./
 RUN go mod download
 
 COPY *.go ./
-ADD constants /app/constants
-ADD github /app/github
+COPY Makefile ./
+COPY *.yaml ./
+COPY *.yml ./
+ADD base /app/base
+ADD cmd /app/cmd
+ADD internal /app/internal
+ADD proto /app/proto
+ADD scripts /app/scripts
 
-RUN go build -o /raito-cli
+RUN apk add --no-cache make
+RUN go install github.com/bufbuild/buf/cmd/buf@v1.30.0
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.33
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3
+
+RUN make build
 
 ## Deploy
 FROM alpine:3 as deploy
@@ -27,10 +38,10 @@ RUN mkdir -p /config
 ENV TZ=Etc/UTC
 ENV CLI_CRON="0 2 * * *"
 
-RUN addgroup -S raito && adduser -D -S -G raito --no-create-home raito && chmod +w /tmp
+RUN addgroup -S raito && adduser -D -S -G raito raito && chmod +w /tmp
 RUN chown raito:raito /app /config
 
-COPY --from=build /raito-cli /raito
+COPY --from=build /app/raito /raito
 RUN chown raito:raito /raito
 
 USER raito
@@ -54,7 +65,7 @@ ENV CLI_CRON="0 2 * * *"
 RUN groupadd -r raito && useradd -r -g raito raito
 RUN chown raito:raito /app /config
 
-COPY --from=build /raito-cli /raito
+COPY --from=build /app/raito /raito
 
 RUN chown raito:raito /raito
 USER raito

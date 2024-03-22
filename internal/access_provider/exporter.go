@@ -14,10 +14,10 @@ import (
 
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/file"
 )
 
 type AccessProviderExportResult struct {
@@ -78,18 +78,18 @@ func (d *accessProviderExporter) TriggerExport(ctx context.Context, jobId string
 }
 
 func (d *accessProviderExporter) download(url string) (string, error) {
-	cn := strings.Replace(d.config.ConnectorName, "/", "-", -1)
-	filePath, err := filepath.Abs(file.CreateUniqueFileName(cn+"-as", "json"))
+	filePath, err := filepath.Abs(file.CreateUniqueFileNameForTarget(d.config.Name, "toTarget-access", "json"))
 
 	if err != nil {
 		return "", err
 	}
 
-	file, err := os.Create(filePath)
+	downloadedFile, err := os.Create(filePath)
 	if err != nil {
 		return "", fmt.Errorf("error while creating temporary file %q: %s", filePath, err.Error())
 	}
-	defer file.Close()
+
+	defer downloadedFile.Close()
 
 	resp, err := http.Get(url) //nolint
 
@@ -107,7 +107,7 @@ func (d *accessProviderExporter) download(url string) (string, error) {
 		return "", fmt.Errorf("error while reading bytes from export file: %s", err.Error())
 	}
 
-	_, err = file.Write(bytes)
+	_, err = downloadedFile.Write(bytes)
 	if err != nil {
 		return "", fmt.Errorf("error while writing data to file: %s", err.Error())
 	}

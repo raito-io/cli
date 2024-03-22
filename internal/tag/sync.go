@@ -3,16 +3,14 @@ package tag
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/raito-io/cli/base/tag"
 	baseconfig "github.com/raito-io/cli/base/util/config"
-	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/file"
 	"github.com/raito-io/cli/internal/version_management"
 )
 
@@ -45,18 +43,14 @@ func (s *TagSync) GetParts() []job.TaskPart {
 }
 
 func (s *TagSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
-	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
-
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-tags", "json"))
+	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-tags", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as tag taret file", targetFile))
 
-	if s.TargetConfig.DeleteTempFiles {
-		defer os.RemoveAll(targetFile)
-	}
+	defer s.TargetConfig.HandleTempFile(targetFile)
 
 	syncerConfig := tag.TagSyncConfig{
 		ConfigMap:       &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},

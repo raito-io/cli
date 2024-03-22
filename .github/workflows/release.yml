@@ -58,7 +58,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/raito-io/raito-cli-runner
+            ghcr.io/raito-io/raito-cli
           flavor: latest=auto
           tags: |
             type=ref,event=branch

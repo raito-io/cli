@@ -26,9 +26,6 @@ RUN mkdir -p /config
 
 ENV TZ=Etc/UTC
 ENV CLI_CRON="0 2 * * *"
-ENV RAITO_CLI_UPDATE_CRON="0 1 * * *"
-ENV RAITO_CLI_CONTAINER_STDOUT_FILE="/dev/stdout"
-ENV RAITO_CLI_CONTAINER_STDERR_FILE="/dev/stderr"
 
 RUN addgroup -S raito && adduser -D -S -G raito --no-create-home raito && chmod +w /tmp
 RUN chown raito:raito /app /config
@@ -41,7 +38,7 @@ USER raito
 ENTRYPOINT /raito run -c "$CLI_CRON" --config-file /config/raito.yml --log-output
 
 ## Deploy-amazon
-FROM amazon/aws-cli:2.15.10 as amazonlinux
+FROM amazon/aws-cli:2.15.31 as amazonlinux
 
 LABEL org.opencontainers.image.base.name="amazon/aws-cli:2.15.10"
 
@@ -53,9 +50,6 @@ RUN mkdir -p /config
 
 ENV TZ=Etc/UTC
 ENV CLI_CRON="0 2 * * *"
-ENV RAITO_CLI_UPDATE_CRON="0 1 * * *"
-ENV RAITO_CLI_CONTAINER_STDOUT_FILE="/dev/stdout"
-ENV RAITO_CLI_CONTAINER_STDERR_FILE="/dev/stderr"
 
 RUN groupadd -r raito && useradd -r -g raito raito
 RUN chown raito:raito /app /config

@@ -401,6 +401,7 @@ func TestRunMultipleTargets(t *testing.T) {
 
 		return nil
 	})
+	targetRunner.EXPECT().RunType().Return("")
 	targetRunner.EXPECT().Finalize(mock.Anything, baseconfig, mock.Anything).Return(nil)
 
 	err := RunTargets(context.Background(), baseconfig, targetRunner)
@@ -432,6 +433,7 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner := NewMockTargetRunner(t)
+	targetRunner.EXPECT().RunType().Return("")
 	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
 		assert.Equal(t, "c1", tConfig.ConnectorName)
 		assert.Equal(t, "name1", tConfig.Name)
@@ -452,6 +454,7 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 	baseconfig, _ = BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner = NewMockTargetRunner(t)
+	targetRunner.EXPECT().RunType().Return("")
 	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
 		assert.Equal(t, "c2", tConfig.ConnectorName)
 		assert.Equal(t, "c2", tConfig.Name)
@@ -589,6 +592,7 @@ func TestRunFromConfigFile_WithEnrichers(t *testing.T) {
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner := NewMockTargetRunner(t)
+	targetRunner.EXPECT().RunType().Return("")
 	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
 		assert.Equal(t, "raito-io/cli-plugin-snowflake", tConfig.ConnectorName)
 		assert.Equal(t, "snowflake1", tConfig.Name)

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/raito-io/cli/internal/logging"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -28,12 +29,26 @@ import (
 
 func initRunCommand(rootCmd *cobra.Command) {
 	var cmd = &cobra.Command{
-		Hidden: true,
+		Hidden: false,
 		Use:    "run",
 		Short:  "Run all the configured synchronizations",
 		Long:   `Run all the configured synchronizations`,
 		Run:    executeRun,
 	}
+
+	cmd.PersistentFlags().String(constants.IdentityStoreIdFlag, "", "The ID of the identity store in Raito to import the user and group information to. This is only applicable if specifying the (single) target information in the commandline.")
+	cmd.PersistentFlags().String(constants.DataSourceIdFlag, "", "The ID of the data source in Raito to import the meta data information to or get the access permissions from. This is only applicable if specifying the (single) target information in the commandline.")
+	cmd.PersistentFlags().StringP(constants.DomainFlag, "d", "", "The subdomain to your Raito instance (https://<subdomain>.raito.io). This parameter can be overridden in the target configs if needed.")
+	cmd.PersistentFlags().StringP(constants.ApiUserFlag, "u", "", "The username of the API user to authenticate against Raito. This parameter can be overridden in the target configs if needed.")
+	cmd.PersistentFlags().StringP(constants.ApiSecretFlag, "s", "", "The API key secret to authenticate against Raito. This parameter can be overridden in the target configs if needed.")
+	cmd.PersistentFlags().String(constants.URLOverrideFlag, "", "")
+	cmd.PersistentFlags().Bool(constants.SkipAuthentication, false, "")
+	cmd.PersistentFlags().Bool(constants.SkipFileUpload, false, "")
+	cmd.PersistentFlags().StringP(constants.OnlyTargetsFlag, "t", "", "Can be used to only execute a subset of the defined targets in the configuration file. To specify multiple, use a comma-separated list.")
+	cmd.PersistentFlags().String(constants.ConnectorNameFlag, "", "The name of the connector to use. If not set, the CLI will use a configuration file to define the targets.")
+	cmd.PersistentFlags().String(constants.ConnectorVersionFlag, "", "The version of the connector to use. This is only relevant if the 'connector' flag is set as well. If not set (but the 'connector' flag is), then 'latest' is used.")
+	cmd.PersistentFlags().StringP(constants.NameFlag, "n", "", "The name for the target. This is only relevant if the 'connector' flag is set as well. If not set, the name of the connector will be used.")
+	cmd.PersistentFlags().String(constants.ContainerLivenessFile, "", "If set, we will create/remove a health-check file based on the webhook state. This is only relevant if you are running the CLI in long running mode.")
 
 	cmd.PersistentFlags().StringP(constants.CronFlag, "c", "", "If set, the cron expression will define when a sync should run. When not set (and no frequency is defined), the sync will run once and quit after. (e.g. '0 0/2 * * *' initiates a sync evey 2 hours)")
 	cmd.PersistentFlags().Bool(constants.SyncAtStartupFlag, false, "If set, a sync will be run at startup independent of the cron expression. Only applicable if cron expression is defined.")
@@ -69,6 +84,20 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().String(constants.FileBackupLocationFlag, "", "If set, this filepath is used to store backups of the files that are used during synchronization jobs. A sub-folder is created per target, using the target name + the type of run (full, manual or webhook) as name for the folder. Underneath that, another sub-folder is created per run, using a timestamp as the folder name. The backed up files are then stored in that folder. This parameter can be overridden in the target configs if needed.")
 	cmd.PersistentFlags().Int(constants.MaximumBackupsPerTargetFlag, 0, fmt.Sprintf("When %q is defined, this parameter can be used to control how many backups should be kept per target+type. When this number is exceeded, older backups will be removed automatically. By default, this is 0, which means there is no maximum. This parameter can be overridden in the target configs if needed.", constants.FileBackupLocationFlag))
 
+	BindFlag(constants.IdentityStoreIdFlag, cmd)
+	BindFlag(constants.DataSourceIdFlag, cmd)
+	BindFlag(constants.OnlyTargetsFlag, cmd)
+	BindFlag(constants.ConnectorNameFlag, cmd)
+	BindFlag(constants.ConnectorVersionFlag, cmd)
+	BindFlag(constants.NameFlag, cmd)
+	BindFlag(constants.DomainFlag, cmd)
+	BindFlag(constants.ApiUserFlag, cmd)
+	BindFlag(constants.ApiSecretFlag, cmd)
+	BindFlag(constants.URLOverrideFlag, cmd)
+	BindFlag(constants.SkipAuthentication, cmd)
+	BindFlag(constants.SkipFileUpload, cmd)
+	BindFlag(constants.ContainerLivenessFile, cmd)
+
 	BindFlag(constants.CronFlag, cmd)
 	BindFlag(constants.SyncAtStartupFlag, cmd)
 	BindFlag(constants.FrequencyFlag, cmd)
@@ -101,12 +130,16 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.FileBackupLocationFlag, cmd)
 	BindFlag(constants.MaximumBackupsPerTargetFlag, cmd)
 
+	hideConfigOptions(cmd, constants.URLOverrideFlag, constants.SkipAuthentication, constants.SkipFileUpload, constants.ContainerLivenessFile)
+
 	cmd.FParseErrWhitelist.UnknownFlags = true
 
 	rootCmd.AddCommand(cmd)
 }
 
 func executeRun(cmd *cobra.Command, args []string) {
+	logging.SetupLogging(false)
+
 	otherArgs := cmd.Flags().Args()
 
 	ctx := context.Background()

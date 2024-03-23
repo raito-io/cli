@@ -27,6 +27,30 @@ type TargetRunner interface {
 	RunType() string
 }
 
+func GetTargetConfig(targetName string, baseConfig *types.BaseConfig) (*types.BaseTargetConfig, error) {
+	targets := viper.Get(constants.Targets)
+
+	if targetList, ok := targets.([]interface{}); ok {
+		for _, targetObj := range targetList {
+			target, ok := targetObj.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("invalid configuration structure found")
+			}
+
+			tConfig, err := buildTargetConfigFromMapForRun(baseConfig, target, nil)
+			if err != nil {
+				return nil, fmt.Errorf("error while parsing the target configuration: %s", err.Error())
+			}
+
+			if tConfig.Name == targetName {
+				return tConfig, nil
+			}
+		}
+	}
+
+	return nil, nil
+}
+
 func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget TargetRunner, opFns ...func(*Options)) (err error) {
 	options := createOptions(opFns...)
 

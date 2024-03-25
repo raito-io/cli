@@ -13,6 +13,9 @@ import (
 	"github.com/raito-io/cli/internal/constants"
 )
 
+// fillStruct will fill the given struct object in the first parameter with the values from the map in the second parameter.
+// It will do this automatically by finding the fields in the struct and matching them with the keys in the map.
+// This is done by transforming the key from the map to a camel-case to match the field name in the struct (e.g. api-user becomes ApiUser)
 func fillStruct(o interface{}, m map[string]interface{}) error {
 	for k, v := range m {
 		if k != constants.DataObjectEnrichers {

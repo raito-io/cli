@@ -118,6 +118,7 @@ func applyAccessCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Error while filtering access providers: %s", err.Error()) //nolint:stylecheck
 	}
 
+	isFiltered := filteredFile != fullPath
 	fullPath = filteredFile
 
 	if filteredAps == nil {
@@ -138,7 +139,7 @@ func applyAccessCmd(cmd *cobra.Command, args []string) error {
 	pterm.Println()
 
 	// Starting the actual run
-	err = applyAccess(context.Background(), tConfig, fullPath)
+	err = applyAccess(context.Background(), tConfig, fullPath, isFiltered)
 	if err != nil {
 		return err
 	}
@@ -170,7 +171,7 @@ func requestConfirmation() bool {
 	return true
 }
 
-func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile string) error {
+func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile string, isFiltered bool) error {
 	client, err := plugin.NewPluginClient(tConfig.ConnectorName, tConfig.ConnectorVersion, tConfig.TargetLogger)
 	if err != nil {
 		return fmt.Errorf("Error while initializing connector plugin %q: %s", tConfig.ConnectorName, err.Error()) //nolint:stylecheck
@@ -198,9 +199,14 @@ func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile
 		return fmt.Errorf("Error while creating access feedback file: %s", err.Error()) //nolint:stylecheck
 	}
 
-	defer tConfig.HandleTempFile(targetFile, false)
+	defer func() {
+		tConfig.HandleTempFile(targetFile, false)
 
-	defer tConfig.HandleTempFile(inputFile, true)
+		// If the file is the filtered one, we can remove it after the run like normal, but if it's the original one, we need to keep it.
+		tConfig.HandleTempFile(inputFile, !isFiltered)
+
+		tConfig.FinalizeRun()
+	}()
 
 	syncerConfig := dapc.AccessSyncToTarget{
 		ConfigMap:          &baseconfig.ConfigMap{Parameters: tConfig.Parameters},

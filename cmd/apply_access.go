@@ -113,6 +113,7 @@ func applyAccessCmd(cmd *cobra.Command, args []string) error {
 
 	filters := viper.GetString(constants.FilterAccessFlag)
 	filteredFile, filteredAps, totalAps, err := filterAccessProviders(tConfig.Name, fullPath, filters)
+
 	if err != nil {
 		return fmt.Errorf("Error while filtering access providers: %s", err.Error()) //nolint:stylecheck
 	}

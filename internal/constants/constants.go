@@ -26,7 +26,6 @@ var KnownFlags = map[string]struct{}{
 	DeleteUntouchedFlag:         {},
 	DeleteTempFilesFlag:         {},
 	ReplaceGroupsFlag:           {},
-	AccessFileFlag:              {},
 	FileBackupLocationFlag:      {},
 	MaximumBackupsPerTargetFlag: {},
 }
@@ -86,9 +85,6 @@ const (
 	// Import specific flags
 	DeleteUntouchedFlag = "delete-untouched"
 	ReplaceGroupsFlag   = "replace-groups"
-
-	// Access specific parameters
-	AccessFileFlag = "access-file"
 
 	// For the apply-access command
 	FilterAccessFlag = "filter-access"

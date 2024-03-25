@@ -50,7 +50,7 @@ func (s *TagSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.P
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as tag taret file", targetFile))
 
-	defer s.TargetConfig.HandleTempFile(targetFile)
+	defer s.TargetConfig.HandleTempFile(targetFile, false)
 
 	syncerConfig := tag.TagSyncConfig{
 		ConfigMap:       &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},

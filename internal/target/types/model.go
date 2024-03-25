@@ -210,7 +210,8 @@ func (c *BaseTargetConfig) FinalizeRun() {
 	}
 }
 
-func (c *BaseTargetConfig) HandleTempFile(filePath string) {
+// HandleTempFile handles the temporary file by backing it up if needed and deleting it if needed
+func (c *BaseTargetConfig) HandleTempFile(filePath string, neverDelete bool) {
 	if c.fileBackupLocationForRun != "" {
 		fileName := filePath[strings.LastIndex(filePath, string(filepath.Separator))+1:]
 
@@ -229,7 +230,7 @@ func (c *BaseTargetConfig) HandleTempFile(filePath string) {
 		}
 	}
 
-	if c.DeleteTempFiles {
+	if !neverDelete && c.DeleteTempFiles {
 		err := os.RemoveAll(filePath)
 		if err != nil {
 			c.TargetLogger.Error(fmt.Sprintf("unable to delete temporary file %q: %s", filePath, err.Error()))

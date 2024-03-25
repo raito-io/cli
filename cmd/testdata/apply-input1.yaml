@@ -1,0 +1,1001 @@
+lastCalculated: 1705920489
+accessProviders:
+  - id: 8VVXtWDQ2ftOozak-YJXd
+    name: DIETER_TEST_1
+    description: ""
+    namingHint: DIETER_TEST_1
+    externalId: DIETER_TEST_1
+    who:
+      users:
+        - A-SAMUELMCDONALD5730@RAITO.IO
+        - A-YASIRELLIS5644@RAITO.IO
+        - DAISARGENTAARON@RAITO.IO
+      inheritFrom:
+        - ID:RebzHIG6rJ6fi33qug47r
+        - ID:0c1YpQV_i26JsnDlVReyT
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: true
+    inheritanceLocked: false
+    actualName: DIETER_TEST_1
+    what:
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.CUSTOMER
+          id: o4tabSqMy56gzoeEjJxI9
+          type: table
+        permissions:
+          - SELECT
+          - REFERENCES
+    deleteWhat: []
+    type: role
+  - id: a5Icfw4TgWmFPczOsuITp
+    name: Nicolas is testing
+    description: This is not a drill
+    namingHint: Nicolas is testing
+    externalId: NICOLAS_IS_TESTING
+    who: {}
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: NICOLAS_IS_TESTING
+    what:
+      - dataObject:
+          fullName: RUBEN_TEST.PUBLIC
+          id: lrHXEdrGhU_95zhmf1cgC
+          type: schema
+        permissions:
+          - DELETE
+          - SELECT
+          - REFERENCES
+      - dataObject:
+          fullName: UTIL_DB.PUBLIC
+          id: apKiqguvvYjWltQcaCj3F
+          type: schema
+        permissions:
+          - SELECT
+          - REFERENCES
+          - INSERT
+          - UPDATE
+          - TRUNCATE
+          - DELETE
+    deleteWhat: []
+    type: null
+  - id: vAL7tLd0vccdkKv1-0n-e
+    name: Nicolas's  19/03/2024
+    description: This is the description
+    namingHint: Nicolas's  19/03/2024
+    externalId: NICOLAS_S_19_03_2024
+    who:
+      inheritFrom:
+        - ID:sIYsnVrk126gpv8GmaViK
+        - ID:SA4A6kHaWkLoCMgAnYtN4
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: NICOLAS_S_19_03_2024
+    what:
+      - dataObject:
+          fullName: RUBEN_TEST.PUBLIC
+          id: lrHXEdrGhU_95zhmf1cgC
+          type: schema
+        permissions:
+          - ADD SEARCH OPTIMIZATION
+    deleteWhat: []
+    type: role
+  - id: Cx3KssbdPLTGtPXn9pzgf
+    name: TERRAFORM_GRANT_NAME_UPDATE
+    description: ""
+    namingHint: TERRAFORM_GRANT_NAME_UPDATE
+    externalId: TERRAFORM_GRANT_NAME_UPDATE
+    who: {}
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: TERRAFORM_GRANT_NAME_UPDATE
+    what: []
+    deleteWhat: []
+    type: role
+  - id: 1E9ujAf06uG20D7eAgLAi
+    name: Nicola testing masks
+    description: ""
+    namingHint: Nicola testing masks
+    externalId: RAITO_NICOLA_TESTING_MASKS_gGEmwZ23
+    who:
+      inheritFrom:
+        - ID:6ric_q080EB42bu_JwLJo
+    deletedWho: null
+    action: mask
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: RAITO_NICOLA_TESTING_MASKS_gGEmwZ23
+    what:
+      - dataObject:
+          fullName: THOMAS_TEST.TESTING.ANOTHER_TABLE.ID
+          id: RDxCv4Wcjkfm5eqJStC3d
+          type: column
+        permissions: []
+    deleteWhat: []
+    type: SHA256
+  - id: UFa5QDaKj3XessoavSThb
+    name: Test Grant 1 - Updated
+    description: ""
+    namingHint: Test Grant 1!!!!! - Updated too
+    externalId: TEST_GRANT_1_UPDATED_TOO
+    who: {}
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: TEST_GRANT_1_UPDATED_TOO
+    what:
+      - dataObject:
+          fullName: RUBEN_TEST
+          id: 6iKUXwdt6KIdZoNtRtMwN
+          type: database
+        permissions:
+          - USAGE
+          - SELECT
+          - REFERENCES
+    deleteWhat: []
+    type: null
+  - id: Hd1XlhYTH2Xzo8HY8NKbD
+    name: sqdfghjruyjytreqfsdvxc
+    description: x<cwvbgsrgrefz
+    namingHint: sqdfghjruyjytreqfsdvxc
+    externalId: SQDFGHJRUYJYTREQFSDVXC
+    who:
+      users:
+        - DAISARGENTAARON@RAITO.IO
+      inheritFrom:
+        - ID:6ric_q080EB42bu_JwLJo
+    deletedWho: null
+    action: purpose
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: SQDFGHJRUYJYTREQFSDVXC
+    what: []
+    deleteWhat: []
+    type: null
+  - id: RebzHIG6rJ6fi33qug47r
+    name: Nicolas's testing purposes
+    description: This is just a drill
+    namingHint: Nicolas's testing purposes
+    externalId: NICOLAS_S_TESTING_PURPOSES
+    who:
+      users:
+        - A-SAMUELMCDONALD5730@RAITO.IO
+    deletedWho: null
+    action: purpose
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: NICOLAS_S_TESTING_PURPOSES
+    what: []
+    deleteWhat: []
+    type: role
+  - id: SA4A6kHaWkLoCMgAnYtN4
+    name: COMPUTE_WH__0
+    description: ""
+    namingHint: COMPUTE_WH__0
+    externalId: COMPUTE_WH_0
+    who: {}
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: COMPUTE_WH_0
+    what: []
+    deleteWhat: []
+    type: role
+  - id: 5LTedtFPFj6R_Wo_phOpC
+    name: ACTUAL_NAME_SNOWFLAKE_MONITORING_VIEWER
+    description: ""
+    namingHint: ACTUAL_NAME_SNOWFLAKE_MONITORING_VIEWER
+    externalId: ACTUAL_NAME_SNOWFLAKE_MONITORING_VIEWER
+    who:
+      inheritFrom:
+        - ID:ww4kndzVzSyPoRcMUv32y
+        - ID:sIYsnVrk126gpv8GmaViK
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: ACTUAL_NAME_SNOWFLAKE_MONITORING_VIEWER
+    what: []
+    deleteWhat: []
+    type: role
+  - id: 6ric_q080EB42bu_JwLJo
+    name: dsqfdfsq
+    description: SQFQDS
+    namingHint: dsqfdfsq
+    externalId: DSQFDFSQ
+    who: {}
+    deletedWho: null
+    action: purpose
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: DSQFDFSQ
+    what: []
+    deleteWhat: []
+    type: role
+  - id: aMgs9ns_Kw5cR_Ab1Qf61
+    name: Zoro
+    description: The masked hero!
+    namingHint: Zoro edited
+    externalId: RAITO_ZORO_jwPaSaKU
+    who:
+      users:
+        - ABBOT_JENABEARD@RAITO.IO
+        - DAISARGENTAARON@RAITO.IO
+      inheritFrom:
+        - ID:RebzHIG6rJ6fi33qug47r
+        - ID:qSH6VcKUQgyEUNvDwV5u7
+        - ID:8eBFVI9z2ZQk9crxuc0-K
+    deletedWho: null
+    action: mask
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: RAITO_ZORO_jwPaSaKU
+    what:
+      - dataObject:
+          fullName: RUBEN_TEST.TESTING.CITIES.CITY
+          id: 2rOlojQNMPbDSn7Wd4NH2
+          type: column
+        permissions: []
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.PART.BRAND
+          id: hk5Qj7NFw1FhquIsJAYrd
+          type: column
+        permissions: []
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.SUPPLIER.COMMENT
+          id: KkrOP5zs0uTWwIUfsRwFU
+          type: column
+        permissions: []
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.SUPPLIER.ACCTBAL
+          id: CMiCZqzIqZrTGioz8A9RF
+          type: column
+        permissions: []
+      - dataObject:
+          fullName: RUBEN_TEST.TESTING.CITIES.LONS
+          id: dIyBthI9xivAdfxEBkElY
+          type: column
+        permissions: []
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.CUSTOMER.ADDRESS
+          id: sr8YF898CyScHJcC-WW3i
+          type: column
+        permissions: []
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.SUPPLIER.ADDRESS
+          id: r3ZxjeIfsKLbE6Eg0w77T
+          type: column
+        permissions: []
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.PARTSUPP.AVAILQTY
+          id: X9xJ5u6z0zwvbeGha-hsd
+          type: column
+        permissions: []
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.CUSTOMER.ACCTBAL
+          id: 7kWV9KjBfrBhj30B9rNZd
+          type: column
+        permissions: []
+    deleteWhat: []
+    type: "NULL"
+  - id: IKPGl6JwWEcz9h2GR3l2s
+    name: DSQFSFD sqdf dsqf f qdsf ds
+    description: ""
+    namingHint: DSQFSFD
+    externalId: DSQFSFD
+    who:
+      inheritFrom:
+        - ID:a5Icfw4TgWmFPczOsuITp
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: DSQFSFD
+    what: []
+    deleteWhat: []
+    type: role
+  - id: 0c1YpQV_i26JsnDlVReyT
+    name: Dieter Test 2024-02-05!
+    description: A Grant meant for testing the release
+    namingHint: Dieter Test 2024-02-05
+    externalId: DIETER_TEST_2024_02_05
+    who:
+      inheritFrom:
+        - ID:UFa5QDaKj3XessoavSThb
+        - ID:RebzHIG6rJ6fi33qug47r
+        - ID:Hd1XlhYTH2Xzo8HY8NKbD
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: DIETER_TEST_2024_02_05
+    what:
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING
+          id: K6Bo6oIga72KVn1UyZq-i
+          type: schema
+        permissions:
+          - SELECT
+          - REFERENCES
+    deleteWhat: []
+    type: role
+  - id: F1y-f4YAZYm28gC2faJDT
+    name: Nicolas's mask
+    description: This is a drill
+    namingHint: Nicolas's mask
+    externalId: RAITO_NICOLASS_MASK_n0f8t0Mz
+    who:
+      users:
+        - COLINKLEIN_ABDUL@RAITO.IO
+      inheritFrom:
+        - ID:Hd1XlhYTH2Xzo8HY8NKbD
+        - ID:a5Icfw4TgWmFPczOsuITp
+        - ID:XyWR7txtSGZBplbPIBv93
+        - ID:ww4kndzVzSyPoRcMUv32y
+    deletedWho: null
+    action: mask
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: RAITO_NICOLASS_MASK_n0f8t0Mz
+    what:
+      - dataObject:
+          fullName: THOMAS_TEST.TESTING.CITIES.EW
+          id: 3rplvaDrpXYrT6mNaNsv4
+          type: column
+        permissions: []
+    deleteWhat: []
+    type: SHA256
+  - id: mfJQHHQm9woQe_pp3_cE8
+    name: ENGINEERING
+    description: ""
+    namingHint: ENGINEERING
+    externalId: ENGINEERING
+    who:
+      users:
+        - A-DREW1722@RAITO.IO
+        - A_ABBOTATKINSON7576@RAITO.IO
+        - BILL.POORTEN@RAITO.IO
+        - DIETER@RAITO.IO
+        - ELON.GEUR@RAITO.IO
+      inheritFrom:
+        - TESTING_SESSION_18_01_24
+        - ID:JcIL2c8RdJZG3o_fIYvMf
+        - ID:vAL7tLd0vccdkKv1-0n-e
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: ENGINEERING
+    what:
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.ORDERS
+          id: 44sfzrLmoszg8H6acF8Db
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.SUPPLIER
+          id: yVmiSjjW9PJ2R1zm1wFmm
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.EXTERNAL_TABLE_TEST
+          id: SsCWeanzWt-usFi8ucHQT
+          type: external-table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.LINEITEM
+          id: BZ8NoNSo1v93LabmBzi0h
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.PARTSUPP
+          id: iFCFNmNRXrZVBGzKJHoDl
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.REGION
+          id: 188S0l_hMreATW_nmU5Xa
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.ORDERS_LIMITED
+          id: plaUoHh2ME79Ynrg7l_K2
+          type: materialized-view
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.CUSTOMER
+          id: o4tabSqMy56gzoeEjJxI9
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.NATION
+          id: CqGvM3H6_IW-WMeX7BPC5
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.PART
+          id: 98tpK-FU4HZTMTtq5Ui-V
+          type: table
+        permissions:
+          - SELECT
+    deleteWhat: []
+    type: role
+  - id: JcIL2c8RdJZG3o_fIYvMf
+    name: FINANCE_MANAGEMENT_REPORTING
+    description: ""
+    namingHint: FINANCE_MANAGEMENT_REPORTING
+    externalId: FINANCE_MANAGEMENT_REPORTING
+    who:
+      users:
+        - A-ADRIAN@RAITO.IO
+        - DIETER@RAITO.IO
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: FINANCE_MANAGEMENT_REPORTING
+    what: []
+    deleteWhat: []
+    type: role
+  - id: P0sup7Qmj6wIjpdo5Uvlx
+    name: INHERITANCE_TEST
+    description: ""
+    namingHint: INHERITANCE_TEST
+    externalId: INHERITANCE_TEST
+    who:
+      users:
+        - CASTOR.SACHAWARREN@RAITO.IO
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: INHERITANCE_TEST
+    what: []
+    deleteWhat: []
+    type: role
+  - id: XiCeq0M1-nqAV-KHOY-W9
+    name: Testing_AR_Ruben
+    description: Some AR testing
+    namingHint: Testing_AR_Ruben
+    externalId: TESTING_AR_RUBEN
+    who: {}
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: TESTING_AR_RUBEN
+    what:
+      - dataObject:
+          fullName: RAITO_DEMO.PUBLIC.DISCOUNTED_LINEITEMS_VIEW
+          id: Y8PnsMBzZ8LV50TETxbx7
+          type: view
+        permissions:
+          - SELECT
+          - REFERENCES
+    deleteWhat: []
+    type: null
+  - id: YwPtnfkd_XPZRDQsn5NPg
+    name: OKTA_PROVISIONER
+    description: ""
+    namingHint: OKTA_PROVISIONER
+    externalId: OKTA_PROVISIONER
+    who:
+      inheritFrom:
+        - ACCOUNTADMIN
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: OKTA_PROVISIONER
+    what:
+      - dataObject:
+          fullName: KQ54735
+          id: 6_5cWZzpWVWe2MUFJunYA
+          type: datasource
+        permissions:
+          - CREATE ROLE
+          - CREATE USER
+    deleteWhat: []
+    type: role
+  - id: hCys5kP-08uMU9axB5urc
+    name: RAITO-2073
+    description: ""
+    namingHint: RAITO-2073
+    externalId: RAITO_RAITO2073_Ub4URVWD
+    who:
+      users:
+        - DAISARGENTAARON@RAITO.IO
+      inheritFrom:
+        - ID:CtGZUHpdjRAjuOukP3u7G
+        - ID:vAL7tLd0vccdkKv1-0n-e
+    deletedWho: null
+    action: mask
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: RAITO_RAITO2073_Ub4URVWD
+    what:
+      - dataObject:
+          fullName: THOMAS_TEST.TESTING.CITIES.EW
+          id: 3rplvaDrpXYrT6mNaNsv4
+          type: column
+        permissions: []
+    deleteWhat: []
+    type: "NULL"
+  - id: 0Rldmh70xgABzUQNqGsIH
+    name: sadfasef
+    description: ""
+    namingHint: sadfasef
+    externalId: SADFASEF
+    who: {}
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: SADFASEF
+    what: []
+    deleteWhat: []
+    type: role
+  - id: CtGZUHpdjRAjuOukP3u7G
+    name: sdqfghfjfghfgdfsqdfghjklkmjkjhg
+    description: hfjgkghghgdfsq
+    namingHint: sdqfghfjfghfgdfsqdfghjklkmjkjhg
+    externalId: SDQFGHFJFGHFGDFSQDFGHJKLKMJKJHG
+    who:
+      inheritFrom:
+        - ID:sIYsnVrk126gpv8GmaViK
+    deletedWho: null
+    action: purpose
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: SDQFGHFJFGHFGDFSQDFGHJKLKMJKJHG
+    what: []
+    deleteWhat: []
+    type: null
+  - id: XyWR7txtSGZBplbPIBv93
+    name: lkmjghfdfsq
+    description: ""
+    namingHint: lkmjghfdfsq
+    externalId: LKMJGHFDFSQ
+    who:
+      inheritFrom:
+        - ID:CtGZUHpdjRAjuOukP3u7G
+    deletedWho: null
+    action: purpose
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: LKMJGHFDFSQ
+    what: []
+    deleteWhat: []
+    type: role
+  - id: sIYsnVrk126gpv8GmaViK
+    name: mldkqjgqdsklgjqdsklfj
+    description: Ok ok, I'm writing it already!
+    namingHint: mldkqjgqdsklgjqdsklfj
+    externalId: MLDKQJGQDSKLGJQDSKLFJ
+    who:
+      users:
+        - DAISARGENTAARON@RAITO.IO
+    deletedWho: null
+    action: purpose
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: MLDKQJGQDSKLGJQDSKLFJ
+    what: []
+    deleteWhat: []
+    type: role
+  - id: ALracCDsKYeHwZa7mUkM6
+    name: TerraformGrant1 - Test Locking
+    description: Terraform grant 1
+    namingHint: TerraformGrant1 - Test Locking
+    externalId: TERRAFORM_GRANT1_TEST_LOCKING
+    who:
+      inheritFrom:
+        - ID:4CSESuJOm4iZU2LE7adMp
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: true
+    inheritanceLocked: false
+    actualName: TERRAFORM_GRANT1_TEST_LOCKING
+    what:
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.CUSTOMER
+          id: o4tabSqMy56gzoeEjJxI9
+          type: table
+        permissions:
+          - REFERENCES
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.ORDERS
+          id: 44sfzrLmoszg8H6acF8Db
+          type: table
+        permissions:
+          - REFERENCES
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.REGION
+          id: 188S0l_hMreATW_nmU5Xa
+          type: table
+        permissions:
+          - REFERENCES
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.PARTSUPP
+          id: iFCFNmNRXrZVBGzKJHoDl
+          type: table
+        permissions:
+          - REFERENCES
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.PART
+          id: 98tpK-FU4HZTMTtq5Ui-V
+          type: table
+        permissions:
+          - REFERENCES
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.NATION
+          id: CqGvM3H6_IW-WMeX7BPC5
+          type: table
+        permissions:
+          - REFERENCES
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.ORDERS_LIMITED
+          id: plaUoHh2ME79Ynrg7l_K2
+          type: materialized-view
+        permissions:
+          - REFERENCES
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.EXTERNAL_TABLE_TEST
+          id: SsCWeanzWt-usFi8ucHQT
+          type: external-table
+        permissions:
+          - SELECT
+          - REFERENCES
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.SUPPLIER
+          id: yVmiSjjW9PJ2R1zm1wFmm
+          type: table
+        permissions:
+          - REFERENCES
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.LINEITEM
+          id: BZ8NoNSo1v93LabmBzi0h
+          type: table
+        permissions:
+          - REFERENCES
+          - SELECT
+      - dataObject:
+          fullName: RUBEN_TEST.TESTING.CITIES
+          id: f0LD_LBmUab_9N34lxXC5
+          type: table
+        permissions:
+          - INSERT
+          - REFERENCES
+          - SELECT
+          - TRUNCATE
+          - UPDATE
+    deleteWhat: []
+    type: role
+  - id: slbpJGSC7cr7cpSwvYUSH
+    name: MASKING_ADMIN
+    description: ""
+    namingHint: MASKING_ADMIN
+    externalId: MASKING_ADMIN
+    who:
+      users:
+        - RAITO
+      inheritFrom:
+        - ID:P0sup7Qmj6wIjpdo5Uvlx
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: MASKING_ADMIN
+    what:
+      - dataObject:
+          fullName: KQ54735
+          id: 6_5cWZzpWVWe2MUFJunYA
+          type: datasource
+        permissions:
+          - CREATE USER
+          - CREATE SCHEMA
+          - MONITOR
+          - CREATE SESSION POLICY
+          - CREATE MASKING POLICY
+          - CREATE STAGE
+          - OPERATE
+          - CREATE SEQUENCE
+          - ADD SEARCH OPTIMIZATION
+          - APPLY ROW ACCESS POLICY
+          - IMPORT SHARE
+          - IMPORTED PRIVILEGES
+          - CREATE INTEGRATION
+          - CREATE NETWORK POLICY
+          - MODIFY
+          - CREATE PIPE
+          - ATTACH POLICY
+          - CREATE EXTERNAL TABLE
+          - TRUNCATE
+          - CREATE ROLE
+          - MANAGE GRANTS
+          - CREATE TASK
+          - CREATE FUNCTION
+          - INSERT
+          - CREATE TABLE
+          - CREATE ROW ACCESS POLICY
+          - CREATE STREAM
+          - CREATE PROCEDURE
+          - CREATE DATA EXCHANGE LISTING
+          - DELETE
+          - CREATE WAREHOUSE
+          - MONITOR EXECUTION
+          - MONITOR USAGE
+          - CREATE TAG
+          - APPLY MASKING POLICY
+          - APPLY SESSION POLICY
+          - APPLY TAG
+          - CREATE FILE FORMAT
+          - SELECT
+          - CREATE VIEW
+          - CREATE MATERIALIZED VIEW
+          - USAGE
+          - REFERENCES
+          - UPDATE
+          - CREATE ACCOUNT
+          - CREATE SHARE
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.ORDERS
+          id: 44sfzrLmoszg8H6acF8Db
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.SUPPLIER
+          id: yVmiSjjW9PJ2R1zm1wFmm
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING
+          id: K6Bo6oIga72KVn1UyZq-i
+          type: schema
+        permissions:
+          - CREATE MASKING POLICY
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.PART
+          id: 98tpK-FU4HZTMTtq5Ui-V
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.REGION
+          id: 188S0l_hMreATW_nmU5Xa
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.NATION
+          id: CqGvM3H6_IW-WMeX7BPC5
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.LINEITEM
+          id: BZ8NoNSo1v93LabmBzi0h
+          type: table
+        permissions:
+          - SELECT
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.PARTSUPP
+          id: iFCFNmNRXrZVBGzKJHoDl
+          type: table
+        permissions:
+          - SELECT
+    deleteWhat: []
+    type: role
+  - id: ww4kndzVzSyPoRcMUv32y
+    name: Test validity
+    description: ""
+    namingHint: Test validity
+    externalId: TEST_VALIDITY
+    who:
+      users:
+        - DAISARGENTAARON@RAITO.IO
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: TEST_VALIDITY
+    what:
+      - dataObject:
+          fullName: RUBEN_TEST
+          id: 6iKUXwdt6KIdZoNtRtMwN
+          type: database
+        permissions:
+          - USAGE
+          - SELECT
+          - REFERENCES
+    deleteWhat: []
+    type: role
+  - id: 8eBFVI9z2ZQk9crxuc0-K
+    name: RAITO-1911
+    description: ""
+    namingHint: RAITO-1911-updated
+    externalId: RAITO_1911_UPDATED
+    who:
+      users:
+        - DAISARGENTAARON@RAITO.IO
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: RAITO_1911_UPDATED
+    what:
+      - dataObject:
+          fullName: THOMAS_TEST
+          id: osVSG_mv_pHu9jlmd2jZr
+          type: database
+        permissions:
+          - USAGE
+          - SELECT
+          - REFERENCES
+    deleteWhat: []
+    type: null
+  - id: Ljdq5dJIeiWNw6iF-xkFw
+    name: Mask?
+    description: ""
+    namingHint: Mask?
+    externalId: RAITO_MASK_h6ZKtMnd
+    who:
+      inheritFrom:
+        - ID:sIYsnVrk126gpv8GmaViK
+        - ID:RebzHIG6rJ6fi33qug47r
+        - ID:6ric_q080EB42bu_JwLJo
+        - ID:a5Icfw4TgWmFPczOsuITp
+        - ID:8eBFVI9z2ZQk9crxuc0-K
+    deletedWho: null
+    action: mask
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: RAITO_MASK_h6ZKtMnd
+    what:
+      - dataObject:
+          fullName: RAITO_DEMO.ORDERING.PARTSUPP.AVAILQTY
+          id: X9xJ5u6z0zwvbeGha-hsd
+          type: column
+        permissions: []
+    deleteWhat: []
+    type: "NULL"
+  - id: 4CSESuJOm4iZU2LE7adMp
+    name: Terraform purpose - Test Locking
+    description: testing a purpose
+    namingHint: Terraform purpose - Test Locking
+    externalId: TERRAFORM_PURPOSE_TEST_LOCKING
+    who:
+      users:
+        - XAVIERNICHOLSCOLTON2789@RAITO.IO
+    deletedWho: null
+    action: purpose
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: TERRAFORM_PURPOSE_TEST_LOCKING
+    what: []
+    deleteWhat: []
+    type: null
+  - id: 9n75T7TSe5j09OqhHK782
+    name: THOMAS_TEST.TESTING_ROLE_1
+    description: ""
+    namingHint: TESTING_ROLE_1_UPDATE
+    externalId: DATABASEROLE###DATABASE:THOMAS_TEST###ROLE:TESTING_ROLE_1_UPDATE
+    who:
+      inheritFrom:
+        - ID:8eBFVI9z2ZQk9crxuc0-K
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: true
+    whatLocked: true
+    inheritanceLocked: false
+    actualName: TESTING_ROLE_1_UPDATE
+    what: []
+    deleteWhat: []
+    type: databaseRole
+  - id: qSH6VcKUQgyEUNvDwV5u7
+    name: EMAIL_MASK
+    description: ""
+    namingHint: EMAIL_MASK
+    externalId: EMAIL_MASK
+    who: {}
+    deletedWho: null
+    action: grant
+    delete: false
+    whoLocked: false
+    whatLocked: false
+    inheritanceLocked: false
+    actualName: EMAIL_MASK
+    what: []
+    deleteWhat: []
+    type: role
+fileBuildTime: 1711140795865

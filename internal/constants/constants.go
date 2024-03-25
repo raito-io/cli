@@ -87,6 +87,9 @@ const (
 	// Access specific parameters
 	AccessFileFlag = "access-file"
 
+	// For the apply-access command
+	FilterAccessFlag = "filter-access"
+
 	Targets             = "targets"
 	DataObjectEnrichers = "data-object-enrichers"
 	Repositories        = "repositories"

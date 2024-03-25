@@ -78,7 +78,7 @@ func (d *accessProviderExporter) TriggerExport(ctx context.Context, jobId string
 }
 
 func (d *accessProviderExporter) download(url string) (string, error) {
-	filePath, err := filepath.Abs(file.CreateUniqueFileNameForTarget(d.config.Name, "toTarget-access", "json"))
+	filePath, err := filepath.Abs(file.CreateUniqueFileNameForTarget(d.config.Name, "toTarget-access", "yaml"))
 
 	if err != nil {
 		return "", err

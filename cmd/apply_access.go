@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +14,9 @@ import (
 	"github.com/pterm/pterm"
 	dapc "github.com/raito-io/cli/base/access_provider"
 	baseconfig "github.com/raito-io/cli/base/util/config"
+	"github.com/raito-io/cli/base/util/match"
+	"github.com/raito-io/cli/base/util/slice"
+	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/health_check"
 	"github.com/raito-io/cli/internal/logging"
 	"github.com/raito-io/cli/internal/plugin"
@@ -20,6 +25,8 @@ import (
 	"github.com/raito-io/cli/internal/util/file"
 	"github.com/raito-io/cli/internal/version_management"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 func initApplyAccessCommand(rootCmd *cobra.Command) {
@@ -30,6 +37,9 @@ func initApplyAccessCommand(rootCmd *cobra.Command) {
 		ValidArgs: []string{},
 		Use:       "apply-access <target-name> <file-path>",
 	}
+
+	cmd.PersistentFlags().String(constants.FilterAccessFlag, "", "To only match a subset of access providers in the file, provide a comma-separated list of access provider names to match. These names can also be specified as regular expressions.")
+	BindFlag(constants.FilterAccessFlag, cmd)
 
 	rootCmd.AddCommand(cmd)
 }
@@ -101,18 +111,24 @@ func applyAccessCmd(cmd *cobra.Command, args []string) error {
 
 	pterm.Println()
 
-	// Show an interactive confirmation dialog and get the result.
-	confirm := pterm.InteractiveTextInputPrinter{
-		DefaultText: "Are you sure you want to continue? " + pterm.ThemeDefault.SecondaryStyle.Sprint("[Yes/No]"),
-		Delimiter:   ": ",
-		TextStyle:   &pterm.ThemeDefault.DefaultText,
-		Mask:        "",
+	filters := viper.GetString(constants.FilterAccessFlag)
+	filteredFile, filteredAps, totalAps, err := filterAccessProviders(tConfig.Name, fullPath, filters)
+	if err != nil {
+		return fmt.Errorf("Error while filtering access providers: %s", err.Error()) //nolint:stylecheck
 	}
 
-	result, _ := confirm.Show()
+	fullPath = filteredFile
 
-	if !strings.EqualFold(result, "yes") {
-		pterm.Println("Operation cancelled")
+	if filteredAps == nil {
+		pterm.Println(fmt.Sprintf("All %d access providers in the file will be applied. If you would like to filter the access providers, please provide a filter using the --filter-access flag.", totalAps))
+	} else if len(filteredAps) == 0 {
+		pterm.Println("No access providers in the file match the filter. Nothing to apply.")
+		return nil
+	} else {
+		pterm.Println(fmt.Sprintf("%d of the total %d access providers matches the provided filter. Only these access provides will be applied: %s", len(filteredAps), totalAps, strings.Join(filteredAps, ", ")))
+	}
+
+	if !requestConfirmation() {
 		return nil
 	}
 
@@ -130,6 +146,27 @@ func applyAccessCmd(cmd *cobra.Command, args []string) error {
 	pterm.Success.Println("Access applied successfully")
 
 	return nil
+}
+
+func requestConfirmation() bool {
+	pterm.Println()
+
+	// Show an interactive confirmation dialog and get the result.
+	confirm := pterm.InteractiveTextInputPrinter{
+		DefaultText: "Are you sure you want to continue? " + pterm.ThemeDefault.SecondaryStyle.Sprint("[Yes/No]"),
+		Delimiter:   ": ",
+		TextStyle:   &pterm.ThemeDefault.DefaultText,
+		Mask:        "",
+	}
+
+	result, _ := confirm.Show()
+
+	if !strings.EqualFold(result, "yes") {
+		pterm.Println("Operation cancelled")
+		return false
+	}
+
+	return true
 }
 
 func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile string) error {
@@ -160,7 +197,9 @@ func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile
 		return fmt.Errorf("Error while creating access feedback file: %s", err.Error()) //nolint:stylecheck
 	}
 
-	defer tConfig.HandleTempFile(targetFile)
+	defer tConfig.HandleTempFile(targetFile, false)
+
+	defer tConfig.HandleTempFile(inputFile, true)
 
 	syncerConfig := dapc.AccessSyncToTarget{
 		ConfigMap:          &baseconfig.ConfigMap{Parameters: tConfig.Parameters},
@@ -177,4 +216,120 @@ func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile
 	}
 
 	return nil
+}
+
+func filterAccessProviders(targetName, source, filter string) (string, []string, int, error) {
+	fileContent, err := readFileStructure(source)
+	if err != nil {
+		return "", nil, 0, err
+	}
+
+	filter = strings.TrimSpace(filter)
+	if filter == "" {
+		return source, nil, len(fileContent.AccessProviders), nil
+	}
+
+	newFileContent, filteredAps, err := filterFileStructure(*fileContent, filter)
+	if err != nil {
+		return "", nil, 0, err
+	}
+
+	filteredFileName, err := filepath.Abs(file.CreateUniqueFileNameForTarget(targetName, "toTarget-filteredAccess", "yaml"))
+	if err != nil {
+		return "", nil, 0, fmt.Errorf("unable to create temporary file with filtered access: %s", err.Error())
+	}
+
+	err = writeFileStructure(filteredFileName, newFileContent)
+	if err != nil {
+		return "", nil, 0, err
+	}
+
+	return filteredFileName, filteredAps, len(fileContent.AccessProviders), nil
+}
+
+func writeFileStructure(output string, content FileStructure) error {
+	// Writing out the file to a temp file
+	filtered, err := yaml.Marshal(content)
+	if err != nil {
+		return fmt.Errorf("unable to marshal filtered content: %s", err.Error())
+	}
+
+	filteredFile, err := os.Create(output)
+	if err != nil {
+		return fmt.Errorf("unable to create temporary file with filtered access %q: %s", output, err.Error())
+	}
+
+	defer filteredFile.Close()
+
+	_, err = filteredFile.Write(filtered)
+	if err != nil {
+		return fmt.Errorf("unable writing to temporary file with filtered access %q: %s", output, err.Error())
+	}
+
+	return nil
+}
+
+func readFileStructure(input string) (*FileStructure, error) {
+	af, err := os.Open(input)
+	if err != nil {
+		return nil, fmt.Errorf("unable to open source file %q: %s", input, err.Error())
+	}
+
+	buf, err := io.ReadAll(af)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read source file %q: %s", input, err.Error())
+	}
+
+	var fileContent FileStructure
+
+	if json.Valid(buf) {
+		err = json.Unmarshal(buf, &fileContent)
+		if err != nil {
+			return nil, fmt.Errorf("unable to unmarshal source file %q as JSON: %s", input, err.Error())
+		}
+	} else {
+		err = yaml.Unmarshal(buf, &fileContent)
+		if err != nil {
+			return nil, fmt.Errorf("unable to unmarshal source file %q as YAML: %s", input, err.Error())
+		}
+	}
+
+	return &fileContent, nil
+}
+
+func filterFileStructure(input FileStructure, filter string) (FileStructure, []string, error) {
+	// Creating the contents for the new file
+	newFileContent := FileStructure{
+		LastCalculated:  input.LastCalculated,
+		AccessProviders: make([]map[string]interface{}, 0, len(input.AccessProviders)),
+	}
+
+	// Now filtering the input file and writing the filtered content to a new file structure
+	filters := slice.ParseCommaSeparatedList(filter).Slice()
+
+	filteredAps := make([]string, 0, len(input.AccessProviders))
+
+	for _, ap := range input.AccessProviders {
+		if name, f := ap["name"]; f {
+			if ns, ok := name.(string); ok {
+				isMatch, err2 := match.MatchesAny(ns, filters)
+
+				if err2 != nil {
+					return newFileContent, filteredAps, fmt.Errorf("invalid filter format: %s", err2.Error())
+				}
+
+				if isMatch {
+					filteredAps = append(filteredAps, ns)
+					newFileContent.AccessProviders = append(newFileContent.AccessProviders, ap)
+				}
+			}
+		}
+	}
+
+	return newFileContent, filteredAps, nil
+}
+
+type FileStructure struct {
+	LastCalculated  int64                    `yaml:"lastCalculated" json:"lastCalculated"`
+	AccessProviders []map[string]interface{} `yaml:"accessProviders" json:"accessProviders"`
 }

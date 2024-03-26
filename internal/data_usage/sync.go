@@ -57,7 +57,7 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
 
-	defer s.TargetConfig.HandleTempFile(targetFile)
+	defer s.TargetConfig.HandleTempFile(targetFile, false)
 
 	syncerConfig := dupc.DataUsageSyncConfig{
 		ConfigMap:  &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},

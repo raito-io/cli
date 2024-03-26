@@ -1,32 +1,33 @@
 package constants
 
 var KnownFlags = map[string]struct{}{
-	DebugFlag:                 {},
-	LogFileFlag:               {},
-	SkipAuthentication:        {},
-	SkipFileUpload:            {},
-	URLOverrideFlag:           {},
-	DomainFlag:                {},
-	ApiUserFlag:               {},
-	ApiSecretFlag:             {},
-	ConfigFileFlag:            {},
-	FrequencyFlag:             {},
-	CronFlag:                  {},
-	SyncAtStartupFlag:         {},
-	SkipIdentityStoreSyncFlag: {},
-	SkipDataSourceSyncFlag:    {},
-	SkipDataAccessSyncFlag:    {},
-	SkipDataUsageSyncFlag:     {},
-	DataSourceIdFlag:          {},
-	IdentityStoreIdFlag:       {},
-	OnlyTargetsFlag:           {},
-	ConnectorNameFlag:         {},
-	ConnectorVersionFlag:      {},
-	NameFlag:                  {},
-	DeleteUntouchedFlag:       {},
-	DeleteTempFilesFlag:       {},
-	ReplaceGroupsFlag:         {},
-	AccessFileFlag:            {},
+	DebugFlag:                   {},
+	LogFileFlag:                 {},
+	SkipAuthentication:          {},
+	SkipFileUpload:              {},
+	URLOverrideFlag:             {},
+	DomainFlag:                  {},
+	ApiUserFlag:                 {},
+	ApiSecretFlag:               {},
+	ConfigFileFlag:              {},
+	FrequencyFlag:               {},
+	CronFlag:                    {},
+	SyncAtStartupFlag:           {},
+	SkipIdentityStoreSyncFlag:   {},
+	SkipDataSourceSyncFlag:      {},
+	SkipDataAccessSyncFlag:      {},
+	SkipDataUsageSyncFlag:       {},
+	DataSourceIdFlag:            {},
+	IdentityStoreIdFlag:         {},
+	OnlyTargetsFlag:             {},
+	ConnectorNameFlag:           {},
+	ConnectorVersionFlag:        {},
+	NameFlag:                    {},
+	DeleteUntouchedFlag:         {},
+	DeleteTempFilesFlag:         {},
+	ReplaceGroupsFlag:           {},
+	FileBackupLocationFlag:      {},
+	MaximumBackupsPerTargetFlag: {},
 }
 
 const (
@@ -68,8 +69,10 @@ const (
 	DisableLogForwardingResourceProviderSync = "disable-log-forwarding-resource-provider-sync"
 	DisableLogForwardingTagSync              = "disable-log-forwarding-tag-sync"
 
+	// File handling config tags
 	FileBackupLocationFlag      = "file-backup-location"
 	MaximumBackupsPerTargetFlag = "maximum-backups-per-target"
+	DeleteTempFilesFlag         = "delete-temp-files"
 
 	TagOverwriteKeyForAccessProviderName   = "tag-overwrite-key-for-access-provider-name"
 	TagOverwriteKeyForAccessProviderOwners = "tag-overwrite-key-for-access-provider-owners"
@@ -81,11 +84,10 @@ const (
 
 	// Import specific flags
 	DeleteUntouchedFlag = "delete-untouched"
-	DeleteTempFilesFlag = "delete-temp-files"
 	ReplaceGroupsFlag   = "replace-groups"
 
-	// Access specific parameters
-	AccessFileFlag = "access-file"
+	// For the apply-access command
+	FilterAccessFlag = "filter-access"
 
 	Targets             = "targets"
 	DataObjectEnrichers = "data-object-enrichers"

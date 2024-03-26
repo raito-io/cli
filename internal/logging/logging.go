@@ -16,10 +16,10 @@ import (
 	"github.com/raito-io/cli/internal/version"
 )
 
-func SetupLogging() {
+func SetupLogging(forceLogOutput bool) {
 	var output io.Writer = &nilWriter{}
 
-	if viper.GetBool(constants.LogOutputFlag) {
+	if forceLogOutput || viper.GetBool(constants.LogOutputFlag) {
 		output = os.Stdout
 
 		if viper.GetString(constants.LogFileFlag) != "" {
@@ -42,7 +42,7 @@ func SetupLogging() {
 		Output: output,
 	})
 
-	if !viper.GetBool(constants.LogOutputFlag) {
+	if !viper.GetBool(constants.LogOutputFlag) && !forceLogOutput {
 		logger.RegisterSink(newSinkAdapter())
 	}
 

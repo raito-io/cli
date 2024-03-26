@@ -54,14 +54,14 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 		return job.Failed, "", err
 	}
 
-	defer s.TargetConfig.HandleTempFile(userFile)
+	defer s.TargetConfig.HandleTempFile(userFile, false)
 
 	groupFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-groups", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	defer s.TargetConfig.HandleTempFile(groupFile)
+	defer s.TargetConfig.HandleTempFile(groupFile, false)
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as user target file", userFile))
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as groups target file", groupFile))

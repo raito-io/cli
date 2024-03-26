@@ -58,7 +58,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
 
-	defer s.TargetConfig.HandleTempFile(targetFile)
+	defer s.TargetConfig.HandleTempFile(targetFile, false)
 
 	doParent := ""
 	if s.TargetConfig.DataObjectParent != nil {
@@ -114,7 +114,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 	if s.TargetConfig.DeleteTempFiles && len(createdFiles) > 0 {
 		defer func() {
 			for _, f := range createdFiles {
-				s.TargetConfig.HandleTempFile(f)
+				s.TargetConfig.HandleTempFile(f, false)
 			}
 		}()
 	}

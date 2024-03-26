@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/raito-io/cli/internal/logging"
 )
 
 //go:embed help/root-description.txt
@@ -42,52 +41,23 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 		exit: exit,
 	}
 	rootCmd := &cobra.Command{
-		Use:   "raito",
-		Short: "The Raito CLI to take care of all your data access needs.",
-		Long:  rootDescription,
-		// TODO complete the long description
+		Use:     "raito",
+		Short:   "The Raito CLI to take care of all your data access needs.",
+		Long:    rootDescription,
 		Version: version,
 	}
 
 	cobra.OnInitialize(root.initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, constants.ConfigFileFlag, "", "The config file (default is ./raito.yml).")
-	rootCmd.PersistentFlags().String(constants.IdentityStoreIdFlag, "", "The ID of the identity store in Raito to import the user and group information to. This is only applicable if specifying the (single) target information in the commandline.")
-	rootCmd.PersistentFlags().String(constants.DataSourceIdFlag, "", "The ID of the data source in Raito to import the meta data information to or get the access permissions from. This is only applicable if specifying the (single) target information in the commandline.")
-	rootCmd.PersistentFlags().StringP(constants.DomainFlag, "d", "", "The subdomain to your Raito instance (https://<subdomain>.raito.io). This parameter can be overridden in the target configs if needed.")
-	rootCmd.PersistentFlags().StringP(constants.ApiUserFlag, "u", "", "The username of the API user to authenticate against Raito. This parameter can be overridden in the target configs if needed.")
-	rootCmd.PersistentFlags().StringP(constants.ApiSecretFlag, "s", "", "The API key secret to authenticate against Raito. This parameter can be overridden in the target configs if needed.")
 	rootCmd.PersistentFlags().String(constants.LogFileFlag, "", "The log file to store structured logs in. If not specified, no logging to file is done.")
 	rootCmd.PersistentFlags().Bool(constants.LogOutputFlag, false, "When set, logging is sent to the command line (stderr) instead of more human readable output.")
-	rootCmd.PersistentFlags().String(constants.URLOverrideFlag, "", "")
-	rootCmd.PersistentFlags().Bool(constants.SkipAuthentication, false, "")
-	rootCmd.PersistentFlags().Bool(constants.SkipFileUpload, false, "")
 	rootCmd.PersistentFlags().Bool(constants.DebugFlag, false, fmt.Sprintf("If set, extra debug logging is generated. Only useful in combination with %s or %s", constants.LogFileFlag, constants.LogOutputFlag))
-	rootCmd.PersistentFlags().StringP(constants.OnlyTargetsFlag, "t", "", "Can be used to only execute a subset of the defined targets in the configuration file. To specify multiple, use a comma-separated list.")
-	rootCmd.PersistentFlags().String(constants.ConnectorNameFlag, "", "The name of the connector to use. If not set, the CLI will use a configuration file to define the targets.")
-	rootCmd.PersistentFlags().String(constants.ConnectorVersionFlag, "", "The version of the connector to use. This is only relevant if the 'connector' flag is set as well. If not set (but the 'connector' flag is), then 'latest' is used.")
-	rootCmd.PersistentFlags().StringP(constants.NameFlag, "n", "", "The name for the target. This is only relevant if the 'connector' flag is set as well. If not set, the name of the connector will be used.")
-	rootCmd.PersistentFlags().String(constants.ContainerLivenessFile, "", "If set, we will create/remove a health-check file based on the webhook state. This is only relevant if you are running the CLI in long running mode.")
 
-	hideConfigOptions(rootCmd, constants.URLOverrideFlag, constants.SkipAuthentication, constants.SkipFileUpload, constants.ContainerLivenessFile)
-
-	BindFlag(constants.IdentityStoreIdFlag, rootCmd)
-	BindFlag(constants.DataSourceIdFlag, rootCmd)
-	BindFlag(constants.OnlyTargetsFlag, rootCmd)
-	BindFlag(constants.ConnectorNameFlag, rootCmd)
-	BindFlag(constants.ConnectorVersionFlag, rootCmd)
-	BindFlag(constants.NameFlag, rootCmd)
 	BindFlag(constants.ConfigFileFlag, rootCmd)
-	BindFlag(constants.DomainFlag, rootCmd)
-	BindFlag(constants.ApiUserFlag, rootCmd)
-	BindFlag(constants.ApiSecretFlag, rootCmd)
-	BindFlag(constants.URLOverrideFlag, rootCmd)
-	BindFlag(constants.SkipAuthentication, rootCmd)
-	BindFlag(constants.SkipFileUpload, rootCmd)
 	BindFlag(constants.DebugFlag, rootCmd)
 	BindFlag(constants.LogFileFlag, rootCmd)
 	BindFlag(constants.LogOutputFlag, rootCmd)
-	BindFlag(constants.ContainerLivenessFile, rootCmd)
 
 	viper.SetDefault(constants.LogFileFlag, "")
 
@@ -95,6 +65,7 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 
 	initRunCommand(rootCmd)
 	initInfoCommand(rootCmd)
+	initApplyAccessCommand(rootCmd)
 
 	return root
 }
@@ -146,8 +117,6 @@ func (cmd *rootCmd) initConfig() {
 	}
 
 	viper.WatchConfig()
-
-	logging.SetupLogging()
 
 	if viper.ConfigFileUsed() != "" {
 		hclog.L().Debug(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))

@@ -97,7 +97,7 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context,
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
 
-	defer s.TargetConfig.HandleTempFile(targetFile)
+	defer s.TargetConfig.HandleTempFile(targetFile, false)
 
 	err = s.accessSyncImport(client, targetFile)
 	if err != nil {
@@ -231,7 +231,7 @@ func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(ctx context.Context,
 		return job.Failed, "", err
 	}
 
-	defer s.TargetConfig.HandleTempFile(targetFile)
+	defer s.TargetConfig.HandleTempFile(targetFile, false)
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as actual access name target file", targetFile))
 
@@ -279,7 +279,7 @@ func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client p
 		return job.Failed, "", err
 	}
 
-	defer s.TargetConfig.HandleTempFile(exportedFile)
+	defer s.TargetConfig.HandleTempFile(exportedFile, false)
 
 	subTaskUpdater.AddSubtaskEvent(ctx, job.InProgress)
 

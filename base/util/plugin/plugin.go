@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -35,25 +34,6 @@ func (i *PluginInfo) InfoString() string {
 		sb.WriteString(sv.String())
 	} else {
 		sb.WriteString("unknown version")
-	}
-
-	return sb.String()
-}
-
-func (i *PluginInfo) FullOverview() string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%s v%s", i.Name, i.Version))
-
-	if i.Description != "" {
-		sb.WriteString(fmt.Sprintf("\n\n%s", i.Description))
-	}
-
-	if len(i.Parameters) > 0 {
-		sb.WriteString("\n\nParameters:")
-
-		for _, param := range i.Parameters {
-			sb.WriteString(fmt.Sprintf("\n   %s", param))
-		}
 	}
 
 	return sb.String()

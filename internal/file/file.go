@@ -4,28 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/connect"
 )
-
-var r *rand.Rand
-
-func init() {
-	r = rand.New(rand.NewSource(time.Now().UnixNano()))
-}
-
-func CreateUniqueFileName(hint, ext string) string {
-	r := r.Intn(10000000)
-	t := time.Now().Format("2006-01-02T15-04-05.999999999Z07-00")
-
-	return hint + "-" + t + "-" + strconv.Itoa(r) + "." + ext
-}
 
 // UploadFile uploads the file from the given path.
 // It returns the key to use to pass to the Raito backend to use the file.

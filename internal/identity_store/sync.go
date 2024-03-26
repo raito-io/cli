@@ -4,17 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
-	"strings"
 
 	ispc "github.com/raito-io/cli/base/identity_store"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	error1 "github.com/raito-io/cli/base/util/error"
-	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/file"
 	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/raito-io/cli/internal/version_management"
 )
@@ -51,25 +49,22 @@ func (s *IdentityStoreSync) GetParts() []job.TaskPart {
 }
 
 func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
-	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
-
-	userFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-user", "json"))
+	userFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-users", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	groupFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-is-group", "json"))
+	defer s.TargetConfig.HandleTempFile(userFile)
+
+	groupFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-groups", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
+
+	defer s.TargetConfig.HandleTempFile(groupFile)
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as user target file", userFile))
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as groups target file", groupFile))
-
-	if s.TargetConfig.DeleteTempFiles {
-		defer os.RemoveAll(userFile)
-		defer os.RemoveAll(groupFile)
-	}
 
 	syncerConfig := ispc.IdentityStoreSyncConfig{
 		ConfigMap: &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},

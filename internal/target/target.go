@@ -24,6 +24,7 @@ import (
 type TargetRunner interface {
 	TargetSync(ctx context.Context, targetConfig *types.BaseTargetConfig) (syncError error)
 	Finalize(ctx context.Context, baseConfig *types.BaseConfig, options *Options) error
+	RunType() string
 }
 
 func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget TargetRunner, opFns ...func(*Options)) (err error) {
@@ -54,7 +55,7 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget Tar
 			return err2
 		}
 	} else {
-		err2 := runMultipleTargets(ctx, baseConfig, runTarget.TargetSync, &options)
+		err2 := runMultipleTargets(ctx, baseConfig, runTarget.RunType(), runTarget.TargetSync, &options)
 		if err2 != nil {
 			return err2
 		}
@@ -80,7 +81,7 @@ func HandleTargetError(err error, config *types.BaseTargetConfig, prefix ...stri
 	config.TargetLogger.Error(fmt.Sprintf("%s%s", prefixString, err.Error()))
 }
 
-func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTarget func(ctx context.Context, tConfig *types.BaseTargetConfig) error, options *Options) error {
+func runMultipleTargets(ctx context.Context, baseConfig *types.BaseConfig, runType string, runTarget func(ctx context.Context, tConfig *types.BaseTargetConfig) error, options *Options) error {
 	var errorResult error
 
 	dataObjectEnricherMap, err := buildDataObjectEnricherMap()
@@ -110,7 +111,7 @@ func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTa
 				continue
 			}
 
-			tConfig, err := buildTargetConfigFromMap(baseconfig, target, dataObjectEnricherMap)
+			tConfig, err := buildTargetConfigFromMapForRun(baseConfig, target, dataObjectEnricherMap)
 			if err != nil {
 				errorResult = multierror.Append(errorResult, fmt.Errorf("error while parsing the target configuration: %s", err.Error()))
 				hclog.L().Error(fmt.Sprintf("error while parsing the target configuration: %s", err.Error()))
@@ -141,6 +142,13 @@ func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTa
 
 			logTargetConfig(tConfig)
 
+			err2 := tConfig.CalculateFileBackupLocationForRun(runType)
+			if err2 != nil {
+				hclog.L().Error(err2.Error())
+
+				continue
+			}
+
 			runErr := runTarget(ctx, tConfig)
 			if runErr != nil {
 				errorResult = multierror.Append(errorResult, runErr)
@@ -148,13 +156,15 @@ func runMultipleTargets(ctx context.Context, baseconfig *types.BaseConfig, runTa
 				// In debug as the error should already be outputted, and we are ignoring it here.
 				tConfig.TargetLogger.Debug("Error while executing target", "error", runErr.Error())
 			}
+
+			tConfig.FinalizeRun()
 		}
 	}
 
 	return errorResult
 }
 
-func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, error) { //nolint:cyclop
+func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, error) { //nolint:cyclop
 	tConfig := types.BaseTargetConfig{
 		BaseConfig:      *baseconfig,
 		DeleteUntouched: true,
@@ -219,6 +229,18 @@ func buildTargetConfigFromMap(baseconfig *types.BaseConfig, target map[string]in
 			return nil, err2
 		}
 		tConfig.ApiUser = cv.(string)
+	}
+
+	if tConfig.FileBackupLocation == "" {
+		cv, err2 := iconfig.HandleField(viper.GetString(constants.FileBackupLocationFlag), reflect.String)
+		if err2 != nil {
+			return nil, err2
+		}
+		tConfig.FileBackupLocation = cv.(string)
+	}
+
+	if tConfig.MaximumBackupsPerTarget == 0 {
+		tConfig.MaximumBackupsPerTarget = viper.GetInt(constants.MaximumBackupsPerTargetFlag)
 	}
 
 	if tConfig.Domain == "" {

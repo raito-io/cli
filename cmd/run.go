@@ -66,6 +66,9 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessProviderOwners, "", "If set, will determine the tag-key used for assigning owners of the Access Control when imported in to Raito Cloud.")
 	cmd.PersistentFlags().String(constants.TagOverwriteKeyForDataObjectOwners, "", "If set, will determine the tag-key used for assigning owners of the Data Objects when imported in to Raito Cloud.")
 
+	cmd.PersistentFlags().String(constants.FileBackupLocationFlag, "", "If set, this filepath is used to store backups of the files that are used during synchronization jobs. A sub-folder is created per target, using the target name + the type of run (full, manual or webhook) as name for the folder. Underneath that, another sub-folder is created per run, using a timestamp as the folder name. The backed up files are then stored in that folder. This parameter can be overridden in the target configs if needed.")
+	cmd.PersistentFlags().Int(constants.MaximumBackupsPerTargetFlag, 0, fmt.Sprintf("When %q is defined, this parameter can be used to control how many backups should be kept per target+type. When this number is exceeded, older backups will be removed automatically. By default, this is 0, which means there is no maximum. This parameter can be overridden in the target configs if needed.", constants.FileBackupLocationFlag))
+
 	BindFlag(constants.CronFlag, cmd)
 	BindFlag(constants.SyncAtStartupFlag, cmd)
 	BindFlag(constants.FrequencyFlag, cmd)
@@ -94,6 +97,9 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.TagOverwriteKeyForAccessProviderName, cmd)
 	BindFlag(constants.TagOverwriteKeyForAccessProviderOwners, cmd)
 	BindFlag(constants.TagOverwriteKeyForDataObjectOwners, cmd)
+
+	BindFlag(constants.FileBackupLocationFlag, cmd)
+	BindFlag(constants.MaximumBackupsPerTargetFlag, cmd)
 
 	cmd.FParseErrWhitelist.UnknownFlags = true
 
@@ -371,7 +377,7 @@ func runSync(ctx context.Context, baseconfig *types.BaseConfig) error {
 
 		fallthrough
 	case version_management.Supported:
-		return target.RunTargets(ctx, baseconfig, &target_sync.SyncJob{})
+		return target.RunTargets(ctx, baseconfig, &target_sync.SyncJob{RunTypeName: "full"})
 	case version_management.CompatibilityUnknown:
 	}
 
@@ -379,7 +385,7 @@ func runSync(ctx context.Context, baseconfig *types.BaseConfig) error {
 }
 
 func handleApUpdateTrigger(ctx context.Context, config *types.BaseConfig, apUpdate *clitrigger.ApUpdate) error {
-	return target.RunTargets(ctx, config, &target_sync.SyncJob{}, target.WithDataSourceIds(apUpdate.DataSourceNames...), target.WithConfigOption(func(targetConfig *types.BaseTargetConfig) {
+	return target.RunTargets(ctx, config, &target_sync.SyncJob{RunTypeName: "webhook"}, target.WithDataSourceIds(apUpdate.DataSourceNames...), target.WithConfigOption(func(targetConfig *types.BaseTargetConfig) {
 		targetConfig.SkipIdentityStoreSync = true
 		targetConfig.SkipDataSourceSync = true
 		targetConfig.SkipDataUsageSync = true
@@ -411,7 +417,7 @@ func handleSyncTrigger(ctx context.Context, config *types.BaseConfig, syncTrigge
 		opts = append(opts, target.WithDataSourceIds(*syncTrigger.DataSource))
 	}
 
-	return target.RunTargets(ctx, config, &target_sync.SyncJob{}, opts...)
+	return target.RunTargets(ctx, config, &target_sync.SyncJob{RunTypeName: "manual"}, opts...)
 }
 
 func startListingToCliTriggers(ctx context.Context, baseConfig *types.BaseConfig) (clitrigger.CliTrigger, *clitrigger.ApUpdateTriggerHandler, *clitrigger.SyncTriggerHandler) {

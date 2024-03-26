@@ -24,7 +24,12 @@ import (
 )
 
 type SyncJob struct {
-	jobIds []string
+	jobIds      []string
+	RunTypeName string
+}
+
+func (s *SyncJob) RunType() string {
+	return s.RunTypeName
 }
 
 func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTargetConfig) (syncError error) {

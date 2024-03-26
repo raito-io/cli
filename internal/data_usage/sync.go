@@ -4,19 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
 
 	dupc "github.com/raito-io/cli/base/data_usage"
 	baseconfig "github.com/raito-io/cli/base/util/config"
-	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/file"
 	"github.com/raito-io/cli/internal/version_management"
 )
 
@@ -51,8 +49,7 @@ func (s *DataUsageSync) GetParts() []job.TaskPart {
 }
 
 func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
-	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-du", "json"))
+	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-usage", "json"))
 
 	if err != nil {
 		return job.Failed, "", err
@@ -60,9 +57,7 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
 
-	if s.TargetConfig.DeleteTempFiles {
-		defer os.RemoveAll(targetFile)
-	}
+	defer s.TargetConfig.HandleTempFile(targetFile)
 
 	syncerConfig := dupc.DataUsageSyncConfig{
 		ConfigMap:  &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},

@@ -15,10 +15,10 @@ import (
 	error1 "github.com/raito-io/cli/base/util/error"
 	"github.com/raito-io/cli/base/util/slice"
 	"github.com/raito-io/cli/internal/constants"
-	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/file"
 	"github.com/raito-io/cli/internal/version_management"
 )
 
@@ -90,18 +90,14 @@ func (s *DataAccessSync) GetTaskResults() []job.TaskResult {
 }
 
 func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
-	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
-
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da", "json"))
+	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-access", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
 
-	if s.TargetConfig.DeleteTempFiles {
-		defer os.RemoveAll(targetFile)
-	}
+	defer s.TargetConfig.HandleTempFile(targetFile)
 
 	err = s.accessSyncImport(client, targetFile)
 	if err != nil {
@@ -230,16 +226,12 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 }
 
 func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
-	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
-
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-da-feedback", "json"))
+	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "toTarget-accessFeedback", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	if s.TargetConfig.DeleteTempFiles {
-		defer os.RemoveAll(targetFile)
-	}
+	defer s.TargetConfig.HandleTempFile(targetFile)
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as actual access name target file", targetFile))
 
@@ -281,15 +273,17 @@ func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client p
 
 	daExporter := NewAccessProviderExporter(&AccessProviderExporterConfig{BaseTargetConfig: *s.TargetConfig}, statusUpdater, syncConfig)
 
-	_, dar, err := daExporter.TriggerExport(ctx, *s.JobId)
+	_, exportedFile, err := daExporter.TriggerExport(ctx, *s.JobId)
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
+	defer s.TargetConfig.HandleTempFile(exportedFile)
+
 	subTaskUpdater.AddSubtaskEvent(ctx, job.InProgress)
 
-	darInformation, err := s.readDataAccessRetrieveInformation(dar)
+	darInformation, err := s.readDataAccessRetrieveInformation(exportedFile)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -300,7 +294,7 @@ func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client p
 	syncerConfig := dapc.AccessSyncToTarget{
 		ConfigMap:          &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		Prefix:             "",
-		SourceFile:         dar,
+		SourceFile:         exportedFile,
 		FeedbackTargetFile: targetFile,
 	}
 

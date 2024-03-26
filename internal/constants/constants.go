@@ -68,6 +68,9 @@ const (
 	DisableLogForwardingResourceProviderSync = "disable-log-forwarding-resource-provider-sync"
 	DisableLogForwardingTagSync              = "disable-log-forwarding-tag-sync"
 
+	FileBackupLocationFlag      = "file-backup-location"
+	MaximumBackupsPerTargetFlag = "maximum-backups-per-target"
+
 	TagOverwriteKeyForAccessProviderName   = "tag-overwrite-key-for-access-provider-name"
 	TagOverwriteKeyForAccessProviderOwners = "tag-overwrite-key-for-access-provider-owners"
 	TagOverwriteKeyForDataObjectOwners     = "tag-overwrite-key-for-data-object-owners"

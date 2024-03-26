@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -13,10 +12,10 @@ import (
 	"github.com/raito-io/cli/base/data_object_enricher"
 	dspc "github.com/raito-io/cli/base/data_source"
 	baseconfig "github.com/raito-io/cli/base/util/config"
-	"github.com/raito-io/cli/internal/file"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target/types"
+	"github.com/raito-io/cli/internal/util/file"
 	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/raito-io/cli/internal/version_management"
 )
@@ -51,19 +50,15 @@ func (s *DataSourceSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) { //nolint:cyclop
-	cn := strings.Replace(s.TargetConfig.ConnectorName, "/", "-", -1)
-
-	targetFile, err := filepath.Abs(file.CreateUniqueFileName(cn+"-ds", "json"))
+func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-dataObjects", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
 
-	if s.TargetConfig.DeleteTempFiles {
-		defer os.RemoveAll(targetFile)
-	}
+	defer s.TargetConfig.HandleTempFile(targetFile)
 
 	doParent := ""
 	if s.TargetConfig.DataObjectParent != nil {
@@ -119,7 +114,7 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 	if s.TargetConfig.DeleteTempFiles && len(createdFiles) > 0 {
 		defer func() {
 			for _, f := range createdFiles {
-				os.RemoveAll(f)
+				s.TargetConfig.HandleTempFile(f)
 			}
 		}()
 	}

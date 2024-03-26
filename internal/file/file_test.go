@@ -1,8 +1,6 @@
 package file
 
 import (
-	"fmt"
-
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/test"
@@ -10,8 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -19,20 +15,6 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestCreateUniqueFileName(t *testing.T) {
-	fileNames := make(map[string]struct{})
-	for i := 0; i < 10000; i++ {
-		fileName := CreateUniqueFileName("thehint", "yml")
-		assert.True(t, strings.HasPrefix(fileName, "thehint"), "Filename doesn't have the right prefix")
-		assert.True(t, strings.HasSuffix(fileName, ".yml"), "Filename doesn't have the right suffix")
-		fmt.Println(fileName)
-		_, found := fileNames[fileName]
-		assert.False(t, found, "Duplicate filename found ("+strconv.Itoa(i)+")")
-		fileNames[fileName] = struct{}{}
-	}
-
-}
 
 func TestFileUpload(t *testing.T) {
 	var token, urlMethod, urlPath, uploadMethod, fileBody string

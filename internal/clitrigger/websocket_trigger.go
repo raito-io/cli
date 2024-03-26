@@ -349,6 +349,10 @@ type heartBeatTargetSync struct {
 	DataSources []string
 }
 
+func (s *heartBeatTargetSync) RunType() string {
+	return ""
+}
+
 func (s *heartBeatTargetSync) TargetSync(ctx context.Context, tConfig *types.BaseTargetConfig) error {
 	client, err := plugin.NewPluginClient(tConfig.ConnectorName, tConfig.ConnectorVersion, tConfig.TargetLogger)
 	if err != nil {

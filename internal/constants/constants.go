@@ -78,6 +78,8 @@ const (
 	TagOverwriteKeyForAccessProviderOwners = "tag-overwrite-key-for-access-provider-owners"
 	TagOverwriteKeyForDataObjectOwners     = "tag-overwrite-key-for-data-object-owners"
 
+	TagKeyAndValueForUserIsMachine = "tag-key-and-value-for-user-is-machine"
+
 	ConnectorNameFlag    = "connector-name"
 	ConnectorVersionFlag = "connector-version"
 	NameFlag             = "name"

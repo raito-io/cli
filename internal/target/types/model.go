@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/util/file"
 	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/base/util/config"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/health_check"
+	"github.com/raito-io/cli/internal/util/file"
 )
 
 type ConfigMap struct {
@@ -129,6 +129,8 @@ type BaseTargetConfig struct {
 	TagOverwriteKeyForAccessProviderName   string
 	TagOverwriteKeyForAccessProviderOwners string
 	TagOverwriteKeyForDataObjectOwners     string
+
+	TagKeyAndValueForUserIsMachine string
 
 	OnlyOutOfSyncData    bool
 	SkipDataAccessImport bool

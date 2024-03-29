@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	ispc "github.com/raito-io/cli/base/identity_store"
 	baseconfig "github.com/raito-io/cli/base/util/config"
@@ -102,6 +103,19 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 		return job.Failed, "", s.mapErrorResult(result.Error) //nolint:staticcheck
 	}
 
+	postProcessor := NewPostProcessor(&PostProcessorConfig{
+		TagKeyAndValueForUserIsMachine: s.TargetConfig.TagKeyAndValueForUserIsMachine,
+		TargetLogger:                   s.TargetConfig.TargetLogger,
+	})
+
+	toProcessUserFile := userFile
+	if postProcessor.NeedsUserPostProcessing() {
+		toProcessUserFile, err = s.postProcessUsers(postProcessor, userFile)
+		if err != nil {
+			return job.Failed, "", err
+		}
+	}
+
 	// Fetching the tagSource from the plugin
 	tagSourcesScope, err := tag.FetchTagSourceFromPlugin(ctx, client, nil)
 	if err != nil {
@@ -110,7 +124,7 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 
 	importerConfig := IdentityStoreImportConfig{
 		BaseTargetConfig: *s.TargetConfig,
-		UserFile:         userFile,
+		UserFile:         toProcessUserFile,
 		GroupFile:        groupFile,
 		DeleteUntouched:  s.TargetConfig.DeleteUntouched,
 		ReplaceGroups:    s.TargetConfig.ReplaceGroups,
@@ -132,6 +146,29 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
+}
+
+func (s *IdentityStoreSync) postProcessUsers(postProcessor PostProcessor, toProcessFile string) (string, error) {
+	postProcessedFile := toProcessFile
+	fileSuffix := "-post-processed"
+
+	// Generate a unique file name for the post processing
+	if strings.Contains(postProcessedFile, fileSuffix) {
+		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, fileSuffix)] + fileSuffix + ".json"
+	} else {
+		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, ".json")] + fileSuffix + ".json"
+	}
+
+	res, err := postProcessor.PostProcessUsers(toProcessFile, postProcessedFile)
+	if err != nil {
+		return toProcessFile, err
+	}
+
+	if res.UsersTouchedCount > 0 {
+		s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully updated %d users in post-processing step", res.UsersTouchedCount))
+	}
+
+	return postProcessedFile, nil
 }
 
 func (s *IdentityStoreSync) ProcessResults(results interface{}) error {

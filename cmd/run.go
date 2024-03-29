@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/logging"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,6 +19,7 @@ import (
 	"github.com/raito-io/cli/internal/clitrigger"
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/health_check"
+	"github.com/raito-io/cli/internal/logging"
 	"github.com/raito-io/cli/internal/target"
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/target_sync"
@@ -81,6 +81,8 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().String(constants.TagOverwriteKeyForAccessProviderOwners, "", "If set, will determine the tag-key used for assigning owners of the Access Control when imported in to Raito Cloud.")
 	cmd.PersistentFlags().String(constants.TagOverwriteKeyForDataObjectOwners, "", "If set, will determine the tag-key used for assigning owners of the Data Objects when imported in to Raito Cloud.")
 
+	cmd.PersistentFlags().String(constants.TagKeyAndValueForUserIsMachine, "", "If set, we automatically flag a user as machine user when the combination of tag key:value (split by `:`) is matched during the import to Raito Cloud.")
+
 	cmd.PersistentFlags().String(constants.FileBackupLocationFlag, "", "If set, this filepath is used to store backups of the files that are used during synchronization jobs. A sub-folder is created per target, using the target name + the type of run (full, manual or webhook) as name for the folder. Underneath that, another sub-folder is created per run, using a timestamp as the folder name. The backed up files are then stored in that folder. This parameter can be overridden in the target configs if needed.")
 	cmd.PersistentFlags().Int(constants.MaximumBackupsPerTargetFlag, 0, fmt.Sprintf("When %q is defined, this parameter can be used to control how many backups should be kept per target+type. When this number is exceeded, older backups will be removed automatically. By default, this is 0, which means there is no maximum. This parameter can be overridden in the target configs if needed.", constants.FileBackupLocationFlag))
 
@@ -126,6 +128,8 @@ func initRunCommand(rootCmd *cobra.Command) {
 	BindFlag(constants.TagOverwriteKeyForAccessProviderName, cmd)
 	BindFlag(constants.TagOverwriteKeyForAccessProviderOwners, cmd)
 	BindFlag(constants.TagOverwriteKeyForDataObjectOwners, cmd)
+
+	BindFlag(constants.TagKeyAndValueForUserIsMachine, cmd)
 
 	BindFlag(constants.FileBackupLocationFlag, cmd)
 	BindFlag(constants.MaximumBackupsPerTargetFlag, cmd)

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/raito-io/cli/base/tag"
 )
@@ -34,6 +35,7 @@ type User struct {
 	Email            string     `json:"email"`
 	GroupExternalIds []string   `json:"groupExternalIds"`
 	Tags             []*tag.Tag `json:"tags"`
+	IsMachine        *bool      `json:"isMachine"`
 }
 
 // IdentityStoreFileCreator describes the interface for easily creating the user and group import files
@@ -67,16 +69,18 @@ func NewIdentityStoreFileCreator(config *IdentityStoreSyncConfig) (IdentityStore
 		return nil, err
 	}
 
-	_, err = isI.usersFile.WriteString("[")
-
-	if err != nil {
-		return nil, err
+	if isI.hasUserTargetFile() {
+		_, err = isI.usersFile.WriteString("[")
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	_, err = isI.groupsFile.WriteString("[")
-
-	if err != nil {
-		return nil, err
+	if isI.hasGroupTargetFile() {
+		_, err = isI.groupsFile.WriteString("[")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &isI, nil
@@ -86,11 +90,15 @@ func NewIdentityStoreFileCreator(config *IdentityStoreSyncConfig) (IdentityStore
 // This method must be called when all users and groups have been added and before control is given back
 // to the CLI. It's advised to call this using 'defer'.
 func (i *identityStoreImporter) Close() {
-	i.usersFile.WriteString("\n]")  //nolint:errcheck
-	i.groupsFile.WriteString("\n]") //nolint:errcheck
+	if i.hasUserTargetFile() {
+		i.usersFile.WriteString("\n]") //nolint:errcheck
+		i.usersFile.Close()
+	}
 
-	i.usersFile.Close()
-	i.groupsFile.Close()
+	if i.hasGroupTargetFile() {
+		i.groupsFile.WriteString("\n]") //nolint:errcheck
+		i.groupsFile.Close()
+	}
 }
 
 // AddGroups adds the slice of groups to the groups import file.
@@ -177,20 +185,32 @@ func (i *identityStoreImporter) GetGroupCount() int {
 	return i.groupCount
 }
 
+func (i *identityStoreImporter) hasUserTargetFile() bool {
+	return !strings.EqualFold(i.config.UserFile, "")
+}
+
+func (i *identityStoreImporter) hasGroupTargetFile() bool {
+	return !strings.EqualFold(i.config.GroupFile, "")
+}
+
 func (i *identityStoreImporter) createTargetFiles() error {
-	f, err := os.Create(i.config.UserFile)
-	if err != nil {
-		return fmt.Errorf("error creating temporary file for identity store importer (users): %s", err.Error())
+	if i.hasUserTargetFile() {
+		f, err := os.Create(i.config.UserFile)
+		if err != nil {
+			return fmt.Errorf("error creating temporary file for identity store importer (users): %s", err.Error())
+		}
+
+		i.usersFile = f
 	}
 
-	i.usersFile = f
+	if i.hasGroupTargetFile() {
+		f2, err := os.Create(i.config.GroupFile)
+		if err != nil {
+			return fmt.Errorf("error creating temporary file for identity store importer (groups): %s", err.Error())
+		}
 
-	f2, err := os.Create(i.config.GroupFile)
-	if err != nil {
-		return fmt.Errorf("error creating temporary file for identity store importer (groups): %s", err.Error())
+		i.groupsFile = f2
 	}
-
-	i.groupsFile = f2
 
 	return nil
 }

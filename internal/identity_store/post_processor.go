@@ -16,9 +16,8 @@ import (
 )
 
 type PostProcessorConfig struct {
-	TagKeyForUserIsMachine   string
-	TagValueForUserIsMachine string
-	TargetLogger             hclog.Logger
+	TagKeyAndValueForUserIsMachine string
+	TargetLogger                   hclog.Logger
 }
 type PostProcessorResult struct {
 	UsersTouchedCount int
@@ -38,7 +37,17 @@ func NewPostProcessor(config *PostProcessorConfig) PostProcessor {
 }
 
 func (p *PostProcessor) NeedsUserPostProcessing() bool {
-	return p.config.TagKeyForUserIsMachine != "" && p.config.TagValueForUserIsMachine != ""
+	tagKeyUserIsMachine, tagValueUserIsMachine := p.splitTagKeyAndValueForUserIsMachine()
+	return !strings.EqualFold(tagKeyUserIsMachine, "") && !strings.EqualFold(tagValueUserIsMachine, "")
+}
+
+func (p *PostProcessor) splitTagKeyAndValueForUserIsMachine() (string, string) {
+	parts := strings.Split(p.config.TagKeyAndValueForUserIsMachine, ":")
+	if len(parts) != 2 {
+		return "", ""
+	}
+
+	return parts[0], parts[1]
 }
 
 func (p *PostProcessor) errorWrapper(err error) error {
@@ -65,6 +74,8 @@ func (p *PostProcessor) PostProcessUsers(usersInputFilePath string, usersOutputF
 	usersRead := 0
 	usersTouched := 0
 
+	tagKeyUserIsMachine, tagValueUserIsMachine := p.splitTagKeyAndValueForUserIsMachine()
+
 	decoder := jsonstream.NewJsonArrayStream[identity_store.User](usersInputFile)
 	for jsonStreamResult := range decoder.Stream() {
 		p.config.TargetLogger.Trace(fmt.Sprintf("Start post processing user %d", usersRead))
@@ -74,7 +85,7 @@ func (p *PostProcessor) PostProcessUsers(usersInputFilePath string, usersOutputF
 		}
 
 		user := jsonStreamResult.Result
-		enriched := p.postProcessUser(user)
+		enriched := p.postProcessUser(user, tagKeyUserIsMachine, tagValueUserIsMachine)
 
 		err := outputWriter.AddUsers(user)
 		if err != nil {
@@ -97,12 +108,12 @@ func (p *PostProcessor) PostProcessUsers(usersInputFilePath string, usersOutputF
 	}, nil
 }
 
-func (p *PostProcessor) postProcessUser(user *identity_store.User) bool {
+func (p *PostProcessor) postProcessUser(user *identity_store.User, tagKeyUserIsMachine string, tagValueUserIsMachine string) bool {
 	enriched := false
 
 	if len(user.Tags) > 0 {
 		for _, tag := range user.Tags {
-			if p.matchedWithTagKey(p.config.TagKeyForUserIsMachine, tag) && strings.EqualFold(tag.Value, p.config.TagValueForUserIsMachine) {
+			if p.matchedWithTagKey(tagKeyUserIsMachine, tag) && strings.EqualFold(tag.Value, tagValueUserIsMachine) {
 				user.IsMachine = ptr.Bool(true)
 				enriched = true
 			}

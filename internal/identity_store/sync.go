@@ -104,9 +104,8 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 	}
 
 	postProcessor := NewPostProcessor(&PostProcessorConfig{
-		TagKeyForUserIsMachine:   s.TargetConfig.TagKeyForUserIsMachine,
-		TagValueForUserIsMachine: s.TargetConfig.TagValueForUserIsMachine,
-		TargetLogger:             s.TargetConfig.TargetLogger,
+		TagKeyAndValueForUserIsMachine: s.TargetConfig.TagKeyAndValueForUserIsMachine,
+		TargetLogger:                   s.TargetConfig.TargetLogger,
 	})
 
 	toProcessUserFile := userFile

@@ -63,9 +63,43 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
-					TagKeyForUserIsMachine:   "",
-					TagValueForUserIsMachine: "",
-					TargetLogger:             logger,
+					TagKeyAndValueForUserIsMachine: "",
+					TargetLogger:                   logger,
+				},
+			},
+			want: want{
+				touchedUsers: 0,
+				processedUsers: []*identity_store.User{{
+					Name: "user_1",
+					Tags: []*tag.Tag{
+						{Key: "RANDOM", Value: "VALUE"},
+					},
+				}},
+			},
+			wantErr: require.NoError,
+		},
+		{
+			name: "wrong config",
+			fields: fields{
+				setup: func(accessProviderFileCreator *mocks.IdentityStoreFileCreator) (identityStoreFileCreatorError error) {
+					accessProviderFileCreator.EXPECT().GetUserCount().Return(1).Once()
+
+					identityStoreFileCreatorError = nil
+
+					return identityStoreFileCreatorError
+				},
+				toProcessesUsers: []*identity_store.User{{
+					Name: "user_1",
+					Tags: []*tag.Tag{
+						{Key: "RANDOM", Value: "VALUE"},
+					},
+				}},
+			},
+			args: args{
+				ctx: context.Background(),
+				config: &PostProcessorConfig{
+					TagKeyAndValueForUserIsMachine: "wrong,config",
+					TargetLogger:                   logger,
 				},
 			},
 			want: want{
@@ -99,9 +133,8 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
-					TagKeyForUserIsMachine:   "user_type",
-					TagValueForUserIsMachine: "machine",
-					TargetLogger:             logger,
+					TagKeyAndValueForUserIsMachine: "user_type:machine",
+					TargetLogger:                   logger,
 				},
 			},
 			want: want{
@@ -147,9 +180,8 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
-					TagKeyForUserIsMachine:   "user_type",
-					TagValueForUserIsMachine: "machine",
-					TargetLogger:             logger,
+					TagKeyAndValueForUserIsMachine: "user_type:machine",
+					TargetLogger:                   logger,
 				},
 			},
 			want: want{

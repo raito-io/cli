@@ -130,8 +130,7 @@ type BaseTargetConfig struct {
 	TagOverwriteKeyForAccessProviderOwners string
 	TagOverwriteKeyForDataObjectOwners     string
 
-	TagKeyForUserIsMachine   string
-	TagValueForUserIsMachine string
+	TagKeyAndValueForUserIsMachine string
 
 	OnlyOutOfSyncData    bool
 	SkipDataAccessImport bool

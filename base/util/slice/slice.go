@@ -71,11 +71,11 @@ func StringSliceMerge(slices ...[]string) []string {
 	return result
 }
 
-func ParseCommaSeparatedList(list string) set.Set[string] {
+func ParseCommaSeparatedList(list string) []string {
 	list = strings.TrimSpace(list)
 
 	if list == "" {
-		return set.NewSet[string]()
+		return []string{}
 	}
 
 	ret := set.NewSet[string]()
@@ -84,5 +84,5 @@ func ParseCommaSeparatedList(list string) set.Set[string] {
 		ret.Add(strings.TrimSpace(v))
 	}
 
-	return ret
+	return ret.Slice()
 }

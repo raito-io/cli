@@ -65,6 +65,42 @@ func (d *accessProviderFileCreator) Close() {
 	d.targetFile.Close()
 }
 
+func shouldLock(field string, all bool, lockByName []string, lockByTag []string, whenIncomplete bool, ap *AccessProvider) (bool, error) {
+	if all {
+		return true, nil
+	}
+
+	matched, err := match.MatchesAny(ap.Name, lockByName)
+	if err != nil {
+		return false, fmt.Errorf("parsing %s-by-name: %s", field, err.Error())
+	}
+
+	if matched {
+		return true, nil
+	}
+
+	if len(lockByTag) > 0 && len(ap.Tags) > 0 {
+		for _, tag := range ap.Tags {
+			fullTag := fmt.Sprintf("%s:%s", tag.Key, tag.Value)
+
+			matched, err = match.MatchesAny(fullTag, lockByTag)
+			if err != nil {
+				return false, fmt.Errorf("parsing %s-by-tag: %s", field, err.Error())
+			}
+
+			if matched {
+				return true, nil
+			}
+		}
+	}
+
+	if whenIncomplete && ap.Incomplete != nil && *ap.Incomplete {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // AddAccessProviders adds the slice of data access elements to the import file.
 // It returns an error when writing one of the objects fails (it will not process the other data objects after that).
 // It returns nil if everything went well.
@@ -74,24 +110,59 @@ func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*Acces
 	}
 
 	for _, ap := range accessProviders {
-		if d.config.LockAllWho {
-			ap.WhoLocked = ptr.Bool(true)
+		if ap.WhoLocked == nil || !*ap.WhoLocked {
+			l, err := shouldLock("lock-who", d.config.LockAllWho, d.config.LockWhoByName, d.config.LockWhoByTag, d.config.LockWhoWhenIncomplete, ap)
+			if err != nil {
+				return err
+			}
+
+			if l {
+				ap.WhoLocked = ptr.Bool(true)
+			}
 		}
 
-		if d.config.LockAllInheritance {
-			ap.InheritanceLocked = ptr.Bool(true)
+		if ap.InheritanceLocked == nil || !*ap.InheritanceLocked {
+			l, err := shouldLock("lock-inheritance", d.config.LockAllInheritance, d.config.LockInheritanceByName, d.config.LockInheritanceByTag, d.config.LockInheritanceWhenIncomplete, ap)
+			if err != nil {
+				return err
+			}
+
+			if l {
+				ap.InheritanceLocked = ptr.Bool(true)
+			}
 		}
 
-		if d.config.LockAllWhat {
-			ap.WhatLocked = ptr.Bool(true)
+		if ap.WhatLocked == nil || !*ap.WhatLocked {
+			l, err := shouldLock("lock-what", d.config.LockAllWhat, d.config.LockWhatByName, d.config.LockWhatByTag, d.config.LockWhatWhenIncomplete, ap)
+			if err != nil {
+				return err
+			}
+
+			if l {
+				ap.WhatLocked = ptr.Bool(true)
+			}
 		}
 
-		if d.config.LockAllNames {
-			ap.NameLocked = ptr.Bool(true)
+		if ap.NameLocked == nil || !*ap.NameLocked {
+			l, err := shouldLock("lock-names", d.config.LockAllNames, d.config.LockNamesByName, d.config.LockNamesByTag, d.config.LockNamesWhenIncomplete, ap)
+			if err != nil {
+				return err
+			}
+
+			if l {
+				ap.NameLocked = ptr.Bool(true)
+			}
 		}
 
-		if d.config.LockAllDelete {
-			ap.DeleteLocked = ptr.Bool(true)
+		if ap.DeleteLocked == nil || !*ap.DeleteLocked {
+			l, err := shouldLock("lock-delete", d.config.LockAllDelete, d.config.LockDeleteByName, d.config.LockDeleteByTag, d.config.LockDeleteWhenIncomplete, ap)
+			if err != nil {
+				return err
+			}
+
+			if l {
+				ap.DeleteLocked = ptr.Bool(true)
+			}
 		}
 
 		if d.config.LockAllOwners {
@@ -100,12 +171,23 @@ func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*Acces
 
 		var err error
 
+		// The legacy field is still supported for now, but will be removed in the future
 		shouldMakeNonInternalizable, err := match.MatchesAny(ap.Name, d.config.MakeNotInternalizable)
 		if err != nil {
 			return fmt.Errorf("parsing parameter %q: %s", constants.MakeNotInternalizableFlag, err.Error())
 		}
 
 		if shouldMakeNonInternalizable {
+			ap.NotInternalizable = true
+		}
+
+		// The new fully lock options to be checked
+		l, err := shouldLock("fully-lock", d.config.FullyLockAll, d.config.FullyLockByName, d.config.FullyLockByTag, d.config.FullyLockWhenIncomplete, ap)
+		if err != nil {
+			return err
+		}
+
+		if l {
 			ap.NotInternalizable = true
 		}
 

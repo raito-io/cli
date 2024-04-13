@@ -34,6 +34,25 @@ message AccessSyncFromTarget {
   bool lock_all_inheritance = 8;
   repeated string make_not_internalizable = 9;
   bool lock_all_owners = 10;
+  repeated string lock_who_by_name = 11;
+  repeated string lock_who_by_tag = 12;
+  bool lock_who_when_incomplete = 13;
+  repeated string lock_what_by_name = 14;
+  repeated string lock_what_by_tag = 15;
+  bool lock_what_when_incomplete = 16;
+  repeated string lock_inheritance_by_name = 17;
+  repeated string lock_inheritance_by_tag = 18;
+  bool lock_inheritance_when_incomplete = 19;
+  bool fully_lock_all = 20;
+  repeated string fully_lock_by_name = 21;
+  repeated string fully_lock_by_tag = 22;
+  bool fully_lock_when_incomplete = 23;
+  repeated string lock_names_by_name = 24;
+  repeated string lock_names_by_tag = 25;
+  bool lock_names_when_incomplete = 26;
+  repeated string lock_delete_by_name = 27;
+  repeated string lock_delete_by_tag = 28;
+  bool lock_delete_when_incomplete = 29;
 }
 
 // AccessSyncResult represents the result from the data access sync process.

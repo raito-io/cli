@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/raito-io/cli/base/tag"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/raito-io/cli/base/access_provider"
@@ -131,4 +132,103 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.Equal(t, "Data Object 1", apsr[1].What[0].DataObject.FullName)
 	assert.Equal(t, "schema", apsr[1].What[0].DataObject.Type)
 	assert.Nil(t, apsr[1].Type)
+}
+
+func TestShouldLock(t *testing.T) {
+	tests := []struct {
+		name         string
+		lockAll      bool
+		nameLocks    []string
+		tagLocks     []string
+		onIncomplete bool
+		ap           *AccessProvider
+		shouldLock   bool
+	}{
+		{
+			name:       "lock all",
+			lockAll:    true,
+			ap:         &AccessProvider{},
+			shouldLock: true,
+		},
+		{
+			name:       "no lock",
+			lockAll:    false,
+			ap:         &AccessProvider{},
+			shouldLock: false,
+		},
+		{
+			name:      "lock by name",
+			lockAll:   false,
+			nameLocks: []string{"myname1"},
+			ap: &AccessProvider{
+				Name: "myname1",
+			},
+			shouldLock: true,
+		},
+		{
+			name:      "lock by name - regex",
+			lockAll:   false,
+			nameLocks: []string{"my.+", "another.+"},
+			ap: &AccessProvider{
+				Name: "myname1",
+			},
+			shouldLock: true,
+		},
+		{
+			name:      "lock by tag",
+			lockAll:   false,
+			nameLocks: []string{"my.+", "another.+"},
+			tagLocks:  []string{"tag1:val1"},
+			ap: &AccessProvider{
+				Name: "blahname",
+				Tags: []*tag.Tag{
+					{
+						Key:   "tag1",
+						Value: "val1",
+					},
+				},
+			},
+			shouldLock: true,
+		},
+		{
+			name:      "lock by tag - regex",
+			lockAll:   false,
+			nameLocks: []string{"my.+", "another.+"},
+			tagLocks:  []string{"tag1:.+"},
+			ap: &AccessProvider{
+				Name: "blahname",
+				Tags: []*tag.Tag{
+					{
+						Key:   "tag1",
+						Value: "val1",
+					},
+				},
+			},
+			shouldLock: true,
+		},
+		{
+			name:      "lock by tag - regex - no hit",
+			lockAll:   false,
+			nameLocks: []string{"my.+", "another.+"},
+			tagLocks:  []string{"tag1:.+"},
+			ap: &AccessProvider{
+				Name: "blahname",
+				Tags: []*tag.Tag{
+					{
+						Key:   "tag2",
+						Value: "val1",
+					},
+				},
+			},
+			shouldLock: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lock, err := shouldLock("lock-name", tt.lockAll, tt.nameLocks, tt.tagLocks, tt.onIncomplete, tt.ap)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.shouldLock, lock)
+		})
+	}
 }

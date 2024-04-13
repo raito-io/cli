@@ -119,12 +119,37 @@ type BaseTargetConfig struct {
 	SkipTagSync           bool
 
 	LockAllWho            bool
-	LockAllInheritance    bool
-	LockAllWhat           bool
-	LockAllNames          bool
-	LockAllDelete         bool
-	LockAllOwners         bool
-	MakeNotInternalizable string
+	LockWhoByName         string
+	LockWhoByTag          string
+	LockWhoWhenIncomplete bool
+
+	LockAllInheritance            bool
+	LockInheritanceByName         string
+	LockInheritanceByTag          string
+	LockInheritanceWhenIncomplete bool
+
+	LockAllWhat            bool
+	LockWhatByName         string
+	LockWhatByTag          string
+	LockWhatWhenIncomplete bool
+
+	LockAllNames            bool
+	LockNamesByName         string
+	LockNamesByTag          string
+	LockNamesWhenIncomplete bool
+
+	LockAllDelete            bool
+	LockDeleteByName         string
+	LockDeleteByTag          string
+	LockDeleteWhenIncomplete bool
+
+	LockAllOwners bool
+
+	MakeNotInternalizable   string
+	FullyLockAll            bool
+	FullyLockByName         string
+	FullyLockByTag          string
+	FullyLockWhenIncomplete bool
 
 	TagOverwriteKeyForAccessProviderName   string
 	TagOverwriteKeyForAccessProviderOwners string

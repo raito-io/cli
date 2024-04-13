@@ -321,16 +321,42 @@ func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) *types.BaseTargetC
 		SkipResourceProvider:  viper.GetBool(constants.SkipResourceProviderFlag),
 		SkipTagSync:           viper.GetBool(constants.SkipTagFlag),
 		LockAllWho:            viper.GetBool(constants.LockAllWhoFlag),
-		LockAllInheritance:    viper.GetBool(constants.LockAllInheritanceFlag),
-		LockAllOwners:         viper.GetBool(constants.LockAllOwnersFlag),
-		LockAllWhat:           viper.GetBool(constants.LockAllWhatFlag),
-		LockAllNames:          viper.GetBool(constants.LockAllNamesFlag),
-		LockAllDelete:         viper.GetBool(constants.LockAllDeleteFlag),
-		MakeNotInternalizable: strings.TrimSpace(viper.GetString(constants.MakeNotInternalizableFlag)),
-		TargetLogger:          baseConfig.BaseLogger.With("target", name),
-		DeleteUntouched:       true,
-		DeleteTempFiles:       true,
-		ReplaceGroups:         true,
+		LockWhoByName:         viper.GetString(constants.LockWhoByNameFlag),
+		LockWhoByTag:          viper.GetString(constants.LockWhoByTagFlag),
+		LockWhoWhenIncomplete: viper.GetBool(constants.LockWhoWhenIncompleteFlag),
+
+		LockAllInheritance:            viper.GetBool(constants.LockAllInheritanceFlag),
+		LockInheritanceByName:         viper.GetString(constants.LockInheritanceByNameFlag),
+		LockInheritanceByTag:          viper.GetString(constants.LockInheritanceByTagFlag),
+		LockInheritanceWhenIncomplete: viper.GetBool(constants.LockInheritanceWhenIncompleteFlag),
+
+		LockAllOwners: viper.GetBool(constants.LockAllOwnersFlag),
+
+		LockAllWhat:            viper.GetBool(constants.LockAllWhatFlag),
+		LockWhatByName:         viper.GetString(constants.LockWhatByNameFlag),
+		LockWhatByTag:          viper.GetString(constants.LockWhatByTagFlag),
+		LockWhatWhenIncomplete: viper.GetBool(constants.LockWhatWhenIncompleteFlag),
+
+		LockAllNames:            viper.GetBool(constants.LockAllNamesFlag),
+		LockNamesByName:         viper.GetString(constants.LockNamesByNameFlag),
+		LockNamesByTag:          viper.GetString(constants.LockNamesByTagFlag),
+		LockNamesWhenIncomplete: viper.GetBool(constants.LockNamesWhenIncompleteFlag),
+
+		LockAllDelete:            viper.GetBool(constants.LockAllDeleteFlag),
+		LockDeleteByName:         viper.GetString(constants.LockDeleteByNameFlag),
+		LockDeleteByTag:          viper.GetString(constants.LockDeleteByTagFlag),
+		LockDeleteWhenIncomplete: viper.GetBool(constants.LockDeleteWhenIncompleteFlag),
+
+		MakeNotInternalizable:   strings.TrimSpace(viper.GetString(constants.MakeNotInternalizableFlag)),
+		FullyLockAll:            viper.GetBool(constants.FullyLockAllFlag),
+		FullyLockByName:         viper.GetString(constants.FullyLockByNameFlag),
+		FullyLockByTag:          viper.GetString(constants.FullyLockByTagFlag),
+		FullyLockWhenIncomplete: viper.GetBool(constants.FullyLockWhenIncompleteFlag),
+
+		TargetLogger:    baseConfig.BaseLogger.With("target", name),
+		DeleteUntouched: true,
+		DeleteTempFiles: true,
+		ReplaceGroups:   true,
 	}
 
 	return &targetConfig

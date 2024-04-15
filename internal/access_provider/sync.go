@@ -191,19 +191,36 @@ func (s *dataAccessImportSubtask) GetResultObject() interface{} {
 
 // Import data from Raito to DS
 func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, targetFile string) (returnErr error) {
-	apsToMakeNotInternalizable := slice.ParseCommaSeparatedList(s.TargetConfig.MakeNotInternalizable)
-
 	syncerConfig := dapc.AccessSyncFromTarget{
-		ConfigMap:             &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		Prefix:                "",
-		TargetFile:            targetFile,
-		LockAllWho:            s.TargetConfig.LockAllWho,
-		LockAllInheritance:    s.TargetConfig.LockAllInheritance,
-		LockAllWhat:           s.TargetConfig.LockAllWhat,
-		LockAllNames:          s.TargetConfig.LockAllNames,
-		LockAllDelete:         s.TargetConfig.LockAllDelete,
-		LockAllOwners:         s.TargetConfig.LockAllOwners,
-		MakeNotInternalizable: apsToMakeNotInternalizable.Slice(),
+		ConfigMap:                     &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		Prefix:                        "",
+		TargetFile:                    targetFile,
+		LockAllWho:                    s.TargetConfig.LockAllWho,
+		LockAllInheritance:            s.TargetConfig.LockAllInheritance,
+		LockAllWhat:                   s.TargetConfig.LockAllWhat,
+		LockAllNames:                  s.TargetConfig.LockAllNames,
+		LockAllDelete:                 s.TargetConfig.LockAllDelete,
+		LockAllOwners:                 s.TargetConfig.LockAllOwners,
+		MakeNotInternalizable:         slice.ParseCommaSeparatedList(s.TargetConfig.MakeNotInternalizable),
+		LockWhoByName:                 slice.ParseCommaSeparatedList(s.TargetConfig.LockWhoByName),
+		LockWhoByTag:                  slice.ParseCommaSeparatedList(s.TargetConfig.LockWhoByTag),
+		LockWhoWhenIncomplete:         s.TargetConfig.LockWhoWhenIncomplete,
+		LockWhatByName:                slice.ParseCommaSeparatedList(s.TargetConfig.LockWhatByName),
+		LockWhatByTag:                 slice.ParseCommaSeparatedList(s.TargetConfig.LockWhatByTag),
+		LockWhatWhenIncomplete:        s.TargetConfig.LockWhatWhenIncomplete,
+		LockInheritanceByName:         slice.ParseCommaSeparatedList(s.TargetConfig.LockInheritanceByName),
+		LockInheritanceByTag:          slice.ParseCommaSeparatedList(s.TargetConfig.LockInheritanceByTag),
+		LockInheritanceWhenIncomplete: s.TargetConfig.LockInheritanceWhenIncomplete,
+		FullyLockAll:                  s.TargetConfig.FullyLockAll,
+		FullyLockByName:               slice.ParseCommaSeparatedList(s.TargetConfig.FullyLockByName),
+		FullyLockByTag:                slice.ParseCommaSeparatedList(s.TargetConfig.FullyLockByTag),
+		FullyLockWhenIncomplete:       s.TargetConfig.FullyLockWhenIncomplete,
+		LockNamesByName:               slice.ParseCommaSeparatedList(s.TargetConfig.LockNamesByName),
+		LockNamesByTag:                slice.ParseCommaSeparatedList(s.TargetConfig.LockNamesByTag),
+		LockNamesWhenIncomplete:       s.TargetConfig.LockNamesWhenIncomplete,
+		LockDeleteByName:              slice.ParseCommaSeparatedList(s.TargetConfig.LockDeleteByName),
+		LockDeleteByTag:               slice.ParseCommaSeparatedList(s.TargetConfig.LockDeleteByTag),
+		LockDeleteWhenIncomplete:      s.TargetConfig.LockDeleteWhenIncomplete,
 	}
 
 	das, err := client.GetAccessSyncer()

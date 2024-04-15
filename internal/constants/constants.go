@@ -50,13 +50,6 @@ const (
 	SkipDataUsageSyncFlag                    = "skip-data-usage-sync"
 	SkipResourceProviderFlag                 = "skip-resource-provider-sync"
 	SkipTagFlag                              = "skip-tag-sync"
-	LockAllWhoFlag                           = "lock-all-who"
-	LockAllInheritanceFlag                   = "lock-all-inheritance"
-	LockAllWhatFlag                          = "lock-all-what"
-	LockAllNamesFlag                         = "lock-all-names"
-	LockAllDeleteFlag                        = "lock-all-delete"
-	LockAllOwnersFlag                        = "lock-all-owners"
-	MakeNotInternalizableFlag                = "make-not-internalizable"
 	DataSourceIdFlag                         = "data-source-id"
 	IdentityStoreIdFlag                      = "identity-store-id"
 	OnlyTargetsFlag                          = "only-targets"
@@ -68,6 +61,41 @@ const (
 	DisableLogForwardingDataUsageSync        = "disable-log-forwarding-data-usage-sync"
 	DisableLogForwardingResourceProviderSync = "disable-log-forwarding-resource-provider-sync"
 	DisableLogForwardingTagSync              = "disable-log-forwarding-tag-sync"
+
+	// Locking parameters
+	LockAllWhoFlag            = "lock-all-who"
+	LockWhoByNameFlag         = "lock-who-by-name"
+	LockWhoByTagFlag          = "lock-who-by-tag"
+	LockWhoWhenIncompleteFlag = "lock-who-when-incomplete"
+
+	LockAllInheritanceFlag            = "lock-all-inheritance"
+	LockInheritanceByNameFlag         = "lock-inheritance-by-name"
+	LockInheritanceByTagFlag          = "lock-inheritance-by-tag"
+	LockInheritanceWhenIncompleteFlag = "lock-inheritance-when-incomplete"
+
+	LockAllWhatFlag            = "lock-all-what"
+	LockWhatByNameFlag         = "lock-what-by-name"
+	LockWhatByTagFlag          = "lock-what-by-tag"
+	LockWhatWhenIncompleteFlag = "lock-what-when-incomplete"
+
+	LockAllNamesFlag            = "lock-all-names"
+	LockNamesByNameFlag         = "lock-names-by-name"
+	LockNamesByTagFlag          = "lock-names-by-tag"
+	LockNamesWhenIncompleteFlag = "lock-names-when-incomplete"
+
+	LockAllDeleteFlag            = "lock-all-delete"
+	LockDeleteByNameFlag         = "lock-delete-by-name"
+	LockDeleteByTagFlag          = "lock-delete-by-tag"
+	LockDeleteWhenIncompleteFlag = "lock-delete-when-incomplete"
+
+	LockAllOwnersFlag = "lock-all-owners"
+
+	// MakeNotInternalizableFlag is deprecated and replaced by FullyLockByNameFlag
+	MakeNotInternalizableFlag   = "make-not-internalizable"
+	FullyLockAllFlag            = "fully-lock-all"
+	FullyLockByNameFlag         = "fully-lock-by-name"
+	FullyLockByTagFlag          = "fully-lock-by-tag"
+	FullyLockWhenIncompleteFlag = "fully-lock-when-incomplete"
 
 	// File handling config tags
 	FileBackupLocationFlag      = "file-backup-location"

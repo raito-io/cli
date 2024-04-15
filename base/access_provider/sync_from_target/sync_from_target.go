@@ -13,11 +13,10 @@ import (
 	"os"
 
 	"github.com/aws/smithy-go/ptr"
-	"github.com/raito-io/cli/base/util/match"
-	"github.com/raito-io/cli/internal/constants"
-
 	"github.com/raito-io/cli/base/access_provider"
 	error2 "github.com/raito-io/cli/base/util/error"
+	"github.com/raito-io/cli/base/util/match"
+	"github.com/raito-io/cli/internal/constants"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderFileCreator --with-expecter
@@ -65,6 +64,115 @@ func (d *accessProviderFileCreator) Close() {
 	d.targetFile.Close()
 }
 
+func shouldLock(field string, all bool, lockByName []string, lockByTag []string, whenIncomplete bool, ap *AccessProvider) (bool, error) {
+	if all {
+		return true, nil
+	}
+
+	matched, err := match.MatchesAny(ap.Name, lockByName)
+	if err != nil {
+		return false, fmt.Errorf("parsing %s-by-name: %s", field, err.Error())
+	}
+
+	if matched {
+		return true, nil
+	}
+
+	if len(lockByTag) > 0 && len(ap.Tags) > 0 {
+		for _, tag := range ap.Tags {
+			fullTag := fmt.Sprintf("%s:%s", tag.Key, tag.Value)
+
+			matched, err = match.MatchesAny(fullTag, lockByTag)
+			if err != nil {
+				return false, fmt.Errorf("parsing %s-by-tag: %s", field, err.Error())
+			}
+
+			if matched {
+				return true, nil
+			}
+		}
+	}
+
+	if whenIncomplete && ap.Incomplete != nil && *ap.Incomplete {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func checkLocking(ap *AccessProvider, config *access_provider.AccessSyncFromTarget) error {
+	l, err := shouldLock("lock-who", config.LockAllWho, config.LockWhoByName, config.LockWhoByTag, config.LockWhoWhenIncomplete, ap)
+	if err != nil {
+		return err
+	}
+
+	if l {
+		ap.WhoLocked = ptr.Bool(true)
+	}
+
+	l, err = shouldLock("lock-inheritance", config.LockAllInheritance, config.LockInheritanceByName, config.LockInheritanceByTag, config.LockInheritanceWhenIncomplete, ap)
+	if err != nil {
+		return err
+	}
+
+	if l {
+		ap.InheritanceLocked = ptr.Bool(true)
+	}
+
+	l, err = shouldLock("lock-what", config.LockAllWhat, config.LockWhatByName, config.LockWhatByTag, config.LockWhatWhenIncomplete, ap)
+	if err != nil {
+		return err
+	}
+
+	if l {
+		ap.WhatLocked = ptr.Bool(true)
+	}
+
+	l, err = shouldLock("lock-names", config.LockAllNames, config.LockNamesByName, config.LockNamesByTag, config.LockNamesWhenIncomplete, ap)
+	if err != nil {
+		return err
+	}
+
+	if l {
+		ap.NameLocked = ptr.Bool(true)
+	}
+
+	l, err = shouldLock("lock-delete", config.LockAllDelete, config.LockDeleteByName, config.LockDeleteByTag, config.LockDeleteWhenIncomplete, ap)
+	if err != nil {
+		return err
+	}
+
+	if l {
+		ap.DeleteLocked = ptr.Bool(true)
+	}
+
+	if config.LockAllOwners {
+		ap.OwnersLocked = ptr.Bool(true)
+	}
+
+	// The legacy field is still supported for now, but will be removed in the future
+	shouldMakeNonInternalizable, err := match.MatchesAny(ap.Name, config.MakeNotInternalizable)
+	if err != nil {
+		return fmt.Errorf("parsing parameter %q: %s", constants.MakeNotInternalizableFlag, err.Error())
+	}
+
+	if shouldMakeNonInternalizable {
+		ap.NotInternalizable = true
+	}
+
+	// The new fully lock options to be checked
+	l, err = shouldLock("fully-lock", config.FullyLockAll, config.FullyLockByName, config.FullyLockByTag, config.FullyLockWhenIncomplete, ap)
+	if err != nil {
+		return err
+	}
+
+	if l {
+		ap.NotInternalizable = true
+	}
+
+	return nil
+}
+
 // AddAccessProviders adds the slice of data access elements to the import file.
 // It returns an error when writing one of the objects fails (it will not process the other data objects after that).
 // It returns nil if everything went well.
@@ -74,39 +182,9 @@ func (d *accessProviderFileCreator) AddAccessProviders(accessProviders ...*Acces
 	}
 
 	for _, ap := range accessProviders {
-		if d.config.LockAllWho {
-			ap.WhoLocked = ptr.Bool(true)
-		}
-
-		if d.config.LockAllInheritance {
-			ap.InheritanceLocked = ptr.Bool(true)
-		}
-
-		if d.config.LockAllWhat {
-			ap.WhatLocked = ptr.Bool(true)
-		}
-
-		if d.config.LockAllNames {
-			ap.NameLocked = ptr.Bool(true)
-		}
-
-		if d.config.LockAllDelete {
-			ap.DeleteLocked = ptr.Bool(true)
-		}
-
-		if d.config.LockAllOwners {
-			ap.OwnersLocked = ptr.Bool(true)
-		}
-
-		var err error
-
-		shouldMakeNonInternalizable, err := match.MatchesAny(ap.Name, d.config.MakeNotInternalizable)
+		err := checkLocking(ap, d.config)
 		if err != nil {
-			return fmt.Errorf("parsing parameter %q: %s", constants.MakeNotInternalizableFlag, err.Error())
-		}
-
-		if shouldMakeNonInternalizable {
-			ap.NotInternalizable = true
+			return err
 		}
 
 		// TODO REFACTOR to be removed once the old API is removed

@@ -312,7 +312,7 @@ func filterFileStructure(input FileStructure, filter string) (FileStructure, []s
 	}
 
 	// Now filtering the input file and writing the filtered content to a new file structure
-	filters := slice.ParseCommaSeparatedList(filter).Slice()
+	filters := slice.ParseCommaSeparatedList(filter)
 
 	filteredAps := make([]string, 0, len(input.AccessProviders))
 

@@ -2,9 +2,8 @@
 package slice
 
 import (
+	"slices"
 	"strings"
-
-	"github.com/raito-io/golang-set/set"
 )
 
 // StringSliceDifference returns the elements in `a` that aren't in `b`.
@@ -78,11 +77,15 @@ func ParseCommaSeparatedList(list string) []string {
 		return []string{}
 	}
 
-	ret := set.NewSet[string]()
+	split := strings.Split(list, ",")
+	ret := make([]string, 0, len(split))
 
-	for _, v := range strings.Split(list, ",") {
-		ret.Add(strings.TrimSpace(v))
+	for _, v := range split {
+		v = strings.TrimSpace(v)
+		if !slices.Contains(ret, v) {
+			ret = append(ret, v)
+		}
 	}
 
-	return ret.Slice()
+	return ret
 }

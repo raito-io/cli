@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/smithy-go/ptr"
 	"github.com/raito-io/cli/base/tag"
 	"github.com/stretchr/testify/assert"
 
@@ -229,6 +230,159 @@ func TestShouldLock(t *testing.T) {
 			lock, err := shouldLock("lock-name", tt.lockAll, tt.nameLocks, tt.tagLocks, tt.onIncomplete, tt.ap)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.shouldLock, lock)
+		})
+	}
+}
+
+func TestCheckLocking(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *access_provider.AccessSyncFromTarget
+		ap       *AccessProvider
+		resultAp *AccessProvider
+	}{
+		{
+			name:     "no locking",
+			config:   &access_provider.AccessSyncFromTarget{},
+			ap:       &AccessProvider{},
+			resultAp: &AccessProvider{},
+		},
+		{
+			name:     "lock all",
+			config:   &access_provider.AccessSyncFromTarget{FullyLockAll: true},
+			ap:       &AccessProvider{},
+			resultAp: &AccessProvider{NotInternalizable: true},
+		},
+		{
+			name:     "lock all - by name",
+			config:   &access_provider.AccessSyncFromTarget{FullyLockByName: []string{"ok", ".+ah"}},
+			ap:       &AccessProvider{Name: "blah"},
+			resultAp: &AccessProvider{NotInternalizable: true},
+		},
+		{
+			name:     "lock all - by tags",
+			config:   &access_provider.AccessSyncFromTarget{FullyLockByTag: []string{"k1:v1"}},
+			ap:       &AccessProvider{Tags: []*tag.Tag{{Key: "k1", Value: "v1"}}},
+			resultAp: &AccessProvider{NotInternalizable: true},
+		},
+		{
+			name:     "lock all - on incomplete",
+			config:   &access_provider.AccessSyncFromTarget{FullyLockWhenIncomplete: true},
+			ap:       &AccessProvider{Incomplete: ptr.Bool(true)},
+			resultAp: &AccessProvider{NotInternalizable: true},
+		},
+
+		{
+			name:     "lock who",
+			config:   &access_provider.AccessSyncFromTarget{LockAllWho: true},
+			ap:       &AccessProvider{},
+			resultAp: &AccessProvider{WhoLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock who - by name",
+			config:   &access_provider.AccessSyncFromTarget{LockWhoByName: []string{"ok", ".+ah"}},
+			ap:       &AccessProvider{Name: "blah"},
+			resultAp: &AccessProvider{WhoLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock who - by tags",
+			config:   &access_provider.AccessSyncFromTarget{LockWhoByTag: []string{"k1:.+"}},
+			ap:       &AccessProvider{Tags: []*tag.Tag{{Key: "k1", Value: "xxx"}}},
+			resultAp: &AccessProvider{WhoLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock who - on incomplete",
+			config:   &access_provider.AccessSyncFromTarget{LockWhoWhenIncomplete: true},
+			ap:       &AccessProvider{Incomplete: ptr.Bool(true)},
+			resultAp: &AccessProvider{WhoLocked: ptr.Bool(true)},
+		},
+
+		{
+			name:     "lock what",
+			config:   &access_provider.AccessSyncFromTarget{LockAllWhat: true},
+			ap:       &AccessProvider{},
+			resultAp: &AccessProvider{WhatLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock what - by name",
+			config:   &access_provider.AccessSyncFromTarget{LockWhatByName: []string{"ok", ".+ah"}},
+			ap:       &AccessProvider{Name: "blah"},
+			resultAp: &AccessProvider{WhatLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock what - by tags",
+			config:   &access_provider.AccessSyncFromTarget{LockWhatByTag: []string{"k1:.+"}},
+			ap:       &AccessProvider{Tags: []*tag.Tag{{Key: "k1", Value: "xxx"}}},
+			resultAp: &AccessProvider{WhatLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock what - on incomplete",
+			config:   &access_provider.AccessSyncFromTarget{LockWhatWhenIncomplete: true},
+			ap:       &AccessProvider{Incomplete: ptr.Bool(true)},
+			resultAp: &AccessProvider{WhatLocked: ptr.Bool(true)},
+		},
+
+		{
+			name:     "lock delete",
+			config:   &access_provider.AccessSyncFromTarget{LockAllDelete: true},
+			ap:       &AccessProvider{},
+			resultAp: &AccessProvider{DeleteLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock delete - by name",
+			config:   &access_provider.AccessSyncFromTarget{LockDeleteByName: []string{"ok", ".+ah"}},
+			ap:       &AccessProvider{Name: "blah"},
+			resultAp: &AccessProvider{DeleteLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock delete - by tags",
+			config:   &access_provider.AccessSyncFromTarget{LockDeleteByTag: []string{".+:xxx"}},
+			ap:       &AccessProvider{Tags: []*tag.Tag{{Key: "yyy", Value: "xxx"}}},
+			resultAp: &AccessProvider{DeleteLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock delete - on incomplete",
+			config:   &access_provider.AccessSyncFromTarget{LockDeleteWhenIncomplete: true},
+			ap:       &AccessProvider{Incomplete: ptr.Bool(true)},
+			resultAp: &AccessProvider{DeleteLocked: ptr.Bool(true)},
+		},
+
+		{
+			name:     "lock name",
+			config:   &access_provider.AccessSyncFromTarget{LockAllNames: true},
+			ap:       &AccessProvider{},
+			resultAp: &AccessProvider{NameLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock name - by name",
+			config:   &access_provider.AccessSyncFromTarget{LockNamesByName: []string{"ok", ".+ah"}},
+			ap:       &AccessProvider{Name: "blah"},
+			resultAp: &AccessProvider{NameLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock name - by tags",
+			config:   &access_provider.AccessSyncFromTarget{LockNamesByTag: []string{".+:xxx"}},
+			ap:       &AccessProvider{Tags: []*tag.Tag{{Key: "yyy", Value: "xxx"}}},
+			resultAp: &AccessProvider{NameLocked: ptr.Bool(true)},
+		},
+		{
+			name:     "lock name - on incomplete",
+			config:   &access_provider.AccessSyncFromTarget{LockNamesWhenIncomplete: true},
+			ap:       &AccessProvider{Incomplete: ptr.Bool(true)},
+			resultAp: &AccessProvider{NameLocked: ptr.Bool(true)},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			checkAp := *tt.ap
+			err := checkLocking(&checkAp, tt.config)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.resultAp.NotInternalizable, checkAp.NotInternalizable)
+			assert.Equal(t, tt.resultAp.WhoLocked, checkAp.WhoLocked)
+			assert.Equal(t, tt.resultAp.WhatLocked, checkAp.WhatLocked)
+			assert.Equal(t, tt.resultAp.DeleteLocked, checkAp.DeleteLocked)
+			assert.Equal(t, tt.resultAp.NameLocked, checkAp.NameLocked)
 		})
 	}
 }

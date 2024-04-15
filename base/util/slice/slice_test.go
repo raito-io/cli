@@ -83,6 +83,12 @@ func TestStringSliceMerge(t *testing.T) {
 	assert.Equal(t, 2, len(merged))
 }
 
+func TestParseCommaSeparatedList(t *testing.T) {
+	parsed := ParseCommaSeparatedList("aaa, bbb , c c c ")
+	assert.Equal(t, 3, len(parsed))
+	assert.ElementsMatch(t, parsed, []string{"aaa", "bbb", "c c c"})
+}
+
 type G struct {
 	F1 string
 	F2 string

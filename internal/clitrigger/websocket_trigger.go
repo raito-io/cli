@@ -373,14 +373,14 @@ func (s *heartBeatTargetSync) TargetSync(ctx context.Context, tConfig *types.Bas
 
 	if len(pluginInfo.Type) == 0 {
 		// Fallback
-		s.DataSources = append(s.DataSources, tConfig.Name)
+		s.DataSources = append(s.DataSources, tConfig.DataSourceId)
 
 		return nil
 	}
 
 	for _, pluginType := range pluginInfo.Type {
 		if pluginType == plugin2.PluginType_PLUGIN_TYPE_FULL_DS_SYNC {
-			s.DataSources = append(s.DataSources, tConfig.Name)
+			s.DataSources = append(s.DataSources, tConfig.DataSourceId)
 
 			return nil
 		}

@@ -60,7 +60,7 @@ func init() {
 
 	if _, err := os.Stat(globalPluginFolder); err != nil {
 		if err := os.MkdirAll(globalPluginFolder, os.ModePerm); err != nil {
-			hclog.L().Error("Error creating global Raito folder %q. Make sure permissions are set correctly: %s", globalPluginFolder, err.Error())
+			hclog.L().Error(fmt.Sprintf("Error creating global Raito folder %q. Make sure permissions are set correctly: %s", globalPluginFolder, err.Error()))
 		}
 	}
 }

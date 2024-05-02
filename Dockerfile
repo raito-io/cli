@@ -1,5 +1,7 @@
 ## Build
 FROM golang:1.22-alpine AS build
+ARG VERSION
+ARG COMMIT_DATE
 
 WORKDIR /app
 
@@ -22,7 +24,8 @@ RUN go install github.com/bufbuild/buf/cmd/buf@v1.30.0
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.33
 RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3
 
-RUN make build
+RUN make generate
+RUN go build -o raito main.go -ldflags="-X main.version=$VERSION -X main.date=$COMMIT_DATE"
 
 ## Deploy
 FROM alpine:3 as deploy

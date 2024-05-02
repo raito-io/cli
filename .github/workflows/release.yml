@@ -74,6 +74,9 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
+          build-args: |
+            VERSION={{.Version}}
+            COMMIT_DATE={{ .CommitDate }}
           context: .
           target: deploy
           push: true

@@ -85,8 +85,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            VERSION:${{ steps.goreleaser_meta_parser.outputs.version }}
-            COMMIT_DATE:${{ steps.goreleaser_meta_parser.outputs.date }}
+            VERSION=${{ steps.goreleaser_meta_parser.outputs.version }}
+            COMMIT_DATE=${{ steps.goreleaser_meta_parser.outputs.date }}
           context: .
           target: deploy
           push: true
@@ -119,8 +119,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            VERSION:${{ steps.goreleaser_meta_parser.outputs.version }}
-            COMMIT_DATE:${{ steps.goreleaser_meta_parser.outputs.date }}
+            VERSION=${{ steps.goreleaser_meta_parser.outputs.version }}
+            COMMIT_DATE=${{ steps.goreleaser_meta_parser.outputs.date }}
           context: .
           target: amazonlinux
           push: true

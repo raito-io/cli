@@ -37,9 +37,9 @@ jobs:
         env:
           goreleaser_meta: ${{ steps.goreleaser.outputs.metadata }}
         run: |
-          version=$( echo $goreleaser_meta | jq '.version' )
-          commit=$( echo $goreleaser_meta | jq '.commit' )
-          date=$( echo $goreleaser_meta | jq '.date' )
+          version=$( echo $goreleaser_meta | jq -r '.version' )
+          commit=$( echo $goreleaser_meta | jq -r '.commit' )
+          date=$( echo $goreleaser_meta | jq -r '.date' )
 
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "commit=$commit" >> $GITHUB_OUTPUT
@@ -85,8 +85,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            VERSION:${{ steps.goreleaser_meta_parser.outputs.version }}
-            COMMIT_DATE:${{ steps.goreleaser_meta_parser.outputs.date }}
+            VERSION=${{ steps.goreleaser_meta_parser.outputs.version }}
+            COMMIT_DATE=${{ steps.goreleaser_meta_parser.outputs.date }}
           context: .
           target: deploy
           push: true
@@ -119,8 +119,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            VERSION:${{ steps.goreleaser_meta_parser.outputs.version }}
-            COMMIT_DATE:${{ steps.goreleaser_meta_parser.outputs.date }}
+            VERSION=${{ steps.goreleaser_meta_parser.outputs.version }}
+            COMMIT_DATE=${{ steps.goreleaser_meta_parser.outputs.date }}
           context: .
           target: amazonlinux
           push: true

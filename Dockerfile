@@ -61,7 +61,8 @@ RUN mkdir -p /config
 ENV TZ=Etc/UTC
 ENV CLI_CRON="0 2 * * *"
 
-RUN groupadd -r raito && useradd -r -g raito raito
+RUN groupadd -r raito && useradd -d /home/raito -g raito raito
+
 RUN chown raito:raito /config
 
 COPY --from=build /app/raito /raito

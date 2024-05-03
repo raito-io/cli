@@ -39,7 +39,7 @@ jobs:
         run: |
           version=$( echo $goreleaser_meta | jq '.version' )
           commit=$( echo $goreleaser_meta | jq '.commit' )
-          data=$( echo $goreleaser_meta | jq '.data' )
+          date=$( echo $goreleaser_meta | jq '.date' )
 
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "commit=$commit" >> $GITHUB_OUTPUT

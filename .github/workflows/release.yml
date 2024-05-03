@@ -41,9 +41,14 @@ jobs:
           commit=$( echo $goreleaser_meta | jq '.commit' )
           data=$( echo $goreleaser_meta | jq '.data' )
 
-          echo "::set-output name=version::$version"
-          echo "::set-output name=commit::$commit"
-          echo "::set-output name=date::$date"
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "commit=$commit" >> $GITHUB_OUTPUT
+          echo "date=$date" >> $GITHUB_OUTPUT
+
+          echo "For debug purpose:"
+          echo "version=$version"
+          echo "commit=$commit"
+          echo "date=$date"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -80,8 +85,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            VERSION=${{ steps.goreleaser_meta_parser.outputs.version }}
-            COMMIT_DATE=${{ steps.goreleaser_meta_parser.outputs.date }}
+            VERSION:${{ steps.goreleaser_meta_parser.outputs.version }}
+            COMMIT_DATE:${{ steps.goreleaser_meta_parser.outputs.date }}
           context: .
           target: deploy
           push: true
@@ -114,8 +119,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            VERSION=${{ steps.goreleaser.outputs.metadata.version }}
-            COMMIT_DATE=${{ steps.goreleaser.outputs.metadata.date }}
+            VERSION:${{ steps.goreleaser_meta_parser.outputs.version }}
+            COMMIT_DATE:${{ steps.goreleaser_meta_parser.outputs.date }}
           context: .
           target: amazonlinux
           push: true

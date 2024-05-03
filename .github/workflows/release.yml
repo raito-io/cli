@@ -3,29 +3,27 @@ name: Raito CLI - Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
 
 jobs:
-  goreleaser:
+  releaser:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      -
-        name: Set up Go
+      - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
           check-latest: true
           cache: false
-      -
-        name: Run GoReleaser
+      - name: Run GoReleaser
+        id: goreleaser
         uses: goreleaser/goreleaser-action@v5
         with:
           distribution: goreleaser
@@ -34,11 +32,23 @@ jobs:
         env:
           GORELEASER_CURRENT_TAG: ${{github.ref_name}}
           GITHUB_TOKEN: ${{ secrets.CI_SECRETS_TOKEN }}
-  docker:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+
+      - id: goreleaser_meta_parser
+        env:
+          goreleaser_meta: ${{ steps.goreleaser.outputs.metadata }}
+        run: |
+          version=$( echo $goreleaser_meta | jq '.version' )
+          commit=$( echo $goreleaser_meta | jq '.commit' )
+          date=$( echo $goreleaser_meta | jq '.date' )
+
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "commit=$commit" >> $GITHUB_OUTPUT
+          echo "date=$date" >> $GITHUB_OUTPUT
+
+          echo "For debug purpose:"
+          echo "version=$version"
+          echo "commit=$commit"
+          echo "date=$date"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -75,8 +85,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            VERSION={{.Version}}
-            COMMIT_DATE={{ .CommitDate }}
+            VERSION:${{ steps.goreleaser_meta_parser.outputs.version }}
+            COMMIT_DATE:${{ steps.goreleaser_meta_parser.outputs.date }}
           context: .
           target: deploy
           push: true
@@ -108,6 +118,9 @@ jobs:
       - name: Build and push amazon
         uses: docker/build-push-action@v5
         with:
+          build-args: |
+            VERSION:${{ steps.goreleaser_meta_parser.outputs.version }}
+            COMMIT_DATE:${{ steps.goreleaser_meta_parser.outputs.date }}
           context: .
           target: amazonlinux
           push: true

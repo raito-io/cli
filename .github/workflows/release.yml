@@ -33,6 +33,18 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{github.ref_name}}
           GITHUB_TOKEN: ${{ secrets.CI_SECRETS_TOKEN }}
 
+      - id: goreleaser_meta_parser
+        env:
+          goreleaser_meta: ${{ steps.goreleaser.outputs.metadata }}
+        run: |
+          version=$( echo $goreleaser_meta | jq '.version' )
+          commit=$( echo $goreleaser_meta | jq '.commit' )
+          data=$( echo $goreleaser_meta | jq '.data' )
+
+          echo "::set-output name=version::$version"
+          echo "::set-output name=commit::$commit"
+          echo "::set-output name=date::$date"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -68,8 +80,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            VERSION=${{ steps.goreleaser.outputs.metadata.version }}
-            COMMIT_DATE=${{ steps.goreleaser.outputs.metadata.date }}
+            VERSION=${{ steps.goreleaser_meta_parser.outputs.version }}
+            COMMIT_DATE=${{ steps.goreleaser_meta_parser.outputs.date }}
           context: .
           target: deploy
           push: true

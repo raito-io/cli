@@ -30,6 +30,7 @@ type AccessProvider struct {
 	WhoLocked         *bool    `yaml:"whoLocked" json:"whoLocked"`
 	InheritanceLocked *bool    `yaml:"inheritanceLocked" json:"inheritanceLocked"`
 	WhatLocked        *bool    `yaml:"whatLocked" json:"whatLocked"`
+	DeleteLocked      *bool    `yaml:"deleteLocked" json:"deleteLocked"`
 
 	// Row level filter properties
 	PolicyRule     *string                               `yaml:"policyRule,omitempty" json:"policyRule,omitempty"`

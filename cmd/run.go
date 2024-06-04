@@ -80,10 +80,10 @@ func initRunCommand(rootCmd *cobra.Command) {
 	cmd.PersistentFlags().String(constants.LockNamesByTagFlag, "", fmt.Sprintf("Same as %q, but for the name of the access providers.", constants.LockWhoByTagFlag))
 	cmd.PersistentFlags().Bool(constants.LockNamesWhenIncompleteFlag, false, fmt.Sprintf("Same as %q, but for the name of the access providers.", constants.LockWhoWhenIncompleteFlag))
 
-	cmd.PersistentFlags().Bool(constants.LockAllDeleteFlag, false, fmt.Sprintf("Same as %q, but for deleting the access providers.", constants.LockAllWhoFlag))
-	cmd.PersistentFlags().String(constants.LockDeleteByNameFlag, "", fmt.Sprintf("Same as %q, but for deleting the access providers.", constants.LockWhoByNameFlag))
-	cmd.PersistentFlags().String(constants.LockDeleteByTagFlag, "", fmt.Sprintf("Same as %q, but for deleting the access providers.", constants.LockWhoByTagFlag))
-	cmd.PersistentFlags().Bool(constants.LockDeleteWhenIncompleteFlag, false, fmt.Sprintf("Same as %q, but for deleting the access providers.", constants.LockWhoWhenIncompleteFlag))
+	cmd.PersistentFlags().Bool(constants.LockAllDeleteFlag, false, fmt.Sprintf("Same as %q, but for deleting the access providers. Note: setting the delete lock on an access control also means that when it is internalized in Raito by a user, it will be switched back to external once a successful sync is done.", constants.LockAllWhoFlag))
+	cmd.PersistentFlags().String(constants.LockDeleteByNameFlag, "", fmt.Sprintf("Same as %q, but for deleting the access providers. Note: setting the delete lock on an access control also means that when it is internalized in Raito by a user, it will be switched back to external once a successful sync is done.", constants.LockWhoByNameFlag))
+	cmd.PersistentFlags().String(constants.LockDeleteByTagFlag, "", fmt.Sprintf("Same as %q, but for deleting the access providers. Note: setting the delete lock on an access control also means that when it is internalized in Raito by a user, it will be switched back to external once a successful sync is done.", constants.LockWhoByTagFlag))
+	cmd.PersistentFlags().Bool(constants.LockDeleteWhenIncompleteFlag, false, fmt.Sprintf("Same as %q, but for deleting the access providers. Note: setting the delete lock on an access control also means that when it is internalized in Raito by a user, it will be switched back to external once a successful sync is done.", constants.LockWhoWhenIncompleteFlag))
 
 	cmd.PersistentFlags().Bool(constants.LockAllOwnersFlag, false, "If set, the owners of all access providers imported into Raito Cloud will be locked.")
 

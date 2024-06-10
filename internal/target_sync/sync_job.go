@@ -133,15 +133,17 @@ func execute(ctx context.Context, targetID string, jobID string, syncType string
 
 	defer loggingCleanUp()
 
+	taskEventUpdater := job.NewTaskEventUpdater(cfg, jobID, syncType, warningCollector)
+
 	defer func() {
 		if r := recover(); r != nil {
 			cfg.TargetLogger.Error(fmt.Sprintf("Panic occurred during %s sync: %v", syncTypeLabel, r))
 
 			err = fmt.Errorf("panic occurred during %s sync", syncTypeLabel)
+
+			taskEventUpdater.SetStatusToFailed(ctx, err)
 		}
 	}()
-
-	taskEventUpdater := job.NewTaskEventUpdater(cfg, jobID, syncType, warningCollector)
 
 	switch {
 	case skipSync:

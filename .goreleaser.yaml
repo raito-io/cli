@@ -1,3 +1,5 @@
+version: 2
+
 # Make sure to check the documentation at https://goreleaser.com
 project_name: raito
 before:
@@ -19,11 +21,11 @@ archives:
       files:
         - completions/*
 brews:
-  - tap:
+  - repository:
       owner: raito-io
       name: homebrew-tap
     name: cli
-    folder: Formula
+    directory: Formula
     goarm: "7"
     homepage:  https://raito.io
     description: Extensible CLI to easily manage the authorization of your data sources.

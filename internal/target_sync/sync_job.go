@@ -125,13 +125,21 @@ func (s *SyncJob) Finalize(ctx context.Context, baseConfig *types.BaseConfig, op
 	return sendEndOfTarget(ctx, baseConfig, s.jobIds, options)
 }
 
-func execute(ctx context.Context, targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool, syncTask job.Task, cfg *types.BaseTargetConfig, c plugin.PluginClient) error {
+func execute(ctx context.Context, targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool, syncTask job.Task, cfg *types.BaseTargetConfig, c plugin.PluginClient) (err error) {
 	cfg, warningCollector, loggingCleanUp, err := logging.CreateWarningCapturingLogger(cfg)
 	if err != nil {
 		return err
 	}
 
 	defer loggingCleanUp()
+
+	defer func() {
+		if r := recover(); r != nil {
+			cfg.TargetLogger.Error(fmt.Sprintf("Panic occurred during %s sync: %v", syncTypeLabel, r))
+
+			err = fmt.Errorf("panic occurred during %s sync", syncTypeLabel)
+		}
+	}()
 
 	taskEventUpdater := job.NewTaskEventUpdater(cfg, jobID, syncType, warningCollector)
 

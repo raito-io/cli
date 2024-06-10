@@ -61,6 +61,12 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget Tar
 		}
 	}()
 
+	defer func() {
+		if r := recover(); r != nil {
+			err = multierror.Append(err, fmt.Errorf("recover from panic in RunTargets: %v", r))
+		}
+	}()
+
 	if viper.GetString(constants.ConnectorNameFlag) != "" {
 		targetConfig := buildTargetConfigFromFlags(baseConfig)
 

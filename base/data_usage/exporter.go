@@ -4,25 +4,75 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-
-	ap "github.com/raito-io/cli/base/access_provider/sync_from_target"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=DataUsageFileCreator --with-expecter
 
+type UsageDataObjectReference struct {
+	FullName string `json:"fullName"`
+	Type     string `json:"type"`
+}
+
+type UsageDataObjectItem struct {
+	// Permissions is a list of permissions that were used to access the data object
+	Permissions []string `json:"permissions,omitempty"` // Deprecated: please use GlobalPermission instead
+
+	// GlobalPermission is the global permission that was used to access the data object
+	GlobalPermission ActionType `json:"globalPermission,omitempty"`
+
+	// DataObject represents the data object that was accessed
+	DataObject UsageDataObjectReference `json:"dataObject"`
+}
+
+//go:generate go run github.com/raito-io/enumer -json -type=ActionType -transform=lower
+type ActionType int
+
+const (
+	UnknownAction ActionType = iota
+	Read
+	Write
+	Admin
+)
+
 type Statement struct {
-	ExternalId          string        `json:"externalId"`
-	AccessedDataObjects []ap.WhatItem `json:"accessedDataObjects"`
-	User                string        `json:"user"`
-	Role                string        `json:"role"`
-	Success             bool          `json:"success"`
-	Status              string        `json:"status"`
-	Query               string        `json:"query"`
-	StartTime           int64         `json:"startTime"`
-	EndTime             int64         `json:"endTime"`
-	Bytes               int           `json:"bytes"`
-	Rows                int           `json:"rows"`
-	Credits             float32       `json:"credits"`
+	// ExternalId is the unique identifier for the statement
+	ExternalId string `json:"externalId"`
+
+	// AccessedDataObjects is a list of data objects that were accessed by the statement
+	AccessedDataObjects []UsageDataObjectItem `json:"accessedDataObjects"`
+
+	// User is the user email that executed the statement
+	User string `json:"user,omitempty"`
+
+	// Role is the role used to execute the statement (if applicable)
+	Role string `json:"role,omitempty"`
+
+	// Success indicates if the statement was successful
+	Success bool `json:"success"`
+
+	// Status is the raw status of the statement
+	Status string `json:"status,omitempty"`
+
+	// Query is the raw query that was executed
+	Query string `json:"query"`
+
+	// StartTime is the time the statement started executing
+	StartTime int64 `json:"startTime,omitempty"`
+
+	// EndTime is the time the statement finished executing
+	EndTime int64 `json:"endTime,omitempty"`
+
+	// Bytes is the number of bytes returned by the statement
+	Bytes int `json:"bytes,omitempty"`
+
+	// Rows is the number of rows returned by the statement
+	Rows int `json:"rows,omitempty"`
+
+	// Credits is the number of credits used by the statement
+	Credits float32 `json:"credits,omitempty"`
+
+	// Parsing information
+	Error string `json:"error,omitempty"`
 }
 
 // DataUsageFileCreator describes the interface for easily creating the data usage import files

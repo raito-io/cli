@@ -82,7 +82,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/raito-io/cli
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           build-args: |
             VERSION=${{ steps.goreleaser_meta_parser.outputs.version }}
@@ -116,7 +116,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/raito-io/cli
 
       - name: Build and push amazon
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           build-args: |
             VERSION=${{ steps.goreleaser_meta_parser.outputs.version }}

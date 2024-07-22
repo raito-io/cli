@@ -3,6 +3,7 @@ package wrappers
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/raito-io/cli/base/tag"
@@ -37,6 +38,12 @@ func (t *tagSyncFunction) SyncTags(ctx context.Context, config *tag.TagSyncConfi
 	defer func() {
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failure during tag sync: %v", err))
+		}
+
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during tag sync: %v", r)
+
+			logger.Error(fmt.Sprintf("Panic during tag sync: %v\n\n%s", r, string(debug.Stack())))
 		}
 	}()
 

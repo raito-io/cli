@@ -3,6 +3,7 @@ package wrappers
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/raito-io/cli/base/data_usage"
 	"github.com/raito-io/cli/base/util/config"
@@ -43,6 +44,12 @@ func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_
 	defer func() {
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failure during data usage sync: %v", err))
+		}
+
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during data usage sync: %v", r)
+
+			logger.Error(fmt.Sprintf("Panic during data usage sync: %v\n\n%s", r, string(debug.Stack())))
 		}
 	}()
 

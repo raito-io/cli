@@ -3,6 +3,7 @@ package wrappers
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -68,6 +69,12 @@ func (s *DataAccessSyncFunction) SyncFromTarget(ctx context.Context, config *acc
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failure during access provider sync from target: %v", err))
 		}
+
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+
+			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
+		}
 	}()
 
 	logger.Info("Starting data access synchronisation from target")
@@ -103,6 +110,12 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 	defer func() {
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failure during access provider sync to target: %v", err))
+		}
+
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during access provider sync to target: %v", r)
+
+			logger.Error(fmt.Sprintf("Panic during access provider sync to target: %v\n\n%s", r, string(debug.Stack())))
 		}
 	}()
 

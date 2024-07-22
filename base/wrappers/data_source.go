@@ -51,9 +51,9 @@ func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *dat
 		}
 
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+			err = fmt.Errorf("panic during data source sync: %v", r)
 
-			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
+			logger.Error(fmt.Sprintf("Panic during data source sync: %v\n\n%s", r, string(debug.Stack())))
 		}
 	}()
 

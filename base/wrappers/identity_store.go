@@ -48,9 +48,9 @@ func (s *identityStoreSyncFunction) SyncIdentityStore(ctx context.Context, confi
 		}
 
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+			err = fmt.Errorf("panic during identity store sync: %v", r)
 
-			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
+			logger.Error(fmt.Sprintf("Panic during identity store sync: %v\n\n%s", r, string(debug.Stack())))
 		}
 	}()
 

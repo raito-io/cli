@@ -113,9 +113,9 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 		}
 
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+			err = fmt.Errorf("panic during access provider sync to target: %v", r)
 
-			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
+			logger.Error(fmt.Sprintf("Panic during access provider sync to target: %v\n\n%s", r, string(debug.Stack())))
 		}
 	}()
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/data_source"
@@ -43,8 +44,20 @@ type dataObjectEnricherFunction struct {
 	enricher SyncFactory[config.ConfigMap, DataObjectEnricherI]
 }
 
-func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_object_enricher.DataObjectEnricherConfig) (*data_object_enricher.DataObjectEnricherResult, error) {
+func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_object_enricher.DataObjectEnricherConfig) (_ *data_object_enricher.DataObjectEnricherResult, err error) {
 	logger.Info("Enriching data objects...")
+
+	defer func() {
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failure during data object enrich: %v", err))
+		}
+
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during data object enrich: %v", r)
+
+			logger.Error(fmt.Sprintf("Panic during data object enrich: %v\n\n%s", r, string(debug.Stack())))
+		}
+	}()
 
 	fileCreator, err := data_source.NewDataSourceFileCreator(&data_source.DataSourceSyncConfig{
 		TargetFile:   config.OutputFile,

@@ -47,9 +47,9 @@ func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_
 		}
 
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+			err = fmt.Errorf("panic during data usage sync: %v", r)
 
-			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
+			logger.Error(fmt.Sprintf("Panic during data usage sync: %v\n\n%s", r, string(debug.Stack())))
 		}
 	}()
 

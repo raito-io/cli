@@ -40,9 +40,9 @@ func (r *ResourceProvisionSyncFunction) UpdateResources(ctx context.Context, con
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failure during resource provisioning: %v", err))
 		} else if r := recover(); r != nil {
-			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+			err = fmt.Errorf("panic during resource provisioning: %v", r)
 
-			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
+			logger.Error(fmt.Sprintf("Panic during resource provisioning: %v\n\n%s", r, string(debug.Stack())))
 		} else {
 			logger.Info(fmt.Sprintf("Finished resource provisioning in %s", time.Since(start)))
 		}

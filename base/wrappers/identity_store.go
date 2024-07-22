@@ -3,6 +3,7 @@ package wrappers
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/base/util/config"
@@ -44,6 +45,12 @@ func (s *identityStoreSyncFunction) SyncIdentityStore(ctx context.Context, confi
 	defer func() {
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failure during identity store sync: %v", err))
+		}
+
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+
+			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
 		}
 	}()
 

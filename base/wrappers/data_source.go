@@ -3,6 +3,7 @@ package wrappers
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/raito-io/cli/base/data_source"
@@ -47,6 +48,12 @@ func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *dat
 	defer func() {
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failure during data source sync: %v", err))
+		}
+
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+
+			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
 		}
 	}()
 

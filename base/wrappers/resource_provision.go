@@ -3,6 +3,7 @@ package wrappers
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/raito-io/cli/base/resource_provider"
@@ -30,13 +31,21 @@ func ResourceProviderSync(syncer ResourceProviderSyncer) resource_provider.Resou
 	return ResourceProviderSyncFactory(NewDummySyncFactoryFn[resource_provider.UpdateResourceInput](syncer))
 }
 
-func (r *ResourceProvisionSyncFunction) UpdateResources(ctx context.Context, config *resource_provider.UpdateResourceInput) (*resource_provider.UpdateResourceResult, error) {
+func (r *ResourceProvisionSyncFunction) UpdateResources(ctx context.Context, config *resource_provider.UpdateResourceInput) (_ *resource_provider.UpdateResourceResult, err error) {
 	logger.Info("Starting resource provisioning")
 
 	start := time.Now()
 
 	defer func() {
-		logger.Info(fmt.Sprintf("Finished resource provisioning in %s", time.Since(start)))
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failure during resource provisioning: %v", err))
+		} else if r := recover(); r != nil {
+			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+
+			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
+		} else {
+			logger.Info(fmt.Sprintf("Finished resource provisioning in %s", time.Since(start)))
+		}
 	}()
 
 	syncer, err := r.syncer.Create(ctx, config)

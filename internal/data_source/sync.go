@@ -273,7 +273,7 @@ func (s *DataSourceSync) callEnricher(ctx context.Context, logger hclog.Logger, 
 
 func (s *DataSourceSync) ProcessResults(logger hclog.Logger, results interface{}) error {
 	if dsResult, ok := results.(*DataSourceImportResult); ok {
-		if dsResult.Warnings != nil && len(dsResult.Warnings) > 0 {
+		if len(dsResult.Warnings) > 0 {
 			logger.Info(fmt.Sprintf("Synced data source with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(dsResult.Warnings), dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
 
 			for _, warning := range dsResult.Warnings {

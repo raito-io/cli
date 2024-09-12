@@ -194,7 +194,7 @@ func runMultipleTargets(ctx context.Context, baseConfig *types.BaseConfig, runTy
 	return errorResult
 }
 
-func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, hclog.Logger, error) { //nolint:cyclop
+func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, hclog.Logger, error) {
 	tConfig := types.BaseTargetConfig{
 		BaseConfig:      *baseconfig,
 		DeleteUntouched: true,

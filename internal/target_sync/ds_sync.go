@@ -17,26 +17,28 @@ import (
 
 func dsSyncTargetSync(ctx context.Context, logger hclog.Logger, targetConfig *types.BaseTargetConfig, client plugin.PluginClient, jobId string, s *SyncJob, eh error_handler.ErrorHandler) {
 	dataSourceSync(ctx, logger, targetConfig, jobId, client, s, error_handler.Wrap(eh, "data source sync: %w", error_handler.ErrorPlaceholder))
+
 	if eh.HasError() {
 		return
 	}
 
 	identityStoreSync(ctx, logger, targetConfig, jobId, client, s, error_handler.Wrap(eh, "identity store sync: %w", error_handler.ErrorPlaceholder))
+
 	if eh.HasError() {
 		return
 	}
 
 	dataAccessSync(ctx, logger, targetConfig, jobId, client, s, error_handler.Wrap(eh, "data access sync: %w", error_handler.ErrorPlaceholder))
+
 	if eh.HasError() {
 		return
 	}
 
 	dataUsageSync(ctx, logger, targetConfig, jobId, client, s, error_handler.Wrap(eh, "data usage sync: %w", error_handler.ErrorPlaceholder))
+
 	if eh.HasError() {
 		return
 	}
-
-	return
 }
 
 func isSyncTargetSync(ctx context.Context, logger hclog.Logger, targetConfig *types.BaseTargetConfig, client plugin.PluginClient, jobId string, s *SyncJob, eh error_handler.ErrorHandler) {

@@ -106,7 +106,7 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, logger hc
 	var status job.JobStatus
 	var subtaskId string
 
-	secureImport(func() error {
+	err = secureImport(func() error {
 		logger.Info("Importing usage data into Raito")
 
 		status, subtaskId, err = duImporter.TriggerImport(ctx, logger, s.JobId)

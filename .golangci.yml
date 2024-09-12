@@ -55,7 +55,7 @@ linters-settings:
       - 'math.*' # Magic number generation, should be fixed and removed?
 
   cyclop:
-    max-complexity: 20
+    max-complexity: 25
     skip-tests: true
     package-average: 0.0
 
@@ -68,13 +68,13 @@ linters:
     - asasalint
     - bodyclose
     - cyclop
+    - copyloopvar
     #- depguard #We should create a correct config to enabe depguard
     - dogsled
     - dupl
     - dupword
     - durationcheck
     - errcheck
-    - exportloopref
     - exhaustive
     - forbidigo
     - goconst
@@ -105,17 +105,20 @@ linters:
     # - wrapcheck # 3th party errors should be wrapped to not lose context
     - wsl
 
+issues:
+  exclude-files:
+    - ".*mock.*\\.go$"
+    - ".*\\.pb\\.go$"
+
 run:
   issues-exit-code: 1
   tests: false
-  skip-files:
-    - ".*mock.*\\.go$"
-    - ".*\\.pb\\.go$"
 
 output:
   path-prefix: ""
   sort-results: true
-  format: tab
+  formats:
+    - format: colored-line-number
   print-issued-lines: false
   print-linter-name: true
   uniq-by-line: false

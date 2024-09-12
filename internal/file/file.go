@@ -36,7 +36,7 @@ func UploadLogFile(logger hclog.Logger, file string, config *types.BaseTargetCon
 	return uploadFileToBucket(logger, file, config, url, key)
 }
 
-func uploadFileToBucket(logger hclog.Logger, file string, config *types.BaseTargetConfig, url string, key string) (string, error) {
+func uploadFileToBucket(logger hclog.Logger, file string, _ *types.BaseTargetConfig, url string, key string) (string, error) {
 	start := time.Now()
 
 	data, err := os.Open(file)

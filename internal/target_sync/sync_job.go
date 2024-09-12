@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/viper"
-	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 
 	"github.com/raito-io/cli/base/util/error/grpc_error"
@@ -31,7 +30,6 @@ type SyncJob struct {
 	jobIds      []string
 	runTypeName string
 
-	syncErr        atomic.Error
 	syncStartMutex sync.Mutex
 	syncQueueMutex sync.Mutex
 	wg             sync.WaitGroup
@@ -164,13 +162,12 @@ func (s *SyncJob) execute(ctx context.Context, logger hclog.Logger, targetID str
 	default:
 		syncErrHandler := error_handler.Wrap(eh, "failed to execute %s sync: %w", syncTypeLabel, error_handler.ErrorPlaceholder)
 		s.sync(ctx, logger, cfg, syncTypeLabel, taskEventUpdater, syncTask, c, syncType, jobID, syncErrHandler)
+
 		if syncErrHandler.HasError() {
 			// Sync error is already pushed to task error
 			return
 		}
 	}
-
-	return
 }
 
 func (s *SyncJob) logForwardingEnabled(syncType string) bool {
@@ -219,6 +216,7 @@ func (s *SyncJob) sync(ctx context.Context, logger hclog.Logger, cfg *types.Base
 
 		defer func() {
 			s.wg.Add(1)
+
 			go func() {
 				defer s.wg.Done()
 
@@ -267,6 +265,7 @@ func (s *SyncJob) sync(ctx context.Context, logger hclog.Logger, cfg *types.Base
 
 	for i, taskPart := range syncParts {
 		s.runTaskPartSync(ctx, logger.With("subtask", i), cfg, syncTypeLabel, taskEventUpdater, jobID, syncType, taskPart, i, syncParts, c, &taskWg, eh)
+
 		if eh.HasError() {
 			return
 		}
@@ -298,6 +297,7 @@ func (s *SyncJob) runTaskPartSync(ctx context.Context, logger hclog.Logger, cfg 
 
 		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(ctx, logger, c, taskEventUpdater, func(f func() error) error {
 			hasImportPart = true
+
 			s.syncQueueMutex.Lock()
 			defer s.syncQueueMutex.Unlock()
 
@@ -355,8 +355,6 @@ func (s *SyncJob) runTaskPartSync(ctx context.Context, logger hclog.Logger, cfg 
 
 			return
 		}
-
-		return
 	}()
 }
 

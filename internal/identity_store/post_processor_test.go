@@ -64,7 +64,6 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagKeyAndValueForUserIsMachine: "",
-					TargetLogger:                   logger,
 				},
 			},
 			want: want{
@@ -99,7 +98,6 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagKeyAndValueForUserIsMachine: "wrong,config",
-					TargetLogger:                   logger,
 				},
 			},
 			want: want{
@@ -134,7 +132,6 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagKeyAndValueForUserIsMachine: "user_type:machine",
-					TargetLogger:                   logger,
 				},
 			},
 			want: want{
@@ -181,7 +178,6 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagKeyAndValueForUserIsMachine: "user_type:machine",
-					TargetLogger:                   logger,
 				},
 			},
 			want: want{
@@ -247,7 +243,7 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 				config: tt.args.config,
 			}
 
-			result, err := postProcessorFn.PostProcessUsers(inputFilePath, outputFilePath)
+			result, err := postProcessorFn.PostProcessUsers(logger, inputFilePath, outputFilePath)
 			tt.wantErr(t, err)
 
 			if err != nil {

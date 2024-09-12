@@ -117,17 +117,17 @@ func (_c *MockTargetRunner_RunType_Call) RunAndReturn(run func() string) *MockTa
 	return _c
 }
 
-// TargetSync provides a mock function with given fields: ctx, targetConfig, logger
-func (_m *MockTargetRunner) TargetSync(ctx context.Context, targetConfig *types.BaseTargetConfig, logger hclog.Logger) error {
-	ret := _m.Called(ctx, targetConfig, logger)
+// TargetSync provides a mock function with given fields: ctx, logger, targetConfig
+func (_m *MockTargetRunner) TargetSync(ctx context.Context, logger hclog.Logger, targetConfig *types.BaseTargetConfig) error {
+	ret := _m.Called(ctx, logger, targetConfig)
 
 	if len(ret) == 0 {
 		panic("no return value specified for TargetSync")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.BaseTargetConfig, hclog.Logger) error); ok {
-		r0 = rf(ctx, targetConfig, logger)
+	if rf, ok := ret.Get(0).(func(context.Context, hclog.Logger, *types.BaseTargetConfig) error); ok {
+		r0 = rf(ctx, logger, targetConfig)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -142,15 +142,15 @@ type MockTargetRunner_TargetSync_Call struct {
 
 // TargetSync is a helper method to define mock.On call
 //   - ctx context.Context
-//   - targetConfig *types.BaseTargetConfig
 //   - logger hclog.Logger
-func (_e *MockTargetRunner_Expecter) TargetSync(ctx interface{}, targetConfig interface{}, logger interface{}) *MockTargetRunner_TargetSync_Call {
-	return &MockTargetRunner_TargetSync_Call{Call: _e.mock.On("TargetSync", ctx, targetConfig, logger)}
+//   - targetConfig *types.BaseTargetConfig
+func (_e *MockTargetRunner_Expecter) TargetSync(ctx interface{}, logger interface{}, targetConfig interface{}) *MockTargetRunner_TargetSync_Call {
+	return &MockTargetRunner_TargetSync_Call{Call: _e.mock.On("TargetSync", ctx, logger, targetConfig)}
 }
 
-func (_c *MockTargetRunner_TargetSync_Call) Run(run func(ctx context.Context, targetConfig *types.BaseTargetConfig, logger hclog.Logger)) *MockTargetRunner_TargetSync_Call {
+func (_c *MockTargetRunner_TargetSync_Call) Run(run func(ctx context.Context, logger hclog.Logger, targetConfig *types.BaseTargetConfig)) *MockTargetRunner_TargetSync_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*types.BaseTargetConfig), args[2].(hclog.Logger))
+		run(args[0].(context.Context), args[1].(hclog.Logger), args[2].(*types.BaseTargetConfig))
 	})
 	return _c
 }
@@ -160,7 +160,7 @@ func (_c *MockTargetRunner_TargetSync_Call) Return(syncError error) *MockTargetR
 	return _c
 }
 
-func (_c *MockTargetRunner_TargetSync_Call) RunAndReturn(run func(context.Context, *types.BaseTargetConfig, hclog.Logger) error) *MockTargetRunner_TargetSync_Call {
+func (_c *MockTargetRunner_TargetSync_Call) RunAndReturn(run func(context.Context, hclog.Logger, *types.BaseTargetConfig) error) *MockTargetRunner_TargetSync_Call {
 	_c.Call.Return(run)
 	return _c
 }

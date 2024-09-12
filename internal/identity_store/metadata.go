@@ -5,13 +5,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
+
 	"github.com/raito-io/cli/base/identity_store"
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/target/types"
 )
 
-func SetMetaData(config types.BaseTargetConfig, metadata *identity_store.MetaData) error {
-	logger := config.TargetLogger.With("identitystore", config.IdentityStoreId)
+func SetMetaData(logger hclog.Logger, config types.BaseTargetConfig, metadata *identity_store.MetaData) error {
+	logger = logger.With("identitystore", config.IdentityStoreId)
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "SetMetaData", "variables":{}, "query": "mutation SetMetaData {

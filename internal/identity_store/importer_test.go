@@ -47,7 +47,7 @@ func TestIdentityStoreImport(t *testing.T) {
 	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 	defer closer()
 
-	status, subtaskId, err := (*isi).TriggerImport(context.Background(), "someJobId")
+	status, subtaskId, err := (*isi).TriggerImport(context.Background(), hclog.L(), "someJobId")
 
 	assert.Nil(t, err)
 	assert.True(t, correctContent)
@@ -75,7 +75,7 @@ func TestIdentityStoreImportFailUploadUrl(t *testing.T) {
 	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 	defer closer()
 
-	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), hclog.L(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "uploading")
@@ -100,7 +100,7 @@ func TestIdentityStoreImportFailUpload(t *testing.T) {
 	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 	defer closer()
 
-	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), hclog.L(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "uploading")
@@ -125,7 +125,7 @@ func TestIdentityStoreImportFailImport(t *testing.T) {
 	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 	defer closer()
 
-	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), hclog.L(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "import")
@@ -150,7 +150,7 @@ func TestIdentityStoreImportFaultyResponse(t *testing.T) {
 	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 	defer closer()
 
-	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), hclog.L(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "invalid character")
@@ -174,7 +174,7 @@ func TestIdentityStoreImportWithErrors(t *testing.T) {
 	isi, closer := newIdentityStoreImporter(t, f1.Name(), f2.Name())
 	defer closer()
 
-	status, _, err := (*isi).TriggerImport(context.Background(), "someJobId")
+	status, _, err := (*isi).TriggerImport(context.Background(), hclog.L(), "someJobId")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "twisted")
@@ -241,8 +241,7 @@ func newIdentityStoreImporter(t *testing.T, f1, f2 string) (*IdentityStoreImport
 
 	isi := NewIdentityStoreImporter(&IdentityStoreImportConfig{
 		BaseTargetConfig: types.BaseTargetConfig{
-			TargetLogger: hclog.L(),
-			BaseConfig:   *baseConfig,
+			BaseConfig: *baseConfig,
 		},
 		UserFile:        f1,
 		GroupFile:       f2,

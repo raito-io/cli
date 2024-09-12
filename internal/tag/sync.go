@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/hashicorp/go-hclog"
+
 	"github.com/raito-io/cli/base/tag"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/internal/job"
@@ -42,15 +44,15 @@ func (s *TagSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *TagSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *TagSync) StartSyncAndQueueTaskPart(ctx context.Context, logger hclog.Logger, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, secureImport func(func() error) error) (job.JobStatus, string, error) {
 	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-tags", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as tag taret file", targetFile))
+	logger.Debug(fmt.Sprintf("Using %q as tag taret file", targetFile))
 
-	defer s.TargetConfig.HandleTempFile(targetFile, false)
+	defer s.TargetConfig.HandleTempFile(logger, targetFile, false)
 
 	syncerConfig := tag.TagSyncConfig{
 		ConfigMap:       &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
@@ -69,7 +71,7 @@ func (s *TagSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.P
 		return job.Failed, "", fmt.Errorf("syncing tags: %w", err)
 	}
 
-	s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced %d tags.", res.Tags))
+	logger.Info(fmt.Sprintf("Successfully synced %d tags.", res.Tags))
 
 	importConfig := TagImportConfig{
 		BaseTargetConfig: *s.TargetConfig,
@@ -79,34 +81,46 @@ func (s *TagSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.P
 
 	tagImporter := NewTagImporter(&importConfig, statusUpdater)
 
-	s.TargetConfig.TargetLogger.Info("Importing tags into Raito")
+	var status job.JobStatus
+	var subtaskId string
 
-	status, subtaskId, err := tagImporter.TriggerImport(ctx, s.JobId)
+	err = secureImport(func() error {
+		logger.Info("Importing tags into Raito")
+
+		status, subtaskId, err = tagImporter.TriggerImport(ctx, logger, s.JobId)
+		if err != nil {
+			err = fmt.Errorf("import tags into Raito: %w", err)
+
+			return err
+		}
+
+		if status == job.Queued {
+			logger.Info("Successfully queued import job. Wait until remote processing is done.")
+		}
+
+		logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
+
+		return nil
+	})
 	if err != nil {
-		return job.Failed, "", fmt.Errorf("import tags into Raito: %w", err)
+		return job.Failed, "", err
 	}
-
-	if status == job.Queued {
-		s.TargetConfig.TargetLogger.Info("Successfully queued import job. Wait until remote processing is done.")
-	}
-
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
 }
 
-func (s *TagSync) ProcessResults(results interface{}) error {
+func (s *TagSync) ProcessResults(logger hclog.Logger, results interface{}) error {
 	if tagResult, ok := results.(*TagImportResult); ok {
 		numberOfTags := tagResult.TagsAdded + tagResult.TagsUpdated + tagResult.TagsRemoved
 
 		if len(tagResult.Warnings) > 0 {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Synced %d tags with %d warnings (see below).", numberOfTags, len(tagResult.Warnings)))
+			logger.Info(fmt.Sprintf("Synced %d tags with %d warnings (see below).", numberOfTags, len(tagResult.Warnings)))
 
 			for _, warning := range tagResult.Warnings {
-				s.TargetConfig.TargetLogger.Warn(warning)
+				logger.Warn(warning)
 			}
 		} else {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced %d tags.", numberOfTags))
+			logger.Info(fmt.Sprintf("Successfully synced %d tags.", numberOfTags))
 		}
 
 		s.result = &job.TaskResult{

@@ -57,7 +57,7 @@ func (s *taskFileSink) Close() error {
 		return err
 	}
 
-	key, err := file.UploadLogFile(s.writer.Name(), s.config, s.taskId)
+	key, err := file.UploadLogFile(s.config.BaseLogger, s.writer.Name(), s.config, s.taskId)
 	if err != nil {
 		return err
 	}

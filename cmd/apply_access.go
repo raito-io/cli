@@ -12,6 +12,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/pterm/pterm"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
+
 	dapc "github.com/raito-io/cli/base/access_provider"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/base/util/match"
@@ -24,9 +28,6 @@ import (
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/file"
 	"github.com/raito-io/cli/internal/version_management"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 func initApplyAccessCommand(rootCmd *cobra.Command) {
@@ -78,7 +79,7 @@ func applyAccessCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("An error occurred while parsing the configuration file: %s", err.Error()) //nolint:stylecheck
 	}
 
-	tConfig, err := target.GetTargetConfig(args[0], baseConfig)
+	tConfig, logger, err := target.GetTargetConfig(args[0], baseConfig)
 	if err != nil {
 		return fmt.Errorf("An error occurred while locating the requested target in the configuration file: %s", err.Error()) //nolint:stylecheck
 	}
@@ -139,7 +140,7 @@ func applyAccessCmd(cmd *cobra.Command, args []string) error {
 	pterm.Println()
 
 	// Starting the actual run
-	err = applyAccess(context.Background(), tConfig, fullPath, isFiltered)
+	err = applyAccess(context.Background(), logger, tConfig, fullPath, isFiltered)
 	if err != nil {
 		return err
 	}
@@ -171,8 +172,8 @@ func requestConfirmation() bool {
 	return true
 }
 
-func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile string, isFiltered bool) error {
-	client, err := plugin.NewPluginClient(tConfig.ConnectorName, tConfig.ConnectorVersion, tConfig.TargetLogger)
+func applyAccess(ctx context.Context, logger hclog.Logger, tConfig *types.BaseTargetConfig, inputFile string, isFiltered bool) error {
+	client, err := plugin.NewPluginClient(tConfig.ConnectorName, tConfig.ConnectorVersion, logger)
 	if err != nil {
 		return fmt.Errorf("Error while initializing connector plugin %q: %s", tConfig.ConnectorName, err.Error()) //nolint:stylecheck
 	}
@@ -189,7 +190,7 @@ func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile
 		return fmt.Errorf("Error while checking version compatibility of connector %q: %s", tConfig.ConnectorName, err.Error()) //nolint:stylecheck
 	}
 
-	err = tConfig.CalculateFileBackupLocationForRun("apply-access")
+	err = tConfig.CalculateFileBackupLocationForRun(logger, "apply-access")
 	if err != nil {
 		return fmt.Errorf("Error while setting up backup location: %s", err.Error()) //nolint:stylecheck
 	}
@@ -200,12 +201,12 @@ func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile
 	}
 
 	defer func() {
-		tConfig.HandleTempFile(targetFile, false)
+		tConfig.HandleTempFile(logger, targetFile, false)
 
 		// If the file is the filtered one, we can remove it after the run like normal, but if it's the original one, we need to keep it.
-		tConfig.HandleTempFile(inputFile, !isFiltered)
+		tConfig.HandleTempFile(logger, inputFile, !isFiltered)
 
-		tConfig.FinalizeRun()
+		tConfig.FinalizeRun(logger)
 	}()
 
 	syncerConfig := dapc.AccessSyncToTarget{
@@ -215,7 +216,7 @@ func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile
 		FeedbackTargetFile: targetFile,
 	}
 
-	tConfig.TargetLogger.Info("Synchronizing access providers between Raito and the data source")
+	logger.Info("Synchronizing access providers between Raito and the data source")
 
 	_, err = accessSyncer.SyncToTarget(ctx, &syncerConfig)
 	if err != nil {

@@ -17,8 +17,8 @@ import (
 
 type PostProcessorConfig struct {
 	TagKeyAndValueForUserIsMachine string
-	TargetLogger                   hclog.Logger
 }
+
 type PostProcessorResult struct {
 	UsersTouchedCount int
 }
@@ -54,7 +54,7 @@ func (p *PostProcessor) errorWrapper(err error) error {
 	return status.Error(codes.Internal, err.Error())
 }
 
-func (p *PostProcessor) PostProcessUsers(usersInputFilePath string, usersOutputFile string) (*PostProcessorResult, error) {
+func (p *PostProcessor) PostProcessUsers(logger hclog.Logger, usersInputFilePath string, usersOutputFile string) (*PostProcessorResult, error) {
 	outputWriter, err := p.identityStoreFileCreator(&identity_store.IdentityStoreSyncConfig{
 		UserFile: usersOutputFile,
 	})
@@ -63,7 +63,7 @@ func (p *PostProcessor) PostProcessUsers(usersInputFilePath string, usersOutputF
 		return nil, p.errorWrapper(err)
 	}
 
-	p.config.TargetLogger.Debug(fmt.Sprintf("Post processor streaming users from file %s", usersInputFilePath))
+	logger.Debug(fmt.Sprintf("Post processor streaming users from file %s", usersInputFilePath))
 
 	usersInputFile, err := os.Open(usersInputFilePath)
 	if err != nil {
@@ -78,14 +78,14 @@ func (p *PostProcessor) PostProcessUsers(usersInputFilePath string, usersOutputF
 
 	decoder := jsonstream.NewJsonArrayStream[identity_store.User](usersInputFile)
 	for jsonStreamResult := range decoder.Stream() {
-		p.config.TargetLogger.Trace(fmt.Sprintf("Start post processing user %d", usersRead))
+		logger.Trace(fmt.Sprintf("Start post processing user %d", usersRead))
 
 		if jsonStreamResult.Err != nil {
 			return nil, p.errorWrapper(fmt.Errorf("unable to parse user (%d): %s", usersRead, jsonStreamResult.Err.Error()))
 		}
 
 		user := jsonStreamResult.Result
-		enriched := p.postProcessUser(user, tagKeyUserIsMachine, tagValueUserIsMachine)
+		enriched := p.postProcessUser(logger, user, tagKeyUserIsMachine, tagValueUserIsMachine)
 
 		err := outputWriter.AddUsers(user)
 		if err != nil {
@@ -108,7 +108,7 @@ func (p *PostProcessor) PostProcessUsers(usersInputFilePath string, usersOutputF
 	}, nil
 }
 
-func (p *PostProcessor) postProcessUser(user *identity_store.User, tagKeyUserIsMachine string, tagValueUserIsMachine string) bool {
+func (p *PostProcessor) postProcessUser(logger hclog.Logger, user *identity_store.User, tagKeyUserIsMachine string, tagValueUserIsMachine string) bool {
 	enriched := false
 
 	if len(user.Tags) > 0 {
@@ -121,7 +121,7 @@ func (p *PostProcessor) postProcessUser(user *identity_store.User, tagKeyUserIsM
 	}
 
 	if enriched {
-		p.config.TargetLogger.Debug(fmt.Sprintf("Enriched user %q", user.Name))
+		logger.Debug(fmt.Sprintf("Enriched user %q", user.Name))
 	}
 
 	return enriched

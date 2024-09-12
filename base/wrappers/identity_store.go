@@ -79,8 +79,8 @@ func (s *identityStoreSyncFunction) SyncIdentityStore(ctx context.Context, confi
 	logger.Info(fmt.Sprintf("Fetched %d users and %d groups in %s", fileCreator.GetUserCount(), fileCreator.GetGroupCount(), sec))
 
 	return &identity_store.IdentityStoreSyncResult{
-		UserCount:  int32(fileCreator.GetUserCount()),
-		GroupCount: int32(fileCreator.GetGroupCount()),
+		UserCount:  int32(fileCreator.GetUserCount()),  //nolint:gosec
+		GroupCount: int32(fileCreator.GetGroupCount()), //nolint:gosec
 	}, nil
 }
 

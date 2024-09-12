@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/viper"
 
 	"github.com/raito-io/cli/base/resource_provider"
@@ -36,7 +37,7 @@ func (s *ResourceSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *ResourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *ResourceSync) StartSyncAndQueueTaskPart(ctx context.Context, logger hclog.Logger, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, _ func(func() error) error) (job.JobStatus, string, error) {
 	var urlOverridePtr *string
 
 	urlOverride := viper.GetString(constants.URLOverrideFlag)
@@ -76,12 +77,12 @@ func (s *ResourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client plu
 		Failed:     int(result.Failures),
 	}
 
-	s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced resource objects. Added: %d - Updated: %d - Removed: %d - Failures: %d", result.AddedObjects, result.UpdatedObjects, result.DeletedObjects, result.Failures))
+	logger.Info(fmt.Sprintf("Successfully synced resource objects. Added: %d - Updated: %d - Removed: %d - Failures: %d", result.AddedObjects, result.UpdatedObjects, result.DeletedObjects, result.Failures))
 
 	return job.Completed, "", nil
 }
 
-func (s *ResourceSync) ProcessResults(_ interface{}) error {
+func (s *ResourceSync) ProcessResults(_ hclog.Logger, _ interface{}) error {
 	return errors.New("unexpected result processing")
 }
 

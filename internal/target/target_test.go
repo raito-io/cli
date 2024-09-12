@@ -158,7 +158,7 @@ func TestBuildTargetConfigFromMapError(t *testing.T) {
 	logger := hclog.L()
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
 
-	config, err := buildTargetConfigFromMapForRun(baseconfig, data, map[string]*types.EnricherConfig{})
+	config, _, err := buildTargetConfigFromMapForRun(baseconfig, data, map[string]*types.EnricherConfig{})
 	assert.NotNil(t, err)
 	assert.Nil(t, config)
 }
@@ -184,7 +184,7 @@ func TestBuildTargetConfigFromMap(t *testing.T) {
 	clearViper()
 	logger := hclog.L()
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
-	config, err := buildTargetConfigFromMapForRun(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
+	config, _, err := buildTargetConfigFromMapForRun(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1", config.ConnectorName)
@@ -211,7 +211,7 @@ func TestBuildTargetConfigFromMapNoName(t *testing.T) {
 	delete(noNameConfigMap, "name")
 	logger := hclog.L()
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
-	config, err := buildTargetConfigFromMapForRun(baseconfig, noNameConfigMap, map[string]*types.EnricherConfig{})
+	config, _, err := buildTargetConfigFromMapForRun(baseconfig, noNameConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1", config.ConnectorName)
@@ -223,7 +223,7 @@ func TestBuildTargetConfigFromMapOverride(t *testing.T) {
 	viper.Set("skip-data-source-sync", true)
 	logger := hclog.L()
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
-	config, err := buildTargetConfigFromMapForRun(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
+	config, _, err := buildTargetConfigFromMapForRun(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, true, config.SkipIdentityStoreSync)
@@ -238,7 +238,7 @@ func TestBuildTargetConfigFromMapLocalRaitoData(t *testing.T) {
 	viper.Set("api-secret", "ssss")
 	logger := hclog.L()
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
-	config, err := buildTargetConfigFromMapForRun(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
+	config, _, err := buildTargetConfigFromMapForRun(baseconfig, baseConfigMap, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "c1user", config.ApiUser)
@@ -261,7 +261,7 @@ func TestBuildTargetConfigFromMapGlobalRaitoData(t *testing.T) {
 	viper.Set("domain", "dddd")
 	logger := hclog.L()
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), nil)
-	config, err := buildTargetConfigFromMapForRun(baseconfig, withoutRaitoStuff, map[string]*types.EnricherConfig{})
+	config, _, err := buildTargetConfigFromMapForRun(baseconfig, withoutRaitoStuff, map[string]*types.EnricherConfig{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, "uuuu", config.ApiUser)
@@ -292,7 +292,7 @@ func TestBuildTargetConfigFromFlags(t *testing.T) {
 
 	logger := hclog.L()
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{"--custom1", "ok"})
-	config := buildTargetConfigFromFlags(baseconfig)
+	config, _ := buildTargetConfigFromFlags(baseconfig)
 	assert.NotNil(t, config)
 
 	assert.Equal(t, "conn1", config.ConnectorName)
@@ -316,7 +316,7 @@ func TestBuildTargetConfigFromFlagsNoName(t *testing.T) {
 
 	logger := hclog.L()
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
-	config := buildTargetConfigFromFlags(baseconfig)
+	config, _ := buildTargetConfigFromFlags(baseconfig)
 	assert.NotNil(t, config)
 
 	assert.Equal(t, "conn1", config.ConnectorName)
@@ -351,7 +351,7 @@ func TestRunSingleTarget(t *testing.T) {
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner := NewMockTargetRunner(t)
-	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).Run(func(ctx context.Context, targetConfig *types.BaseTargetConfig) {
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything, mock.Anything).Run(func(ctx context.Context, logger hclog.Logger, targetConfig *types.BaseTargetConfig) {
 		runs++
 	}).Return(nil)
 	targetRunner.EXPECT().Finalize(mock.Anything, baseconfig, mock.Anything).Return(nil)
@@ -386,7 +386,7 @@ func TestRunMultipleTargets(t *testing.T) {
 	baseconfig, _ := BuildBaseConfigFromFlags(logger, health_check.NewDummyHealthChecker(logger), []string{})
 
 	targetRunner := NewMockTargetRunner(t)
-	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, logger hclog.Logger, tConfig *types.BaseTargetConfig) error {
 		if runs == 0 {
 			assert.Equal(t, "c1", tConfig.ConnectorName)
 			assert.Equal(t, "cn1", tConfig.Name)
@@ -434,7 +434,7 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 
 	targetRunner := NewMockTargetRunner(t)
 	targetRunner.EXPECT().RunType().Return("")
-	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, logger hclog.Logger, tConfig *types.BaseTargetConfig) error {
 		assert.Equal(t, "c1", tConfig.ConnectorName)
 		assert.Equal(t, "name1", tConfig.Name)
 		runs++
@@ -455,7 +455,7 @@ func TestRunMultipleTargetsWithOnlyTargets(t *testing.T) {
 
 	targetRunner = NewMockTargetRunner(t)
 	targetRunner.EXPECT().RunType().Return("")
-	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, logger hclog.Logger, tConfig *types.BaseTargetConfig) error {
 		assert.Equal(t, "c2", tConfig.ConnectorName)
 		assert.Equal(t, "c2", tConfig.Name)
 		runs++
@@ -593,7 +593,7 @@ func TestRunFromConfigFile_WithEnrichers(t *testing.T) {
 
 	targetRunner := NewMockTargetRunner(t)
 	targetRunner.EXPECT().RunType().Return("")
-	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, tConfig *types.BaseTargetConfig) error {
+	targetRunner.EXPECT().TargetSync(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, logger hclog.Logger, tConfig *types.BaseTargetConfig) error {
 		assert.Equal(t, "raito-io/cli-plugin-snowflake", tConfig.ConnectorName)
 		assert.Equal(t, "snowflake1", tConfig.Name)
 		assert.Equal(t, 2, len(tConfig.DataObjectEnrichers))

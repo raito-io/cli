@@ -46,9 +46,8 @@ func TestFileUpload(t *testing.T) {
 	baseConfig, closer := test.CreateBaseConfig("mydomain", "api-user", "api-secret", "")
 	defer closer()
 
-	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
-		TargetLogger: hclog.L(),
-		BaseConfig:   *baseConfig,
+	res, err := UploadFile(hclog.L(), "testdata/testfile.txt", &types.BaseTargetConfig{
+		BaseConfig: *baseConfig,
 	})
 
 	assert.Nil(t, err)
@@ -78,8 +77,7 @@ func TestFileUploadNotFound(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/doesntexist.txt", &types.BaseTargetConfig{
-		TargetLogger: hclog.L(),
+	res, err := UploadFile(hclog.L(), "testdata/doesntexist.txt", &types.BaseTargetConfig{
 		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -107,8 +105,7 @@ func TestFileUploadErrorUploading(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
-		TargetLogger: hclog.L(),
+	res, err := UploadFile(hclog.L(), "testdata/testfile.txt", &types.BaseTargetConfig{
 		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -130,8 +127,7 @@ func TestFileUploadGetUrlFailed(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
-		TargetLogger: hclog.L(),
+	res, err := UploadFile(hclog.L(), "testdata/testfile.txt", &types.BaseTargetConfig{
 		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -152,8 +148,7 @@ func TestFileUploadGetUrlIllegalResult(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
-		TargetLogger: hclog.L(),
+	res, err := UploadFile(hclog.L(), "testdata/testfile.txt", &types.BaseTargetConfig{
 		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -174,8 +169,7 @@ func TestFileUploadGetUrlIllegalUrl(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
-		TargetLogger: hclog.L(),
+	res, err := UploadFile(hclog.L(), "testdata/testfile.txt", &types.BaseTargetConfig{
 		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -196,8 +190,7 @@ func TestFileUploadGetUrlNonExistingUrl(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, getUrlTestServer.URL)
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
-		TargetLogger: hclog.L(),
+	res, err := UploadFile(hclog.L(), "testdata/testfile.txt", &types.BaseTargetConfig{
 		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},
@@ -211,8 +204,7 @@ func TestFileUploadNonExistingUrl(t *testing.T) {
 	viper.Set(constants.URLOverrideFlag, "http://localhost:9999")
 	defer viper.Set(constants.URLOverrideFlag, "")
 
-	res, err := UploadFile("testdata/testfile.txt", &types.BaseTargetConfig{
-		TargetLogger: hclog.L(),
+	res, err := UploadFile(hclog.L(), "testdata/testfile.txt", &types.BaseTargetConfig{
 		BaseConfig: types.BaseConfig{
 			BaseLogger: hclog.L(),
 		},

@@ -118,7 +118,7 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 	}
 
 	return &data_object_enricher.DataObjectEnricherResult{
-		Enriched: int32(enrichmentCount),
+		Enriched: int32(enrichmentCount), //nolint:gosec
 	}, nil
 }
 

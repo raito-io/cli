@@ -72,7 +72,6 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagOverwriteKeyForName: "key",
-					TargetLogger:           logger,
 				},
 			},
 			want: want{
@@ -113,7 +112,6 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagOverwriteKeyForName: "",
-					TargetLogger:           logger,
 				},
 			},
 			want: want{
@@ -170,7 +168,7 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 				config: tt.args.config,
 			}
 
-			result, err := postProcessorFn.PostProcess("", "")
+			result, err := postProcessorFn.PostProcess(logger, "", "")
 			tt.wantErr(t, err)
 
 			if err != nil {
@@ -206,7 +204,6 @@ func TestPostProcessor_matchedWithTagKey(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagOverwriteKeyForName: "key",
-					TargetLogger:           logger,
 				},
 
 				tagKeySearchValue: "key",
@@ -222,7 +219,6 @@ func TestPostProcessor_matchedWithTagKey(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagOverwriteKeyForName: "key",
-					TargetLogger:           logger,
 				},
 
 				tagKeySearchValue: "KeY",
@@ -238,7 +234,6 @@ func TestPostProcessor_matchedWithTagKey(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagOverwriteKeyForName: "key",
-					TargetLogger:           logger,
 				},
 
 				tagKeySearchValue: "KEEEEY",
@@ -295,7 +290,6 @@ func TestPostProcessor_overwriteName(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagOverwriteKeyForName: "key",
-					TargetLogger:           logger,
 				},
 				ap: &sync_from_target.AccessProvider{
 					Name: "OLD_NAME",
@@ -334,7 +328,7 @@ func TestPostProcessor_overwriteName(t *testing.T) {
 				config: tt.args.config,
 			}
 
-			touched := postProcessorFn.overwriteName(tt.args.ap, tt.args.tag)
+			touched := postProcessorFn.overwriteName(logger, tt.args.ap, tt.args.tag)
 
 			assert.Equal(t, tt.want.touched, touched)
 			assert.Equal(t, tt.want.processedAp, tt.args.ap)
@@ -367,7 +361,6 @@ func TestPostProcessor_overwriteOwners(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagOverwriteKeyForOwners: "owners",
-					TargetLogger:             logger,
 				},
 				ap: &sync_from_target.AccessProvider{
 					Name: "OLD_NAME",
@@ -400,7 +393,6 @@ func TestPostProcessor_overwriteOwners(t *testing.T) {
 				ctx: context.Background(),
 				config: &PostProcessorConfig{
 					TagOverwriteKeyForOwners: "owners",
-					TargetLogger:             logger,
 				},
 				ap: &sync_from_target.AccessProvider{
 					Name: "OLD_NAME",
@@ -442,7 +434,7 @@ func TestPostProcessor_overwriteOwners(t *testing.T) {
 				config: tt.args.config,
 			}
 
-			touched := postProcessorFn.overwriteOwners(tt.args.ap, tt.args.tag)
+			touched := postProcessorFn.overwriteOwners(logger, tt.args.ap, tt.args.tag)
 
 			assert.Equal(t, tt.want.touched, touched)
 			assert.Equal(t, tt.want.processedAp, tt.args.ap)

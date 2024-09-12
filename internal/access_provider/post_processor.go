@@ -22,7 +22,6 @@ const ownersTagOverrideLockedReason = "This Snowflake role can't update its owne
 type PostProcessorConfig struct {
 	TagOverwriteKeyForName   string
 	TagOverwriteKeyForOwners string
-	TargetLogger             hclog.Logger
 }
 type PostProcessorResult struct {
 	AccessProviderTouchedCount int
@@ -47,7 +46,7 @@ func (p *PostProcessor) NeedsPostProcessing() bool {
 	return p.config.TagOverwriteKeyForName != "" || p.config.TagOverwriteKeyForOwners != ""
 }
 
-func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*PostProcessorResult, error) {
+func (p *PostProcessor) PostProcess(logger hclog.Logger, inputFilePath string, outputFile string) (*PostProcessorResult, error) {
 	accessProviderParser, err := p.accessProviderParserFactory(inputFilePath)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -62,7 +61,7 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 
 	defer outputWriter.Close()
 
-	p.config.TargetLogger.Debug("Post processor parsing APs")
+	logger.Debug("Post processor parsing APs")
 
 	aps, err := accessProviderParser.ParseAccessProviders()
 	if err != nil {
@@ -73,9 +72,9 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 	accessProviderTouchedCount := 0
 
 	for _, ap := range aps {
-		p.config.TargetLogger.Debug(fmt.Sprintf("Start post processing access provider %q", ap.ExternalId))
+		logger.Debug(fmt.Sprintf("Start post processing access provider %q", ap.ExternalId))
 
-		touched, err := p.postProcessAp(ap, outputWriter)
+		touched, err := p.postProcessAp(logger, ap, outputWriter)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post process access provider (%d): %s", accessProvidersRead, err.Error())
 		}
@@ -96,13 +95,13 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 	}, nil
 }
 
-func (p *PostProcessor) postProcessAp(accessProvider *sync_from_target.AccessProvider, outputWriter sync_from_target.AccessProviderFileCreator) (bool, error) {
+func (p *PostProcessor) postProcessAp(logger hclog.Logger, accessProvider *sync_from_target.AccessProvider, outputWriter sync_from_target.AccessProviderFileCreator) (bool, error) {
 	touched := false
 
 	if len(accessProvider.Tags) > 0 {
 		for _, tag := range accessProvider.Tags {
 			if p.matchedWithTagKey(p.config.TagOverwriteKeyForName, tag) {
-				nameOverwritten := p.overwriteName(accessProvider, tag)
+				nameOverwritten := p.overwriteName(logger, accessProvider, tag)
 				if nameOverwritten {
 					touched = true
 					continue
@@ -110,7 +109,7 @@ func (p *PostProcessor) postProcessAp(accessProvider *sync_from_target.AccessPro
 			}
 
 			if p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, tag) {
-				ownersOverwritten := p.overwriteOwners(accessProvider, tag)
+				ownersOverwritten := p.overwriteOwners(logger, accessProvider, tag)
 				if ownersOverwritten {
 					touched = ownersOverwritten
 					continue
@@ -121,16 +120,16 @@ func (p *PostProcessor) postProcessAp(accessProvider *sync_from_target.AccessPro
 
 	err := outputWriter.AddAccessProviders(accessProvider)
 	if err != nil {
-		p.config.TargetLogger.Info(fmt.Sprintf("Error while saving AP to writer %q", accessProvider.ExternalId))
+		logger.Info(fmt.Sprintf("Error while saving AP to writer %q", accessProvider.ExternalId))
 		return touched, err
 	}
 
 	return touched, nil
 }
 
-func (p *PostProcessor) overwriteName(accessProvider *sync_from_target.AccessProvider, tag *tag.Tag) bool {
+func (p *PostProcessor) overwriteName(logger hclog.Logger, accessProvider *sync_from_target.AccessProvider, tag *tag.Tag) bool {
 	if tag.Value != "" {
-		p.config.TargetLogger.Debug(fmt.Sprintf("adjusting name for AP (externalId: %v) from %v to %v", accessProvider.ExternalId, accessProvider.Name, tag.Value))
+		logger.Debug(fmt.Sprintf("adjusting name for AP (externalId: %v) from %v to %v", accessProvider.ExternalId, accessProvider.Name, tag.Value))
 
 		accessProvider.Name = tag.Value
 		accessProvider.NameLocked = ptr.Bool(true)
@@ -141,14 +140,14 @@ func (p *PostProcessor) overwriteName(accessProvider *sync_from_target.AccessPro
 
 	return false
 }
-func (p *PostProcessor) overwriteOwners(accessProvider *sync_from_target.AccessProvider, tag *tag.Tag) bool {
+func (p *PostProcessor) overwriteOwners(logger hclog.Logger, accessProvider *sync_from_target.AccessProvider, tag *tag.Tag) bool {
 	if tag.Value != "" {
 		overwrittenOwners := []string{}
 		for _, owner := range strings.Split(tag.Value, ",") {
 			overwrittenOwners = append(overwrittenOwners, strings.TrimSpace(owner))
 		}
 
-		p.config.TargetLogger.Debug(fmt.Sprintf("adjusting owners for AP (externalId: %v) to %v", accessProvider.ExternalId, overwrittenOwners))
+		logger.Debug(fmt.Sprintf("adjusting owners for AP (externalId: %v) to %v", accessProvider.ExternalId, overwrittenOwners))
 
 		if accessProvider.Owners == nil {
 			accessProvider.Owners = &sync_from_target.OwnersInput{}

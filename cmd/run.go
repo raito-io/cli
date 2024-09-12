@@ -459,7 +459,7 @@ func runSync(ctx context.Context, baseconfig *types.BaseConfig) error {
 
 		fallthrough
 	case version_management.Supported:
-		return target.RunTargets(ctx, baseconfig, &target_sync.SyncJob{RunTypeName: "full"})
+		return target.RunTargets(ctx, baseconfig, target_sync.NewSyncJob("full"))
 	case version_management.CompatibilityUnknown:
 	}
 
@@ -467,7 +467,7 @@ func runSync(ctx context.Context, baseconfig *types.BaseConfig) error {
 }
 
 func handleApUpdateTrigger(ctx context.Context, config *types.BaseConfig, apUpdate *clitrigger.ApUpdate) error {
-	return target.RunTargets(ctx, config, &target_sync.SyncJob{RunTypeName: "webhook"}, target.WithDataSourceIds(apUpdate.DataSourceNames...), target.WithConfigOption(func(targetConfig *types.BaseTargetConfig) {
+	return target.RunTargets(ctx, config, target_sync.NewSyncJob("webhook"), target.WithDataSourceIds(apUpdate.DataSourceNames...), target.WithConfigOption(func(targetConfig *types.BaseTargetConfig) {
 		targetConfig.SkipIdentityStoreSync = true
 		targetConfig.SkipDataSourceSync = true
 		targetConfig.SkipDataUsageSync = true
@@ -499,7 +499,7 @@ func handleSyncTrigger(ctx context.Context, config *types.BaseConfig, syncTrigge
 		opts = append(opts, target.WithDataSourceIds(*syncTrigger.DataSource))
 	}
 
-	return target.RunTargets(ctx, config, &target_sync.SyncJob{RunTypeName: "manual"}, opts...)
+	return target.RunTargets(ctx, config, target_sync.NewSyncJob("manual"), opts...)
 }
 
 func startListingToCliTriggers(ctx context.Context, baseConfig *types.BaseConfig) (clitrigger.CliTrigger, *clitrigger.ApUpdateTriggerHandler, *clitrigger.SyncTriggerHandler) {

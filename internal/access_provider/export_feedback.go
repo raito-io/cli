@@ -22,40 +22,40 @@ type AccessProviderExportFeedbackConfig struct {
 }
 
 type AccessProviderExportFeedbackSync interface {
-	TriggerFeedbackImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
+	TriggerFeedbackImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error)
 }
 
 type accessProviderFeedbackSync struct {
 	config        *AccessProviderExportFeedbackConfig
-	log           hclog.Logger
 	statusUpdater job.TaskEventUpdater
 }
 
 func NewAccessProviderFeedbackImporter(config *AccessProviderExportFeedbackConfig, statusUpdater job.TaskEventUpdater) AccessProviderExportFeedbackSync {
-	logger := config.TargetLogger.With("AccessProvider", config.DataSourceId, "file", config.FeedbackFile)
-	apI := accessProviderFeedbackSync{config, logger, statusUpdater}
+	apI := accessProviderFeedbackSync{config, statusUpdater}
 
 	return &apI
 }
 
-func (i *accessProviderFeedbackSync) TriggerFeedbackImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
+func (i *accessProviderFeedbackSync) TriggerFeedbackImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error) {
+	logger = logger.With("AccessProvider", i.config.DataSourceId, "file", i.config.FeedbackFile)
+
 	if viper.GetBool(constants.SkipFileUpload) {
 		// In the development environment, we skip the upload and use the local file for the import
-		return i.doImport(jobId, i.config.FeedbackFile)
+		return i.doImport(logger, jobId, i.config.FeedbackFile)
 	} else {
-		key, err := i.upload(ctx)
+		key, err := i.upload(ctx, logger)
 		if err != nil {
 			return job.Failed, "", err
 		}
 
-		return i.doImport(jobId, key)
+		return i.doImport(logger, jobId, key)
 	}
 }
 
-func (i *accessProviderFeedbackSync) upload(ctx context.Context) (string, error) {
+func (i *accessProviderFeedbackSync) upload(ctx context.Context, logger hclog.Logger) (string, error) {
 	i.statusUpdater.SetStatusToDataUpload(ctx)
 
-	key, err := file.UploadFile(i.config.FeedbackFile, &i.config.BaseTargetConfig)
+	key, err := file.UploadFile(logger, i.config.FeedbackFile, &i.config.BaseTargetConfig)
 	if err != nil {
 		return "", fmt.Errorf("error while uploading access provider feedback import files to Raito: %s", err.Error())
 	}
@@ -63,7 +63,7 @@ func (i *accessProviderFeedbackSync) upload(ctx context.Context) (string, error)
 	return key, nil
 }
 
-func (i *accessProviderFeedbackSync) doImport(jobId string, fileKey string) (job.JobStatus, string, error) {
+func (i *accessProviderFeedbackSync) doImport(logger hclog.Logger, jobId string, fileKey string) (job.JobStatus, string, error) {
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportAccessProvidersSyncFeedback", "variables":{}, "query": "mutation ImportAccessProvidersSyncFeedback {
@@ -94,7 +94,7 @@ func (i *accessProviderFeedbackSync) doImport(jobId string, fileKey string) (job
 	retStatus := res.Response.Subtask.Status
 	subtaskId := res.Response.Subtask.SubtaskId
 
-	i.log.Info(fmt.Sprintf("Done submitting feedback import in %s", time.Since(start).Round(time.Millisecond)))
+	logger.Info(fmt.Sprintf("Done submitting feedback import in %s", time.Since(start).Round(time.Millisecond)))
 
 	return retStatus, subtaskId, nil
 }

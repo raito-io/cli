@@ -7,8 +7,9 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/pterm/pterm"
-	"github.com/raito-io/cli/internal/logging"
 	"github.com/spf13/cobra"
+
+	"github.com/raito-io/cli/internal/logging"
 
 	"github.com/raito-io/cli/internal/plugin"
 )
@@ -73,7 +74,7 @@ func executeInfoCmd(cmd *cobra.Command, args []string) {
 		pterm.Println("Parameters:")
 
 		for _, param := range pluginInfo.Parameters {
-			line := "   " + pterm.Bold.Sprintf(param.Name)
+			line := "   " + pterm.Bold.Sprintf(param.Name) //nolint:govet
 			if param.Mandatory {
 				line += " (required)"
 			}

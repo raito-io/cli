@@ -1,12 +1,9 @@
 package logging
 
 import (
-	"errors"
 	"sync"
 
 	"github.com/hashicorp/go-hclog"
-
-	"github.com/raito-io/cli/internal/target/types"
 )
 
 const bufferSize = 1024
@@ -48,16 +45,12 @@ func (s *warningCapturingSink) GetWarnings() []string {
 	return warnings
 }
 
-func CreateWarningCapturingLogger(config *types.BaseTargetConfig) (*types.BaseTargetConfig, WarningCollector, func(), error) {
-	if logger, ok := config.BaseLogger.(hclog.InterceptLogger); ok {
-		sink := newWarningCapturingSink()
+func CreateWarningCapturingLogger(baseLogger hclog.InterceptLogger) (WarningCollector, func()) {
+	sink := newWarningCapturingSink()
 
-		logger.RegisterSink(sink)
+	baseLogger.RegisterSink(sink)
 
-		return config, sink, func() {
-			logger.DeregisterSink(sink)
-		}, nil
+	return sink, func() {
+		baseLogger.DeregisterSink(sink)
 	}
-
-	return nil, nil, nil, errors.New("no logger found")
 }

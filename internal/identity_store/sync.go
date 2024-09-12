@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hashicorp/go-hclog"
+
 	ispc "github.com/raito-io/cli/base/identity_store"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	error1 "github.com/raito-io/cli/base/util/error"
@@ -49,23 +51,23 @@ func (s *IdentityStoreSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, logger hclog.Logger, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, secureImport func(func() error) error) (job.JobStatus, string, error) {
 	userFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-users", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	defer s.TargetConfig.HandleTempFile(userFile, false)
+	defer s.TargetConfig.HandleTempFile(logger, userFile, false)
 
 	groupFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-groups", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	defer s.TargetConfig.HandleTempFile(groupFile, false)
+	defer s.TargetConfig.HandleTempFile(logger, groupFile, false)
 
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as user target file", userFile))
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as groups target file", groupFile))
+	logger.Debug(fmt.Sprintf("Using %q as user target file", userFile))
+	logger.Debug(fmt.Sprintf("Using %q as groups target file", groupFile))
 
 	syncerConfig := ispc.IdentityStoreSyncConfig{
 		ConfigMap: &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
@@ -78,21 +80,21 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Info("Fetching identity store metadata")
+	logger.Info("Fetching identity store metadata")
 
 	md, err := iss.GetIdentityStoreMetaData(ctx, syncerConfig.ConfigMap)
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Info("Updating identity store metadata")
-	err = SetMetaData(*s.TargetConfig, md)
+	logger.Info("Updating identity store metadata")
+	err = SetMetaData(logger, *s.TargetConfig, md)
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Info("Gathering users and groups")
+	logger.Info("Gathering users and groups")
 
 	result, err := iss.SyncIdentityStore(ctx, &syncerConfig)
 	if err != nil {
@@ -105,12 +107,11 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 
 	postProcessor := NewPostProcessor(&PostProcessorConfig{
 		TagKeyAndValueForUserIsMachine: s.TargetConfig.TagKeyAndValueForUserIsMachine,
-		TargetLogger:                   s.TargetConfig.TargetLogger,
 	})
 
 	toProcessUserFile := userFile
 	if postProcessor.NeedsUserPostProcessing() {
-		toProcessUserFile, err = s.postProcessUsers(postProcessor, userFile)
+		toProcessUserFile, err = s.postProcessUsers(logger, postProcessor, userFile)
 		if err != nil {
 			return job.Failed, "", err
 		}
@@ -132,23 +133,33 @@ func (s *IdentityStoreSync) StartSyncAndQueueTaskPart(ctx context.Context, clien
 	}
 	isImporter := NewIdentityStoreImporter(&importerConfig, statusUpdater)
 
-	s.TargetConfig.TargetLogger.Info("Importing users and groups into Raito")
-	status, subtaskId, err := isImporter.TriggerImport(ctx, s.JobId)
+	var status job.JobStatus
+	var subtaskId string
 
+	err = secureImport(func() error {
+		logger.Info("Importing users and groups into Raito")
+		status, subtaskId, err = isImporter.TriggerImport(ctx, logger, s.JobId)
+
+		if err != nil {
+			return err
+		}
+
+		if status == job.Queued {
+			logger.Info("Successfully queued import job. Wait until remote processing is done.")
+		}
+
+		logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
+
+		return nil
+	})
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	if status == job.Queued {
-		s.TargetConfig.TargetLogger.Info("Successfully queued import job. Wait until remote processing is done.")
-	}
-
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
-
 	return status, subtaskId, nil
 }
 
-func (s *IdentityStoreSync) postProcessUsers(postProcessor PostProcessor, toProcessFile string) (string, error) {
+func (s *IdentityStoreSync) postProcessUsers(logger hclog.Logger, postProcessor PostProcessor, toProcessFile string) (string, error) {
 	postProcessedFile := toProcessFile
 	fileSuffix := "-post-processed"
 
@@ -159,29 +170,29 @@ func (s *IdentityStoreSync) postProcessUsers(postProcessor PostProcessor, toProc
 		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, ".json")] + fileSuffix + ".json"
 	}
 
-	res, err := postProcessor.PostProcessUsers(toProcessFile, postProcessedFile)
+	res, err := postProcessor.PostProcessUsers(logger, toProcessFile, postProcessedFile)
 	if err != nil {
 		return toProcessFile, err
 	}
 
 	if res.UsersTouchedCount > 0 {
-		s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully updated %d users in post-processing step", res.UsersTouchedCount))
+		logger.Info(fmt.Sprintf("Successfully updated %d users in post-processing step", res.UsersTouchedCount))
 	}
 
 	return postProcessedFile, nil
 }
 
-func (s *IdentityStoreSync) ProcessResults(results interface{}) error {
+func (s *IdentityStoreSync) ProcessResults(logger hclog.Logger, results interface{}) error {
 	if isResult, ok := results.(*IdentityStoreImportResult); ok {
 		if isResult != nil && len(isResult.Warnings) > 0 {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Synced users and groups with %d warnings (see below). Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d",
+			logger.Info(fmt.Sprintf("Synced users and groups with %d warnings (see below). Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d",
 				len(isResult.Warnings), isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
 
 			for _, warning := range isResult.Warnings {
-				s.TargetConfig.TargetLogger.Warn(warning)
+				logger.Warn(warning)
 			}
 		} else {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced users and groups. Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d", isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
+			logger.Info(fmt.Sprintf("Successfully synced users and groups. Users: Added: %d - Removed: %d - Updated: %d | Groups: Added: %d - Removed: %d - Updated: %d", isResult.UsersAdded, isResult.UsersRemoved, isResult.UsersUpdated, isResult.GroupsAdded, isResult.GroupsRemoved, isResult.GroupsUpdated))
 		}
 
 		s.result = append(s.result, job.TaskResult{

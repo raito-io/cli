@@ -48,16 +48,16 @@ func (s *DataUsageSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, logger hclog.Logger, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, secureImport func(func() error) error) (job.JobStatus, string, error) {
 	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-usage", "json"))
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
+	logger.Debug(fmt.Sprintf("Using %q as data usage target file", targetFile))
 
-	defer s.TargetConfig.HandleTempFile(targetFile, false)
+	defer s.TargetConfig.HandleTempFile(logger, targetFile, false)
 
 	syncerConfig := dupc.DataUsageSyncConfig{
 		ConfigMap:  &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
@@ -73,9 +73,9 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 		BaseTargetConfig: *s.TargetConfig,
 		TargetFile:       targetFile,
 	}
-	duImporter := NewDataUsageImporter(&importerConfig, statusUpdater)
+	duImporter := NewDataUsageImporter(logger, &importerConfig, statusUpdater)
 
-	s.TargetConfig.TargetLogger.Info("Fetching last synchronization date")
+	logger.Info("Fetching last synchronization date")
 
 	firstUsed, lastUsed, err := duImporter.GetLastAndFirstUsage()
 
@@ -94,7 +94,7 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 		syncerConfig.ConfigMap.Parameters["firstUsed"] = firstUsedValue.Format(time.RFC3339)
 	}
 
-	s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Fetching usage data from the data source, using first used %v and last used %v", syncerConfig.ConfigMap.Parameters["firstUsed"], syncerConfig.ConfigMap.Parameters["lastUsed"]))
+	logger.Info(fmt.Sprintf("Fetching usage data from the data source, using first used %v and last used %v", syncerConfig.ConfigMap.Parameters["firstUsed"], syncerConfig.ConfigMap.Parameters["lastUsed"]))
 
 	res, err := dus.SyncDataUsage(context.Background(), &syncerConfig)
 	if err != nil {
@@ -103,32 +103,42 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 		return job.Failed, "", errors.New(res.Error.ErrorMessage) //nolint:staticcheck
 	}
 
-	s.TargetConfig.TargetLogger.Info("Importing usage data into Raito")
+	var status job.JobStatus
+	var subtaskId string
 
-	status, subtaskId, err := duImporter.TriggerImport(ctx, s.JobId)
+	secureImport(func() error {
+		logger.Info("Importing usage data into Raito")
+
+		status, subtaskId, err = duImporter.TriggerImport(ctx, logger, s.JobId)
+		if err != nil {
+			return err
+		}
+
+		if status == job.Queued {
+			logger.Info("Successfully queued import job. Wait until remote processing is done.")
+		}
+
+		logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
+
+		return nil
+	})
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	if status == job.Queued {
-		s.TargetConfig.TargetLogger.Info("Successfully queued import job. Wait until remote processing is done.")
-	}
-
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
-
 	return status, subtaskId, nil
 }
 
-func (s *DataUsageSync) ProcessResults(results interface{}) error {
+func (s *DataUsageSync) ProcessResults(logger hclog.Logger, results interface{}) error {
 	if duResult, ok := results.(*DataUsageImportResult); ok {
 		if duResult != nil && len(duResult.Warnings) > 0 {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Synced data usage with %d warnings (see below). %d statements added, %d failed", len(duResult.Warnings), duResult.StatementsAdded, duResult.StatementsFailed))
+			logger.Info(fmt.Sprintf("Synced data usage with %d warnings (see below). %d statements added, %d failed", len(duResult.Warnings), duResult.StatementsAdded, duResult.StatementsFailed))
 
 			for _, warning := range duResult.Warnings {
-				s.TargetConfig.TargetLogger.Warn(warning)
+				logger.Warn(warning)
 			}
 		} else {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced data usage. %d statements added, %d failed",
+			logger.Info(fmt.Sprintf("Successfully synced data usage. %d statements added, %d failed",
 				duResult.StatementsAdded, duResult.StatementsFailed))
 		}
 

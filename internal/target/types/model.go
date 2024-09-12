@@ -169,14 +169,12 @@ type BaseTargetConfig struct {
 
 	DataObjectEnrichers []*EnricherConfig
 
-	TargetLogger hclog.Logger
-
 	fileBackupLocationForRun string
 }
 
 // CalculateFileBackupLocationForRun calculated the full directory path where the backup files of this run should be stored.
 // The current time is used for the directory name
-func (c *BaseTargetConfig) CalculateFileBackupLocationForRun(runType string) error {
+func (c *BaseTargetConfig) CalculateFileBackupLocationForRun(logger hclog.Logger, runType string) error {
 	c.fileBackupLocationForRun = ""
 
 	if runType != "" && c.FileBackupLocation != "" {
@@ -197,7 +195,7 @@ func (c *BaseTargetConfig) CalculateFileBackupLocationForRun(runType string) err
 			return fmt.Errorf("unable to create backup folder %q: %s", dir, err.Error())
 		}
 
-		c.TargetLogger.Debug(fmt.Sprintf("created backup directory %q", dir))
+		logger.Debug(fmt.Sprintf("created backup directory %q", dir))
 
 		c.fileBackupLocationForRun = dir
 	}
@@ -206,17 +204,17 @@ func (c *BaseTargetConfig) CalculateFileBackupLocationForRun(runType string) err
 }
 
 // FinalizeRun will remove old backup files if the maximum number of backups is exceeded
-func (c *BaseTargetConfig) FinalizeRun() {
+func (c *BaseTargetConfig) FinalizeRun(logger hclog.Logger) {
 	if c.fileBackupLocationForRun != "" {
 		empty, err := isFolderEmpty(c.fileBackupLocationForRun)
 		if err != nil {
-			c.TargetLogger.Error(fmt.Sprintf("unable to check if directory %q is empty or not: %s", c.FileBackupLocation, err.Error()))
+			logger.Error(fmt.Sprintf("unable to check if directory %q is empty or not: %s", c.FileBackupLocation, err.Error()))
 		} else if empty {
 			err = os.RemoveAll(c.fileBackupLocationForRun)
 			if err != nil {
-				c.TargetLogger.Error(fmt.Sprintf("unable to delete empty directory %q: %s", c.FileBackupLocation, err.Error()))
+				logger.Error(fmt.Sprintf("unable to delete empty directory %q: %s", c.FileBackupLocation, err.Error()))
 			} else {
-				c.TargetLogger.Debug(fmt.Sprintf("deleted empty backup directory %q", c.fileBackupLocationForRun))
+				logger.Debug(fmt.Sprintf("deleted empty backup directory %q", c.fileBackupLocationForRun))
 			}
 		}
 
@@ -227,42 +225,42 @@ func (c *BaseTargetConfig) FinalizeRun() {
 			subFolders, err := fetchSubfolders(dir)
 
 			if err != nil {
-				c.TargetLogger.Error(fmt.Sprintf("unable to walk through backup folders in %q: %s", c.FileBackupLocation, err.Error()))
+				logger.Error(fmt.Sprintf("unable to walk through backup folders in %q: %s", c.FileBackupLocation, err.Error()))
 			}
 
 			if len(subFolders) > c.MaximumBackupsPerTarget {
-				removeOldestFolders(subFolders, c.MaximumBackupsPerTarget, c.TargetLogger)
+				removeOldestFolders(subFolders, c.MaximumBackupsPerTarget, logger)
 			}
 		}
 	}
 }
 
 // HandleTempFile handles the temporary file by backing it up if needed and deleting it if needed
-func (c *BaseTargetConfig) HandleTempFile(filePath string, neverDelete bool) {
+func (c *BaseTargetConfig) HandleTempFile(logger hclog.Logger, filePath string, neverDelete bool) {
 	if c.fileBackupLocationForRun != "" {
 		fileName := filePath[strings.LastIndex(filePath, string(filepath.Separator))+1:]
 
 		input, err := os.ReadFile(filePath)
 		if err != nil {
-			c.TargetLogger.Error(fmt.Sprintf("unable to read file %q to backup: %s", filePath, err.Error()))
+			logger.Error(fmt.Sprintf("unable to read file %q to backup: %s", filePath, err.Error()))
 		}
 
 		targetFile := c.fileBackupLocationForRun + string(filepath.Separator) + fileName
 
 		err = os.WriteFile(targetFile, input, 0600)
 		if err != nil {
-			c.TargetLogger.Error(fmt.Sprintf("unable to write backup file %q: %s", targetFile, err.Error()))
+			logger.Error(fmt.Sprintf("unable to write backup file %q: %s", targetFile, err.Error()))
 		} else {
-			c.TargetLogger.Debug(fmt.Sprintf("backed up file %q to %q", filePath, targetFile))
+			logger.Debug(fmt.Sprintf("backed up file %q to %q", filePath, targetFile))
 		}
 	}
 
 	if !neverDelete && c.DeleteTempFiles {
 		err := os.RemoveAll(filePath)
 		if err != nil {
-			c.TargetLogger.Error(fmt.Sprintf("unable to delete temporary file %q: %s", filePath, err.Error()))
+			logger.Error(fmt.Sprintf("unable to delete temporary file %q: %s", filePath, err.Error()))
 		} else {
-			c.TargetLogger.Debug(fmt.Sprintf("removed temporary file %q", filePath))
+			logger.Debug(fmt.Sprintf("removed temporary file %q", filePath))
 		}
 	}
 }

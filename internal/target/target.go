@@ -22,33 +22,33 @@ import (
 
 //go:generate go run github.com/vektra/mockery/v2 --name=TargetRunner --with-expecter --inpackage
 type TargetRunner interface {
-	TargetSync(ctx context.Context, targetConfig *types.BaseTargetConfig) (syncError error)
+	TargetSync(ctx context.Context, logger hclog.Logger, targetConfig *types.BaseTargetConfig) (syncError error)
 	Finalize(ctx context.Context, baseConfig *types.BaseConfig, options *Options) error
 	RunType() string
 }
 
-func GetTargetConfig(targetName string, baseConfig *types.BaseConfig) (*types.BaseTargetConfig, error) {
+func GetTargetConfig(targetName string, baseConfig *types.BaseConfig) (*types.BaseTargetConfig, hclog.Logger, error) {
 	targets := viper.Get(constants.Targets)
 
 	if targetList, ok := targets.([]interface{}); ok {
 		for _, targetObj := range targetList {
 			target, ok := targetObj.(map[string]interface{})
 			if !ok {
-				return nil, fmt.Errorf("invalid configuration structure found")
+				return nil, nil, fmt.Errorf("invalid configuration structure found")
 			}
 
-			tConfig, err := buildTargetConfigFromMapForRun(baseConfig, target, nil)
+			tConfig, logger, err := buildTargetConfigFromMapForRun(baseConfig, target, nil)
 			if err != nil {
-				return nil, fmt.Errorf("error while parsing the target configuration: %s", err.Error())
+				return nil, nil, fmt.Errorf("error while parsing the target configuration: %s", err.Error())
 			}
 
 			if tConfig.Name == targetName {
-				return tConfig, nil
+				return tConfig, logger, nil
 			}
 		}
 	}
 
-	return nil, nil
+	return nil, nil, nil
 }
 
 func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget TargetRunner, opFns ...func(*Options)) (err error) {
@@ -68,7 +68,7 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget Tar
 	}()
 
 	if viper.GetString(constants.ConnectorNameFlag) != "" {
-		targetConfig := buildTargetConfigFromFlags(baseConfig)
+		targetConfig, logger := buildTargetConfigFromFlags(baseConfig)
 
 		if !options.SyncDataSourceId(targetConfig.DataSourceId) {
 			return nil
@@ -80,7 +80,7 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget Tar
 
 		logTargetConfig(targetConfig)
 
-		err2 := runTarget.TargetSync(ctx, options.TargetOptions(targetConfig))
+		err2 := runTarget.TargetSync(ctx, logger, options.TargetOptions(targetConfig))
 		if err2 != nil {
 			return err2
 		}
@@ -94,7 +94,7 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget Tar
 	return nil
 }
 
-func HandleTargetError(err error, config *types.BaseTargetConfig, prefix ...string) {
+func HandleTargetError(err error, log hclog.Logger, prefix ...string) {
 	targetError := &grpc_error.InternalPluginStatusError{}
 
 	prefixString := strings.Join(prefix, " ")
@@ -104,14 +104,14 @@ func HandleTargetError(err error, config *types.BaseTargetConfig, prefix ...stri
 	}
 
 	if errors.As(err, &targetError) && targetError.StatusCode() == codes.InvalidArgument {
-		config.TargetLogger.Error(fmt.Sprintf("%s%s. Execute command 'info <connector>' to print out the expected parameters for the connector.", prefixString, targetError.Error()))
+		log.Error(fmt.Sprintf("%s%s. Execute command 'info <connector>' to print out the expected parameters for the connector.", prefixString, targetError.Error()))
 		return
 	}
 
-	config.TargetLogger.Error(fmt.Sprintf("%s%s", prefixString, err.Error()))
+	log.Error(fmt.Sprintf("%s%s", prefixString, err.Error()))
 }
 
-func runMultipleTargets(ctx context.Context, baseConfig *types.BaseConfig, runType string, runTarget func(ctx context.Context, tConfig *types.BaseTargetConfig) error, options *Options) error {
+func runMultipleTargets(ctx context.Context, baseConfig *types.BaseConfig, runType string, runTarget func(ctx context.Context, logger hclog.Logger, tConfig *types.BaseTargetConfig) error, options *Options) error {
 	var errorResult error
 
 	dataObjectEnricherMap, err := buildDataObjectEnricherMap()
@@ -141,7 +141,7 @@ func runMultipleTargets(ctx context.Context, baseConfig *types.BaseConfig, runTy
 				continue
 			}
 
-			tConfig, err := buildTargetConfigFromMapForRun(baseConfig, target, dataObjectEnricherMap)
+			tConfig, logger, err := buildTargetConfigFromMapForRun(baseConfig, target, dataObjectEnricherMap)
 			if err != nil {
 				errorResult = multierror.Append(errorResult, fmt.Errorf("error while parsing the target configuration: %s", err.Error()))
 				hclog.L().Error(fmt.Sprintf("error while parsing the target configuration: %s", err.Error()))
@@ -165,36 +165,36 @@ func runMultipleTargets(ctx context.Context, baseConfig *types.BaseConfig, runTy
 
 			if len(onlyTargets) > 0 {
 				if _, found := onlyTargets[tConfig.Name]; !found {
-					tConfig.TargetLogger.Info("Skipping target", "success")
+					logger.Info("Skipping target", "success")
 					continue
 				}
 			}
 
 			logTargetConfig(tConfig)
 
-			err2 := tConfig.CalculateFileBackupLocationForRun(runType)
+			err2 := tConfig.CalculateFileBackupLocationForRun(logger, runType)
 			if err2 != nil {
 				hclog.L().Error(err2.Error())
 
 				continue
 			}
 
-			runErr := runTarget(ctx, tConfig)
+			runErr := runTarget(ctx, logger, tConfig)
 			if runErr != nil {
 				errorResult = multierror.Append(errorResult, runErr)
 
 				// In debug as the error should already be outputted, and we are ignoring it here.
-				tConfig.TargetLogger.Debug("Error while executing target", "error", runErr.Error())
+				logger.Debug("Error while executing target", "error", runErr.Error())
 			}
 
-			tConfig.FinalizeRun()
+			tConfig.FinalizeRun(logger)
 		}
 	}
 
 	return errorResult
 }
 
-func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, error) { //nolint:cyclop
+func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[string]interface{}, dataObjectEnricherMap map[string]*types.EnricherConfig) (*types.BaseTargetConfig, hclog.Logger, error) { //nolint:cyclop
 	tConfig := types.BaseTargetConfig{
 		BaseConfig:      *baseconfig,
 		DeleteUntouched: true,
@@ -204,7 +204,7 @@ func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[str
 
 	err := fillStruct(&tConfig, target)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	tConfig.Parameters = make(map[string]string)
@@ -216,12 +216,12 @@ func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[str
 
 		cv, err2 := iconfig.HandleField(v, reflect.String)
 		if err2 != nil {
-			return nil, err2
+			return nil, nil, err2
 		}
 
 		stringValue, err2 := argumentToString(cv)
 		if err2 != nil {
-			return nil, err2
+			return nil, nil, err2
 		}
 
 		if stringValue != nil {
@@ -234,7 +234,7 @@ func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[str
 	}
 
 	// Create a logger to add the target log name to each log message.
-	tConfig.TargetLogger = baseconfig.BaseLogger.With("target", tConfig.Name)
+	targetLogger := baseconfig.BaseLogger.With("target", tConfig.Name)
 
 	// Merge with some global parameters
 	tConfig.SkipDataAccessSync = tConfig.SkipDataAccessSync || viper.GetBool(constants.SkipDataAccessSyncFlag)
@@ -248,7 +248,7 @@ func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[str
 	if tConfig.ApiSecret == "" {
 		cv, err2 := iconfig.HandleField(viper.GetString(constants.ApiSecretFlag), reflect.String)
 		if err2 != nil {
-			return nil, err2
+			return nil, nil, err2
 		}
 		tConfig.ApiSecret = cv.(string)
 	}
@@ -256,7 +256,7 @@ func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[str
 	if tConfig.ApiUser == "" {
 		cv, err2 := iconfig.HandleField(viper.GetString(constants.ApiUserFlag), reflect.String)
 		if err2 != nil {
-			return nil, err2
+			return nil, nil, err2
 		}
 		tConfig.ApiUser = cv.(string)
 	}
@@ -264,7 +264,7 @@ func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[str
 	if tConfig.FileBackupLocation == "" {
 		cv, err2 := iconfig.HandleField(viper.GetString(constants.FileBackupLocationFlag), reflect.String)
 		if err2 != nil {
-			return nil, err2
+			return nil, nil, err2
 		}
 		tConfig.FileBackupLocation = cv.(string)
 	}
@@ -276,17 +276,17 @@ func buildTargetConfigFromMapForRun(baseconfig *types.BaseConfig, target map[str
 	if tConfig.Domain == "" {
 		cv, err2 := iconfig.HandleField(viper.GetString(constants.DomainFlag), reflect.String)
 		if err2 != nil {
-			return nil, err2
+			return nil, nil, err2
 		}
 		tConfig.Domain = cv.(string)
 	}
 
 	err = addDataObjectEnrichersToTargetConfig(&tConfig, target, dataObjectEnricherMap)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &tConfig, nil
+	return &tConfig, targetLogger, nil
 }
 
 func BuildBaseConfigFromFlags(baseLogger hclog.Logger, healthChecker health_check.HealthChecker, otherArgs []string) (*types.BaseConfig, error) {
@@ -304,7 +304,7 @@ func BuildBaseConfigFromFlags(baseLogger hclog.Logger, healthChecker health_chec
 	return &config, nil
 }
 
-func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) *types.BaseTargetConfig {
+func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) (*types.BaseTargetConfig, hclog.Logger) {
 	connector := viper.GetString(constants.ConnectorNameFlag)
 	version := viper.GetString(constants.ConnectorVersionFlag)
 	name := viper.GetString(constants.NameFlag)
@@ -359,13 +359,12 @@ func buildTargetConfigFromFlags(baseConfig *types.BaseConfig) *types.BaseTargetC
 		FullyLockByTag:          viper.GetString(constants.FullyLockByTagFlag),
 		FullyLockWhenIncomplete: viper.GetBool(constants.FullyLockWhenIncompleteFlag),
 
-		TargetLogger:    baseConfig.BaseLogger.With("target", name),
 		DeleteUntouched: true,
 		DeleteTempFiles: true,
 		ReplaceGroups:   true,
 	}
 
-	return &targetConfig
+	return &targetConfig, baseConfig.BaseLogger.With("target", name)
 }
 
 // logTargetConfig will print out the target configuration in the log (debug level).

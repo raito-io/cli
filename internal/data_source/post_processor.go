@@ -20,8 +20,8 @@ type PostProcessorConfig struct {
 	DataSourceId             string
 	DataObjectParent         string
 	DataObjectExcludes       []string
-	TargetLogger             hclog.Logger
 }
+
 type PostProcessorResult struct {
 	DataObjectsTouchedCount int
 }
@@ -47,7 +47,7 @@ func (p *PostProcessor) NeedsPostProcessing() bool {
 	return p.config.TagOverwriteKeyForOwners != ""
 }
 
-func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*PostProcessorResult, error) {
+func (p *PostProcessor) PostProcess(logger hclog.Logger, inputFilePath string, outputFile string) (*PostProcessorResult, error) {
 	outputWriter, err := p.dataSourceFileCreatorFactory(&data_source.DataSourceSyncConfig{
 		TargetFile:         outputFile,
 		DataSourceId:       p.config.DataSourceId,
@@ -59,7 +59,7 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	p.config.TargetLogger.Debug("Post processor streaming data objects from file %s", inputFilePath)
+	logger.Debug("Post processor streaming data objects from file %s", inputFilePath)
 
 	inputFile, err := os.Open(inputFilePath)
 	if err != nil {
@@ -72,16 +72,16 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 
 	decoder := jsonstream.NewJsonArrayStream[data_source.DataObject](inputFile)
 	for jsonStreamResult := range decoder.Stream() {
-		p.config.TargetLogger.Debug(fmt.Sprintf("Start post processing data object %d", dataObjectsRead))
+		logger.Debug(fmt.Sprintf("Start post processing data object %d", dataObjectsRead))
 
 		if jsonStreamResult.Err != nil {
 			return nil, fmt.Errorf("unable to parse data object (%d): %s", dataObjectsRead, jsonStreamResult.Err.Error())
 		}
 
 		do := jsonStreamResult.Result
-		p.config.TargetLogger.Info(fmt.Sprintf("Start enriching data object %q", do.FullName))
+		logger.Info(fmt.Sprintf("Start enriching data object %q", do.FullName))
 
-		enriched, err2 := p.postProcessDataObject(do, outputWriter)
+		enriched, err2 := p.postProcessDataObject(logger, do, outputWriter)
 		if err2 != nil {
 			return nil, fmt.Errorf("unable to enrich data object (%d): %s", dataObjectsRead, err2.Error())
 		}
@@ -102,13 +102,13 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 	}, nil
 }
 
-func (p *PostProcessor) postProcessDataObject(do *data_source.DataObject, outputWriter data_source.DataSourceFileCreator) (bool, error) {
+func (p *PostProcessor) postProcessDataObject(logger hclog.Logger, do *data_source.DataObject, outputWriter data_source.DataSourceFileCreator) (bool, error) {
 	touched := false
 
 	if len(do.Tags) > 0 {
 		for _, tag := range do.Tags {
 			if p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, tag) {
-				ownersOverwritten := p.overwriteOwners(do, tag)
+				ownersOverwritten := p.overwriteOwners(logger, do, tag)
 				if ownersOverwritten {
 					touched = ownersOverwritten
 					continue
@@ -119,21 +119,21 @@ func (p *PostProcessor) postProcessDataObject(do *data_source.DataObject, output
 
 	err := outputWriter.AddDataObjects(do)
 	if err != nil {
-		p.config.TargetLogger.Info(fmt.Sprintf("Error while saving data object to writer %q", do.FullName))
+		logger.Info(fmt.Sprintf("Error while saving data object to writer %q", do.FullName))
 		return touched, err
 	}
 
 	return touched, nil
 }
 
-func (p *PostProcessor) overwriteOwners(do *data_source.DataObject, tag *tag.Tag) bool {
+func (p *PostProcessor) overwriteOwners(logger hclog.Logger, do *data_source.DataObject, tag *tag.Tag) bool {
 	if tag.Value != "" {
 		overwrittenOwners := []string{}
 		for _, owner := range strings.Split(tag.Value, ",") {
 			overwrittenOwners = append(overwrittenOwners, strings.TrimSpace(owner))
 		}
 
-		p.config.TargetLogger.Debug(fmt.Sprintf("adjusting owners for DO (fullPath: %v) to %v", do.FullName, overwrittenOwners))
+		logger.Debug(fmt.Sprintf("adjusting owners for DO (fullPath: %v) to %v", do.FullName, overwrittenOwners))
 
 		if do.Owners == nil {
 			do.Owners = &data_source.OwnersInput{}

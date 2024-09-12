@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
 	graphql2 "github.com/hasura/go-graphql-client"
 
 	"github.com/raito-io/golang-set/set"
@@ -16,8 +17,8 @@ import (
 	"github.com/raito-io/cli/internal/target/types"
 )
 
-func SetMetaData(ctx context.Context, config *types.BaseTargetConfig, metadata *data_source.MetaData) error {
-	logger := config.TargetLogger.With("datasource", config.DataSourceId)
+func SetMetaData(ctx context.Context, logger hclog.Logger, config *types.BaseTargetConfig, metadata *data_source.MetaData) error {
+	logger = logger.With("datasource", config.DataSourceId)
 	start := time.Now()
 
 	err := metadataConsistencyCheck(metadata)

@@ -353,8 +353,8 @@ func (s *heartBeatTargetSync) RunType() string {
 	return ""
 }
 
-func (s *heartBeatTargetSync) TargetSync(ctx context.Context, tConfig *types.BaseTargetConfig) error {
-	client, err := plugin.NewPluginClient(tConfig.ConnectorName, tConfig.ConnectorVersion, tConfig.TargetLogger)
+func (s *heartBeatTargetSync) TargetSync(ctx context.Context, logger hclog.Logger, tConfig *types.BaseTargetConfig) error {
+	client, err := plugin.NewPluginClient(tConfig.ConnectorName, tConfig.ConnectorVersion, logger)
 	if err != nil {
 		return fmt.Errorf("new plugin: %w", err)
 	}

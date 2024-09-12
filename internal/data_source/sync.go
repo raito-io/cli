@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
+
 	"github.com/raito-io/cli/base/data_object_enricher"
 	dspc "github.com/raito-io/cli/base/data_source"
 	baseconfig "github.com/raito-io/cli/base/util/config"
@@ -50,15 +52,15 @@ func (s *DataSourceSync) GetParts() []job.TaskPart {
 	return []job.TaskPart{s}
 }
 
-func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, logger hclog.Logger, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, secureImport func(func() error) error) (job.JobStatus, string, error) {
 	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-dataObjects", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
+	logger.Debug(fmt.Sprintf("Using %q as data source target file", targetFile))
 
-	defer s.TargetConfig.HandleTempFile(targetFile, false)
+	defer s.TargetConfig.HandleTempFile(logger, targetFile, false)
 
 	doParent := ""
 	if s.TargetConfig.DataObjectParent != nil {
@@ -78,21 +80,21 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Info("Fetching data source metadata")
+	logger.Info("Fetching data source metadata")
 
 	md, err := dss.GetDataSourceMetaData(ctx, syncerConfig.ConfigMap)
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Info("Updating data source metadata")
-	err = SetMetaData(ctx, s.TargetConfig, md)
+	logger.Info("Updating data source metadata")
+	err = SetMetaData(ctx, logger, s.TargetConfig, md)
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Info("Gathering data objects from the data source")
+	logger.Info("Gathering data objects from the data source")
 
 	res, err := dss.SyncDataSource(ctx, &syncerConfig)
 	if err != nil {
@@ -109,12 +111,12 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		return job.Failed, "", err
 	}
 
-	enrichedTargetFile, createdFiles, tagSourcesScope, err := s.enrichDataObjects(ctx, targetFile, tagSourcesScope)
+	enrichedTargetFile, createdFiles, tagSourcesScope, err := s.enrichDataObjects(ctx, logger, targetFile, tagSourcesScope)
 
 	if s.TargetConfig.DeleteTempFiles && len(createdFiles) > 0 {
 		defer func() {
 			for _, f := range createdFiles {
-				s.TargetConfig.HandleTempFile(f, false)
+				s.TargetConfig.HandleTempFile(logger, f, false)
 			}
 		}()
 	}
@@ -128,12 +130,11 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 		DataSourceId:             syncerConfig.DataSourceId,
 		DataObjectParent:         syncerConfig.DataObjectParent,
 		DataObjectExcludes:       syncerConfig.DataObjectExcludes,
-		TargetLogger:             s.TargetConfig.TargetLogger,
 	})
 
 	toProcessFile := enrichedTargetFile
 	if postProcessor.NeedsPostProcessing() {
-		toProcessFile, _, err = s.postProcessDataObjects(postProcessor, enrichedTargetFile)
+		toProcessFile, _, err = s.postProcessDataObjects(logger, postProcessor, enrichedTargetFile)
 		if err != nil {
 			return job.Failed, "", err
 		}
@@ -152,23 +153,33 @@ func (s *DataSourceSync) StartSyncAndQueueTaskPart(ctx context.Context, client p
 	}
 	dsImporter := NewDataSourceImporter(&importerConfig, statusUpdater)
 
-	s.TargetConfig.TargetLogger.Info("Importing data objects into Raito")
-	status, subtaskId, err := dsImporter.TriggerImport(ctx, s.JobId)
+	var status job.JobStatus
+	var subtaskId string
 
+	err = secureImport(func() error {
+		logger.Info("Importing data objects into Raito")
+		status, subtaskId, err = dsImporter.TriggerImport(ctx, logger, s.JobId)
+
+		if err != nil {
+			return err
+		}
+
+		if status == job.Queued {
+			logger.Info("Successfully queued import job. Wait until remote processing is done.")
+		}
+
+		logger.Debug(fmt.Sprintf("Current status: %s", status))
+
+		return nil
+	})
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	if status == job.Queued {
-		s.TargetConfig.TargetLogger.Info("Successfully queued import job. Wait until remote processing is done.")
-	}
-
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status))
-
 	return status, subtaskId, nil
 }
 
-func (s *DataSourceSync) enrichDataObjects(ctx context.Context, sourceFile string, tagSourcesScope []string) (string, []string, []string, error) {
+func (s *DataSourceSync) enrichDataObjects(ctx context.Context, logger hclog.Logger, sourceFile string, tagSourcesScope []string) (string, []string, []string, error) {
 	enrichedFile := sourceFile
 
 	var newFiles []string
@@ -179,10 +190,10 @@ func (s *DataSourceSync) enrichDataObjects(ctx context.Context, sourceFile strin
 		for i, enricher := range s.TargetConfig.DataObjectEnrichers {
 			start := time.Now()
 
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Calling enricher %q", enricher.Name))
+			logger.Info(fmt.Sprintf("Calling enricher %q", enricher.Name))
 
 			enrichmentCount := 0
-			enrichedFile, enrichmentCount, tagSourcesScope, err = s.callEnricher(ctx, enricher, enrichedFile, i, tagSourcesScope)
+			enrichedFile, enrichmentCount, tagSourcesScope, err = s.callEnricher(ctx, logger, enricher, enrichedFile, i, tagSourcesScope)
 
 			if enrichedFile != "" {
 				newFiles = append(newFiles, enrichedFile)
@@ -192,14 +203,14 @@ func (s *DataSourceSync) enrichDataObjects(ctx context.Context, sourceFile strin
 				return "", newFiles, tagSourcesScope, err
 			}
 
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("%d data objects enriched (%s) in %s", enrichmentCount, enricher.Name, time.Since(start).Round(time.Millisecond)))
+			logger.Info(fmt.Sprintf("%d data objects enriched (%s) in %s", enrichmentCount, enricher.Name, time.Since(start).Round(time.Millisecond)))
 		}
 	}
 
 	return enrichedFile, newFiles, tagSourcesScope, nil
 }
 
-func (s *DataSourceSync) postProcessDataObjects(postProcessor PostProcessor, toProcessFile string) (string, int, error) {
+func (s *DataSourceSync) postProcessDataObjects(logger hclog.Logger, postProcessor PostProcessor, toProcessFile string) (string, int, error) {
 	postProcessedFile := toProcessFile
 	fileSuffix := "-post-processed"
 
@@ -210,7 +221,7 @@ func (s *DataSourceSync) postProcessDataObjects(postProcessor PostProcessor, toP
 		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, JSON_EXTENSION)] + fileSuffix + JSON_EXTENSION
 	}
 
-	res, err := postProcessor.PostProcess(toProcessFile, postProcessedFile)
+	res, err := postProcessor.PostProcess(logger, toProcessFile, postProcessedFile)
 	if err != nil {
 		return toProcessFile, 0, err
 	}
@@ -218,10 +229,10 @@ func (s *DataSourceSync) postProcessDataObjects(postProcessor PostProcessor, toP
 	return postProcessedFile, res.DataObjectsTouchedCount, nil
 }
 
-func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *types.EnricherConfig, sourceFile string, index int, tagSourcesScope []string) (string, int, []string, error) {
-	client, err := plugin.NewPluginClient(enricher.ConnectorName, enricher.ConnectorVersion, s.TargetConfig.TargetLogger)
+func (s *DataSourceSync) callEnricher(ctx context.Context, logger hclog.Logger, enricher *types.EnricherConfig, sourceFile string, index int, tagSourcesScope []string) (string, int, []string, error) {
+	client, err := plugin.NewPluginClient(enricher.ConnectorName, enricher.ConnectorVersion, logger)
 	if err != nil {
-		s.TargetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing enricher plugin %q: %s", enricher.ConnectorName, err.Error()))
+		logger.Error(fmt.Sprintf("Error initializing enricher plugin %q: %s", enricher.ConnectorName, err.Error()))
 		return "", 0, tagSourcesScope, fmt.Errorf("creating client for plugin %s: %w", enricher.ConnectorName, err)
 	}
 	defer client.Close()
@@ -260,16 +271,16 @@ func (s *DataSourceSync) callEnricher(ctx context.Context, enricher *types.Enric
 	return targetFile, int(res.Enriched), tagSourcesScope, nil
 }
 
-func (s *DataSourceSync) ProcessResults(results interface{}) error {
+func (s *DataSourceSync) ProcessResults(logger hclog.Logger, results interface{}) error {
 	if dsResult, ok := results.(*DataSourceImportResult); ok {
 		if dsResult.Warnings != nil && len(dsResult.Warnings) > 0 {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Synced data source with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(dsResult.Warnings), dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
+			logger.Info(fmt.Sprintf("Synced data source with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(dsResult.Warnings), dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
 
 			for _, warning := range dsResult.Warnings {
-				s.TargetConfig.TargetLogger.Warn(warning)
+				logger.Warn(warning)
 			}
 		} else {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced data source. Added: %d - Removed: %d - Updated: %d", dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
+			logger.Info(fmt.Sprintf("Successfully synced data source. Added: %d - Removed: %d - Updated: %d", dsResult.DataObjectsAdded, dsResult.DataObjectsRemoved, dsResult.DataObjectsUpdated))
 		}
 
 		s.result = &job.TaskResult{

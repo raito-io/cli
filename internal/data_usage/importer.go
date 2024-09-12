@@ -28,7 +28,7 @@ type DataSourceUsageInfo struct {
 }
 
 type DataUsageImporter interface {
-	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error)
 	GetLastAndFirstUsage() (*time.Time, *time.Time, error)
 }
 
@@ -38,19 +38,19 @@ type dataUsageImporter struct {
 	statusUpdater job.TaskEventUpdater
 }
 
-func NewDataUsageImporter(config *DataUsageImportConfig, statusUpdater job.TaskEventUpdater) DataUsageImporter {
-	logger := config.TargetLogger.With("data-usage", config.DataSourceId, "file", config.TargetFile)
+func NewDataUsageImporter(logger hclog.Logger, config *DataUsageImportConfig, statusUpdater job.TaskEventUpdater) DataUsageImporter {
+	logger = logger.With("data-usage", config.DataSourceId, "file", config.TargetFile)
 	duI := dataUsageImporter{config, logger, statusUpdater}
 
 	return &duI
 }
 
-func (d *dataUsageImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
+func (d *dataUsageImporter) TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error) {
 	if viper.GetBool(constants.SkipFileUpload) {
 		// In the development environment, we skip the upload and use the local file for the import
 		return d.doImport(jobId, d.config.TargetFile)
 	} else {
-		key, err := d.upload(ctx)
+		key, err := d.upload(ctx, logger)
 		if err != nil {
 			return job.Failed, "", err
 		}
@@ -59,9 +59,9 @@ func (d *dataUsageImporter) TriggerImport(ctx context.Context, jobId string) (jo
 	}
 }
 
-func (d *dataUsageImporter) upload(ctx context.Context) (string, error) {
+func (d *dataUsageImporter) upload(ctx context.Context, logger hclog.Logger) (string, error) {
 	d.statusUpdater.SetStatusToDataUpload(ctx)
-	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
+	key, err := file.UploadFile(logger, d.config.TargetFile, &d.config.BaseTargetConfig)
 
 	if err != nil {
 		return "", fmt.Errorf("error while uploading data usage import files to Raito: %s", err.Error())

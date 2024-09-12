@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/spf13/viper"
+
+	"github.com/raito-io/cli/internal/util/tag"
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
@@ -30,45 +31,45 @@ type IdentityStoreImportConfig struct {
 }
 
 type IdentityStoreImporter interface {
-	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error)
 }
 
 type identityStoreImporter struct {
 	config        *IdentityStoreImportConfig
-	log           hclog.Logger
 	statusUpdater job.TaskEventUpdater
 }
 
 func NewIdentityStoreImporter(config *IdentityStoreImportConfig, statusUpdater job.TaskEventUpdater) IdentityStoreImporter {
-	logger := config.TargetLogger.With("identitystore", config.IdentityStoreId, "userfile", config.UserFile, "groupfile", config.GroupFile)
-	isI := identityStoreImporter{config, logger, statusUpdater}
+	isI := identityStoreImporter{config, statusUpdater}
 
 	return &isI
 }
 
-func (i *identityStoreImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
+func (i *identityStoreImporter) TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error) {
+	logger = logger.With("identitystore", i.config.IdentityStoreId, "userfile", i.config.UserFile, "groupfile", i.config.GroupFile)
+
 	if viper.GetBool(constants.SkipFileUpload) {
 		// In the development environment, we skip the upload and use the local file for the import
-		return i.doImport(jobId, i.config.UserFile, i.config.GroupFile)
+		return i.doImport(logger, jobId, i.config.UserFile, i.config.GroupFile)
 	} else {
-		userKey, groupKey, err := i.upload(ctx)
+		userKey, groupKey, err := i.upload(ctx, logger)
 		if err != nil {
 			return job.Failed, "", err
 		}
 
-		return i.doImport(jobId, userKey, groupKey)
+		return i.doImport(logger, jobId, userKey, groupKey)
 	}
 }
 
-func (i *identityStoreImporter) upload(ctx context.Context) (string, string, error) {
+func (i *identityStoreImporter) upload(ctx context.Context, logger hclog.Logger) (string, string, error) {
 	i.statusUpdater.SetStatusToDataUpload(ctx)
 
-	userKey, err := file.UploadFile(i.config.UserFile, &i.config.BaseTargetConfig)
+	userKey, err := file.UploadFile(logger, i.config.UserFile, &i.config.BaseTargetConfig)
 	if err != nil {
 		return "", "", fmt.Errorf("error while uploading users JSON file to the backend: %s", err.Error())
 	}
 
-	groupKey, err := file.UploadFile(i.config.GroupFile, &i.config.BaseTargetConfig)
+	groupKey, err := file.UploadFile(logger, i.config.GroupFile, &i.config.BaseTargetConfig)
 	if err != nil {
 		return "", "", fmt.Errorf("error while uploading groups JSON file to the backend: %s", err.Error())
 	}
@@ -76,7 +77,7 @@ func (i *identityStoreImporter) upload(ctx context.Context) (string, string, err
 	return userKey, groupKey, nil
 }
 
-func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey string) (job.JobStatus, string, error) {
+func (i *identityStoreImporter) doImport(logger hclog.Logger, jobId string, userKey string, groupKey string) (job.JobStatus, string, error) {
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportIdentityRequest", "variables":{}, "query": "mutation ImportIdentityRequest {
@@ -109,7 +110,7 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
 
 	subtask := res.Respose.Subtask
 
-	i.log.Info(fmt.Sprintf("Executed import request in %s", time.Since(start).Round(time.Millisecond)))
+	logger.Info(fmt.Sprintf("Executed import request in %s", time.Since(start).Round(time.Millisecond)))
 
 	return subtask.Status, subtask.SubtaskId, nil
 }

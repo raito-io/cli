@@ -8,33 +8,35 @@ import (
 	"os"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
+
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/connect"
 )
 
 // UploadFile uploads the file from the given path.
 // It returns the key to use to pass to the Raito backend to use the file.
-func UploadFile(file string, config *types.BaseTargetConfig) (string, error) {
+func UploadFile(logger hclog.Logger, file string, config *types.BaseTargetConfig) (string, error) {
 	url, key, err := getUploadURL(config)
 	if err != nil {
 		return "", err
 	}
 
-	return uploadFileToBucket(file, config, url, key)
+	return uploadFileToBucket(logger, file, config, url, key)
 }
 
 // UploadLogFile uploads the file from the given path.
 // It returns the key to use to pass to the Raito backend to use the file.
-func UploadLogFile(file string, config *types.BaseTargetConfig, task string) (string, error) {
+func UploadLogFile(logger hclog.Logger, file string, config *types.BaseTargetConfig, task string) (string, error) {
 	url, key, err := getUploadLogsURL(config, task)
 	if err != nil {
 		return "", err
 	}
 
-	return uploadFileToBucket(file, config, url, key)
+	return uploadFileToBucket(logger, file, config, url, key)
 }
 
-func uploadFileToBucket(file string, config *types.BaseTargetConfig, url string, key string) (string, error) {
+func uploadFileToBucket(logger hclog.Logger, file string, config *types.BaseTargetConfig, url string, key string) (string, error) {
 	start := time.Now()
 
 	data, err := os.Open(file)
@@ -72,7 +74,7 @@ func uploadFileToBucket(file string, config *types.BaseTargetConfig, url string,
 
 	sec := time.Since(start).Round(time.Millisecond)
 
-	config.TargetLogger.Info(fmt.Sprintf("Successfully uploaded file with key %q (%d bytes) in %s.", key, stat.Size(), sec))
+	logger.Info(fmt.Sprintf("Successfully uploaded file with key %q (%d bytes) in %s.", key, stat.Size(), sec))
 
 	return key, nil
 }

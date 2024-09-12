@@ -22,39 +22,39 @@ type TagImportConfig struct {
 }
 
 type TagImporter interface {
-	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error)
 }
 
 type tagImporter struct {
 	config        *TagImportConfig
-	log           hclog.Logger
 	statusUpdater job.TaskEventUpdater
 }
 
 func NewTagImporter(config *TagImportConfig, statusUpdater job.TaskEventUpdater) TagImporter {
-	logger := config.TargetLogger.With("datasource", config.DataSourceId, "file", config.TargetFile)
-	tagI := tagImporter{config, logger, statusUpdater}
+	tagI := tagImporter{config, statusUpdater}
 
 	return tagI
 }
 
-func (t tagImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
+func (t tagImporter) TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error) {
+	logger = logger.With("datasource", t.config.DataSourceId, "file", t.config.TargetFile)
+
 	if viper.GetBool(constants.SkipFileUpload) {
-		return t.doImport(ctx, jobId, t.config.TargetFile)
+		return t.doImport(ctx, logger, jobId, t.config.TargetFile)
 	} else {
-		key, err := t.upload(ctx)
+		key, err := t.upload(ctx, logger)
 		if err != nil {
 			return job.Failed, "", err
 		}
 
-		return t.doImport(ctx, jobId, key)
+		return t.doImport(ctx, logger, jobId, key)
 	}
 }
 
-func (t tagImporter) upload(ctx context.Context) (string, error) {
+func (t tagImporter) upload(ctx context.Context, logger hclog.Logger) (string, error) {
 	t.statusUpdater.SetStatusToDataUpload(ctx)
 
-	key, err := file.UploadFile(t.config.TargetFile, &t.config.BaseTargetConfig)
+	key, err := file.UploadFile(logger, t.config.TargetFile, &t.config.BaseTargetConfig)
 	if err != nil {
 		return "", fmt.Errorf("uploading tag import files to Raito: %w", err)
 	}
@@ -62,14 +62,14 @@ func (t tagImporter) upload(ctx context.Context) (string, error) {
 	return key, nil
 }
 
-func (t tagImporter) doImport(ctx context.Context, jobId, fileKey string) (status job.JobStatus, subtaskId string, err error) {
+func (t tagImporter) doImport(ctx context.Context, logger hclog.Logger, jobId, fileKey string) (status job.JobStatus, subtaskId string, err error) {
 	start := time.Now()
 
 	defer func() {
 		if err != nil {
-			t.log.Error(fmt.Sprintf("Error while importing tags: %s", err.Error()))
+			logger.Error(fmt.Sprintf("Error while importing tags: %s", err.Error()))
 		} else {
-			t.log.Info(fmt.Sprintf("Imported tags in %s", time.Since(start).Round(time.Millisecond)))
+			logger.Info(fmt.Sprintf("Imported tags in %s", time.Since(start).Round(time.Millisecond)))
 		}
 	}()
 

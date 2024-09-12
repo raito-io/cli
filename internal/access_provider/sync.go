@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hashicorp/go-hclog"
 	"gopkg.in/yaml.v2"
 
 	dapc "github.com/raito-io/cli/base/access_provider"
@@ -89,17 +90,17 @@ func (s *DataAccessSync) GetTaskResults() []job.TaskResult {
 	return s.result
 }
 
-func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context, logger hclog.Logger, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, secureImport func(func() error) error) (job.JobStatus, string, error) {
 	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "fromTarget-access", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
+	logger.Debug(fmt.Sprintf("Using %q as data access target file", targetFile))
 
-	defer s.TargetConfig.HandleTempFile(targetFile, false)
+	defer s.TargetConfig.HandleTempFile(logger, targetFile, false)
 
-	err = s.accessSyncImport(client, targetFile)
+	err = s.accessSyncImport(logger, client, targetFile)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -107,12 +108,11 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context,
 	postProcessor := NewPostProcessor(&PostProcessorConfig{
 		TagOverwriteKeyForName:   s.TargetConfig.TagOverwriteKeyForAccessProviderName,
 		TagOverwriteKeyForOwners: s.TargetConfig.TagOverwriteKeyForAccessProviderOwners,
-		TargetLogger:             s.TargetConfig.TargetLogger,
 	})
 
 	toProcessFile := targetFile
 	if postProcessor.NeedsPostProcessing() {
-		toProcessFile, _, err = s.postProcessAccessProviders(postProcessor, targetFile)
+		toProcessFile, _, err = s.postProcessAccessProviders(logger, postProcessor, targetFile)
 		if err != nil {
 			return job.Failed, "", err
 		}
@@ -126,21 +126,31 @@ func (s *dataAccessImportSubtask) StartSyncAndQueueTaskPart(ctx context.Context,
 
 	daImporter := NewAccessProviderImporter(&importerConfig, statusUpdater)
 
-	status, subtaskId, err := daImporter.TriggerImport(ctx, *s.JobId)
+	var status job.JobStatus
+	var subtaskId string
+
+	err = secureImport(func() error {
+		status, subtaskId, err = daImporter.TriggerImport(ctx, logger, *s.JobId)
+		if err != nil {
+			return err
+		}
+
+		if status == job.Queued {
+			logger.Info("Successfully queued import job. Wait until remote processing is done.")
+		}
+
+		logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
+
+		return nil
+	})
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	if status == job.Queued {
-		s.TargetConfig.TargetLogger.Info("Successfully queued import job. Wait until remote processing is done.")
-	}
-
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
-
 	return status, subtaskId, nil
 }
 
-func (s *dataAccessImportSubtask) postProcessAccessProviders(postProcessor PostProcessor, toProcessFile string) (string, int, error) {
+func (s *dataAccessImportSubtask) postProcessAccessProviders(logger hclog.Logger, postProcessor PostProcessor, toProcessFile string) (string, int, error) {
 	postProcessedFile := toProcessFile
 	fileSuffix := "-post-processed"
 
@@ -151,7 +161,7 @@ func (s *dataAccessImportSubtask) postProcessAccessProviders(postProcessor PostP
 		postProcessedFile = postProcessedFile[0:strings.LastIndex(postProcessedFile, ".json")] + fileSuffix + ".json"
 	}
 
-	res, err := postProcessor.PostProcess(toProcessFile, postProcessedFile)
+	res, err := postProcessor.PostProcess(logger, toProcessFile, postProcessedFile)
 	if err != nil {
 		return toProcessFile, 0, err
 	}
@@ -159,16 +169,16 @@ func (s *dataAccessImportSubtask) postProcessAccessProviders(postProcessor PostP
 	return postProcessedFile, res.AccessProviderTouchedCount, nil
 }
 
-func (s *dataAccessImportSubtask) ProcessResults(results interface{}) error {
+func (s *dataAccessImportSubtask) ProcessResults(logger hclog.Logger, results interface{}) error {
 	if daResult, ok := results.(*AccessProviderImportResult); ok {
 		if len(daResult.Warnings) > 0 {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Synced access providers with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(daResult.Warnings), daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+			logger.Info(fmt.Sprintf("Synced access providers with %d warnings (see below). Added: %d - Removed: %d - Updated: %d", len(daResult.Warnings), daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
 
 			for _, warning := range daResult.Warnings {
-				s.TargetConfig.TargetLogger.Warn(warning)
+				logger.Warn(warning)
 			}
 		} else {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
+			logger.Info(fmt.Sprintf("Successfully synced access providers. Added: %d - Removed: %d - Updated: %d", daResult.AccessAdded, daResult.AccessRemoved, daResult.AccessUpdated))
 		}
 
 		s.task.result = append(s.task.result, job.TaskResult{
@@ -190,7 +200,7 @@ func (s *dataAccessImportSubtask) GetResultObject() interface{} {
 }
 
 // Import data from Raito to DS
-func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, targetFile string) (returnErr error) {
+func (s *dataAccessImportSubtask) accessSyncImport(logger hclog.Logger, client plugin.PluginClient, targetFile string) (returnErr error) {
 	syncerConfig := dapc.AccessSyncFromTarget{
 		ConfigMap:                     &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
 		Prefix:                        "",
@@ -228,7 +238,7 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 		return err
 	}
 
-	s.TargetConfig.TargetLogger.Info("Synchronizing access providers between data source and Raito")
+	logger.Info("Synchronizing access providers between data source and Raito")
 
 	res, err := das.SyncFromTarget(context.Background(), &syncerConfig)
 	if err != nil {
@@ -242,28 +252,28 @@ func (s *dataAccessImportSubtask) accessSyncImport(client plugin.PluginClient, t
 	return nil
 }
 
-func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater) (job.JobStatus, string, error) {
+func (s *dataAccessExportSubtask) StartSyncAndQueueTaskPart(ctx context.Context, logger hclog.Logger, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, secureImport func(func() error) error) (job.JobStatus, string, error) {
 	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(s.TargetConfig.Name, "toTarget-accessFeedback", "json"))
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	defer s.TargetConfig.HandleTempFile(targetFile, false)
+	defer s.TargetConfig.HandleTempFile(logger, targetFile, false)
 
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Using %q as actual access name target file", targetFile))
+	logger.Debug(fmt.Sprintf("Using %q as actual access name target file", targetFile))
 
 	statusUpdater.SetStatusToDataRetrieve(ctx)
 
-	return s.accessSyncExport(ctx, client, statusUpdater, targetFile)
+	return s.accessSyncExport(ctx, logger, client, statusUpdater, targetFile, secureImport)
 }
 
 // Export data from Raito to DS
-func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string) (_ job.JobStatus, _ string, returnErr error) {
+func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, logger hclog.Logger, client plugin.PluginClient, statusUpdater job.TaskEventUpdater, targetFile string, secureImport func(func() error) error) (_ job.JobStatus, _ string, returnErr error) {
 	subTaskUpdater := statusUpdater.GetSubtaskEventUpdater(constants.SubtaskAccessSync)
 
 	defer func() {
 		if returnErr != nil {
-			s.TargetConfig.TargetLogger.Error(fmt.Sprintf("Access provider sync failed due to error: %s", returnErr.Error()))
+			logger.Error(fmt.Sprintf("Access provider sync failed due to error: %s", returnErr.Error()))
 			subTaskUpdater.AddSubtaskEvent(ctx, job.Failed)
 		} else {
 			subTaskUpdater.AddSubtaskEvent(ctx, job.Completed)
@@ -272,14 +282,14 @@ func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client p
 
 	subTaskUpdater.AddSubtaskEvent(ctx, job.Started)
 
-	s.TargetConfig.TargetLogger.Info("Loading plugin")
+	logger.Info("Loading plugin")
 
 	das, err := client.GetAccessSyncer()
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	s.TargetConfig.TargetLogger.Info("Fetching access providers for this data source from Raito")
+	logger.Info("Fetching access providers for this data source from Raito")
 
 	statusUpdater.SetStatusToDataRetrieve(ctx)
 
@@ -290,13 +300,13 @@ func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client p
 
 	daExporter := NewAccessProviderExporter(&AccessProviderExporterConfig{BaseTargetConfig: *s.TargetConfig}, statusUpdater, syncConfig)
 
-	_, exportedFile, err := daExporter.TriggerExport(ctx, *s.JobId)
+	_, exportedFile, err := daExporter.TriggerExport(ctx, logger, *s.JobId)
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
-	defer s.TargetConfig.HandleTempFile(exportedFile, false)
+	defer s.TargetConfig.HandleTempFile(logger, exportedFile, false)
 
 	subTaskUpdater.AddSubtaskEvent(ctx, job.InProgress)
 
@@ -315,7 +325,7 @@ func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client p
 		FeedbackTargetFile: targetFile,
 	}
 
-	s.TargetConfig.TargetLogger.Info("Synchronizing access providers between Raito and the data source")
+	logger.Info("Synchronizing access providers between Raito and the data source")
 
 	res, err := das.SyncToTarget(context.Background(), &syncerConfig)
 	if err != nil {
@@ -338,16 +348,26 @@ func (s *dataAccessExportSubtask) accessSyncExport(ctx context.Context, client p
 
 	importer := NewAccessProviderFeedbackImporter(&feedbackImportConfig, statusUpdater)
 
-	status, subtaskId, err := importer.TriggerFeedbackImport(ctx, *s.JobId)
+	var status job.JobStatus
+	var subtaskId string
+
+	err = secureImport(func() error {
+		status, subtaskId, err = importer.TriggerFeedbackImport(ctx, logger, *s.JobId)
+		if err != nil {
+			return err
+		}
+
+		if status == job.Queued {
+			logger.Info("Successfully queued feedback import job. Wait until remote processing is done.")
+		}
+
+		logger.Debug(fmt.Sprintf("Current status: %s", status.String()))
+
+		return nil
+	})
 	if err != nil {
 		return job.Failed, "", err
 	}
-
-	if status == job.Queued {
-		s.TargetConfig.TargetLogger.Info("Successfully queued feedback import job. Wait until remote processing is done.")
-	}
-
-	s.TargetConfig.TargetLogger.Debug(fmt.Sprintf("Current status: %s", status.String()))
 
 	return status, subtaskId, nil
 }
@@ -370,16 +390,16 @@ func (s *dataAccessExportSubtask) updateLastCalculated(information *dataAccessRe
 	accessLastCalculated[s.TargetConfig.DataSourceId] = information.LastCalculated
 }
 
-func (s *dataAccessExportSubtask) ProcessResults(results interface{}) error {
+func (s *dataAccessExportSubtask) ProcessResults(logger hclog.Logger, results interface{}) error {
 	if daResult, ok := results.(*AccessProviderExportFeedbackResult); ok {
 		if len(daResult.Warnings) > 0 {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Exported access providers with %d warnings (see below). Added Actual Names: %d", len(daResult.Warnings), daResult.AccessNamesAdded))
+			logger.Info(fmt.Sprintf("Exported access providers with %d warnings (see below). Added Actual Names: %d", len(daResult.Warnings), daResult.AccessNamesAdded))
 
 			for _, warning := range daResult.Warnings {
-				s.TargetConfig.TargetLogger.Warn(warning)
+				logger.Warn(warning)
 			}
 		} else {
-			s.TargetConfig.TargetLogger.Info(fmt.Sprintf("Exported access providers. Added Actual Names: %d", daResult.AccessNamesAdded))
+			logger.Info(fmt.Sprintf("Exported access providers. Added Actual Names: %d", daResult.AccessNamesAdded))
 		}
 
 		return nil

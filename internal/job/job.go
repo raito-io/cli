@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
+
 	"github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/logging"
 	"github.com/raito-io/cli/internal/plugin"
@@ -40,8 +42,8 @@ type Task interface {
 }
 
 type TaskPart interface {
-	StartSyncAndQueueTaskPart(ctx context.Context, c plugin.PluginClient, statusUpdater TaskEventUpdater) (JobStatus, string, error)
-	ProcessResults(results interface{}) error
+	StartSyncAndQueueTaskPart(ctx context.Context, logger hclog.Logger, c plugin.PluginClient, statusUpdater TaskEventUpdater, secureImport func(func() error) error) (JobStatus, string, error)
+	ProcessResults(logger hclog.Logger, results interface{}) error
 	GetResultObject() interface{}
 }
 
@@ -55,13 +57,14 @@ type TaskResult struct {
 
 type taskEventUpdater struct {
 	Cfg              *types.BaseTargetConfig
+	logger           hclog.Logger
 	JobId            string
 	JobType          string
 	warningCollector logging.WarningCollector
 }
 
-func NewTaskEventUpdater(cfg *types.BaseTargetConfig, jobId, jobType string, warningCollector logging.WarningCollector) TaskEventUpdater {
-	return &taskEventUpdater{cfg, jobId, jobType, warningCollector}
+func NewTaskEventUpdater(cfg *types.BaseTargetConfig, logger hclog.Logger, jobId, jobType string, warningCollector logging.WarningCollector) TaskEventUpdater {
+	return &taskEventUpdater{cfg, logger, jobId, jobType, warningCollector}
 }
 
 func (u *taskEventUpdater) setStatus(ctx context.Context, status JobStatus, results []TaskResult, err error) {
@@ -75,7 +78,7 @@ func (u *taskEventUpdater) setStatus(ctx context.Context, status JobStatus, resu
 		warnings = u.warningCollector.GetWarnings()
 	}
 
-	AddTaskEvent(ctx, u.Cfg, u.JobId, u.JobType, status, results, warnings, errors)
+	AddTaskEvent(ctx, u.Cfg, u.logger, u.JobId, u.JobType, status, results, warnings, errors)
 }
 
 func (u *taskEventUpdater) SetStatusToStarted(ctx context.Context) {
@@ -113,6 +116,7 @@ func (u *taskEventUpdater) SetStatusToSkipped(ctx context.Context) {
 func (u *taskEventUpdater) GetSubtaskEventUpdater(subtask string) SubtaskEventUpdater {
 	return &subtaskEventUpdater{
 		Cfg:     u.Cfg,
+		Logger:  u.logger,
 		JobId:   u.JobId,
 		JobType: u.JobType,
 		Subtask: subtask,
@@ -121,6 +125,7 @@ func (u *taskEventUpdater) GetSubtaskEventUpdater(subtask string) SubtaskEventUp
 
 type subtaskEventUpdater struct {
 	Cfg          *types.BaseTargetConfig
+	Logger       hclog.Logger
 	JobId        string
 	JobType      string
 	Subtask      string
@@ -128,7 +133,7 @@ type subtaskEventUpdater struct {
 }
 
 func (u *subtaskEventUpdater) AddSubtaskEvent(ctx context.Context, status JobStatus) {
-	AddSubtaskEvent(ctx, u.Cfg, u.JobId, u.JobType, u.Subtask, status, u.receivedDate)
+	AddSubtaskEvent(ctx, u.Cfg, u.Logger, u.JobId, u.JobType, u.Subtask, status, u.receivedDate)
 }
 
 func (u *subtaskEventUpdater) SetReceivedDate(receivedDate int64) {
@@ -168,7 +173,7 @@ func StartJob(ctx context.Context, cfg *types.BaseTargetConfig) (string, error) 
 	return mutation.CreateJob.JobId, nil
 }
 
-func UpdateJobEvent(cfg *types.BaseTargetConfig, jobID string, status JobStatus, inputErr error) {
+func UpdateJobEvent(cfg *types.BaseTargetConfig, logger hclog.Logger, jobID string, status JobStatus, inputErr error) {
 	var mutation struct {
 		UpdateJob struct {
 			JobId string
@@ -202,11 +207,11 @@ func UpdateJobEvent(cfg *types.BaseTargetConfig, jobID string, status JobStatus,
 
 	err := graphql.NewClient(&cfg.BaseConfig).Mutate(context.Background(), &mutation, map[string]interface{}{"id": jobID, "input": input})
 	if err != nil {
-		cfg.TargetLogger.Debug(fmt.Sprintf("job update failed: %s", err.Error()))
+		logger.Debug(fmt.Sprintf("job update failed: %s", err.Error()))
 	}
 }
 
-func AddTaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType string, status JobStatus, taskResults []TaskResult, warnings []string, errors []error) {
+func AddTaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, logger hclog.Logger, jobID, jobType string, status JobStatus, taskResults []TaskResult, warnings []string, errors []error) {
 	var mutation struct {
 		AddTaskEvent struct {
 			JobId string
@@ -253,11 +258,11 @@ func AddTaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobTy
 
 	err := graphql.NewClient(&cfg.BaseConfig).Mutate(ctx, &mutation, map[string]interface{}{"input": input})
 	if err != nil {
-		cfg.TargetLogger.Debug("taskEvent update failed: %s", err.Error())
+		logger.Debug("taskEvent update failed: %s", err.Error())
 	}
 }
 
-func AddSubtaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType, subtask string, status JobStatus, receivedDate *int64) {
+func AddSubtaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, logger hclog.Logger, jobID, jobType, subtask string, status JobStatus, receivedDate *int64) {
 	var mutation struct {
 		AddSubtaskEvent struct {
 			JobId string
@@ -294,11 +299,11 @@ func AddSubtaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jo
 
 	err := graphql.NewClient(&cfg.BaseConfig).Mutate(ctx, &mutation, map[string]interface{}{"input": input})
 	if err != nil {
-		cfg.TargetLogger.Debug("subtask event update failed: %s", err.Error())
+		logger.Debug("subtask event update failed: %s", err.Error())
 	}
 }
 
-func GetSubtask(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType, subtaskId string, responseResult interface{}) (*Subtask, error) {
+func GetSubtask(ctx context.Context, cfg *types.BaseTargetConfig, logger hclog.Logger, jobID, jobType, subtaskId string, responseResult interface{}) (*Subtask, error) {
 	gqlQuery := fmt.Sprintf(`query jobSubtask{
 		jobSubtask(jobId: "%s", jobType: "%s", subtaskId: "%s") {
             jobId
@@ -354,7 +359,7 @@ func GetSubtask(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType
 
 	rawResponse, err := graphql.NewClient(&cfg.BaseConfig).ExecRaw(ctx, gqlQuery, nil)
 	if err != nil {
-		cfg.TargetLogger.Debug("failed to load Subtask information: %s", err.Error())
+		logger.Debug("failed to load Subtask information: %s", err.Error())
 		return nil, err
 	}
 
@@ -362,7 +367,7 @@ func GetSubtask(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType
 
 	err = json.Unmarshal(rawResponse, &response)
 	if err != nil {
-		cfg.TargetLogger.Debug("failed to load Subtask information: %s", err.Error())
+		logger.Debug("failed to load Subtask information: %s", err.Error())
 		return nil, err
 	}
 
@@ -479,7 +484,7 @@ func (e JobStatus) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func WaitForJobToComplete(ctx context.Context, jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *types.BaseTargetConfig, currentStatus JobStatus) (*Subtask, error) {
+func WaitForJobToComplete(ctx context.Context, logger hclog.Logger, jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *types.BaseTargetConfig, currentStatus JobStatus) (*Subtask, error) {
 	i := 0
 
 	var subtask *Subtask
@@ -490,7 +495,7 @@ func WaitForJobToComplete(ctx context.Context, jobID string, syncType string, su
 			time.Sleep(1 * time.Second)
 		}
 
-		subtask, err = GetSubtask(ctx, cfg, jobID, syncType, subtaskId, syncResult)
+		subtask, err = GetSubtask(ctx, cfg, logger, jobID, syncType, subtaskId, syncResult)
 
 		if err != nil {
 			return nil, err
@@ -499,11 +504,11 @@ func WaitForJobToComplete(ctx context.Context, jobID string, syncType string, su
 		}
 
 		if currentStatus != subtask.Status {
-			cfg.TargetLogger.Info(fmt.Sprintf("Update task status to %s", subtask.Status.String()))
+			logger.Info(fmt.Sprintf("Update task status to %s", subtask.Status.String()))
 		}
 
 		currentStatus = subtask.Status
-		cfg.TargetLogger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, currentStatus.String()))
+		logger.Debug(fmt.Sprintf("Current status on iteration %d: %s", i, currentStatus.String()))
 		i += 1
 	}
 

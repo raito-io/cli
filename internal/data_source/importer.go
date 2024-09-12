@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/spf13/viper"
+
+	"github.com/raito-io/cli/internal/util/tag"
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
@@ -28,40 +29,38 @@ type DataSourceImportConfig struct {
 }
 
 type DataSourceImporter interface {
-	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error)
 }
 
 type dataSourceImporter struct {
 	config        *DataSourceImportConfig
-	log           hclog.Logger
 	statusUpdater job.TaskEventUpdater
 }
 
 func NewDataSourceImporter(config *DataSourceImportConfig, statusUpdater job.TaskEventUpdater) DataSourceImporter {
-	logger := config.TargetLogger.With("datasource", config.DataSourceId, "file", config.TargetFile)
-	dsI := dataSourceImporter{config, logger, statusUpdater}
+	dsI := dataSourceImporter{config, statusUpdater}
 
 	return &dsI
 }
 
-func (d *dataSourceImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
+func (d *dataSourceImporter) TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error) {
 	if viper.GetBool(constants.SkipFileUpload) {
 		// In the development environment, we skip the upload and use the local file for the import
-		return d.doImport(jobId, d.config.TargetFile)
+		return d.doImport(logger, jobId, d.config.TargetFile)
 	} else {
-		key, err := d.upload(ctx)
+		key, err := d.upload(ctx, logger)
 		if err != nil {
 			return job.Failed, "", err
 		}
 
-		return d.doImport(jobId, key)
+		return d.doImport(logger, jobId, key)
 	}
 }
 
-func (d *dataSourceImporter) upload(ctx context.Context) (string, error) {
+func (d *dataSourceImporter) upload(ctx context.Context, logger hclog.Logger) (string, error) {
 	d.statusUpdater.SetStatusToDataUpload(ctx)
 
-	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
+	key, err := file.UploadFile(logger, d.config.TargetFile, &d.config.BaseTargetConfig)
 	if err != nil {
 		return "", fmt.Errorf("error while uploading data source import files to Raito: %s", err.Error())
 	}
@@ -69,7 +68,7 @@ func (d *dataSourceImporter) upload(ctx context.Context) (string, error) {
 	return key, nil
 }
 
-func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, string, error) {
+func (d *dataSourceImporter) doImport(logger hclog.Logger, jobId, fileKey string) (job.JobStatus, string, error) {
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataSourceRequest", "variables":{}, "query": "mutation ImportDataSourceRequest {
@@ -98,7 +97,7 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, str
 		return job.Failed, "", fmt.Errorf("error while executing import: %s", err.Error())
 	}
 
-	d.log.Info(fmt.Sprintf("Submitted import in %s", time.Since(start).Round(time.Millisecond)))
+	logger.Info(fmt.Sprintf("Submitted import in %s", time.Since(start).Round(time.Millisecond)))
 
 	subtask := res.Response.Subtask
 

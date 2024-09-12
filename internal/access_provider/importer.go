@@ -23,40 +23,40 @@ type AccessProviderImportConfig struct {
 }
 
 type AccessProviderImporter interface {
-	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error)
 }
 
 type accessProviderImporter struct {
 	config        *AccessProviderImportConfig
-	log           hclog.Logger
 	statusUpdater job.TaskEventUpdater
 }
 
 func NewAccessProviderImporter(config *AccessProviderImportConfig, statusUpdater job.TaskEventUpdater) AccessProviderImporter {
-	logger := config.TargetLogger.With("AccessProvider", config.DataSourceId, "file", config.TargetFile)
-	dsI := accessProviderImporter{config, logger, statusUpdater}
+	dsI := accessProviderImporter{config, statusUpdater}
 
 	return &dsI
 }
 
-func (d *accessProviderImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
+func (d *accessProviderImporter) TriggerImport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error) {
+	logger = logger.With("AccessProvider", d.config.DataSourceId, "file", d.config.TargetFile)
+
 	if viper.GetBool(constants.SkipFileUpload) {
 		// In the development environment, we skip the upload and use the local file for the import
-		return d.doImport(jobId, d.config.TargetFile)
+		return d.doImport(logger, jobId, d.config.TargetFile)
 	} else {
-		key, err := d.upload(ctx)
+		key, err := d.upload(ctx, logger)
 		if err != nil {
 			return job.Failed, "", err
 		}
 
-		return d.doImport(jobId, key)
+		return d.doImport(logger, jobId, key)
 	}
 }
 
-func (d *accessProviderImporter) upload(ctx context.Context) (string, error) {
+func (d *accessProviderImporter) upload(ctx context.Context, logger hclog.Logger) (string, error) {
 	d.statusUpdater.SetStatusToDataUpload(ctx)
 
-	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
+	key, err := file.UploadFile(logger, d.config.TargetFile, &d.config.BaseTargetConfig)
 	if err != nil {
 		return "", fmt.Errorf("error while uploading data source import files to Raito: %s", err.Error())
 	}
@@ -64,7 +64,7 @@ func (d *accessProviderImporter) upload(ctx context.Context) (string, error) {
 	return key, nil
 }
 
-func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.JobStatus, string, error) {
+func (d *accessProviderImporter) doImport(logger hclog.Logger, jobId string, fileKey string) (job.JobStatus, string, error) {
 	start := time.Now()
 
 	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportAccessProvidersRequest", "variables":{}, "query": "mutation ImportAccessProvidersRequest {
@@ -95,7 +95,7 @@ func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.Job
 	retStatus := res.Response.Subtask.Status
 	subtaskId := res.Response.Subtask.SubtaskId
 
-	d.log.Info(fmt.Sprintf("Done submitting import in %s", time.Since(start).Round(time.Millisecond)))
+	logger.Info(fmt.Sprintf("Done submitting import in %s", time.Since(start).Round(time.Millisecond)))
 
 	return retStatus, subtaskId, nil
 }

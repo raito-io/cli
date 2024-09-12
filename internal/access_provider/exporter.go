@@ -31,32 +31,32 @@ type AccessProviderExporterConfig struct {
 }
 
 type AccessProviderExporter interface {
-	TriggerExport(ctx context.Context, jobId string) (job.JobStatus, string, error)
+	TriggerExport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error)
 }
 
 type accessProviderExporter struct {
 	config        *AccessProviderExporterConfig
-	log           hclog.Logger
 	statusUpdater job.TaskEventUpdater
 	syncConfig    *access_provider.AccessSyncConfig
 }
 
 func NewAccessProviderExporter(config *AccessProviderExporterConfig, statusUpdater job.TaskEventUpdater, syncConfig *access_provider.AccessSyncConfig) AccessProviderExporter {
-	logger := config.TargetLogger.With("AccessProviderExport", config.DataSourceId)
-	dsI := accessProviderExporter{config, logger, statusUpdater, syncConfig}
+	dsI := accessProviderExporter{config, statusUpdater, syncConfig}
 
 	return &dsI
 }
 
-func (d *accessProviderExporter) TriggerExport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
-	status, subTaskId, err := d.doExport(ctx, jobId)
+func (d *accessProviderExporter) TriggerExport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error) {
+	logger = logger.With("AccessProviderExport", d.config.DataSourceId)
+
+	status, subTaskId, err := d.doExport(ctx, logger, jobId)
 
 	if err != nil {
 		return job.Failed, "", err
 	}
 
 	result := &AccessProviderExportResult{}
-	subtask, err := job.WaitForJobToComplete(ctx, jobId, constants.DataAccessSync, subTaskId, result, &d.config.BaseTargetConfig, status)
+	subtask, err := job.WaitForJobToComplete(ctx, logger, jobId, constants.DataAccessSync, subTaskId, result, &d.config.BaseTargetConfig, status)
 
 	if err != nil {
 		return job.Failed, "", err
@@ -115,7 +115,7 @@ func (d *accessProviderExporter) download(url string) (string, error) {
 	return filePath, nil
 }
 
-func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
+func (d *accessProviderExporter) doExport(ctx context.Context, logger hclog.Logger, jobId string) (job.JobStatus, string, error) {
 	start := time.Now()
 
 	var q struct {
@@ -153,7 +153,7 @@ func (d *accessProviderExporter) doExport(ctx context.Context, jobId string) (jo
 	retStatus := q.ExportAccessProvidersRequest.Subtask.Status
 	subtaskId := q.ExportAccessProvidersRequest.Subtask.SubtaskId
 
-	d.log.Info(fmt.Sprintf("Done submitting export in %s", time.Since(start).Round(time.Millisecond)))
+	logger.Info(fmt.Sprintf("Done submitting export in %s", time.Since(start).Round(time.Millisecond)))
 
 	return retStatus, subtaskId, nil
 }

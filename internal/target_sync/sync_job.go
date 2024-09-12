@@ -4,15 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/viper"
+	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 
 	"github.com/raito-io/cli/base/util/error/grpc_error"
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
 	"github.com/raito-io/cli/internal/constants"
+	"github.com/raito-io/cli/internal/error_handler"
 	gql "github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/logging"
@@ -25,15 +29,26 @@ import (
 
 type SyncJob struct {
 	jobIds      []string
-	RunTypeName string
+	runTypeName string
+
+	syncErr        atomic.Error
+	syncStartMutex sync.Mutex
+	syncQueueMutex sync.Mutex
+	wg             sync.WaitGroup
+}
+
+func NewSyncJob(runTypeName string) *SyncJob {
+	return &SyncJob{
+		runTypeName: runTypeName,
+	}
 }
 
 func (s *SyncJob) RunType() string {
-	return s.RunTypeName
+	return s.runTypeName
 }
 
-func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTargetConfig) (syncError error) {
-	targetConfig.TargetLogger.Info("Executing target...")
+func (s *SyncJob) TargetSync(ctx context.Context, logger hclog.Logger, targetConfig *types.BaseTargetConfig) (syncError error) {
+	logger.Info("Executing target...")
 
 	var jobId string
 
@@ -41,9 +56,9 @@ func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTarget
 
 	defer func() {
 		if syncError != nil {
-			targetConfig.TargetLogger.Error(fmt.Sprintf("Failed execution: %s", syncError.Error()), "success")
+			logger.Error(fmt.Sprintf("Failed execution: %s", syncError.Error()), "success")
 		} else {
-			targetConfig.TargetLogger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
+			logger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
 
 			if jobId != "" {
 				s.jobIds = append(s.jobIds, jobId)
@@ -51,9 +66,9 @@ func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTarget
 		}
 	}()
 
-	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, targetConfig.TargetLogger)
+	client, err := plugin.NewPluginClient(targetConfig.ConnectorName, targetConfig.ConnectorVersion, logger)
 	if err != nil {
-		targetConfig.TargetLogger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
+		logger.Error(fmt.Sprintf("Error initializing connector plugin %q: %s", targetConfig.ConnectorName, err.Error()))
 		return err
 	}
 	defer client.Close()
@@ -63,14 +78,14 @@ func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTarget
 		return err
 	}
 
-	targetConfig.TargetLogger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobId))
-	job.UpdateJobEvent(targetConfig, jobId, job.InProgress, nil)
+	logger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobId))
+	job.UpdateJobEvent(targetConfig, logger, jobId, job.InProgress, nil)
 
 	defer func() {
 		if syncError == nil {
-			job.UpdateJobEvent(targetConfig, jobId, job.Completed, nil)
+			job.UpdateJobEvent(targetConfig, logger, jobId, job.Completed, nil)
 		} else {
-			job.UpdateJobEvent(targetConfig, jobId, job.Failed, syncError)
+			job.UpdateJobEvent(targetConfig, logger, jobId, job.Failed, syncError)
 		}
 	}()
 
@@ -84,62 +99,50 @@ func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTarget
 		return fmt.Errorf("get plugin info: %w", err)
 	}
 
+	eh := error_handler.NewBaseErrorHandler()
+
 	if len(pluginInfo.Type) == 0 { // Backwards compatibility
-		err = dsSyncTargetSync(ctx, targetConfig, client, jobId)
-		if err != nil {
-			return fmt.Errorf("full data source sync: %w", err)
-		}
+		dsSyncTargetSync(ctx, logger, targetConfig, client, jobId, s, error_handler.Wrap(eh, "full data source sync: %w", error_handler.ErrorPlaceholder))
 	}
 
 	for _, pluginType := range pluginInfo.Type {
 		switch pluginType {
 		case plugin2.PluginType_PLUGIN_TYPE_FULL_DS_SYNC:
-			err = dsSyncTargetSync(ctx, targetConfig, client, jobId)
-			if err != nil {
-				return fmt.Errorf("full data source sync: %w", err)
-			}
+			dsSyncTargetSync(ctx, logger, targetConfig, client, jobId, s, error_handler.Wrap(eh, "full data source sync: %w", error_handler.ErrorPlaceholder))
 		case plugin2.PluginType_PLUGIN_TYPE_IS_SYNC:
-			err = isSyncTargetSync(ctx, targetConfig, client, jobId)
-			if err != nil {
-				return fmt.Errorf("identity store sync: %w", err)
-			}
+			isSyncTargetSync(ctx, logger, targetConfig, client, jobId, s, error_handler.Wrap(eh, "identity store sync: %w", error_handler.ErrorPlaceholder))
 		case plugin2.PluginType_PLUGIN_TYPE_TAG_SYNC:
-			err = tagSyncTargetSync(ctx, targetConfig, client, jobId)
-			if err != nil {
-				return fmt.Errorf("tag sync: %w", err)
-			}
+			tagSyncTargetSync(ctx, logger, targetConfig, client, jobId, s, error_handler.Wrap(eh, "tag sync: %w", error_handler.ErrorPlaceholder))
 		case plugin2.PluginType_PLUGIN_TYPE_RESOURCE_PROVIDER:
-			err = resourceProviderSync(ctx, targetConfig, client, jobId)
-			if err != nil {
-				return fmt.Errorf("resource provider sync: %w", err)
-			}
+			resourceProviderSync(ctx, logger, targetConfig, client, jobId, s, error_handler.Wrap(eh, "resource provider sync: %w", error_handler.ErrorPlaceholder))
 		default:
 			return fmt.Errorf("unsupported plugin type: %s", pluginType)
 		}
 	}
 
-	return nil
+	s.wg.Wait()
+
+	return eh.GetError()
 }
 
 func (s *SyncJob) Finalize(ctx context.Context, baseConfig *types.BaseConfig, options *target.Options) error {
 	return sendEndOfTarget(ctx, baseConfig, s.jobIds, options)
 }
 
-func execute(ctx context.Context, targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool, syncTask job.Task, cfg *types.BaseTargetConfig, c plugin.PluginClient) (err error) {
-	cfg, warningCollector, loggingCleanUp, err := logging.CreateWarningCapturingLogger(cfg)
-	if err != nil {
-		return err
-	}
+func (s *SyncJob) execute(ctx context.Context, logger hclog.Logger, targetID string, jobID string, syncType string, syncTypeLabel string, skipSync bool, syncTask job.Task, cfg *types.BaseTargetConfig, c plugin.PluginClient, eh error_handler.ErrorHandler) {
+	logger = logger.With("jobID", jobID, "syncType", syncTypeLabel)
 
+	warningCollector, loggingCleanUp := logging.CreateWarningCapturingLogger(logger.(hclog.InterceptLogger))
 	defer loggingCleanUp()
 
-	taskEventUpdater := job.NewTaskEventUpdater(cfg, jobID, syncType, warningCollector)
+	taskEventUpdater := job.NewTaskEventUpdater(cfg, logger, jobID, syncType, warningCollector)
 
 	defer func() {
 		if r := recover(); r != nil {
-			cfg.TargetLogger.Error(fmt.Sprintf("Panic occurred during %s sync: %v", syncTypeLabel, r))
+			logger.Error(fmt.Sprintf("Panic occurred during %s sync: %v", syncTypeLabel, r))
 
-			err = fmt.Errorf("panic occurred during %s sync", syncTypeLabel)
+			err := fmt.Errorf("panic occurred during %s sync", syncTypeLabel)
+			eh.Error(err)
 
 			taskEventUpdater.SetStatusToFailed(ctx, err)
 		}
@@ -148,7 +151,7 @@ func execute(ctx context.Context, targetID string, jobID string, syncType string
 	switch {
 	case skipSync:
 		taskEventUpdater.SetStatusToSkipped(ctx)
-		cfg.TargetLogger.Info("Skipping sync of " + syncTypeLabel)
+		logger.Info("Skipping sync of " + syncTypeLabel)
 	case targetID == "":
 		taskEventUpdater.SetStatusToSkipped(ctx)
 
@@ -157,19 +160,20 @@ func execute(ctx context.Context, targetID string, jobID string, syncType string
 			idField = "identity-store-id"
 		}
 
-		cfg.TargetLogger.Warn("No " + idField + " argument found. Skipping syncing of " + syncTypeLabel)
+		logger.Warn("No " + idField + " argument found. Skipping syncing of " + syncTypeLabel)
 	default:
-		syncErr := sync(ctx, cfg, syncTypeLabel, taskEventUpdater, syncTask, c, syncType, jobID)
-		if syncErr != nil {
+		syncErrHandler := error_handler.Wrap(eh, "failed to execute %s sync: %w", syncTypeLabel, error_handler.ErrorPlaceholder)
+		s.sync(ctx, logger, cfg, syncTypeLabel, taskEventUpdater, syncTask, c, syncType, jobID, syncErrHandler)
+		if syncErrHandler.HasError() {
 			// Sync error is already pushed to task error
-			return fmt.Errorf("failed to execute %s sync", syncTypeLabel)
+			return
 		}
 	}
 
-	return nil
+	return
 }
 
-func logForwardingEnabled(syncType string) bool {
+func (s *SyncJob) logForwardingEnabled(syncType string) bool {
 	if viper.GetBool(constants.DisableLogForwarding) {
 		return false
 	}
@@ -194,109 +198,166 @@ func logForwardingEnabled(syncType string) bool {
 	return !viper.GetBool(cmdFlag)
 }
 
-func sync(ctx context.Context, cfg *types.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, syncTask job.Task, c plugin.PluginClient, syncType string, jobID string) (err error) {
-	defer func() {
-		if err != nil {
-			taskEventUpdater.SetStatusToFailed(ctx, err)
+func (s *SyncJob) sync(ctx context.Context, logger hclog.Logger, cfg *types.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, syncTask job.Task, c plugin.PluginClient, syncType string, jobID string, eh error_handler.ErrorHandler) {
+	eh = error_handler.OnError(eh, func(err error) {
+		taskEventUpdater.SetStatusToFailed(ctx, err)
 
-			target.HandleTargetError(err, cfg, fmt.Sprintf("Synchronizing %s failed", syncType))
-		}
-	}()
+		target.HandleTargetError(err, logger, fmt.Sprintf("Synchronizing %s failed", syncType))
+	})
 
-	if logForwardingEnabled(syncType) {
+	var taskMutex sync.Mutex
+
+	if s.logForwardingEnabled(syncType) {
 		targetCfg, cleanup, taskLoggingError := logging.CreateTaskLogger(cfg, jobID, syncType)
 		if taskLoggingError != nil {
-			return taskLoggingError
+			eh.Error(taskLoggingError)
+
+			return
 		}
 
 		cfg = targetCfg
 
 		defer func() {
-			cleanUpErr := cleanup()
-			if cleanUpErr != nil {
-				cfg.TargetLogger.Warn(fmt.Sprintf("Failed to close logger for task: %s", cleanUpErr.Error()))
-			}
+			s.wg.Add(1)
+			go func() {
+				defer s.wg.Done()
+
+				taskMutex.Lock()
+
+				cleanUpErr := cleanup()
+				if cleanUpErr != nil {
+					logger.Warn(fmt.Sprintf("Failed to close logger for task: %s", cleanUpErr.Error()))
+				}
+			}()
 		}()
 	}
 
-	_, err = syncTask.IsClientValid(ctx, c)
+	_, err := syncTask.IsClientValid(ctx, c)
 	incompatibleVersionError := version_management.IncompatiblePluginVersionError{}
 
 	var internalPluginStatusError *grpc_error.InternalPluginStatusError
 
 	if errors.As(err, &internalPluginStatusError) {
 		if internalPluginStatusError.StatusCode() == codes.Unimplemented {
-			cfg.TargetLogger.Info(fmt.Sprintf("Plugin does not implement a syncer for %s. Skipping", syncTypeLabel))
+			logger.Info(fmt.Sprintf("Plugin does not implement a syncer for %s. Skipping", syncTypeLabel))
 			taskEventUpdater.SetStatusToSkipped(ctx) // Skip should be sent before we send a start status event
 
-			return nil
+			return
 		}
 	}
 
-	cfg.TargetLogger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
+	s.syncStartMutex.Lock()
+	logger.Info(fmt.Sprintf("Synchronizing %s...", syncTypeLabel))
 	taskEventUpdater.SetStatusToStarted(ctx)
+	s.syncStartMutex.Unlock()
 
 	if errors.As(err, &incompatibleVersionError) {
-		return fmt.Errorf("unable to execute %s sync: %w", syncTypeLabel, incompatibleVersionError)
+		eh.Errorf("unable to execute %s sync: %w", syncTypeLabel, incompatibleVersionError)
+
+		return
 	} else if err != nil {
-		return err
+		eh.Error(err)
+
+		return
 	}
 
 	syncParts := syncTask.GetParts()
 
+	taskWg := sync.WaitGroup{}
+
 	for i, taskPart := range syncParts {
-		err2 := runTaskPartSync(ctx, cfg, syncTypeLabel, taskEventUpdater, jobID, syncType, taskPart, i, syncParts, c)
-		if err2 != nil {
-			return err2
+		s.runTaskPartSync(ctx, logger.With("subtask", i), cfg, syncTypeLabel, taskEventUpdater, jobID, syncType, taskPart, i, syncParts, c, &taskWg, eh)
+		if eh.HasError() {
+			return
 		}
 	}
 
-	taskEventUpdater.SetStatusToCompleted(ctx, syncTask.GetTaskResults())
+	taskMutex.Lock()
+	s.wg.Add(1)
 
-	return nil
+	go func() {
+		defer s.wg.Done()
+		defer taskMutex.Unlock()
+
+		taskWg.Wait()
+		taskEventUpdater.SetStatusToCompleted(ctx, syncTask.GetTaskResults())
+	}()
 }
 
-func runTaskPartSync(ctx context.Context, cfg *types.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, jobID string, syncType string, taskPart job.TaskPart, i int, syncParts []job.TaskPart, c plugin.PluginClient) error {
-	cfg.TargetLogger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
+func (s *SyncJob) runTaskPartSync(ctx context.Context, logger hclog.Logger, cfg *types.BaseTargetConfig, syncTypeLabel string, taskEventUpdater job.TaskEventUpdater, jobID string, syncType string, taskPart job.TaskPart, i int,
+	syncParts []job.TaskPart, c plugin.PluginClient, wg *sync.WaitGroup, eh error_handler.ErrorHandler) {
+	s.syncStartMutex.Lock()
+	hasImportPart := false
 
-	status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(ctx, c, taskEventUpdater)
-	if err != nil {
-		err = fmt.Errorf("synchronizing %s : %w", syncType, err)
+	wg.Add(1)
 
-		return err
-	}
+	go func() {
+		defer wg.Done()
 
-	if status == job.Queued {
-		taskEventUpdater.SetStatusToQueued(ctx)
-		cfg.TargetLogger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
-	}
+		logger.Debug(fmt.Sprintf("Start sync task part %d out of %d", i+1, len(syncParts)))
 
-	syncResult := taskPart.GetResultObject()
+		status, subtaskId, err := taskPart.StartSyncAndQueueTaskPart(ctx, logger, c, taskEventUpdater, func(f func() error) error {
+			hasImportPart = true
+			s.syncQueueMutex.Lock()
+			defer s.syncQueueMutex.Unlock()
 
-	if syncResult != nil {
-		subtask, err := job.WaitForJobToComplete(ctx, jobID, syncType, subtaskId, syncResult, cfg, status)
+			s.syncStartMutex.Unlock()
+
+			return f()
+		})
+
+		if !hasImportPart {
+			s.syncStartMutex.Unlock()
+		}
+
 		if err != nil {
-			return err
+			eh.Errorf("synchronizing %s : %w", syncTypeLabel, err)
+
+			return
 		}
 
-		if subtask.Status == job.Failed {
-			var subtaskErr error
-			subtaskErr = multierror.Append(subtaskErr, array.Map(subtask.Errors, func(err *string) error { return errors.New(*err) })...)
-
-			return subtaskErr
-		} else if subtask.Status == job.TimeOut {
-			return fmt.Errorf("synchronizing %s timed out", syncType)
+		if status == job.Queued {
+			taskEventUpdater.SetStatusToQueued(ctx)
+			logger.Info(fmt.Sprintf("Waiting for server to start processing %s...", syncTypeLabel))
 		}
 
-		err = taskPart.ProcessResults(syncResult)
-		if err != nil {
-			return err
-		}
-	} else if status != job.Completed {
-		return fmt.Errorf("unable to load results")
-	}
+		syncResult := taskPart.GetResultObject()
 
-	return nil
+		if syncResult != nil {
+			subtask, err := job.WaitForJobToComplete(ctx, logger, jobID, syncType, subtaskId, syncResult, cfg, status)
+			if err != nil {
+				eh.Error(err)
+
+				return
+			}
+
+			if subtask.Status == job.Failed {
+				var subtaskErr error
+				subtaskErr = multierror.Append(subtaskErr, array.Map(subtask.Errors, func(err *string) error { return errors.New(*err) })...)
+
+				eh.Error(subtaskErr)
+
+				return
+			} else if subtask.Status == job.TimeOut {
+				eh.Errorf("synchronizing %s timed out", syncTypeLabel)
+
+				return
+			}
+
+			err = taskPart.ProcessResults(logger, syncResult)
+			if err != nil {
+				eh.Error(err)
+
+				return
+			}
+		} else if status != job.Completed {
+			eh.Errorf("unable to load results")
+
+			return
+		}
+
+		return
+	}()
 }
 
 func sendEndOfTarget(ctx context.Context, baseConfig *types.BaseConfig, jobIds []string, options *target.Options) error {

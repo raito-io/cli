@@ -502,7 +502,7 @@ func WaitForJobToComplete(ctx context.Context, jobID string, syncType string, su
 					err = fmt.Errorf("received invalid job status")
 				}
 
-				cfg.TargetLogger.Error(fmt.Sprintf("exceeded threshold for number of retries for fetching subtask progress: %w", err))
+				cfg.TargetLogger.Error(fmt.Sprintf("exceeded threshold for number of retries for fetching subtask progress: %s", err.Error()))
 
 				return nil, err
 			} else {

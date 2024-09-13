@@ -73,7 +73,7 @@ func executeInfoCmd(cmd *cobra.Command, args []string) {
 		pterm.Println("Parameters:")
 
 		for _, param := range pluginInfo.Parameters {
-			line := "   " + pterm.Bold.Sprintf(param.Name)
+			line := "   " + pterm.Bold.Sprint(param.Name)
 			if param.Mandatory {
 				line += " (required)"
 			}

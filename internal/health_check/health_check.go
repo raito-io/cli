@@ -1,6 +1,7 @@
 package health_check
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hashicorp/go-hclog"
@@ -37,7 +38,7 @@ func (s *HealthChecker) MarkLiveness() error {
 		return err
 	}
 
-	s.logger.Debug("[Healthchecker] Created liveness file: %s", s.livenessFilePath)
+	s.logger.Debug(fmt.Sprintf("[Healthchecker] Created liveness file: %s", s.livenessFilePath))
 
 	s.livenessFile = livenessFile
 

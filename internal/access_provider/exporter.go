@@ -56,7 +56,7 @@ func (d *accessProviderExporter) TriggerExport(ctx context.Context, jobId string
 	}
 
 	result := &AccessProviderExportResult{}
-	subtask, err := job.WaitForJobToComplete(ctx, jobId, constants.DataAccessSync, subTaskId, result, &d.config.BaseTargetConfig, status)
+	subtask, err := job.WaitForJobToComplete(ctx, jobId, constants.DataAccessSync, subTaskId, result, &d.config.BaseTargetConfig, status, 1)
 
 	if err != nil {
 		return job.Failed, "", err

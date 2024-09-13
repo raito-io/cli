@@ -274,7 +274,7 @@ func runTaskPartSync(ctx context.Context, cfg *types.BaseTargetConfig, syncTypeL
 	syncResult := taskPart.GetResultObject()
 
 	if syncResult != nil {
-		subtask, err := job.WaitForJobToComplete(ctx, jobID, syncType, subtaskId, syncResult, cfg, status)
+		subtask, err := job.WaitForJobToComplete(ctx, jobID, syncType, subtaskId, syncResult, cfg, status, 5)
 		if err != nil {
 			return err
 		}

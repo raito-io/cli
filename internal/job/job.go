@@ -14,6 +14,8 @@ import (
 	"github.com/raito-io/cli/internal/target/types"
 )
 
+const NrOfRetriesOnError = 5
+
 //go:generate go run github.com/vektra/mockery/v2 --name=TaskEventUpdater --with-expecter
 type TaskEventUpdater interface {
 	SetStatusToStarted(ctx context.Context)
@@ -253,7 +255,7 @@ func AddTaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobTy
 
 	err := graphql.NewClient(&cfg.BaseConfig).Mutate(ctx, &mutation, map[string]interface{}{"input": input})
 	if err != nil {
-		cfg.TargetLogger.Debug("taskEvent update failed: %s", err.Error())
+		cfg.TargetLogger.Debug(fmt.Sprintf("taskEvent update failed: %s", err.Error()))
 	}
 }
 
@@ -294,7 +296,7 @@ func AddSubtaskEvent(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jo
 
 	err := graphql.NewClient(&cfg.BaseConfig).Mutate(ctx, &mutation, map[string]interface{}{"input": input})
 	if err != nil {
-		cfg.TargetLogger.Debug("subtask event update failed: %s", err.Error())
+		cfg.TargetLogger.Debug(fmt.Sprintf("subtask event update failed: %s", err.Error()))
 	}
 }
 
@@ -354,7 +356,7 @@ func GetSubtask(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType
 
 	rawResponse, err := graphql.NewClient(&cfg.BaseConfig).ExecRaw(ctx, gqlQuery, nil)
 	if err != nil {
-		cfg.TargetLogger.Debug("failed to load Subtask information: %s", err.Error())
+		cfg.TargetLogger.Debug(fmt.Sprintf("failed loading subtask: %s", err.Error()))
 		return nil, err
 	}
 
@@ -362,7 +364,7 @@ func GetSubtask(ctx context.Context, cfg *types.BaseTargetConfig, jobID, jobType
 
 	err = json.Unmarshal(rawResponse, &response)
 	if err != nil {
-		cfg.TargetLogger.Debug("failed to load Subtask information: %s", err.Error())
+		cfg.TargetLogger.Debug(fmt.Sprintf("failed parsing subtask: %s", err.Error()))
 		return nil, err
 	}
 
@@ -479,23 +481,33 @@ func (e JobStatus) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func WaitForJobToComplete(ctx context.Context, jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *types.BaseTargetConfig, currentStatus JobStatus) (*Subtask, error) {
+func WaitForJobToComplete(ctx context.Context, jobID string, syncType string, subtaskId string, syncResult interface{}, cfg *types.BaseTargetConfig, currentStatus JobStatus, waitInterval int) (*Subtask, error) {
 	i := 0
+	errorCount := 0
 
 	var subtask *Subtask
 	var err error
 
 	for currentStatus.IsRunning() || i == 0 {
 		if currentStatus.IsRunning() {
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Duration(waitInterval) * time.Second)
 		}
 
 		subtask, err = GetSubtask(ctx, cfg, jobID, syncType, subtaskId, syncResult)
 
-		if err != nil {
-			return nil, err
-		} else if subtask == nil {
-			return nil, fmt.Errorf("received invalid job status")
+		if err != nil || subtask == nil {
+			errorCount++
+			if errorCount > NrOfRetriesOnError {
+				if err == nil {
+					err = fmt.Errorf("received invalid job status")
+				}
+
+				cfg.TargetLogger.Error(fmt.Sprintf("exceeded threshold for number of retries for fetching subtask progress: %s", err.Error()))
+
+				return nil, err
+			} else {
+				continue
+			}
 		}
 
 		if currentStatus != subtask.Status {

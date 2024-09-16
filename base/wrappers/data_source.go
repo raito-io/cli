@@ -83,7 +83,7 @@ func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *dat
 	logger.Info(fmt.Sprintf("Fetched %d data objects in %s", fileCreator.GetDataObjectCount(), sec))
 
 	return &data_source.DataSourceSyncResult{
-		DataObjects: int32(fileCreator.GetDataObjectCount()),
+		DataObjects: int32(fileCreator.GetDataObjectCount()), //nolint:gosec
 	}, nil
 }
 

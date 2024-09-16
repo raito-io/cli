@@ -74,7 +74,7 @@ func (t *tagSyncFunction) SyncTags(ctx context.Context, config *tag.TagSyncConfi
 	logger.Info(fmt.Sprintf("Finished synchronising %d tags in %s", fileCreator.GetTagCount(), sec))
 
 	return &tag.TagSyncResult{
-		Tags:            int32(fileCreator.GetTagCount()),
+		Tags:            int32(fileCreator.GetTagCount()), //nolint:gosec
 		TagSourcesScope: tagSources,
 	}, nil
 }

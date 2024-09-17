@@ -123,7 +123,7 @@ func TestUniqueGenerator_Generate_DuplicatedNames(t *testing.T) {
 
 func TestUniqueGenerator_Generate_DuplicatedNames_uppercase(t *testing.T) {
 	//Given
-	upperCaseRegex := regexp.MustCompile("[A-Z0-9_]+")
+	upperCaseRegex := regexp.MustCompile("^[A-Z0-9_]+$")
 
 	constraints := NamingConstraints{
 		UpperCaseLetters:  true,

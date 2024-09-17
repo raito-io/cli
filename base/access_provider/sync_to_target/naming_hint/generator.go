@@ -116,7 +116,7 @@ func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (strin
 	}
 
 	if currentNumber, found := g.existingNames[name]; found {
-		postfixId := fmt.Sprintf("%[1]c%[1]c%[2]x", g.splitCharacter, currentNumber)
+		postfixId := fmt.Sprintf("%[1]c%[1]c%[2]X", g.splitCharacter, currentNumber)
 
 		if !g.constraints.UpperCaseLetters {
 			postfixId = strings.ToLower(postfixId)

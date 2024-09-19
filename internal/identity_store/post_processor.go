@@ -63,6 +63,8 @@ func (p *PostProcessor) PostProcessUsers(usersInputFilePath string, usersOutputF
 		return nil, p.errorWrapper(err)
 	}
 
+	defer outputWriter.Close()
+
 	p.config.TargetLogger.Debug(fmt.Sprintf("Post processor streaming users from file %s", usersInputFilePath))
 
 	usersInputFile, err := os.Open(usersInputFilePath)

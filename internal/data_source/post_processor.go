@@ -59,6 +59,8 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	defer outputWriter.Close()
+
 	p.config.TargetLogger.Debug(fmt.Sprintf("Post processor streaming data objects from file %s", inputFilePath))
 
 	inputFile, err := os.Open(inputFilePath)

@@ -46,8 +46,9 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 		{
 			name: "no config",
 			fields: fields{
-				setup: func(accessProviderFileCreator *mocks.IdentityStoreFileCreator) (identityStoreFileCreatorError error) {
-					accessProviderFileCreator.EXPECT().GetUserCount().Return(1).Once()
+				setup: func(identityFileCreator *mocks.IdentityStoreFileCreator) (identityStoreFileCreatorError error) {
+					identityFileCreator.EXPECT().GetUserCount().Return(1).Once()
+					identityFileCreator.EXPECT().Close().Return().Once()
 
 					identityStoreFileCreatorError = nil
 
@@ -81,8 +82,9 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 		{
 			name: "wrong config",
 			fields: fields{
-				setup: func(accessProviderFileCreator *mocks.IdentityStoreFileCreator) (identityStoreFileCreatorError error) {
-					accessProviderFileCreator.EXPECT().GetUserCount().Return(1).Once()
+				setup: func(identityStoreFileCreator *mocks.IdentityStoreFileCreator) (identityStoreFileCreatorError error) {
+					identityStoreFileCreator.EXPECT().GetUserCount().Return(1).Once()
+					identityStoreFileCreator.EXPECT().Close().Return().Once()
 
 					identityStoreFileCreatorError = nil
 
@@ -115,8 +117,9 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 		}, {
 			name: "a machine user",
 			fields: fields{
-				setup: func(accessProviderFileCreator *mocks.IdentityStoreFileCreator) (identityStoreFileCreatorError error) {
-					accessProviderFileCreator.EXPECT().GetUserCount().Return(1).Once()
+				setup: func(identityStoreFileCreator *mocks.IdentityStoreFileCreator) (identityStoreFileCreatorError error) {
+					identityStoreFileCreator.EXPECT().GetUserCount().Return(1).Once()
+					identityStoreFileCreator.EXPECT().Close().Return().Once()
 
 					identityStoreFileCreatorError = nil
 
@@ -152,8 +155,9 @@ func TestPostProcessor_PostProcess(t *testing.T) {
 		}, {
 			name: "two machine users and a normal user",
 			fields: fields{
-				setup: func(accessProviderFileCreator *mocks.IdentityStoreFileCreator) (identityStoreFileCreatorError error) {
-					accessProviderFileCreator.EXPECT().GetUserCount().Return(3).Once()
+				setup: func(identityStoreFileCreator *mocks.IdentityStoreFileCreator) (identityStoreFileCreatorError error) {
+					identityStoreFileCreator.EXPECT().GetUserCount().Return(3).Once()
+					identityStoreFileCreator.EXPECT().Close().Return().Once()
 
 					identityStoreFileCreatorError = nil
 

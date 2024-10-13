@@ -3,6 +3,7 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/hashicorp/go-hclog"
@@ -66,6 +67,8 @@ func newRootCmd(version string, exit func(int)) *rootCmd {
 	initRunCommand(rootCmd)
 	initInfoCommand(rootCmd)
 	initApplyAccessCommand(rootCmd)
+	initInitCommand(rootCmd)
+	initAddTargetCommand(rootCmd)
 
 	return root
 }
@@ -110,15 +113,23 @@ func (cmd *rootCmd) initConfig() {
 	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
-	if err != nil && !strings.HasSuffix(viper.ConfigFileUsed(), "/raito") && viper.ConfigFileUsed() != "" {
-		// No logger yet
-		fmt.Printf("error while reading config file %q: %s\n", viper.ConfigFileUsed(), err.Error()) //nolint:forbidigo
-		cmd.exitForError()
+	chosenCommand := ""
+
+	if len(os.Args) > 1 {
+		chosenCommand = os.Args[1]
 	}
 
-	viper.WatchConfig()
+	if !strings.EqualFold(chosenCommand, "init") && !strings.EqualFold(chosenCommand, "add-target") {
+		if err != nil && !strings.HasSuffix(viper.ConfigFileUsed(), "/raito") && viper.ConfigFileUsed() != "" {
+			// No logger yet
+			fmt.Printf("error while reading config file %q: %s\n", viper.ConfigFileUsed(), err.Error()) //nolint:forbidigo
+			cmd.exitForError()
+		}
 
-	if viper.ConfigFileUsed() != "" {
-		hclog.L().Debug(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))
+		viper.WatchConfig()
+
+		if viper.ConfigFileUsed() != "" {
+			hclog.L().Debug(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))
+		}
 	}
 }

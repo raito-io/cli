@@ -135,20 +135,22 @@ func (p *PostProcessor) processOverwriteOwners(accessProvider *sync_from_target.
 	var raitoOwnerTag *tag.Tag
 
 	for _, t := range accessProvider.Tags {
-		if strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
-			value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
-
-			if value == "" {
-				continue
-			}
-
-			raitoOwnerTag = t
-			raitoOwnerTag.Value = value
-
-			touched = true
-
-			break
+		if !strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
+			continue
 		}
+
+		value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
+
+		if value == "" {
+			continue
+		}
+
+		raitoOwnerTag = t
+		raitoOwnerTag.Value = value
+
+		touched = true
+
+		break
 	}
 
 	for _, t := range accessProvider.Tags {

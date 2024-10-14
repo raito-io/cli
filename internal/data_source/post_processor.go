@@ -112,20 +112,22 @@ func (p *PostProcessor) postProcessDataObject(do *data_source.DataObject, output
 	var raitoOwnerTag *tag.Tag
 
 	for _, t := range do.Tags {
-		if strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
-			value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
-
-			if value == "" {
-				continue
-			}
-
-			raitoOwnerTag = t
-			raitoOwnerTag.Value = value
-
-			touched = true
-
-			break
+		if !strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
+			continue
 		}
+
+		value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
+
+		if value == "" {
+			continue
+		}
+
+		raitoOwnerTag = t
+		raitoOwnerTag.Value = value
+
+		touched = true
+
+		break
 	}
 
 	for _, t := range do.Tags {

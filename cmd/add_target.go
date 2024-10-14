@@ -90,7 +90,7 @@ func executeAddTargetCmd(cmd *cobra.Command, args []string) {
 			pterm.Println()
 		}
 
-		baseDocument, domainNode, apiUserNode, apiSecretNode = buildBaseConfig(baseDocument, domainNode, apiUserNode, apiSecretNode, targetsNode, existingDomain, existingApiUser, existingApiSecret)
+		baseDocument, domainNode, apiUserNode, apiSecretNode = buildBaseConfig(baseDocument, domainNode, apiUserNode, apiSecretNode, existingDomain, existingApiUser, existingApiSecret)
 	}
 
 	if targetsNode == nil {
@@ -181,6 +181,7 @@ func buildTargetNode(domain, apiUser, apiSecret string) (*ast.MappingNode, strin
 
 			selectedOption, _ = pterm.DefaultInteractiveSelect.WithOptions(dsNames).Show()
 			selectedOptionIndex = slices.Index(dsNames, selectedOption)
+
 			pterm.Println()
 		}
 
@@ -247,6 +248,7 @@ func buildTargetNode(domain, apiUser, apiSecret string) (*ast.MappingNode, strin
 
 			selectedOption, _ := pterm.DefaultInteractiveSelect.WithOptions(params).Show()
 			selectedIndex := slices.Index(params, selectedOption)
+
 			pterm.Println()
 
 			if selectedIndex == 0 {
@@ -549,7 +551,7 @@ func storeConfigFile(baseDocument *ast.DocumentNode, configFile string) {
 	pterm.Println()
 }
 
-func buildBaseConfig(baseDocument *ast.DocumentNode, domainNode *ast.StringNode, apiUserNode *ast.StringNode, apiSecretNode *ast.StringNode, targetsNode *ast.SequenceNode, existingDomain string, existingApiUser string, existingApiSecret string) (*ast.DocumentNode, *ast.StringNode, *ast.StringNode, *ast.StringNode) {
+func buildBaseConfig(baseDocument *ast.DocumentNode, domainNode *ast.StringNode, apiUserNode *ast.StringNode, apiSecretNode *ast.StringNode, existingDomain string, existingApiUser string, existingApiSecret string) (*ast.DocumentNode, *ast.StringNode, *ast.StringNode, *ast.StringNode) {
 	if baseDocument == nil {
 		baseDocument = &ast.DocumentNode{
 			BaseNode: &ast.BaseNode{},
@@ -662,6 +664,7 @@ func textInput(title, shortTitle, defaultValue string, masked bool) string {
 	}
 
 	res, _ := tip.Show(shortTitle)
+
 	pterm.Println()
 
 	return res

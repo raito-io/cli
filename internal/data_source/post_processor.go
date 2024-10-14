@@ -14,7 +14,7 @@ import (
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/tag"
 	"github.com/raito-io/cli/internal/util/jsonstream"
-	string2 "github.com/raito-io/cli/internal/util/string"
+	"github.com/raito-io/cli/internal/util/stringops"
 )
 
 type PostProcessorConfig struct {
@@ -113,8 +113,14 @@ func (p *PostProcessor) postProcessDataObject(do *data_source.DataObject, output
 
 	for _, t := range do.Tags {
 		if strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
+			value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
+
+			if value == "" {
+				continue
+			}
+
 			raitoOwnerTag = t
-			raitoOwnerTag.Value = string2.TrimSpaceInCommaSeparatedList(raitoOwnerTag.Value)
+			raitoOwnerTag.Value = value
 
 			touched = true
 
@@ -124,12 +130,17 @@ func (p *PostProcessor) postProcessDataObject(do *data_source.DataObject, output
 
 	for _, t := range do.Tags {
 		if p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, t) {
+			value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
+			if value == "" {
+				continue
+			}
+
 			if raitoOwnerTag != nil {
-				raitoOwnerTag.Value = raitoOwnerTag.Value + "," + string2.TrimSpaceInCommaSeparatedList(t.Value)
+				raitoOwnerTag.Value = raitoOwnerTag.Value + "," + value
 			} else {
 				raitoOwnerTag = &tag.Tag{
 					Key:    constants.RaitoOwnerTagKey,
-					Value:  string2.TrimSpaceInCommaSeparatedList(t.Value),
+					Value:  value,
 					Source: t.Source,
 				}
 

@@ -1,4 +1,4 @@
-package string
+package stringops
 
 import "testing"
 
@@ -31,6 +31,20 @@ func TestTrimSpaceInCommaSeparatedList(t *testing.T) {
 				list: "SomeRandomString, without , spaces ",
 			},
 			want: "SomeRandomString,without,spaces",
+		},
+		{
+			name: "return empty string is no elements",
+			args: args{
+				list: " , , ",
+			},
+			want: "",
+		},
+		{
+			name: "Remove empty elements",
+			args: args{
+				list: "first, , second",
+			},
+			want: "first,second",
 		},
 	}
 	for _, tt := range tests {

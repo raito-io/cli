@@ -488,12 +488,17 @@ func TestPostProcessor_processOverwriteOwners(t *testing.T) {
 						{Key: "random_tag", Value: "user1"},
 						{
 							Key:    "owners_overwrite",
-							Value:  "user1, email:user2@raito.io",
+							Value:  ", user1, email:user2@raito.io",
 							Source: "source1",
 						},
 						{
 							Key:    constants.RaitoOwnerTagKey,
 							Value:  " user3, email:user4@raito.io",
+							Source: "source1",
+						},
+						{
+							Key:    "owners_overwrite",
+							Value:  ",",
 							Source: "source1",
 						},
 					},
@@ -507,12 +512,17 @@ func TestPostProcessor_processOverwriteOwners(t *testing.T) {
 					{Key: "random_tag", Value: "user1"},
 					{
 						Key:    "owners_overwrite",
-						Value:  "user1, email:user2@raito.io",
+						Value:  ", user1, email:user2@raito.io",
 						Source: "source1",
 					},
 					{
 						Key:    constants.RaitoOwnerTagKey,
 						Value:  "user3,email:user4@raito.io,user1,email:user2@raito.io",
+						Source: "source1",
+					},
+					{
+						Key:    "owners_overwrite",
+						Value:  ",",
 						Source: "source1",
 					},
 				},

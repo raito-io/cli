@@ -15,7 +15,7 @@ import (
 	"github.com/raito-io/cli/base/constants"
 	"github.com/raito-io/cli/base/tag"
 	"github.com/raito-io/cli/internal/access_provider/post_processing"
-	string2 "github.com/raito-io/cli/internal/util/string"
+	"github.com/raito-io/cli/internal/util/stringops"
 )
 
 const nameTagOverrideLockedReason = "This Snowflake role can't be renamed because it has a name tag override attached to it"
@@ -136,8 +136,14 @@ func (p *PostProcessor) processOverwriteOwners(accessProvider *sync_from_target.
 
 	for _, t := range accessProvider.Tags {
 		if strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
+			value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
+
+			if value == "" {
+				continue
+			}
+
 			raitoOwnerTag = t
-			raitoOwnerTag.Value = string2.TrimSpaceInCommaSeparatedList(raitoOwnerTag.Value)
+			raitoOwnerTag.Value = value
 
 			touched = true
 
@@ -147,12 +153,17 @@ func (p *PostProcessor) processOverwriteOwners(accessProvider *sync_from_target.
 
 	for _, t := range accessProvider.Tags {
 		if p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, t) {
+			value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
+			if value == "" {
+				continue
+			}
+
 			if raitoOwnerTag != nil {
-				raitoOwnerTag.Value = raitoOwnerTag.Value + "," + string2.TrimSpaceInCommaSeparatedList(t.Value)
+				raitoOwnerTag.Value = raitoOwnerTag.Value + "," + value
 			} else {
 				raitoOwnerTag = &tag.Tag{
 					Key:    constants.RaitoOwnerTagKey,
-					Value:  string2.TrimSpaceInCommaSeparatedList(t.Value),
+					Value:  value,
 					Source: t.Source,
 				}
 

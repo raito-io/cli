@@ -30,10 +30,15 @@ type userTokens struct {
 }
 
 var (
-	mutex       sync.Mutex
-	tokenMap    = make(map[string]*userTokens)
-	clientAppId string
+	mutex          sync.Mutex
+	tokenMap       = make(map[string]*userTokens)
+	clientAppId    string
+	noConfigReload bool
 )
+
+func SetNoConfigReload(noReload bool) {
+	noConfigReload = noReload
+}
 
 func AddTokenToHeader(h *http.Header, config *types.BaseConfig) error {
 	if viper.GetBool(constants.SkipAuthentication) {
@@ -41,10 +46,12 @@ func AddTokenToHeader(h *http.Header, config *types.BaseConfig) error {
 		return nil
 	}
 
-	// Reloading the configuration to make sure we have the latest info.
-	err := config.ReloadConfig()
-	if err != nil {
-		return fmt.Errorf("error while reloading configuration: %s", err.Error())
+	if !noConfigReload {
+		// Reloading the configuration to make sure we have the latest info.
+		err := config.ReloadConfig()
+		if err != nil {
+			return fmt.Errorf("error while reloading configuration: %s", err.Error())
+		}
 	}
 
 	tokens, found := tokenMap[config.ApiUser]
@@ -53,7 +60,7 @@ func AddTokenToHeader(h *http.Header, config *types.BaseConfig) error {
 		tokenMap[config.ApiUser] = tokens
 	}
 
-	err = updateTokens(config, tokens)
+	err := updateTokens(config, tokens)
 	if err != nil {
 		return err
 	}

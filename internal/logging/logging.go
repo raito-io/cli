@@ -17,7 +17,7 @@ import (
 )
 
 func SetupLogging(forceLogOutput bool) {
-	var output io.Writer = &nilWriter{}
+	var output io.Writer = &NilWriter{}
 
 	if forceLogOutput || viper.GetBool(constants.LogOutputFlag) {
 		output = os.Stdout
@@ -58,10 +58,10 @@ func SetupLogging(forceLogOutput bool) {
 	hclog.SetDefault(logger)
 }
 
-type nilWriter struct {
+type NilWriter struct {
 }
 
-func (w *nilWriter) Write(p []byte) (n int, err error) {
+func (w *NilWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 

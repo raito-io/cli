@@ -104,7 +104,7 @@ func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (strin
 			idNumber, err := strconv.ParseInt(originalNameSplit[1], 16, 16)
 
 			if err == nil {
-				number := uint(idNumber)
+				number := uint(idNumber) //nolint:gosec
 
 				if _, found := g.existingNames[name]; !found || g.existingNames[name] < number {
 					g.existingNames[name] = number

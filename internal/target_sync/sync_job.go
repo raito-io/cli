@@ -162,7 +162,7 @@ func execute(ctx context.Context, targetID string, jobID string, syncType string
 		syncErr := sync(ctx, cfg, syncTypeLabel, taskEventUpdater, syncTask, c, syncType, jobID)
 		if syncErr != nil {
 			// Sync error is already pushed to task error
-			return fmt.Errorf("failed to execute %s sync", syncTypeLabel)
+			return fmt.Errorf("failed to execute %s sync: %w", syncTypeLabel, syncErr)
 		}
 	}
 

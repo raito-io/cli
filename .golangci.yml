@@ -67,6 +67,7 @@ linters:
   enable:
     - asasalint
     - bodyclose
+    - copyloopvar
     - cyclop
     #- depguard #We should create a correct config to enabe depguard
     - dogsled
@@ -74,7 +75,6 @@ linters:
     - dupword
     - durationcheck
     - errcheck
-    - exportloopref
     - exhaustive
     - forbidigo
     - goconst
@@ -113,9 +113,10 @@ run:
     - ".*\\.pb\\.go$"
 
 output:
-  path-prefix: ""
+  path-prefix: ''
   sort-results: true
-  format: tab
-  print-issued-lines: false
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
   print-linter-name: true
   uniq-by-line: false

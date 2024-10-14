@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/raito-io/cli/base/constants"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/tag"
 	"github.com/raito-io/cli/internal/util/jsonstream"
@@ -106,17 +107,40 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 
 func (p *PostProcessor) postProcessDataObject(do *data_source.DataObject, outputWriter data_source.DataSourceFileCreator) (bool, error) {
 	touched := false
+	//
+	var raitoOwnerTag *tag.Tag
 
-	if len(do.Tags) > 0 {
-		for _, tag := range do.Tags {
-			if p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, tag) {
-				ownersOverwritten := p.overwriteOwners(do, tag)
-				if ownersOverwritten {
-					touched = ownersOverwritten
-					continue
-				}
-			}
+	for _, t := range do.Tags {
+		if strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
+			raitoOwnerTag = t
+			raitoOwnerTag.Value = trimSpaceInCommaSeparatedList(raitoOwnerTag.Value)
+
+			touched = true
+
+			break
 		}
+	}
+
+	for _, t := range do.Tags {
+		if p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, t) {
+			if raitoOwnerTag != nil {
+				raitoOwnerTag.Value = raitoOwnerTag.Value + "," + trimSpaceInCommaSeparatedList(t.Value)
+			} else {
+				raitoOwnerTag = &tag.Tag{
+					Key:    constants.RaitoOwnerTagKey,
+					Value:  trimSpaceInCommaSeparatedList(t.Value),
+					Source: t.Source,
+				}
+
+				do.Tags = append(do.Tags, raitoOwnerTag)
+			}
+
+			touched = true
+		}
+	}
+
+	if raitoOwnerTag != nil {
+		p.config.TargetLogger.Debug(fmt.Sprintf("adjusting owners for DO (fullpath: %v) to %v", do.FullName, raitoOwnerTag.Value))
 	}
 
 	err := outputWriter.AddDataObjects(do)
@@ -128,31 +152,19 @@ func (p *PostProcessor) postProcessDataObject(do *data_source.DataObject, output
 	return touched, nil
 }
 
-func (p *PostProcessor) overwriteOwners(do *data_source.DataObject, tag *tag.Tag) bool {
-	if tag.Value != "" {
-		overwrittenOwners := []string{}
-		for _, owner := range strings.Split(tag.Value, ",") {
-			overwrittenOwners = append(overwrittenOwners, strings.TrimSpace(owner))
-		}
-
-		p.config.TargetLogger.Debug(fmt.Sprintf("adjusting owners for DO (fullPath: %v) to %v", do.FullName, overwrittenOwners))
-
-		if do.Owners == nil {
-			do.Owners = &data_source.OwnersInput{}
-		}
-
-		do.Owners.Users = overwrittenOwners
-
-		return true
-	}
-
-	return false
-}
-
 func (p *PostProcessor) matchedWithTagKey(overwriteKey string, tag *tag.Tag) bool {
 	return tag != nil && overwriteKey != "" && strings.EqualFold(tag.Key, overwriteKey) && tag.Value != ""
 }
 
-func (p *PostProcessor) Close(ctx context.Context) error {
+func (p *PostProcessor) Close(_ context.Context) error {
 	return nil
+}
+
+func trimSpaceInCommaSeparatedList(list string) string {
+	trimmed := strings.Split(list, ",")
+	for i, s := range trimmed {
+		trimmed[i] = strings.TrimSpace(s)
+	}
+
+	return strings.Join(trimmed, ",")
 }

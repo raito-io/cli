@@ -15,6 +15,7 @@ import (
 	"github.com/goccy/go-yaml/printer"
 	"github.com/goccy/go-yaml/token"
 	"github.com/hashicorp/go-hclog"
+	graphql2 "github.com/hasura/go-graphql-client"
 	"github.com/pterm/pterm"
 	pl "github.com/raito-io/cli/base/util/plugin"
 	"github.com/raito-io/cli/internal/auth"
@@ -310,27 +311,26 @@ func fetchPluginInfo(connector string) *pl.PluginInfo {
 func fetchDataSources(domain, apiUser, apiSecret string) map[string]DataSourceInfo {
 	spinner, _ := pterm.DefaultSpinner.Start("Loading available data sources from Raito Cloud...")
 
-	gql := `{ "operationName": "dataSources", "variables":{}, "query": "query dataSources {
-        dataSources {
-          ... on PagedResult {
-            edges {
-              node {
-                ... on DataSource {
-                  name
-                  id
-                  identityStores {
-                    id
-                    native
-                  }
-                }
-              }
-            }
-          }
-        }
-      }"}`
+	var response struct {
+		DataSources struct {
+			PagedResult struct {
+				Edges []struct {
+					Node struct {
+						DataSource struct {
+							Name           string
+							Id             string
+							IdentityStores []struct {
+								Id     string
+								Native bool
+							}
+						} `graphql:"... on DataSource"`
+					}
+				}
+			} `graphql:"... on PagedResult"`
+		}
+	}
 
-	response := DataSourcesResponse{}
-	res, err := executeGraphQLWithCustomConfig(gql, domain, apiUser, apiSecret, &response)
+	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{}, false, &response)
 
 	if err != nil {
 		spinner.Fail("Unable to fetch data sources: " + err.Error())
@@ -339,47 +339,59 @@ func fetchDataSources(domain, apiUser, apiSecret string) map[string]DataSourceIn
 		return nil
 	}
 
-	if len(res.Errors) > 0 {
-		spinner.Fail("Unable to fetch data sources: " + res.Errors[0].Message)
-		pterm.Println()
-
-		return nil
-	}
-
 	spinner.Success("Data sources fetched successfully")
 	pterm.Println()
 
-	return response.GetDataSources()
+	dataSourceMap := map[string]DataSourceInfo{}
+
+	for _, e := range response.DataSources.PagedResult.Edges {
+		dsInfo := DataSourceInfo{
+			Name: e.Node.DataSource.Name,
+			Id:   e.Node.DataSource.Id,
+		}
+
+		if len(e.Node.DataSource.IdentityStores) > 0 {
+			for _, store := range e.Node.DataSource.IdentityStores {
+				if store.Native {
+					dsInfo.IdentityStore = store.Id
+					break
+				}
+			}
+		}
+
+		dataSourceMap[dsInfo.Name] = dsInfo
+	}
+
+	return dataSourceMap
 }
 
 func createDataSource(dsName, domain, apiUser, apiSecret string) *DataSourceInfo {
 	spinner, _ := pterm.DefaultSpinner.Start("Creating new data source in Raito Cloud...")
 
-	gql := fmt.Sprintf(`{ "operationName": "dataSource", "variables":{}, "query": "mutation dataSource {
-        createDataSource(input: { name: \"%s\" }) {
-          ... on DataSource {
-            name
-            id
-            identityStores {
-              id
-              native
-            }
-          }
-        }
-      }"}`, dsName)
-
-	response := CreateDataSourceResponse{}
-	res, err := executeGraphQLWithCustomConfig(gql, domain, apiUser, apiSecret, &response)
-
-	if err != nil {
-		spinner.Fail("Unable to create data source: " + err.Error())
-		pterm.Println()
-
-		return nil
+	var response struct {
+		CreateDataSource struct {
+			DataSource struct {
+				Name           string
+				Id             string
+				IdentityStores []struct {
+					Id     string
+					Native bool
+				}
+			} `graphql:"... on DataSource"`
+		} `graphql:"createDataSource(input: $input)"`
 	}
 
-	if len(res.Errors) > 0 {
-		spinner.Fail("Unable to create data source: " + res.Errors[0].Message)
+	type DataSourceInput struct {
+		Name string `json:"name,omitempty"`
+	}
+
+	input := DataSourceInput{
+		Name: dsName,
+	}
+
+	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{"input": input}, true, &response)
+	if err != nil {
+		spinner.Fail("Unable to create data source: " + err.Error())
 		pterm.Println()
 
 		return nil
@@ -388,89 +400,13 @@ func createDataSource(dsName, domain, apiUser, apiSecret string) *DataSourceInfo
 	spinner.Success("Data source created successfully")
 	pterm.Println()
 
-	return response.GetDataSourceInfo()
-}
-
-func fetchDataSource(dsId, domain, apiUser, apiSecret string) *DataSourceInfo {
-	spinner, _ := pterm.DefaultSpinner.Start("Loading data source from Raito Cloud...")
-
-	gql := fmt.Sprintf(`{ "operationName": "dataSource", "variables":{}, "query": "query dataSource {
-        dataSource(id: \"%s\") {
-          ... on DataSource {
-            name
-            id
-            identityStores {
-              id
-              native
-            }
-          }
-        }
-      }"}`, dsId)
-
-	response := DataSourceResponse{}
-	res, err := executeGraphQLWithCustomConfig(gql, domain, apiUser, apiSecret, &response)
-
-	if err != nil {
-		spinner.Fail("Unable to fetch data source: " + err.Error())
-		pterm.Println()
-
-		return nil
-	}
-
-	if len(res.Errors) > 0 {
-		spinner.Fail("Unable to fetch data source: " + res.Errors[0].Message)
-		pterm.Println()
-
-		return nil
-	}
-
-	spinner.Success("Fetched data source information.")
-	pterm.Println()
-
-	return response.GetDataSourceInfo()
-}
-
-type DataSourceInfo struct {
-	Name          string
-	Id            string
-	IdentityStore string
-}
-
-type identityStoreNode struct {
-	Id     string `json:"id"`
-	Native bool   `json:"native"`
-}
-
-type dataSourceNode struct {
-	Name           string              `json:"name"`
-	Id             string              `json:"id"`
-	IdentityStores []identityStoreNode `json:"identityStores"`
-}
-
-type dataSourceEdge struct {
-	Node dataSourceNode `json:"node"`
-}
-
-type dataSourcesResponse struct {
-	Edges []dataSourceEdge `json:"edges"`
-}
-
-type DataSourceResponse struct {
-	DataSource dataSourceNode `json:"dataSource"`
-}
-
-type CreateDataSourceResponse struct {
-	DataSource dataSourceNode `json:"createDataSource"`
-}
-
-func (d dataSourceNode) GetDataSourceInfo() *DataSourceInfo {
 	dsInfo := DataSourceInfo{
-		Name: d.Name,
-		Id:   d.Id,
+		Name: response.CreateDataSource.DataSource.Name,
+		Id:   response.CreateDataSource.DataSource.Id,
 	}
 
-	if len(d.IdentityStores) > 0 {
-		for _, store := range d.IdentityStores {
+	if len(response.CreateDataSource.DataSource.IdentityStores) > 0 {
+		for _, store := range response.CreateDataSource.DataSource.IdentityStores {
 			if store.Native {
 				dsInfo.IdentityStore = store.Id
 				break
@@ -481,44 +417,58 @@ func (d dataSourceNode) GetDataSourceInfo() *DataSourceInfo {
 	return &dsInfo
 }
 
-func (d *DataSourceResponse) GetDataSourceInfo() *DataSourceInfo {
-	return d.DataSource.GetDataSourceInfo()
-}
+func fetchDataSource(dsId, domain, apiUser, apiSecret string) *DataSourceInfo {
+	spinner, _ := pterm.DefaultSpinner.Start("Loading data source from Raito Cloud...")
 
-func (d *CreateDataSourceResponse) GetDataSourceInfo() *DataSourceInfo {
-	return d.DataSource.GetDataSourceInfo()
-}
-
-type DataSourcesResponse struct {
-	Response dataSourcesResponse `json:"dataSources"`
-}
-
-func (d *DataSourcesResponse) GetDataSources() map[string]DataSourceInfo {
-	dataSources := make(map[string]DataSourceInfo)
-
-	for _, edge := range d.Response.Edges {
-		identityStore := ""
-
-		if len(edge.Node.IdentityStores) > 0 {
-			for _, store := range edge.Node.IdentityStores {
-				if store.Native {
-					identityStore = store.Id
-					break
+	var response struct {
+		GetDataSource struct {
+			DataSource struct {
+				Name           string
+				Id             string
+				IdentityStores []struct {
+					Id     string
+					Native bool
 				}
-			}
-		}
+			} `graphql:"... on DataSource"`
+		} `graphql:"dataSource(id: $id)"`
+	}
 
-		dataSources[edge.Node.Name] = DataSourceInfo{
-			Name:          edge.Node.Name,
-			Id:            edge.Node.Id,
-			IdentityStore: identityStore,
+	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{"id": graphql2.ID(dsId)}, false, &response)
+
+	if err != nil {
+		spinner.Fail("Unable to fetch data source: " + err.Error())
+		pterm.Println()
+
+		return nil
+	}
+
+	spinner.Success("Fetched data source information.")
+	pterm.Println()
+
+	dsInfo := DataSourceInfo{
+		Name: response.GetDataSource.DataSource.Name,
+		Id:   response.GetDataSource.DataSource.Id,
+	}
+
+	if len(response.GetDataSource.DataSource.IdentityStores) > 0 {
+		for _, store := range response.GetDataSource.DataSource.IdentityStores {
+			if store.Native {
+				dsInfo.IdentityStore = store.Id
+				break
+			}
 		}
 	}
 
-	return dataSources
+	return &dsInfo
 }
 
-func executeGraphQLWithCustomConfig(gql, domain, apiUser, apiSecret string, response interface{}) (*graphql.GraphqlResponse, error) {
+type DataSourceInfo struct {
+	Name          string
+	Id            string
+	IdentityStore string
+}
+
+func executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret string, params map[string]interface{}, mutation bool, response interface{}) error {
 	tmpConfig := &types.BaseConfig{
 		Domain:     domain,
 		ApiUser:    apiUser,
@@ -526,13 +476,15 @@ func executeGraphQLWithCustomConfig(gql, domain, apiUser, apiSecret string, resp
 		BaseLogger: hclog.L(),
 	}
 
-	gql = strings.Replace(gql, "\n", "\\n", -1)
-
 	// Temporarily disable config reload to avoid reloading the config while testing the connection as we need to use this config specifically
 	auth.SetNoConfigReload(true)
 	defer auth.SetNoConfigReload(false)
 
-	return graphql.ExecuteGraphQL(gql, tmpConfig, &response)
+	if mutation {
+		return graphql.NewClient(tmpConfig).Mutate(context.Background(), response, params)
+	} else {
+		return graphql.NewClient(tmpConfig).Query(context.Background(), response, params)
+	}
 }
 
 func storeConfigFile(baseDocument *ast.DocumentNode, configFile string) {
@@ -601,24 +553,16 @@ func buildBaseConfig(baseDocument *ast.DocumentNode, domainNode *ast.StringNode,
 func testConnection(domain, apiUser, apiSecret string) bool {
 	spinner, _ := pterm.DefaultSpinner.Start("Checking connection to Raito Cloud...")
 
-	gql := `{ "operationName": "currentUser", "variables":{}, "query": "query currentUser {
-        currentUser {
-          email
-        }
-      }"}`
+	var response struct {
+		CurrentUser struct {
+			Email string
+		}
+	}
 
-	response := CurrentUserResponse{}
-	res, err := executeGraphQLWithCustomConfig(gql, domain, apiUser, apiSecret, &response)
+	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{}, false, &response)
 
 	if err != nil {
 		spinner.Fail("An error occurred while checking connection: " + err.Error())
-		pterm.Println()
-
-		return false
-	}
-
-	if len(res.Errors) > 0 {
-		spinner.Fail("An error occurred checking connection: " + res.Errors[0].Message)
 		pterm.Println()
 
 		return false
@@ -628,18 +572,6 @@ func testConnection(domain, apiUser, apiSecret string) bool {
 	pterm.Println()
 
 	return true
-}
-
-type currentUserResponse struct {
-	Email string `json:"email"`
-}
-
-type CurrentUserQueryResponse struct {
-	CurrentUser currentUserResponse `json:"currentUser"`
-}
-
-type CurrentUserResponse struct {
-	Response CurrentUserQueryResponse `json:"currentUser"`
 }
 
 func readDomain(current string) string {

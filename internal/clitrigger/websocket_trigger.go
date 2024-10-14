@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/coder/websocket"
 	"github.com/hashicorp/go-hclog"
-	"nhooyr.io/websocket"
 
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
 	"github.com/raito-io/cli/internal/auth"

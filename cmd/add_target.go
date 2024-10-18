@@ -180,56 +180,7 @@ func buildTargetNode(domain, apiUser, apiSecret string, existingTargetNames set.
 		}
 	}
 
-	// Fetching the data source and identity store id
-	dataSourceId := viper.GetString(constants.DataSourceIdFlag)
-	identityStoreId := ""
-
-	if dataSourceId == "" {
-		dataSources := fetchDataSources(domain, apiUser, apiSecret)
-		if dataSources == nil {
-			os.Exit(1)
-		}
-
-		selectedOptionIndex := 0
-		selectedOption := ""
-
-		// If there are data sources already, let the user choose one (or create a new one)
-		if len(dataSources) > 0 {
-			dsNames := maps.Keys(dataSources)
-			sort.Strings(dsNames)
-
-			dsNames = append([]string{"Create a new data source"}, dsNames...)
-
-			selectedOption, _ = pterm.DefaultInteractiveSelect.WithOptions(dsNames).Show()
-			selectedOptionIndex = slices.Index(dsNames, selectedOption)
-
-			pterm.Println()
-		}
-
-		if selectedOptionIndex == 0 {
-			dsName := textInput("Enter the name for the new data source (e.g. 'Snowflake Production')", "Name", "", false) // Chosen to create a new data source
-
-			dsInfo := createDataSource(dsName, domain, apiUser, apiSecret)
-			if dsInfo == nil {
-				os.Exit(1)
-			}
-
-			dataSourceId = dsInfo.Id
-			identityStoreId = dsInfo.IdentityStore
-		} else {
-			selectedDS := dataSources[selectedOption]
-
-			dataSourceId = selectedDS.Id
-			identityStoreId = selectedDS.IdentityStore
-		}
-	} else {
-		dsInfo := fetchDataSource(dataSourceId, domain, apiUser, apiSecret)
-		if dsInfo == nil {
-			os.Exit(1)
-		}
-
-		identityStoreId = dsInfo.IdentityStore
-	}
+	dataSourceId, identityStoreId := fetchDataSourceAndIdentityStoreId(domain, apiUser, apiSecret)
 
 	addStringNodeWithValue("data-source-id", dataSourceId, targetNode)
 	addStringNodeWithValue("identity-store-id", identityStoreId, targetNode)
@@ -286,6 +237,61 @@ func buildTargetNode(domain, apiUser, apiSecret string, existingTargetNames set.
 	}
 
 	return targetNode, targetName
+}
+
+func fetchDataSourceAndIdentityStoreId(domain string, apiUser string, apiSecret string) (string, string) {
+	// Fetching the data source and identity store id
+	dataSourceId := viper.GetString(constants.DataSourceIdFlag)
+	identityStoreId := ""
+
+	if dataSourceId == "" {
+		dataSources := fetchDataSources(domain, apiUser, apiSecret)
+		if dataSources == nil {
+			os.Exit(1)
+		}
+
+		selectedOptionIndex := 0
+		selectedOption := ""
+
+		// If there are data sources already, let the user choose one (or create a new one)
+		if len(dataSources) > 0 {
+			dsNames := maps.Keys(dataSources)
+			sort.Strings(dsNames)
+
+			dsNames = append([]string{"Create a new data source"}, dsNames...)
+
+			selectedOption, _ = pterm.DefaultInteractiveSelect.WithOptions(dsNames).Show()
+			selectedOptionIndex = slices.Index(dsNames, selectedOption)
+
+			pterm.Println()
+		}
+
+		if selectedOptionIndex == 0 {
+			dsName := textInput("Enter the name for the new data source (e.g. 'Snowflake Production')", "Name", "", false) // Chosen to create a new data source
+
+			dsInfo := createDataSource(dsName, domain, apiUser, apiSecret)
+			if dsInfo == nil {
+				os.Exit(1)
+			}
+
+			dataSourceId = dsInfo.Id
+			identityStoreId = dsInfo.IdentityStore
+		} else {
+			selectedDS := dataSources[selectedOption]
+
+			dataSourceId = selectedDS.Id
+			identityStoreId = selectedDS.IdentityStore
+		}
+	} else {
+		dsInfo := fetchDataSource(dataSourceId, domain, apiUser, apiSecret)
+		if dsInfo == nil {
+			os.Exit(1)
+		}
+
+		identityStoreId = dsInfo.IdentityStore
+	}
+
+	return dataSourceId, identityStoreId
 }
 
 func addStringNodeWithValue(key, value string, parent *ast.MappingNode) {

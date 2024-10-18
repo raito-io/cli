@@ -105,6 +105,8 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 
 	s.TargetConfig.TargetLogger.Info("Importing usage data into Raito")
 
+	// TODO handle multiple files!
+
 	status, subtaskId, err := duImporter.TriggerImport(ctx, s.JobId)
 	if err != nil {
 		return job.Failed, "", err

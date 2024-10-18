@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=DataUsageFileCreator --with-expecter
@@ -89,26 +90,26 @@ type dataUsageFileCreator struct {
 	targetFile     *os.File
 	statementCount int
 	fileByteSize   uint64
+	totalByteSize  uint64
+
+	maxBytesPerFile uint64
+
+	actualFileNames []string
 }
 
 func NewDataUsageFileCreator(config *DataUsageSyncConfig) (DataUsageFileCreator, error) {
 	duI := dataUsageFileCreator{
-		config:         config,
-		statementCount: 0,
-		fileByteSize:   2, // 2 bytes for closing the file, '\n]'
+		config:          config,
+		statementCount:  0,
+		fileByteSize:    0,
+		totalByteSize:   0,
+		maxBytesPerFile: config.MaxBytesPerFile,
 	}
 
-	err := duI.createTargetFile()
+	err := duI.openNewFile()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open new file: %w", err)
 	}
-
-	_, err = duI.targetFile.WriteString("[")
-	if err != nil {
-		return nil, err
-	}
-
-	duI.fileByteSize += 1
 
 	return &duI, nil
 }
@@ -137,6 +138,18 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 		if err != nil {
 			return fmt.Errorf("error while serializing data object with externalID %q", statement.ExternalId)
 		}
+
+		size := uint64(len(doBuf))
+
+		if d.maxBytesPerFile != 0 && d.fileByteSize+size > uint64(d.maxBytesPerFile) {
+			d.closeFile()
+
+			err = d.openNewFile()
+			if err != nil {
+				return fmt.Errorf("open new file: %w", err)
+			}
+		}
+
 		_, err = d.targetFile.Write(doBuf)
 
 		// Only looking at writing errors at the end, supposing if one fails, all would fail
@@ -155,6 +168,10 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 // This method must be called when all data objects have been added and before control is given back
 // to the CLI. It's advised to call this using 'defer'.
 func (d *dataUsageFileCreator) Close() {
+	d.closeFile()
+}
+
+func (d *dataUsageFileCreator) closeFile() {
 	d.targetFile.WriteString("\n]") //nolint:errcheck
 	d.targetFile.Close()
 }
@@ -169,12 +186,47 @@ func (d *dataUsageFileCreator) GetImportFileSize() uint64 {
 	return d.fileByteSize
 }
 
+func (d *dataUsageFileCreator) GetActualFileNames() []string {
+	return d.actualFileNames
+}
+
 func (d *dataUsageFileCreator) createTargetFile() error {
-	f, err := os.Create(d.config.TargetFile)
+	actualName := d.config.TargetFile
+
+	if strings.HasSuffix(d.config.TargetFile, ".json") || strings.HasSuffix(d.config.TargetFile, ".yaml") {
+		split := strings.Split(d.config.TargetFile, ".")
+
+		nr := len(d.actualFileNames)
+
+		actualName = fmt.Sprintf("%s_%d.%s", strings.Join(split[0:len(split)-2], "."), nr, split[1])
+	} else {
+		actualName = d.config.TargetFile + "_0"
+	}
+
+	f, err := os.Create(actualName)
 	if err != nil {
 		return fmt.Errorf("error creating temporary file for data usage importer: %s", err.Error())
 	}
 	d.targetFile = f
+
+	d.actualFileNames = append(d.actualFileNames, actualName)
+
+	return nil
+}
+
+func (d *dataUsageFileCreator) openNewFile() error {
+	err := d.createTargetFile()
+	if err != nil {
+		return fmt.Errorf("create target file: %w", err)
+	}
+
+	_, err = d.targetFile.WriteString("[")
+	if err != nil {
+		return fmt.Errorf("write open json token: %w", err)
+	}
+
+	d.fileByteSize = 3   //Already include '\n]'
+	d.totalByteSize += 3 //Already include '\n]'
 
 	return nil
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/version"
+	"github.com/raito-io/golang-set/set"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/maps"
@@ -97,7 +98,19 @@ func executeAddTargetCmd(cmd *cobra.Command, args []string) {
 		targetsNode = addSequenceNode("targets", baseDocument.Body.(*ast.MappingNode))
 	}
 
-	newTargetNode, newTargetName := buildTargetNode(domainNode.Value, apiUserNode.Value, apiSecretNode.Value)
+	existingTargetNames := set.NewSet[string]()
+
+	for _, t := range targetsNode.Values {
+		for _, v := range t.(*ast.MappingNode).Values {
+			if keysn, ok2 := v.Key.(*ast.StringNode); ok2 {
+				if valuesn, ok3 := v.Value.(*ast.StringNode); ok3 && keysn.Value == constants.NameFlag {
+					existingTargetNames.Add(valuesn.Value)
+				}
+			}
+		}
+	}
+
+	newTargetNode, newTargetName := buildTargetNode(domainNode.Value, apiUserNode.Value, apiSecretNode.Value, existingTargetNames)
 	if newTargetNode != nil {
 		targetsNode.Values = append(targetsNode.Values, newTargetNode)
 
@@ -115,7 +128,7 @@ func executeAddTargetCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func buildTargetNode(domain, apiUser, apiSecret string) (*ast.MappingNode, string) {
+func buildTargetNode(domain, apiUser, apiSecret string, existingTargetNames set.Set[string]) (*ast.MappingNode, string) {
 	targetNode := &ast.MappingNode{
 		BaseNode: &ast.BaseNode{},
 		Start: &token.Token{
@@ -131,8 +144,19 @@ func buildTargetNode(domain, apiUser, apiSecret string) (*ast.MappingNode, strin
 
 	// Handling the name of the target
 	targetName := viper.GetString(constants.NameFlag)
-	if targetName == "" {
-		targetName = textInput("Enter the name of the new target to add (e.g. 'my-snowflake-target')", "Target name", "", false)
+
+	for {
+		if targetName == "" {
+			targetName = textInput("Enter the name of the new target to add (e.g. 'my-snowflake-target')", "Target name", "", false)
+		}
+
+		if existingTargetNames.Contains(targetName) {
+			pterm.Error.Println("A target with this name already exists. Please choose a different name.")
+			pterm.Println()
+			targetName = ""
+		} else {
+			break
+		}
 	}
 
 	addStringNodeWithValue("name", targetName, targetNode)
@@ -266,6 +290,11 @@ func buildTargetNode(domain, apiUser, apiSecret string) (*ast.MappingNode, strin
 
 func addStringNodeWithValue(key, value string, parent *ast.MappingNode) {
 	node := addStringNode(key, parent)
+
+	if mustBeQuoted(value) {
+		node.Token.Type = token.SingleQuoteType
+	}
+
 	node.Value = value
 }
 
@@ -535,6 +564,18 @@ func buildBaseConfig(baseDocument *ast.DocumentNode, domainNode *ast.StringNode,
 		res := testConnection(domain, apiUser, apiSecret)
 
 		if res {
+			if mustBeQuoted(domain) {
+				domainNode.Token.Type = token.SingleQuoteType
+			}
+
+			if mustBeQuoted(apiUser) {
+				apiUserNode.Token.Type = token.SingleQuoteType
+			}
+
+			if mustBeQuoted(apiSecret) {
+				apiSecretNode.Token.Type = token.SingleQuoteType
+			}
+
 			domainNode.Value = domain
 			apiUserNode.Value = apiUser
 			apiSecretNode.Value = apiSecret
@@ -544,6 +585,19 @@ func buildBaseConfig(baseDocument *ast.DocumentNode, domainNode *ast.StringNode,
 	}
 
 	return baseDocument, domainNode, apiUserNode, apiSecretNode
+}
+
+var needsNoQuotes = regexp.MustCompile("^[a-zA-Z0-9]+$")
+
+// mustBeQuoted returns true if the provided value must be quoted in YAML.
+func mustBeQuoted(value string) bool {
+	value = strings.TrimSpace(value)
+
+	if value == "" {
+		return true
+	}
+
+	return !needsNoQuotes.MatchString(value)
 }
 
 func testConnection(domain, apiUser, apiSecret string) bool {

@@ -27,7 +27,6 @@ import (
 	"github.com/raito-io/cli/internal/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.design/x/clipboard"
 	"golang.org/x/exp/maps"
 )
 
@@ -113,9 +112,6 @@ func executeAddTargetCmd(cmd *cobra.Command, args []string) {
 		pterm.Println(pterm.Bold.Sprint("Congratulations!") + " You have successfully added a new target to your Raito CLI configuration.")
 		pterm.Println(fmt.Sprintf("Next, you can run the following command to start a synchronization with this target: %s", pterm.Bold.Sprint(runCommand)))
 		pterm.Println()
-		pterm.Println("For your convenience, this command has also been copied to the clipboard.")
-
-		clipboard.Write(clipboard.FmtText, []byte(runCommand))
 	}
 }
 

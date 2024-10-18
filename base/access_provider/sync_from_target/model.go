@@ -19,7 +19,7 @@ type AccessProvider struct {
 	Policy string   `json:"policy"`
 	Who    *WhoItem `yaml:"who" json:"who"`
 
-	Owners *OwnersInput `json:"owners"`
+	Owners *OwnersInput `json:"owners,omitempty"` // Deprecated, use RaitoOwnerTag instead
 
 	// Locking properties
 

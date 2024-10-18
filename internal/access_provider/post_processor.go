@@ -12,8 +12,10 @@ import (
 
 	baseAp "github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/access_provider/sync_from_target"
+	"github.com/raito-io/cli/base/constants"
 	"github.com/raito-io/cli/base/tag"
 	"github.com/raito-io/cli/internal/access_provider/post_processing"
+	"github.com/raito-io/cli/internal/util/stringops"
 )
 
 const nameTagOverrideLockedReason = "This Snowflake role can't be renamed because it has a name tag override attached to it"
@@ -97,27 +99,8 @@ func (p *PostProcessor) PostProcess(inputFilePath string, outputFile string) (*P
 }
 
 func (p *PostProcessor) postProcessAp(accessProvider *sync_from_target.AccessProvider, outputWriter sync_from_target.AccessProviderFileCreator) (bool, error) {
-	touched := false
-
-	if len(accessProvider.Tags) > 0 {
-		for _, tag := range accessProvider.Tags {
-			if p.matchedWithTagKey(p.config.TagOverwriteKeyForName, tag) {
-				nameOverwritten := p.overwriteName(accessProvider, tag)
-				if nameOverwritten {
-					touched = true
-					continue
-				}
-			}
-
-			if p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, tag) {
-				ownersOverwritten := p.overwriteOwners(accessProvider, tag)
-				if ownersOverwritten {
-					touched = ownersOverwritten
-					continue
-				}
-			}
-		}
-	}
+	touched := p.processOverwriteName(accessProvider)
+	touched = p.processOverwriteOwners(accessProvider) || touched
 
 	err := outputWriter.AddAccessProviders(accessProvider)
 	if err != nil {
@@ -126,6 +109,79 @@ func (p *PostProcessor) postProcessAp(accessProvider *sync_from_target.AccessPro
 	}
 
 	return touched, nil
+}
+
+func (p *PostProcessor) processOverwriteName(accessProvider *sync_from_target.AccessProvider) bool {
+	if p.config.TagOverwriteKeyForName == "" {
+		return false
+	}
+
+	for _, t := range accessProvider.Tags {
+		if p.matchedWithTagKey(p.config.TagOverwriteKeyForName, t) {
+			return p.overwriteName(accessProvider, t)
+		}
+	}
+
+	return false
+}
+
+func (p *PostProcessor) processOverwriteOwners(accessProvider *sync_from_target.AccessProvider) (touched bool) {
+	touched = false
+
+	if p.config.TagOverwriteKeyForOwners == "" {
+		return touched
+	}
+
+	var raitoOwnerTag *tag.Tag
+
+	for _, t := range accessProvider.Tags {
+		if !strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
+			continue
+		}
+
+		value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
+
+		if value == "" {
+			continue
+		}
+
+		raitoOwnerTag = t
+		raitoOwnerTag.Value = value
+
+		touched = true
+
+		break
+	}
+
+	for _, t := range accessProvider.Tags {
+		if p.matchedWithTagKey(p.config.TagOverwriteKeyForOwners, t) {
+			value := stringops.TrimSpaceInCommaSeparatedList(t.Value)
+			if value == "" {
+				continue
+			}
+
+			if raitoOwnerTag != nil {
+				raitoOwnerTag.Value = raitoOwnerTag.Value + "," + value
+			} else {
+				raitoOwnerTag = &tag.Tag{
+					Key:    constants.RaitoOwnerTagKey,
+					Value:  value,
+					Source: t.Source,
+				}
+
+				accessProvider.Tags = append(accessProvider.Tags, raitoOwnerTag)
+			}
+
+			touched = true
+		}
+	}
+
+	if raitoOwnerTag != nil {
+		accessProvider.OwnersLocked = ptr.Bool(true)
+		accessProvider.OwnersLockedReason = ptr.String(ownersTagOverrideLockedReason)
+	}
+
+	return touched
 }
 
 func (p *PostProcessor) overwriteName(accessProvider *sync_from_target.AccessProvider, tag *tag.Tag) bool {
@@ -141,34 +197,11 @@ func (p *PostProcessor) overwriteName(accessProvider *sync_from_target.AccessPro
 
 	return false
 }
-func (p *PostProcessor) overwriteOwners(accessProvider *sync_from_target.AccessProvider, tag *tag.Tag) bool {
-	if tag.Value != "" {
-		overwrittenOwners := []string{}
-		for _, owner := range strings.Split(tag.Value, ",") {
-			overwrittenOwners = append(overwrittenOwners, strings.TrimSpace(owner))
-		}
-
-		p.config.TargetLogger.Debug(fmt.Sprintf("adjusting owners for AP (externalId: %v) to %v", accessProvider.ExternalId, overwrittenOwners))
-
-		if accessProvider.Owners == nil {
-			accessProvider.Owners = &sync_from_target.OwnersInput{}
-		}
-
-		accessProvider.Owners.Users = overwrittenOwners
-
-		accessProvider.OwnersLocked = ptr.Bool(true)
-		accessProvider.OwnersLockedReason = ptr.String(ownersTagOverrideLockedReason)
-
-		return true
-	}
-
-	return false
-}
 
 func (p *PostProcessor) matchedWithTagKey(overwriteKey string, tag *tag.Tag) bool {
 	return tag != nil && overwriteKey != "" && strings.EqualFold(tag.Key, overwriteKey) && tag.Value != ""
 }
 
-func (p *PostProcessor) Close(ctx context.Context) error {
+func (p *PostProcessor) Close(_ context.Context) error {
 	return nil
 }

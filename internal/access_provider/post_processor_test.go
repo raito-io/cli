@@ -13,6 +13,7 @@ import (
 	baseAp "github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/access_provider/sync_from_target"
 	"github.com/raito-io/cli/base/access_provider/sync_from_target/mocks"
+	"github.com/raito-io/cli/base/constants"
 	"github.com/raito-io/cli/base/tag"
 	"github.com/raito-io/cli/internal/access_provider/post_processing"
 	mocks2 "github.com/raito-io/cli/internal/access_provider/post_processing/mocks"
@@ -342,110 +343,204 @@ func TestPostProcessor_overwriteName(t *testing.T) {
 	}
 }
 
-func TestPostProcessor_overwriteOwners(t *testing.T) {
-
+func TestPostProcessor_processOverwriteOwners(t *testing.T) {
+	type fields struct {
+		accessFileCreatorFactory    func(config *baseAp.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error)
+		accessProviderParserFactory func(sourceFile string) (post_processing.PostProcessorSourceFileParser, error)
+		config                      *PostProcessorConfig
+	}
 	type args struct {
-		ctx    context.Context
-		config *PostProcessorConfig
-		ap     *sync_from_target.AccessProvider
-		tag    *tag.Tag
+		accessProvider *sync_from_target.AccessProvider
 	}
-
-	type want struct {
-		touched     bool
-		processedAp *sync_from_target.AccessProvider
-	}
-
 	tests := []struct {
-		name string
-		args args
-		want want
+		name        string
+		fields      fields
+		args        args
+		expectedAp  *sync_from_target.AccessProvider
+		wantTouched bool
 	}{
 		{
-			name: "basic",
-			args: args{
-				ctx: context.Background(),
+			name: "No owners set",
+			fields: fields{
 				config: &PostProcessorConfig{
-					TagOverwriteKeyForOwners: "owners",
-					TargetLogger:             logger,
-				},
-				ap: &sync_from_target.AccessProvider{
-					Name: "OLD_NAME",
-					Tags: []*tag.Tag{
-						{Key: "RANDOM", Value: "VALUE"},
-						{Key: "owners", Value: "name1,email:test@test.be"},
-					},
-				},
-				tag: &tag.Tag{Key: "owners", Value: "name1,email:test@test.be"},
-			},
-			want: want{
-				touched: true,
-				processedAp: &sync_from_target.AccessProvider{
-					Name: "OLD_NAME",
-					Tags: []*tag.Tag{
-						{Key: "RANDOM", Value: "VALUE"},
-						{Key: "owners", Value: "name1,email:test@test.be"},
-					},
-					Owners: &sync_from_target.OwnersInput{
-						Users: []string{"name1", "email:test@test.be"},
-					},
-					OwnersLocked:       ptr.Bool(true),
-					OwnersLockedReason: ptr.String(ownersTagOverrideLockedReason),
+					TagOverwriteKeyForOwners: "owners_overwrite",
+					TargetLogger:             hclog.NewNullLogger(),
 				},
 			},
+			args: args{
+				accessProvider: &sync_from_target.AccessProvider{
+					ExternalId: "apId1",
+					Name:       "apName1",
+					NamingHint: "apName1",
+					Tags: []*tag.Tag{
+						{Key: "random_tag", Value: "user1"},
+					},
+				},
+			},
+			expectedAp: &sync_from_target.AccessProvider{
+				ExternalId: "apId1",
+				Name:       "apName1",
+				NamingHint: "apName1",
+				Tags: []*tag.Tag{
+					{Key: "random_tag", Value: "user1"},
+				},
+			},
+			wantTouched: false,
 		},
 		{
-			name: "with spaces",
-			args: args{
-				ctx: context.Background(),
+			name: "Owners set by raito_onwers tag",
+			fields: fields{
 				config: &PostProcessorConfig{
-					TagOverwriteKeyForOwners: "owners",
-					TargetLogger:             logger,
-				},
-				ap: &sync_from_target.AccessProvider{
-					Name: "OLD_NAME",
-					Tags: []*tag.Tag{
-						{Key: "RANDOM", Value: "VALUE"},
-						{Key: "owners", Value: "name1,email:test@test.be"},
-					},
-				},
-				tag: &tag.Tag{Key: "owners", Value: "name1  ,    email:test@test.be"},
-			},
-			want: want{
-				touched: true,
-				processedAp: &sync_from_target.AccessProvider{
-					Name: "OLD_NAME",
-					Tags: []*tag.Tag{
-						{Key: "RANDOM", Value: "VALUE"},
-						{Key: "owners", Value: "name1,email:test@test.be"},
-					},
-					Owners: &sync_from_target.OwnersInput{
-						Users: []string{"name1", "email:test@test.be"},
-					},
-					OwnersLocked:       ptr.Bool(true),
-					OwnersLockedReason: ptr.String(ownersTagOverrideLockedReason),
+					TagOverwriteKeyForOwners: "owners_overwrite",
+					TargetLogger:             hclog.NewNullLogger(),
 				},
 			},
+			args: args{
+				accessProvider: &sync_from_target.AccessProvider{
+					ExternalId: "apId1",
+					Name:       "apName1",
+					NamingHint: "apName1",
+					Tags: []*tag.Tag{
+						{Key: "random_tag", Value: "user1"},
+						{
+							Key:    constants.RaitoOwnerTagKey,
+							Value:  "user1, email:user2@raito.io",
+							Source: "source1",
+						},
+					},
+				},
+			},
+			expectedAp: &sync_from_target.AccessProvider{
+				ExternalId: "apId1",
+				Name:       "apName1",
+				NamingHint: "apName1",
+				Tags: []*tag.Tag{
+					{Key: "random_tag", Value: "user1"}, {
+						Key:    constants.RaitoOwnerTagKey,
+						Value:  "user1,email:user2@raito.io",
+						Source: "source1",
+					},
+				},
+				OwnersLocked:       ptr.Bool(true),
+				OwnersLockedReason: ptr.String(ownersTagOverrideLockedReason),
+			},
+			wantTouched: true,
+		},
+		{
+			name: "Owners set by specific tag",
+			fields: fields{
+				config: &PostProcessorConfig{
+					TagOverwriteKeyForOwners: "owners_overwrite",
+					TargetLogger:             hclog.NewNullLogger(),
+				},
+			},
+			args: args{
+				accessProvider: &sync_from_target.AccessProvider{
+					ExternalId: "apId1",
+					Name:       "apName1",
+					NamingHint: "apName1",
+					Tags: []*tag.Tag{
+						{Key: "random_tag", Value: "user1"},
+						{
+							Key:    "owners_overwrite",
+							Value:  "user1, email:user2@raito.io",
+							Source: "source1",
+						},
+					},
+				},
+			},
+			expectedAp: &sync_from_target.AccessProvider{
+				ExternalId: "apId1",
+				Name:       "apName1",
+				NamingHint: "apName1",
+				Tags: []*tag.Tag{
+					{Key: "random_tag", Value: "user1"},
+					{
+						Key:    "owners_overwrite",
+						Value:  "user1, email:user2@raito.io",
+						Source: "source1",
+					},
+					{
+						Key:    constants.RaitoOwnerTagKey,
+						Value:  "user1,email:user2@raito.io",
+						Source: "source1",
+					},
+				},
+				OwnersLocked:       ptr.Bool(true),
+				OwnersLockedReason: ptr.String(ownersTagOverrideLockedReason),
+			},
+			wantTouched: true,
+		},
+		{
+			name: "Owners set by specific tag and raito_owners tag",
+			fields: fields{
+				config: &PostProcessorConfig{
+					TagOverwriteKeyForOwners: "owners_overwrite",
+					TargetLogger:             hclog.NewNullLogger(),
+				},
+			},
+			args: args{
+				accessProvider: &sync_from_target.AccessProvider{
+					ExternalId: "apId1",
+					Name:       "apName1",
+					NamingHint: "apName1",
+					Tags: []*tag.Tag{
+						{Key: "random_tag", Value: "user1"},
+						{
+							Key:    "owners_overwrite",
+							Value:  ", user1, email:user2@raito.io",
+							Source: "source1",
+						},
+						{
+							Key:    constants.RaitoOwnerTagKey,
+							Value:  " user3, email:user4@raito.io",
+							Source: "source1",
+						},
+						{
+							Key:    "owners_overwrite",
+							Value:  ",",
+							Source: "source1",
+						},
+					},
+				},
+			},
+			expectedAp: &sync_from_target.AccessProvider{
+				ExternalId: "apId1",
+				Name:       "apName1",
+				NamingHint: "apName1",
+				Tags: []*tag.Tag{
+					{Key: "random_tag", Value: "user1"},
+					{
+						Key:    "owners_overwrite",
+						Value:  ", user1, email:user2@raito.io",
+						Source: "source1",
+					},
+					{
+						Key:    constants.RaitoOwnerTagKey,
+						Value:  "user3,email:user4@raito.io,user1,email:user2@raito.io",
+						Source: "source1",
+					},
+					{
+						Key:    "owners_overwrite",
+						Value:  ",",
+						Source: "source1",
+					},
+				},
+				OwnersLocked:       ptr.Bool(true),
+				OwnersLockedReason: ptr.String(ownersTagOverrideLockedReason),
+			},
+			wantTouched: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockFileCreator, mockFileReader := createPostProcessor(t)
-
-			postProcessorFn := PostProcessor{
-				accessFileCreatorFactory: func(config *baseAp.AccessSyncFromTarget) (sync_from_target.AccessProviderFileCreator, error) {
-					return mockFileCreator, nil
-				},
-				accessProviderParserFactory: func(sourceFile string) (post_processing.PostProcessorSourceFileParser, error) {
-					return mockFileReader, nil
-				},
-				config: tt.args.config,
+			p := &PostProcessor{
+				accessFileCreatorFactory:    tt.fields.accessFileCreatorFactory,
+				accessProviderParserFactory: tt.fields.accessProviderParserFactory,
+				config:                      tt.fields.config,
 			}
-
-			touched := postProcessorFn.overwriteOwners(tt.args.ap, tt.args.tag)
-
-			assert.Equal(t, tt.want.touched, touched)
-			assert.Equal(t, tt.want.processedAp, tt.args.ap)
+			assert.Equalf(t, tt.wantTouched, p.processOverwriteOwners(tt.args.accessProvider), "processOverwriteOwners(%v)", tt.args.accessProvider)
+			assert.Equalf(t, tt.expectedAp, tt.args.accessProvider, "accessProvider after processOverwriteOwners()")
 		})
 	}
 }

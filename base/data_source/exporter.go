@@ -27,7 +27,7 @@ type DataObject struct {
 	ParentExternalId string       `json:"parentExternalId"`
 	Tags             []*tag.Tag   `json:"tags"`
 	DataType         *string      `json:"dataType,omitempty"`
-	Owners           *OwnersInput `json:"owners"`
+	Owners           *OwnersInput `json:"owners,omitempty"` // Deprecated, use RaitoOwnerTag instead
 }
 
 type OwnersInput struct {

@@ -101,6 +101,7 @@ const (
 	FileBackupLocationFlag      = "file-backup-location"
 	MaximumBackupsPerTargetFlag = "maximum-backups-per-target"
 	DeleteTempFilesFlag         = "delete-temp-files"
+	MaximumFileSizesFlag        = "maximum-file-size"
 
 	TagOverwriteKeyForAccessProviderName   = "tag-overwrite-key-for-access-provider-name"
 	TagOverwriteKeyForAccessProviderOwners = "tag-overwrite-key-for-access-provider-owners"

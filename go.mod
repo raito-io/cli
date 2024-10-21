@@ -50,6 +50,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.32.2 // indirect
+	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500 // indirect
 	github.com/chigopher/pathlib v0.19.1 // indirect
 	github.com/containerd/console v1.0.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect

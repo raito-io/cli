@@ -111,6 +111,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 
 	cmd.PersistentFlags().String(constants.FileBackupLocationFlag, "", "If set, this filepath is used to store backups of the files that are used during synchronization jobs. A sub-folder is created per target, using the target name + the type of run (full, manual or webhook) as name for the folder. Underneath that, another sub-folder is created per run, using a timestamp as the folder name. The backed up files are then stored in that folder. This parameter can be overridden in the target configs if needed.")
 	cmd.PersistentFlags().Int(constants.MaximumBackupsPerTargetFlag, 0, fmt.Sprintf("When %q is defined, this parameter can be used to control how many backups should be kept per target+type. When this number is exceeded, older backups will be removed automatically. By default, this is 0, which means there is no maximum. This parameter can be overridden in the target configs if needed.", constants.FileBackupLocationFlag))
+	cmd.PersistentFlags().String(constants.MaximumFileSizesFlag, "512mb", "The maximum file size in MB that can be uploaded to Raito Cloud. This parameter can be overridden in the target configs if needed. (only used for data usage files at this moment)")
 
 	BindFlag(constants.IdentityStoreIdFlag, cmd)
 	BindFlag(constants.DataSourceIdFlag, cmd)
@@ -178,6 +179,7 @@ func initRunCommand(rootCmd *cobra.Command) {
 
 	BindFlag(constants.FileBackupLocationFlag, cmd)
 	BindFlag(constants.MaximumBackupsPerTargetFlag, cmd)
+	BindFlag(constants.MaximumFileSizesFlag, cmd)
 
 	hideConfigOptions(cmd, constants.URLOverrideFlag, constants.SkipAuthentication, constants.SkipFileUpload, constants.ContainerLivenessFile)
 

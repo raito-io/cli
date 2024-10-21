@@ -83,14 +83,16 @@ type DataUsageFileCreator interface {
 	Close()
 	GetStatementCount() int
 	GetImportFileSize() uint64
+	GetActualFileNames() []string
 }
 
 type dataUsageFileCreator struct {
-	config         *DataUsageSyncConfig
-	targetFile     *os.File
-	statementCount int
-	fileByteSize   uint64
-	totalByteSize  uint64
+	config              *DataUsageSyncConfig
+	targetFile          *os.File
+	fileStatementCount  int
+	totalStatementCount int
+	fileByteSize        uint64
+	totalByteSize       uint64
 
 	maxBytesPerFile uint64
 
@@ -99,11 +101,12 @@ type dataUsageFileCreator struct {
 
 func NewDataUsageFileCreator(config *DataUsageSyncConfig) (DataUsageFileCreator, error) {
 	duI := dataUsageFileCreator{
-		config:          config,
-		statementCount:  0,
-		fileByteSize:    0,
-		totalByteSize:   0,
-		maxBytesPerFile: config.MaxBytesPerFile,
+		config:              config,
+		fileStatementCount:  0,
+		totalStatementCount: 0,
+		fileByteSize:        0,
+		totalByteSize:       0,
+		maxBytesPerFile:     config.MaxBytesPerFile,
 	}
 
 	err := duI.openNewFile()
@@ -126,14 +129,6 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 		statement := statements[ind]
 		var err error
 
-		if d.statementCount > 0 {
-			d.targetFile.WriteString(",") //nolint:errcheck
-			d.fileByteSize += 1
-		}
-
-		d.targetFile.WriteString("\n") //nolint:errcheck
-		d.fileByteSize += 1
-
 		doBuf, err := json.Marshal(statement)
 		if err != nil {
 			return fmt.Errorf("error while serializing data object with externalID %q", statement.ExternalId)
@@ -141,8 +136,11 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 
 		size := uint64(len(doBuf))
 
-		if d.maxBytesPerFile != 0 && d.fileByteSize+size > uint64(d.maxBytesPerFile) {
-			d.closeFile()
+		if d.maxBytesPerFile != 0 && d.fileByteSize != 0 && d.fileByteSize+size+2 > d.maxBytesPerFile { // +2 for the comma and newline
+			err = d.closeFile()
+			if err != nil {
+				return fmt.Errorf("close file %q: %w", d.targetFile.Name(), err)
+			}
 
 			err = d.openNewFile()
 			if err != nil {
@@ -150,15 +148,27 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 			}
 		}
 
-		_, err = d.targetFile.Write(doBuf)
+		if d.fileStatementCount > 0 {
+			err = d.writeString(",")
+			if err != nil {
+				return err
+			}
+		}
+
+		err = d.writeString("\n")
+		if err != nil {
+			return err
+		}
+
+		err = d.write(doBuf)
 
 		// Only looking at writing errors at the end, supposing if one fails, all would fail
 		if err != nil {
 			return fmt.Errorf("error while writing to temp file %q", d.targetFile.Name())
 		}
 
-		d.statementCount++
-		d.fileByteSize += uint64(len(doBuf))
+		d.totalStatementCount++
+		d.fileStatementCount++
 	}
 
 	return nil
@@ -168,22 +178,31 @@ func (d *dataUsageFileCreator) AddStatements(statements []Statement) error {
 // This method must be called when all data objects have been added and before control is given back
 // to the CLI. It's advised to call this using 'defer'.
 func (d *dataUsageFileCreator) Close() {
-	d.closeFile()
+	_ = d.closeFile()
 }
 
-func (d *dataUsageFileCreator) closeFile() {
-	d.targetFile.WriteString("\n]") //nolint:errcheck
-	d.targetFile.Close()
+func (d *dataUsageFileCreator) closeFile() error {
+	err := d.writeString("\n]")
+	if err != nil {
+		return fmt.Errorf("write close json token: %w", err)
+	}
+
+	err = d.targetFile.Close()
+	if err != nil {
+		return fmt.Errorf("close file: %w", err)
+	}
+
+	return nil
 }
 
 // GetStatementCount returns the number of data objects that has been added to the import file.
 func (d *dataUsageFileCreator) GetStatementCount() int {
-	return d.statementCount
+	return d.totalStatementCount
 }
 
 // GetImportFileSize returns the approximate byte size of the data that has been added to the import file.
 func (d *dataUsageFileCreator) GetImportFileSize() uint64 {
-	return d.fileByteSize
+	return d.totalByteSize
 }
 
 func (d *dataUsageFileCreator) GetActualFileNames() []string {
@@ -193,14 +212,15 @@ func (d *dataUsageFileCreator) GetActualFileNames() []string {
 func (d *dataUsageFileCreator) createTargetFile() error {
 	actualName := d.config.TargetFile
 
-	if strings.HasSuffix(d.config.TargetFile, ".json") || strings.HasSuffix(d.config.TargetFile, ".yaml") {
-		split := strings.Split(d.config.TargetFile, ".")
-
+	if d.maxBytesPerFile > 0 {
 		nr := len(d.actualFileNames)
 
-		actualName = fmt.Sprintf("%s_%d.%s", strings.Join(split[0:len(split)-2], "."), nr, split[1])
-	} else {
-		actualName = d.config.TargetFile + "_0"
+		if strings.HasSuffix(d.config.TargetFile, ".json") || strings.HasSuffix(d.config.TargetFile, ".yaml") {
+			split := strings.Split(d.config.TargetFile, ".")
+			actualName = fmt.Sprintf("%s_%d.%s", strings.Join(split[0:len(split)-1], "."), nr, split[len(split)-1])
+		} else {
+			actualName = fmt.Sprintf("%s_%d", d.config.TargetFile, nr)
+		}
 	}
 
 	f, err := os.Create(actualName)
@@ -208,8 +228,10 @@ func (d *dataUsageFileCreator) createTargetFile() error {
 		return fmt.Errorf("error creating temporary file for data usage importer: %s", err.Error())
 	}
 	d.targetFile = f
-
 	d.actualFileNames = append(d.actualFileNames, actualName)
+
+	d.fileByteSize = 0
+	d.fileStatementCount = 0
 
 	return nil
 }
@@ -220,13 +242,34 @@ func (d *dataUsageFileCreator) openNewFile() error {
 		return fmt.Errorf("create target file: %w", err)
 	}
 
-	_, err = d.targetFile.WriteString("[")
+	err = d.writeString("[")
 	if err != nil {
 		return fmt.Errorf("write open json token: %w", err)
 	}
 
-	d.fileByteSize = 3   //Already include '\n]'
-	d.totalByteSize += 3 //Already include '\n]'
+	return nil
+}
+
+func (d *dataUsageFileCreator) write(data []byte) error {
+	bytes, err := d.targetFile.Write(data)
+	if err != nil {
+		return err
+	}
+
+	d.fileByteSize += uint64(bytes)  //nolint:gosec
+	d.totalByteSize += uint64(bytes) //nolint:gosec
+
+	return nil
+}
+
+func (d *dataUsageFileCreator) writeString(data string) error {
+	bytes, err := d.targetFile.WriteString(data)
+	if err != nil {
+		return err
+	}
+
+	d.fileByteSize += uint64(bytes)  //nolint:gosec
+	d.totalByteSize += uint64(bytes) //nolint:gosec
 
 	return nil
 }

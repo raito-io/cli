@@ -80,7 +80,8 @@ func (s *dataUsageSyncFunction) SyncDataUsage(ctx context.Context, config *data_
 		fileCreator.GetStatementCount(), fileCreator.GetImportFileSize(), sec))
 
 	return &data_usage.DataUsageSyncResult{
-		Statements: int32(fileCreator.GetStatementCount()), //nolint:gosec
+		Statements:  int32(fileCreator.GetStatementCount()), //nolint:gosec
+		TargetFiles: fileCreator.GetActualFileNames(),
 	}, nil
 }
 

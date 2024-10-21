@@ -28,7 +28,7 @@ type DataSourceUsageInfo struct {
 }
 
 type DataUsageImporter interface {
-	TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error)
+	TriggerImport(ctx context.Context, jobId string, files []string) (job.JobStatus, string, error)
 	GetLastAndFirstUsage() (*time.Time, *time.Time, error)
 }
 
@@ -45,23 +45,29 @@ func NewDataUsageImporter(config *DataUsageImportConfig, statusUpdater job.TaskE
 	return &duI
 }
 
-func (d *dataUsageImporter) TriggerImport(ctx context.Context, jobId string) (job.JobStatus, string, error) {
+func (d *dataUsageImporter) TriggerImport(ctx context.Context, jobId string, files []string) (job.JobStatus, string, error) {
 	if viper.GetBool(constants.SkipFileUpload) {
 		// In the development environment, we skip the upload and use the local file for the import
-		return d.doImport(jobId, d.config.TargetFile)
+		return d.doImport(ctx, jobId, files)
 	} else {
-		key, err := d.upload(ctx)
-		if err != nil {
-			return job.Failed, "", err
+		keys := make([]string, 0, len(files))
+
+		for _, file := range files {
+			key, err := d.upload(ctx, file)
+			if err != nil {
+				return job.Failed, "", err
+			}
+
+			keys = append(keys, key)
 		}
 
-		return d.doImport(jobId, key)
+		return d.doImport(ctx, jobId, keys)
 	}
 }
 
-func (d *dataUsageImporter) upload(ctx context.Context) (string, error) {
+func (d *dataUsageImporter) upload(ctx context.Context, filePath string) (string, error) {
 	d.statusUpdater.SetStatusToDataUpload(ctx)
-	key, err := file.UploadFile(d.config.TargetFile, &d.config.BaseTargetConfig)
+	key, err := file.UploadFile(filePath, &d.config.BaseTargetConfig)
 
 	if err != nil {
 		return "", fmt.Errorf("error while uploading data usage import files to Raito: %s", err.Error())
@@ -70,31 +76,33 @@ func (d *dataUsageImporter) upload(ctx context.Context) (string, error) {
 	return key, nil
 }
 
-func (d *dataUsageImporter) doImport(jobId string, fileKey string) (job.JobStatus, string, error) {
-	gqlQuery := fmt.Sprintf(`{ "operationName": "ImportDataUsageRequest", "variables":{}, "query": "mutation ImportDataUsageRequest {
-      importDataUsageRequest(input: {
-        jobId: \"%s\",
-        importSettings: {
-          dataSource: \"%s\",
-          fileKey: \"%s\"
-        }
-      }) {
-        subtask {
-            subtaskId
-            status            
-          }
-      }
-    }" }"`, jobId, d.config.DataSourceId, fileKey)
-	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
+func (d *dataUsageImporter) doImport(ctx context.Context, jobId string, fileKeys []string) (job.JobStatus, string, error) {
+	var mutation struct {
+		ImportDataUsageRequest struct {
+			Subtask struct {
+				SubtaskId string
+				Status    job.JobStatus
+			}
+		} `graphql:"importDataUsageRequest(input: $request)"`
+	}
 
-	res := Response{}
-	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseConfig, &res)
+	variables := map[string]interface{}{
+		"request": DataUsageImportRequest{
+			JobId: ID(jobId),
+			ImportSettings: DataUsageImportSettings{
+				DataSource: ID(d.config.DataSourceId),
+				FileKeys:   fileKeys,
+			},
+		},
+	}
+
+	err := graphql.NewClient(&d.config.BaseConfig).Mutate(ctx, &mutation, variables)
 
 	if err != nil {
 		return job.Failed, "", fmt.Errorf("error while executing data usage import on appserver: %s", err.Error())
 	}
 
-	return res.Response.Subtask.Status, res.Response.Subtask.SubtaskId, nil
+	return mutation.ImportDataUsageRequest.Subtask.Status, mutation.ImportDataUsageRequest.Subtask.SubtaskId, nil
 }
 
 func (d *dataUsageImporter) GetLastAndFirstUsage() (*time.Time, *time.Time, error) {
@@ -126,17 +134,16 @@ func (d *dataUsageImporter) GetLastAndFirstUsage() (*time.Time, *time.Time, erro
 	return finalResultFirstUsage, finalResultLastUsage, nil
 }
 
-type subtaskResponse struct {
-	Status    job.JobStatus `json:"status"`
-	SubtaskId string        `json:"subtaskId"`
+type ID string
+
+type DataUsageImportSettings struct {
+	DataSource ID       `json:"dataSource"`
+	FileKeys   []string `json:"fileKeys"`
 }
 
-type QueryResponse struct {
-	Subtask subtaskResponse `json:"subtask"`
-}
-
-type Response struct {
-	Response QueryResponse `json:"importDataUsageRequest"`
+type DataUsageImportRequest struct {
+	JobId          ID                      `json:"jobId"`
+	ImportSettings DataUsageImportSettings `json:"importSettings"`
 }
 
 type LastUsedResponse struct {

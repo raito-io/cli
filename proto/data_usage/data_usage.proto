@@ -11,6 +11,7 @@ import "util/version/version.proto";
 message DataUsageSyncConfig {
   util.config.ConfigMap config_map = 1;
   string target_file = 2;
+  uint64 max_bytes_per_file = 3;
 }
 
 // DataUsageSyncResult represents the result from the data usage sync process.
@@ -18,6 +19,7 @@ message DataUsageSyncConfig {
 message DataUsageSyncResult {
   util.error.ErrorResult error = 1 [deprecated = true];
   int32 statements = 2;
+  repeated string target_files = 3;
 }
 
 service DataUsageSyncService {

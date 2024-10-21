@@ -12,6 +12,7 @@ require (
 	github.com/aws/smithy-go v1.22.0
 	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
 	github.com/bcicen/jstream v1.0.1
+	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/coder/websocket v1.8.12
 	github.com/goccy/go-yaml v1.12.0
 	github.com/hashicorp/go-hclog v1.6.3

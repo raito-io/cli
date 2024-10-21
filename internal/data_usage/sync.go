@@ -7,10 +7,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/hashicorp/go-hclog"
+	"github.com/spf13/viper"
 
 	dupc "github.com/raito-io/cli/base/data_usage"
 	baseconfig "github.com/raito-io/cli/base/util/config"
+	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/plugin"
 	"github.com/raito-io/cli/internal/target/types"
@@ -60,8 +63,9 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 	defer s.TargetConfig.HandleTempFile(targetFile, false)
 
 	syncerConfig := dupc.DataUsageSyncConfig{
-		ConfigMap:  &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
-		TargetFile: targetFile,
+		ConfigMap:       &baseconfig.ConfigMap{Parameters: s.TargetConfig.Parameters},
+		TargetFile:      targetFile,
+		MaxBytesPerFile: s.GetMaxBytesPerFile(),
 	}
 
 	dus, err := client.GetDataUsageSyncer()
@@ -105,7 +109,14 @@ func (s *DataUsageSync) StartSyncAndQueueTaskPart(ctx context.Context, client pl
 
 	s.TargetConfig.TargetLogger.Info("Importing usage data into Raito")
 
-	status, subtaskId, err := duImporter.TriggerImport(ctx, s.JobId)
+	var filesCreated []string
+	if len(res.TargetFiles) > 0 {
+		filesCreated = res.TargetFiles
+	} else {
+		filesCreated = []string{targetFile}
+	}
+
+	status, subtaskId, err := duImporter.TriggerImport(ctx, s.JobId, filesCreated)
 	if err != nil {
 		return job.Failed, "", err
 	}
@@ -154,4 +165,14 @@ func (s *DataUsageSync) GetTaskResults() []job.TaskResult {
 	}
 
 	return []job.TaskResult{*s.result}
+}
+
+func (s *DataUsageSync) GetMaxBytesPerFile() uint64 {
+	var v datasize.ByteSize
+	if err := v.UnmarshalText([]byte(viper.GetString(constants.MaximumFileSizesFlag))); err != nil {
+		s.TargetConfig.TargetLogger.Error(fmt.Sprintf("Error parsing maximum file size: %s. Will use 512MB instead.", err.Error()))
+		v = datasize.MB * 512
+	}
+
+	return v.Bytes()
 }

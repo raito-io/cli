@@ -165,12 +165,15 @@ func buildTargetNode(domain, apiUser, apiSecret string, existingTargetNames set.
 
 	connector := viper.GetString(constants.ConnectorNameFlag)
 
+	isDataSource := false
+	isIdentityStore := false
+
 	for {
 		if connector == "" {
 			connector = textInput("Enter the full name of the connector (e.g. raito-io/cli-plugin-snowflake)", "Connector name", "", false)
 		}
 
-		pluginInfo = fetchPluginInfo(connector)
+		pluginInfo, isDataSource, isIdentityStore = fetchPluginInfo(connector)
 		if pluginInfo != nil {
 			addStringNodeWithValue("connector-name", connector, targetNode)
 
@@ -180,10 +183,16 @@ func buildTargetNode(domain, apiUser, apiSecret string, existingTargetNames set.
 		}
 	}
 
-	dataSourceId, identityStoreId := fetchDataSourceAndIdentityStoreId(domain, apiUser, apiSecret)
+	if isDataSource {
+		dataSourceId, identityStoreId := fetchDataSourceAndIdentityStoreId(domain, apiUser, apiSecret)
 
-	addStringNodeWithValue("data-source-id", dataSourceId, targetNode)
-	addStringNodeWithValue("identity-store-id", identityStoreId, targetNode)
+		addStringNodeWithValue("data-source-id", dataSourceId, targetNode)
+		addStringNodeWithValue("identity-store-id", identityStoreId, targetNode)
+	} else if isIdentityStore {
+		identityStoreId := fetchIdentityStoreId(domain, apiUser, apiSecret)
+
+		addStringNodeWithValue("identity-store-id", identityStoreId, targetNode)
+	}
 
 	// Now getting the values for all the mandatory parameters for the connector
 	optionalParameters := make([]*pl.ParameterInfo, 0, len(pluginInfo.Parameters))
@@ -294,6 +303,56 @@ func fetchDataSourceAndIdentityStoreId(domain string, apiUser string, apiSecret 
 	return dataSourceId, identityStoreId
 }
 
+func fetchIdentityStoreId(domain string, apiUser string, apiSecret string) string {
+	// Fetching the data source and identity store id
+	identityStoreId := viper.GetString(constants.IdentityStoreIdFlag)
+
+	if identityStoreId == "" {
+		identityStores := fetchIdentityStores(domain, apiUser, apiSecret)
+		if identityStores == nil {
+			os.Exit(1)
+		}
+
+		selectedOptionIndex := 0
+		selectedOption := ""
+
+		// If there are data sources already, let the user choose one (or create a new one)
+		if len(identityStores) > 0 {
+			isNames := maps.Keys(identityStores)
+			sort.Strings(isNames)
+
+			isNames = append([]string{"Create a new identity store"}, isNames...)
+
+			selectedOption, _ = pterm.DefaultInteractiveSelect.WithOptions(isNames).Show()
+			selectedOptionIndex = slices.Index(isNames, selectedOption)
+
+			pterm.Println()
+		}
+
+		if selectedOptionIndex == 0 {
+			isName := textInput("Enter the name for the new identity store (e.g. 'Azure Entra ID')", "Name", "", false) // Chosen to create a new data source
+
+			isInfo := createIdentityStore(isName, domain, apiUser, apiSecret)
+			if isInfo == nil {
+				os.Exit(1)
+			}
+
+			identityStoreId = isInfo.Id
+		} else {
+			selectedIS := identityStores[selectedOption]
+
+			identityStoreId = selectedIS.Id
+		}
+	} else {
+		isInfo := fetchIdentityStore(identityStoreId, domain, apiUser, apiSecret)
+		if isInfo == nil {
+			os.Exit(1)
+		}
+	}
+
+	return identityStoreId
+}
+
 func addStringNodeWithValue(key, value string, parent *ast.MappingNode) {
 	node := addStringNode(key, parent)
 
@@ -304,7 +363,7 @@ func addStringNodeWithValue(key, value string, parent *ast.MappingNode) {
 	node.Value = value
 }
 
-func fetchPluginInfo(connector string) *pl.PluginInfo {
+func fetchPluginInfo(connector string) (*pl.PluginInfo, bool, bool) {
 	spinner, _ := pterm.DefaultSpinner.Start("Looking for connector information...")
 
 	client, err := plugin.NewPluginClient(connector, "", hclog.L())
@@ -312,7 +371,7 @@ func fetchPluginInfo(connector string) *pl.PluginInfo {
 		spinner.Fail(fmt.Sprintf("Unable to load connector %q: %s", connector, err.Error()))
 		pterm.Println()
 
-		return nil
+		return nil, false, false
 	}
 
 	defer client.Close()
@@ -322,7 +381,7 @@ func fetchPluginInfo(connector string) *pl.PluginInfo {
 		spinner.Fail(fmt.Sprintf("Connector (%s) does not implement the Info interface", connector))
 		pterm.Println()
 
-		return nil
+		return nil, false, false
 	}
 
 	pluginInfo, err := info.GetInfo(context.Background())
@@ -330,17 +389,36 @@ func fetchPluginInfo(connector string) *pl.PluginInfo {
 		spinner.Fail(fmt.Sprintf("Unable to load plugin information: %s", err))
 		pterm.Println()
 
-		return nil
+		return nil, false, false
+	}
+
+	isDataSource := false
+	isIdentityStore := false
+
+	for _, pluginType := range pluginInfo.Type {
+		if pluginType == pl.PluginType_PLUGIN_TYPE_FULL_DS_SYNC {
+			isDataSource = true
+			break
+		} else if pluginType == pl.PluginType_PLUGIN_TYPE_IS_SYNC {
+			isIdentityStore = true
+		}
+	}
+
+	if !isDataSource && !isIdentityStore {
+		spinner.Fail("This plugin doesn't support full Data Source sync or Identity Store syncs.")
+		pterm.Println()
+
+		return nil, false, false
 	}
 
 	spinner.Success(fmt.Sprintf("Loaded connector information for %s", pluginInfo.Name))
 	pterm.Println()
 
-	return pluginInfo
+	return pluginInfo, isDataSource, isIdentityStore
 }
 
 func fetchDataSources(domain, apiUser, apiSecret string) map[string]DataSourceInfo {
-	spinner, _ := pterm.DefaultSpinner.Start("Loading available data sources from Raito Cloud...")
+	spinner, _ := pterm.DefaultSpinner.Start("Loading available Data Sources from Raito Cloud...")
 
 	var response struct {
 		DataSources struct {
@@ -364,13 +442,13 @@ func fetchDataSources(domain, apiUser, apiSecret string) map[string]DataSourceIn
 	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{}, false, &response)
 
 	if err != nil {
-		spinner.Fail("Unable to fetch data sources: " + err.Error())
+		spinner.Fail("Unable to fetch Data Sources: " + err.Error())
 		pterm.Println()
 
 		return nil
 	}
 
-	spinner.Success("Data sources fetched successfully")
+	spinner.Success("Data Sources fetched successfully")
 	pterm.Println()
 
 	dataSourceMap := map[string]DataSourceInfo{}
@@ -396,8 +474,52 @@ func fetchDataSources(domain, apiUser, apiSecret string) map[string]DataSourceIn
 	return dataSourceMap
 }
 
+func fetchIdentityStores(domain, apiUser, apiSecret string) map[string]IdentityStoreInfo {
+	spinner, _ := pterm.DefaultSpinner.Start("Loading available Identity Stores from Raito Cloud...")
+
+	var response struct {
+		IdentityStores struct {
+			PagedResult struct {
+				Edges []struct {
+					Node struct {
+						IdentityStore struct {
+							Name string
+							Id   string
+						} `graphql:"... on IdentityStore"`
+					}
+				}
+			} `graphql:"... on PagedResult"`
+		} `graphql:"identityStores(filter: {native: false})"`
+	}
+
+	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{}, false, &response)
+
+	if err != nil {
+		spinner.Fail("Unable to fetch Identity Stores: " + err.Error())
+		pterm.Println()
+
+		return nil
+	}
+
+	spinner.Success("Identity Stores fetched successfully")
+	pterm.Println()
+
+	identityStoreMap := map[string]IdentityStoreInfo{}
+
+	for _, e := range response.IdentityStores.PagedResult.Edges {
+		isInfo := IdentityStoreInfo{
+			Name: e.Node.IdentityStore.Name,
+			Id:   e.Node.IdentityStore.Id,
+		}
+
+		identityStoreMap[isInfo.Name] = isInfo
+	}
+
+	return identityStoreMap
+}
+
 func createDataSource(dsName, domain, apiUser, apiSecret string) *DataSourceInfo {
-	spinner, _ := pterm.DefaultSpinner.Start("Creating new data source in Raito Cloud...")
+	spinner, _ := pterm.DefaultSpinner.Start("Creating new Data Source in Raito Cloud...")
 
 	var response struct {
 		CreateDataSource struct {
@@ -422,13 +544,13 @@ func createDataSource(dsName, domain, apiUser, apiSecret string) *DataSourceInfo
 
 	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{"input": input}, true, &response)
 	if err != nil {
-		spinner.Fail("Unable to create data source: " + err.Error())
+		spinner.Fail("Unable to create Data Source: " + err.Error())
 		pterm.Println()
 
 		return nil
 	}
 
-	spinner.Success("Data source created successfully")
+	spinner.Success("Data Source created successfully")
 	pterm.Println()
 
 	dsInfo := DataSourceInfo{
@@ -448,8 +570,47 @@ func createDataSource(dsName, domain, apiUser, apiSecret string) *DataSourceInfo
 	return &dsInfo
 }
 
+func createIdentityStore(isName, domain, apiUser, apiSecret string) *IdentityStoreInfo {
+	spinner, _ := pterm.DefaultSpinner.Start("Creating new Identity Store in Raito Cloud...")
+
+	var response struct {
+		CreateIdentityStore struct {
+			IdentityStore struct {
+				Name string
+				Id   string
+			} `graphql:"... on IdentityStore"`
+		} `graphql:"createIdentityStore(input: $input)"`
+	}
+
+	type IdentityStoreInput struct {
+		Name string `json:"name,omitempty"`
+	}
+
+	input := IdentityStoreInput{
+		Name: isName,
+	}
+
+	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{"input": input}, true, &response)
+	if err != nil {
+		spinner.Fail("Unable to create Identity Store: " + err.Error())
+		pterm.Println()
+
+		return nil
+	}
+
+	spinner.Success("Identity Store created successfully")
+	pterm.Println()
+
+	isInfo := IdentityStoreInfo{
+		Name: response.CreateIdentityStore.IdentityStore.Name,
+		Id:   response.CreateIdentityStore.IdentityStore.Id,
+	}
+
+	return &isInfo
+}
+
 func fetchDataSource(dsId, domain, apiUser, apiSecret string) *DataSourceInfo {
-	spinner, _ := pterm.DefaultSpinner.Start("Loading data source from Raito Cloud...")
+	spinner, _ := pterm.DefaultSpinner.Start("Loading Data Source from Raito Cloud...")
 
 	var response struct {
 		GetDataSource struct {
@@ -467,13 +628,13 @@ func fetchDataSource(dsId, domain, apiUser, apiSecret string) *DataSourceInfo {
 	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{"id": graphql2.ID(dsId)}, false, &response)
 
 	if err != nil {
-		spinner.Fail("Unable to fetch data source: " + err.Error())
+		spinner.Fail("Unable to fetch Data Source: " + err.Error())
 		pterm.Println()
 
 		return nil
 	}
 
-	spinner.Success("Fetched data source information.")
+	spinner.Success("Fetched Data Source information.")
 	pterm.Println()
 
 	dsInfo := DataSourceInfo{
@@ -493,10 +654,45 @@ func fetchDataSource(dsId, domain, apiUser, apiSecret string) *DataSourceInfo {
 	return &dsInfo
 }
 
+func fetchIdentityStore(isId, domain, apiUser, apiSecret string) *IdentityStoreInfo {
+	spinner, _ := pterm.DefaultSpinner.Start("Loading Identity Store from Raito Cloud...")
+
+	var response struct {
+		GetIdentityStore struct {
+			IdentityStore struct {
+				Name string
+				Id   string
+			} `graphql:"... on IdentityStore"`
+		} `graphql:"identityStore(id: $id)"`
+	}
+
+	err := executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret, map[string]interface{}{"id": graphql2.ID(isId)}, false, &response)
+
+	if err != nil {
+		spinner.Fail("Unable to fetch Identity Store: " + err.Error())
+		pterm.Println()
+
+		return nil
+	}
+
+	spinner.Success("Fetched Identity Store information.")
+	pterm.Println()
+
+	return &IdentityStoreInfo{
+		Name: response.GetIdentityStore.IdentityStore.Name,
+		Id:   response.GetIdentityStore.IdentityStore.Id,
+	}
+}
+
 type DataSourceInfo struct {
 	Name          string
 	Id            string
 	IdentityStore string
+}
+
+type IdentityStoreInfo struct {
+	Name string
+	Id   string
 }
 
 func executeGraphQLWithCustomConfigNew(domain, apiUser, apiSecret string, params map[string]interface{}, mutation bool, response interface{}) error {

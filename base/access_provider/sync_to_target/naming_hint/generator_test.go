@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 )
@@ -438,8 +439,62 @@ func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase(t *testing.T) {
 		assert.True(t, upperCaseRegex.MatchString(name))
 
 		existingNames[name] = struct{}{}
-
 	}
+}
+
+func TestUniqueGeneratorIT_Generate_DuplicatedNames_uppercase_ImportedAccessProvider(t *testing.T) {
+	//Given
+	constraints := NamingConstraints{
+		UpperCaseLetters:  true,
+		LowerCaseLetters:  false,
+		Numbers:           true,
+		MaxLength:         32,
+		SpecialCharacters: "_-@#$",
+	}
+
+	generator, err := NewUniqueNameGenerator(logger, "", &constraints)
+
+	assert.NoError(t, err)
+
+	accessProviderGenerator := func(id int, namingHint string) *sync_to_target.AccessProvider {
+		return &sync_to_target.AccessProvider{
+			Id:         fmt.Sprintf("SomeID%d", id),
+			NamingHint: namingHint,
+			ActualName: nil,
+		}
+	}
+
+	importedAccessProviderGenerator := func(id int, actualName string) *sync_to_target.AccessProvider {
+		return &sync_to_target.AccessProvider{
+			Id:         fmt.Sprintf("ExternalId%d", id),
+			NamingHint: actualName,
+			ActualName: &actualName,
+		}
+	}
+	ap := accessProviderGenerator(0, "the_same_name")
+	output, err := generator.Generate(ap)
+	require.NoError(t, err)
+	require.Equal(t, "THE_SAME_NAME", output)
+
+	// IMPORTED ACCESS PROVIDER
+	importedActualName := "Some Actual Name w^th Non-generated  char"
+	ap = importedAccessProviderGenerator(0, importedActualName)
+	output, err = generator.Generate(ap)
+	require.NoError(t, err)
+	assert.Equal(t, importedActualName, output)
+
+	// Not able to import the same name
+	ap = importedAccessProviderGenerator(1, "THE_SAME_NAME")
+	output, err = generator.Generate(ap)
+	require.NoError(t, err)
+	assert.Equal(t, "THE_SAME_NAME__0", output)
+
+	// generate new name for non imported access provider
+	ap = accessProviderGenerator(1, "Some Actual Name w^th Non-generated  char")
+	output, err = generator.Generate(ap)
+	require.NoError(t, err)
+	assert.Equal(t, "SOME_ACTUAL_NAME_W_TH_NON-", output)
+
 }
 
 func TestUniqueGeneratorIT_Generate_WithPrefix(t *testing.T) {

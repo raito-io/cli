@@ -93,6 +93,17 @@ func (g *uniqueNameGenerator) Generate(ap *sync_to_target.AccessProvider) (strin
 		name = name[:maxLength]
 	}
 
+	if ap.ActualName != nil && *ap.ActualName == ap.NamingHint {
+		// This case is when external access provider is imported. We try to avoid renaming if possible.
+		if _, found := g.existingNames[*ap.ActualName]; !found {
+			// Actual name was not used before so we can use it directly
+			g.existingNames[*ap.ActualName] = 0
+
+			return *ap.ActualName, nil
+		}
+		// Else we will generate a new name
+	} //nolint:wsl
+
 	if ap.ActualName != nil {
 		// Search for post fix ID
 		originalNameSplit := strings.Split(*ap.ActualName, fmt.Sprintf("%[1]c%[1]c", g.splitCharacter))

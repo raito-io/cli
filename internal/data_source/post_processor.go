@@ -112,7 +112,7 @@ func (p *PostProcessor) postProcessDataObject(do *data_source.DataObject, output
 	var raitoOwnerTag *tag.Tag
 
 	for _, t := range do.Tags {
-		if !strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
+		if t.Key != constants.RaitoOwnerTagKey {
 			continue
 		}
 

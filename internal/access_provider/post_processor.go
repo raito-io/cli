@@ -135,7 +135,7 @@ func (p *PostProcessor) processOverwriteOwners(accessProvider *sync_from_target.
 	var raitoOwnerTag *tag.Tag
 
 	for _, t := range accessProvider.Tags {
-		if !strings.EqualFold(t.Key, constants.RaitoOwnerTagKey) {
+		if t.Key != constants.RaitoOwnerTagKey {
 			continue
 		}
 

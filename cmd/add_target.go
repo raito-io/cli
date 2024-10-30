@@ -395,12 +395,16 @@ func fetchPluginInfo(connector string) (*pl.PluginInfo, bool, bool) {
 	isDataSource := false
 	isIdentityStore := false
 
-	for _, pluginType := range pluginInfo.Type {
-		if pluginType == pl.PluginType_PLUGIN_TYPE_FULL_DS_SYNC {
-			isDataSource = true
-			break
-		} else if pluginType == pl.PluginType_PLUGIN_TYPE_IS_SYNC {
-			isIdentityStore = true
+	if pluginInfo.Type == nil { // To support legacy cases where the plugin type is not set
+		isDataSource = true
+	} else {
+		for _, pluginType := range pluginInfo.Type {
+			if pluginType == pl.PluginType_PLUGIN_TYPE_FULL_DS_SYNC || pluginType == pl.PluginType_PLUGIN_TYPE_UNKNOWN {
+				isDataSource = true
+				break
+			} else if pluginType == pl.PluginType_PLUGIN_TYPE_IS_SYNC {
+				isIdentityStore = true
+			}
 		}
 	}
 

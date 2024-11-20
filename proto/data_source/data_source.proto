@@ -122,6 +122,7 @@ message MaskingMetadata {
   repeated MaskingType maskTypes = 1;
   string defaultMaskExternalName = 2;
   repeated string maskOverridePermissions = 3;
+  repeated  string applicableTypes = 4;
 }
 
 message MaskingType {
@@ -133,6 +134,7 @@ message MaskingType {
 
 message FilterMetadata {
   repeated string filterOverridePermissions = 1;
+  repeated string applicableTypes = 2;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

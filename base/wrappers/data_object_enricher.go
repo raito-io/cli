@@ -9,6 +9,7 @@ import (
 	"github.com/raito-io/cli/base/data_object_enricher"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/util/config"
+	error2 "github.com/raito-io/cli/internal/error"
 	"github.com/raito-io/cli/internal/util/jsonstream"
 )
 
@@ -53,7 +54,7 @@ func (f *dataObjectEnricherFunction) Enrich(ctx context.Context, config *data_ob
 		}
 
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic during data object enrich: %v", r)
+			err = error2.NewRecoverErrorf("panic during data object enrich: %v", r)
 
 			logger.Error(fmt.Sprintf("Panic during data object enrich: %v\n\n%s", r, string(debug.Stack())))
 		}

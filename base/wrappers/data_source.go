@@ -8,6 +8,7 @@ import (
 
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/util/config"
+	error2 "github.com/raito-io/cli/internal/error"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=DataSourceObjectHandler --with-expecter
@@ -51,7 +52,7 @@ func (s *dataSourceSyncFunction) SyncDataSource(ctx context.Context, config *dat
 		}
 
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic during data source sync: %v", r)
+			err = error2.NewRecoverErrorf("panic during data source sync: %v", r)
 
 			logger.Error(fmt.Sprintf("Panic during data source sync: %v\n\n%s", r, string(debug.Stack())))
 		}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/raito-io/cli/base/tag"
+	error2 "github.com/raito-io/cli/internal/error"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=TagHandler --with-expecter
@@ -41,7 +42,7 @@ func (t *tagSyncFunction) SyncTags(ctx context.Context, config *tag.TagSyncConfi
 		}
 
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic during tag sync: %v", r)
+			err = error2.NewRecoverErrorf("panic during tag sync: %v", r)
 
 			logger.Error(fmt.Sprintf("Panic during tag sync: %v\n\n%s", r, string(debug.Stack())))
 		}

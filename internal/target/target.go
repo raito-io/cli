@@ -16,6 +16,7 @@ import (
 	"github.com/raito-io/cli/base/util/error/grpc_error"
 	iconfig "github.com/raito-io/cli/internal/config"
 	"github.com/raito-io/cli/internal/constants"
+	error2 "github.com/raito-io/cli/internal/error"
 	"github.com/raito-io/cli/internal/health_check"
 	"github.com/raito-io/cli/internal/target/types"
 )
@@ -63,7 +64,7 @@ func RunTargets(ctx context.Context, baseConfig *types.BaseConfig, runTarget Tar
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = multierror.Append(err, fmt.Errorf("recover from panic in RunTargets: %v", r))
+			err = multierror.Append(err, error2.NewRecoverErrorf("recover from panic in RunTargets: %v", r))
 		}
 	}()
 

@@ -13,6 +13,7 @@ import (
 	"github.com/raito-io/cli/base/util/error/grpc_error"
 	plugin2 "github.com/raito-io/cli/base/util/plugin"
 	"github.com/raito-io/cli/internal/constants"
+	error2 "github.com/raito-io/cli/internal/error"
 	gql "github.com/raito-io/cli/internal/graphql"
 	"github.com/raito-io/cli/internal/job"
 	"github.com/raito-io/cli/internal/logging"
@@ -139,7 +140,7 @@ func execute(ctx context.Context, targetID string, jobID string, syncType string
 		if r := recover(); r != nil {
 			cfg.TargetLogger.Error(fmt.Sprintf("Panic occurred during %s sync: %v", syncTypeLabel, r))
 
-			err = fmt.Errorf("panic occurred during %s sync", syncTypeLabel)
+			err = error2.NewRecoverErrorf("panic occurred during %s sync", syncTypeLabel)
 
 			taskEventUpdater.SetStatusToFailed(ctx, err)
 		}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/raito-io/cli/base/resource_provider"
+	error2 "github.com/raito-io/cli/internal/error"
 )
 
 type ResourceProviderSyncer interface {
@@ -40,7 +41,7 @@ func (r *ResourceProvisionSyncFunction) UpdateResources(ctx context.Context, con
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failure during resource provisioning: %v", err))
 		} else if r := recover(); r != nil {
-			err = fmt.Errorf("panic during resource provisioning: %v", r)
+			err = error2.NewRecoverErrorf("panic during resource provisioning: %v", r)
 
 			logger.Error(fmt.Sprintf("Panic during resource provisioning: %v\n\n%s", r, string(debug.Stack())))
 		} else {

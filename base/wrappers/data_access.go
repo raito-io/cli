@@ -12,6 +12,7 @@ import (
 	"github.com/raito-io/cli/base/access_provider/sync_from_target"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	"github.com/raito-io/cli/base/util/config"
+	error2 "github.com/raito-io/cli/internal/error"
 )
 
 //go:generate go run github.com/vektra/mockery/v2 --name=AccessProviderHandler --with-expecter
@@ -71,7 +72,7 @@ func (s *DataAccessSyncFunction) SyncFromTarget(ctx context.Context, config *acc
 		}
 
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic during access provider sync from target: %v", r)
+			err = error2.NewRecoverErrorf("panic during access provider sync from target: %v", r)
 
 			logger.Error(fmt.Sprintf("Panic during access provider sync from target: %v\n\n%s", r, string(debug.Stack())))
 		}
@@ -113,7 +114,7 @@ func (s *DataAccessSyncFunction) SyncToTarget(ctx context.Context, config *acces
 		}
 
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic during access provider sync to target: %v", r)
+			err = error2.NewRecoverErrorf("panic during access provider sync to target: %v", r)
 
 			logger.Error(fmt.Sprintf("Panic during access provider sync to target: %v\n\n%s", r, string(debug.Stack())))
 		}

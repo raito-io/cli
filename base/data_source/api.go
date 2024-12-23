@@ -21,6 +21,7 @@ const (
 	ColumnMasking   = "columnMasking"
 	RowFiltering    = "rowFiltering"
 	ColumnFiltering = "columnFiltering"
+	DataSharing     = "dataSharing"
 
 	/*
 		The list of standard Data Object Types

@@ -1,6 +1,7 @@
 package sync_from_target
 
 import (
+	"github.com/raito-io/cli/base/access_provider/types"
 	"github.com/raito-io/cli/base/data_source"
 	"github.com/raito-io/cli/base/tag"
 )
@@ -15,9 +16,9 @@ type AccessProvider struct {
 	// Deprecated: use ActualName and What fields directory
 	Access []*Access `yaml:"access" json:"access"`
 
-	Action Action   `json:"action"`
-	Policy string   `json:"policy"`
-	Who    *WhoItem `yaml:"who" json:"who"`
+	Action types.Action `json:"action"`
+	Policy string       `json:"policy"`
+	Who    *WhoItem     `yaml:"who" json:"who"`
 
 	Owners *OwnersInput `json:"owners,omitempty"` // Deprecated, use RaitoOwnerTag instead
 
@@ -62,19 +63,10 @@ type WhoItem struct {
 	Users           []string `yaml:"users" json:"users"`
 	Groups          []string `yaml:"groups" json:"groups"`
 	AccessProviders []string `yaml:"accessProviders" json:"accessProviders"`
+	Recipients      []string `yaml:"recipients" json:"recipients"`
 }
 
 type WhatItem struct {
 	DataObject  *data_source.DataObjectReference `yaml:"dataObject" json:"dataObject"`
 	Permissions []string                         `yaml:"permissions" json:"permissions"`
 }
-
-type Action int
-
-const (
-	Promise Action = iota
-	Grant
-	Deny
-	Mask
-	Filtered
-)

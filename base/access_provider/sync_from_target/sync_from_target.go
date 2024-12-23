@@ -7,12 +7,12 @@
 package sync_from_target
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/aws/smithy-go/ptr"
+
 	"github.com/raito-io/cli/base/access_provider"
 	error2 "github.com/raito-io/cli/base/util/error"
 	"github.com/raito-io/cli/base/util/match"
@@ -233,31 +233,4 @@ func (d *accessProviderFileCreator) createTargetFile() error {
 	d.targetFile = f
 
 	return nil
-}
-
-var actionNames = [...]string{"Promise", "Grant", "Deny", "Mask", "Filtered"}
-var actionNameMap = map[string]Action{"Promise": Promise, "Grant": Grant, "Deny": Deny, "Mask": Mask, "Filtered": Filtered}
-
-// UnmarshalJSON unmashals a quoted json string to the enum value
-func (s *Action) UnmarshalJSON(b []byte) error {
-	var j string
-
-	err := json.Unmarshal(b, &j)
-	if err != nil {
-		fmt.Println(err.Error()) //nolint:forbidigo
-		return err
-	}
-	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
-	*s = actionNameMap[j]
-
-	return nil
-}
-
-// MarshalJSON marshals the enum as a quoted json string
-func (s Action) MarshalJSON() ([]byte, error) {
-	buffer := bytes.NewBufferString(`"`)
-	buffer.WriteString(actionNames[s])
-	buffer.WriteString(`"`)
-
-	return buffer.Bytes(), nil
 }

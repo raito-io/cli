@@ -8,6 +8,7 @@ import (
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target/naming_hint"
+	"github.com/raito-io/cli/base/access_provider/types"
 	"github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/base/wrappers"
 )
@@ -66,11 +67,11 @@ func (s *accessProviderRoleSyncFunction) SyncAccessProviderToTarget(ctx context.
 		var err2 error
 
 		switch ap.Action {
-		case sync_to_target.Mask:
+		case types.Mask:
 			_, masksMap, masksToRemove, err2 = handleAccessProvider(ap, masksMap, masksToRemove, accessProviderFeedbackHandler, uniqueRoleNameGenerator)
-		case sync_to_target.Filtered:
+		case types.Filtered:
 			_, filtersMap, filtersToRemove, err2 = handleAccessProvider(ap, filtersMap, filtersToRemove, accessProviderFeedbackHandler, uniqueRoleNameGenerator)
-		case sync_to_target.Grant, sync_to_target.Purpose:
+		case types.Grant, types.Purpose:
 			var roleName string
 			roleName, rolesMap, rolesToRemove, err2 = handleAccessProvider(ap, rolesMap, rolesToRemove, accessProviderFeedbackHandler, uniqueRoleNameGenerator)
 			apIdNameMap[ap.Id] = roleName

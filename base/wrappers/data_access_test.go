@@ -16,6 +16,7 @@ import (
 	"github.com/raito-io/cli/base/access_provider/sync_from_target/mocks"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	mocks2 "github.com/raito-io/cli/base/access_provider/sync_to_target/mocks"
+	"github.com/raito-io/cli/base/access_provider/types"
 	config2 "github.com/raito-io/cli/base/util/config"
 	error2 "github.com/raito-io/cli/base/util/error"
 )
@@ -130,7 +131,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 				Delete:      false,
 				Name:        "Ap1",
 				NamingHint:  "NameHint1",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			},
 			{
 				Id:          "AP2",
@@ -138,7 +139,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 				Delete:      false,
 				Name:        "Ap2",
 				NamingHint:  "NameHint2",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			},
 			{
 				ActualName:  &actualName1,
@@ -147,7 +148,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 				Delete:      true,
 				Name:        "Ap3",
 				NamingHint:  "NameHint3",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			},
 			{
 				Id:          "AP4",
@@ -155,7 +156,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders(t *testing.T) {
 				Delete:      true,
 				Name:        "Ap4",
 				NamingHint:  "NameHint4",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			},
 		},
 	}
@@ -258,7 +259,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFile
 				Delete:      false,
 				Name:        "Ap1",
 				NamingHint:  "NameHint1",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			},
 			{
 				Id:          "AP2",
@@ -266,7 +267,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnFeedbackFile
 				Delete:      false,
 				Name:        "Ap2",
 				NamingHint:  "NameHint2",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			},
 		},
 	}
@@ -317,7 +318,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnSync(t *test
 				Delete:      false,
 				Name:        "Ap1",
 				NamingHint:  "NameHint1",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			},
 			{
 				Id:          "AP4",
@@ -325,7 +326,7 @@ func TestDataAccessSyncFunction_SyncToTarget_AccessProviders_ErrorOnSync(t *test
 				Delete:      true,
 				Name:        "Ap4",
 				NamingHint:  "NameHint4",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			},
 		},
 	}

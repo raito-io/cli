@@ -15,6 +15,7 @@ import (
 	"github.com/raito-io/cli/base/access_provider/sync_to_target"
 	mocks2 "github.com/raito-io/cli/base/access_provider/sync_to_target/mocks"
 	"github.com/raito-io/cli/base/access_provider/sync_to_target/naming_hint"
+	"github.com/raito-io/cli/base/access_provider/types"
 	"github.com/raito-io/cli/base/util/config"
 )
 
@@ -76,7 +77,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      false,
 					Name:        "Ap1",
 					NamingHint:  "NameHint1",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					Id:          "AP2",
@@ -84,7 +85,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      false,
 					Name:        "Ap2",
 					NamingHint:  "NameHint2",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					ActualName:  &actualName1,
@@ -93,7 +94,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      true,
 					Name:        "Ap3",
 					NamingHint:  "NameHint3",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					Id:          "AP4",
@@ -101,7 +102,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      true,
 					Name:        "Ap4",
 					NamingHint:  "NameHint4",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 			},
 		}
@@ -115,7 +116,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 			Delete:      true,
 			Name:        "Ap3",
 			NamingHint:  "NameHint3",
-			Action:      sync_to_target.Grant,
+			Action:      types.Grant,
 		}}, mock.Anything, accessFeedBackFileCreator, &configMap).Return(nil).Once()
 
 		syncer := accessProviderRoleSyncFunction{
@@ -145,7 +146,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 				Delete:      true,
 				Name:        "Ap3",
 				NamingHint:  "NameHint3",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			}},
 			map[string]*sync_to_target.AccessProvider{
 				"NAME_HINT1": accessProvidersImport.AccessProviders[0],
@@ -169,7 +170,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      false,
 					Name:        "Ap1",
 					NamingHint:  "NameHint1",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					Id:          "AP2",
@@ -177,7 +178,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      false,
 					Name:        "Ap2",
 					NamingHint:  "NameHint2",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					ActualName:  &actualName1,
@@ -186,7 +187,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      true,
 					Name:        "Ap3",
 					NamingHint:  "NameHint3",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					Id:          "AP4",
@@ -194,7 +195,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      true,
 					Name:        "Ap4",
 					NamingHint:  "NameHint4",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					Id:          "Mask1",
@@ -202,7 +203,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      false,
 					Name:        "Mask1",
 					NamingHint:  "NameHintMask1",
-					Action:      sync_to_target.Mask,
+					Action:      types.Mask,
 				},
 				{
 					Id:          "Mask2",
@@ -211,7 +212,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Name:        "Mask2",
 					NamingHint:  "NameHintMask2",
 					ActualName:  ptr.String("ActualNameMask2"),
-					Action:      sync_to_target.Mask,
+					Action:      types.Mask,
 				},
 			},
 		}
@@ -224,14 +225,14 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 			Name:        "Mask2",
 			NamingHint:  "NameHintMask2",
 			ActualName:  ptr.String("ActualNameMask2"),
-			Action:      sync_to_target.Mask,
+			Action:      types.Mask,
 		}}, map[string]*sync_to_target.AccessProvider{"NAME_HINT_MASK1": {
 			Id:          "Mask1",
 			Description: "Mask1Description",
 			Delete:      false,
 			Name:        "Mask1",
 			NamingHint:  "NameHintMask1",
-			Action:      sync_to_target.Mask,
+			Action:      types.Mask,
 		},
 		}, map[string]string{
 			"AP1": "NAME_HINT1",
@@ -247,7 +248,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 			Delete:      true,
 			Name:        "Ap3",
 			NamingHint:  "NameHint3",
-			Action:      sync_to_target.Grant,
+			Action:      types.Grant,
 		}}, mock.Anything, accessFeedBackFileCreator, &configMap).Return(nil).Once().NotBefore(maskCall)
 
 		syncer := accessProviderRoleSyncFunction{
@@ -277,7 +278,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 				Delete:      true,
 				Name:        "Ap3",
 				NamingHint:  "NameHint3",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			}},
 			map[string]*sync_to_target.AccessProvider{
 				"NAME_HINT1": accessProvidersImport.AccessProviders[0],
@@ -301,7 +302,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      false,
 					Name:        "Ap1",
 					NamingHint:  "NameHint1",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					Id:          "AP2",
@@ -309,7 +310,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      false,
 					Name:        "Ap2",
 					NamingHint:  "NameHint2",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					ActualName:  &actualName1,
@@ -318,7 +319,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      true,
 					Name:        "Ap3",
 					NamingHint:  "NameHint3",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					Id:          "AP4",
@@ -326,7 +327,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      true,
 					Name:        "Ap4",
 					NamingHint:  "NameHint4",
-					Action:      sync_to_target.Grant,
+					Action:      types.Grant,
 				},
 				{
 					Id:          "Filter1",
@@ -334,7 +335,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Delete:      false,
 					Name:        "Filter1",
 					NamingHint:  "NameHintFilter1",
-					Action:      sync_to_target.Filtered,
+					Action:      types.Filtered,
 				},
 				{
 					Id:          "Filter2",
@@ -343,7 +344,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 					Name:        "Filter2",
 					NamingHint:  "NameHintFilter2",
 					ActualName:  ptr.String("ActualNameFilter2"),
-					Action:      sync_to_target.Filtered,
+					Action:      types.Filtered,
 				},
 			},
 		}
@@ -356,14 +357,14 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 			Name:        "Filter2",
 			NamingHint:  "NameHintFilter2",
 			ActualName:  ptr.String("ActualNameFilter2"),
-			Action:      sync_to_target.Filtered,
+			Action:      types.Filtered,
 		}}, map[string]*sync_to_target.AccessProvider{"NAME_HINT_FILTER1": {
 			Id:          "Filter1",
 			Description: "Filter1Description",
 			Delete:      false,
 			Name:        "Filter1",
 			NamingHint:  "NameHintFilter1",
-			Action:      sync_to_target.Filtered,
+			Action:      types.Filtered,
 		},
 		}, map[string]string{
 			"AP1": "NAME_HINT1",
@@ -379,7 +380,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 			Delete:      true,
 			Name:        "Ap3",
 			NamingHint:  "NameHint3",
-			Action:      sync_to_target.Grant,
+			Action:      types.Grant,
 		}}, mock.Anything, accessFeedBackFileCreator, &configMap).Return(nil).Once().NotBefore(filterCall)
 
 		syncer := accessProviderRoleSyncFunction{
@@ -409,7 +410,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget(t *testing.T)
 				Delete:      true,
 				Name:        "Ap3",
 				NamingHint:  "NameHint3",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			}},
 			map[string]*sync_to_target.AccessProvider{
 				"NAME_HINT1": accessProvidersImport.AccessProviders[0],
@@ -436,7 +437,7 @@ func TestAccessProviderRoleSyncFunction_SyncAccessProviderToTarget_ErrorOnNameGe
 				Delete:      false,
 				Name:        "Ap1",
 				NamingHint:  "NameHint1",
-				Action:      sync_to_target.Grant,
+				Action:      types.Grant,
 			},
 		},
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/raito-io/cli/base/access_provider"
+	"github.com/raito-io/cli/base/access_provider/types"
 )
 
 func TestParseImportFileYaml(t *testing.T) {
@@ -39,7 +40,7 @@ func validateParsedAccessFile(t *testing.T, parsed *AccessProviderImport, err er
 	assert.Equal(t, "blah", ap.Name)
 	assert.Equal(t, "Lots of blah", ap.Description)
 	assert.Equal(t, "Blah_", ap.NamingHint)
-	assert.Equal(t, Mask, ap.Action)
+	assert.Equal(t, types.Mask, ap.Action)
 	require.NotNil(t, ap.Type)
 	assert.Equal(t, "role_test", *ap.Type)
 

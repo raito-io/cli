@@ -37,6 +37,13 @@ const (
 	Object     = "object"
 	Folder     = "folder"
 	File       = "file"
+
+	/*
+		The list of standard data origins
+	*/
+	OriginInternal = "Internal"
+	OriginExternal = "External"
+	OriginShared   = "Shared"
 )
 
 type GlobalPermission string

@@ -80,6 +80,9 @@ message DataObjectType {
 
   // Children describes all the data object types that could be a direct child of this data object type.
   repeated string children = 7;
+
+  // DataOrigin describes the origin of the data object type.
+  string dataOrigin = 8;
 }
 
 message AccessProviderType {

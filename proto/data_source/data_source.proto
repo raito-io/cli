@@ -54,6 +54,9 @@ message MetaData {
 
   // filterMetadata provides addition information about available row filters
   FilterMetadata filterMetadata = 9;
+
+  // shareMetadata provides additional information about data sharing
+  ShareMetadata shareMetadata = 10;
 }
 
 message DataObjectType {
@@ -77,6 +80,9 @@ message DataObjectType {
 
   // Children describes all the data object types that could be a direct child of this data object type.
   repeated string children = 7;
+
+  // DataOrigin describes the origin of the data object type.
+  string dataOrigin = 8;
 }
 
 message AccessProviderType {
@@ -122,7 +128,7 @@ message MaskingMetadata {
   repeated MaskingType maskTypes = 1;
   string defaultMaskExternalName = 2;
   repeated string maskOverridePermissions = 3;
-  repeated  string applicableTypes = 4;
+  repeated string applicableTypes = 4;
 }
 
 message MaskingType {
@@ -135,6 +141,12 @@ message MaskingType {
 message FilterMetadata {
   repeated string filterOverridePermissions = 1;
   repeated string applicableTypes = 2;
+}
+
+message ShareMetadata {
+  repeated string applicableTypes = 1;
+  string commonParentType = 2;
+  string dataSourceShareIdentifier = 3;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

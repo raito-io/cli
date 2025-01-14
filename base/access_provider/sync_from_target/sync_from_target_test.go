@@ -11,8 +11,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/smithy-go/ptr"
-	"github.com/raito-io/cli/base/tag"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/raito-io/cli/base/access_provider/types"
+	"github.com/raito-io/cli/base/tag"
 
 	"github.com/raito-io/cli/base/access_provider"
 	"github.com/raito-io/cli/base/data_source"
@@ -65,7 +67,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 		NotInternalizable: true,
 		Name:              "AP2",
 		NamingHint:        "AP2Hint",
-		Action:            Filtered,
+		Action:            types.Filtered,
 		Who: &WhoItem{
 			Users:  []string{"uid1", "uid2"},
 			Groups: []string{"gid1", "gid2"},
@@ -102,7 +104,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.False(t, apsr[0].NotInternalizable)
 	assert.Equal(t, "AP1", apsr[0].Name)
 	assert.Equal(t, "AP1Hint", apsr[0].NamingHint)
-	assert.Equal(t, Promise, apsr[0].Action)
+	assert.Equal(t, types.Promise, apsr[0].Action)
 	assert.Equal(t, 1, len(apsr[0].Who.Users))
 	assert.Equal(t, "uid1", apsr[0].Who.Users[0])
 	assert.Equal(t, 1, len(apsr[0].Who.Groups))
@@ -120,7 +122,7 @@ func TestAccessProviderFileCreator(t *testing.T) {
 	assert.True(t, apsr[1].NotInternalizable)
 	assert.Equal(t, "AP2", apsr[1].Name)
 	assert.Equal(t, "AP2Hint", apsr[1].NamingHint)
-	assert.Equal(t, Filtered, apsr[1].Action)
+	assert.Equal(t, types.Filtered, apsr[1].Action)
 	assert.Equal(t, 2, len(apsr[1].Who.Users))
 	assert.Equal(t, "uid1", apsr[1].Who.Users[0])
 	assert.Equal(t, "uid2", apsr[1].Who.Users[1])

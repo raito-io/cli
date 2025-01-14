@@ -20,9 +20,9 @@ ADD proto /app/proto
 ADD scripts /app/scripts
 
 RUN apk add --no-cache make
-RUN go install github.com/bufbuild/buf/cmd/buf@v1.30.0
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.33
-RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3
+RUN go install github.com/bufbuild/buf/cmd/buf@v1.49.0
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.2
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 
 RUN make generate
 RUN go build -o raito -ldflags="-X main.version=$VERSION -X main.date=$COMMIT_DATE" main.go

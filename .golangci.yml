@@ -24,7 +24,8 @@ linters-settings:
       - paramTypeCombine
 
   govet:
-    check-shadowing: true
+    enable:
+      - shadow
 
   revive:
     rules:
@@ -108,7 +109,9 @@ linters:
 run:
   issues-exit-code: 1
   tests: false
-  skip-files:
+
+issues:
+  exclude-files:
     - ".*mock.*\\.go$"
     - ".*\\.pb\\.go$"
 

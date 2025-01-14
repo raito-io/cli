@@ -21,6 +21,7 @@ const (
 	ColumnMasking   = "columnMasking"
 	RowFiltering    = "rowFiltering"
 	ColumnFiltering = "columnFiltering"
+	DataSharing     = "dataSharing"
 
 	/*
 		The list of standard Data Object Types
@@ -36,6 +37,13 @@ const (
 	Object     = "object"
 	Folder     = "folder"
 	File       = "file"
+
+	/*
+		The list of standard data origins
+	*/
+	OriginInternal = "Internal"
+	OriginExternal = "External"
+	OriginShared   = "Shared"
 )
 
 type GlobalPermission string

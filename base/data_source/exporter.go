@@ -19,15 +19,17 @@ import (
 
 // DataObject represents a data object in the format that is suitable to be imported into a Raito data source.
 type DataObject struct {
-	ExternalId       string       `json:"externalId"`
-	Name             string       `json:"name"`
-	FullName         string       `json:"fullName"`
-	Type             string       `json:"type"`
-	Description      string       `json:"description"`
-	ParentExternalId string       `json:"parentExternalId"`
-	Tags             []*tag.Tag   `json:"tags"`
-	DataType         *string      `json:"dataType,omitempty"`
-	Owners           *OwnersInput `json:"owners,omitempty"` // Deprecated, use RaitoOwnerTag instead
+	ExternalId              string       `json:"externalId"`
+	Name                    string       `json:"name"`
+	FullName                string       `json:"fullName"`
+	Type                    string       `json:"type"`
+	Description             string       `json:"description"`
+	ParentExternalId        string       `json:"parentExternalId"`
+	Tags                    []*tag.Tag   `json:"tags"`
+	DataType                *string      `json:"dataType,omitempty"`
+	ShareProviderIdentifier *string      `json:"shareProviderIdentifier,omitempty"`
+	ShareIdentifier         *string      `json:"shareIdentifier,omitempty"`
+	Owners                  *OwnersInput `json:"owners,omitempty"` // Deprecated, use RaitoOwnerTag instead
 }
 
 type OwnersInput struct {

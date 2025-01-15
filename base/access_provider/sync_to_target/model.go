@@ -37,6 +37,9 @@ type AccessProvider struct {
 	ActualName *string    `yaml:"actualName" json:"actualName"`
 	What       []WhatItem `yaml:"what" json:"what"`
 	DeleteWhat []WhatItem `yaml:"deleteWhat" json:"deleteWhat"`
+
+	// Share properties
+	CommonDataObject *string `yaml:"commonDataObject,omitempty" json:"commonDataObject,omitempty"`
 }
 
 type Access struct {

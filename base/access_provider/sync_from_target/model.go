@@ -26,27 +26,30 @@ type AccessProvider struct {
 
 	// NotInternalizable means that the entire access provider is locked
 	NotInternalizable       bool    `json:"notInternalizable"`
-	WhoLocked               *bool   `json:"whoLocked"`
-	WhoLockedReason         *string `json:"whoLockedReason"`
-	InheritanceLocked       *bool   `json:"inheritanceLocked"`
-	InheritanceLockedReason *string `json:"inheritanceLockedReason"`
-	WhatLocked              *bool   `json:"whatLocked"`
-	WhatLockedReason        *string `json:"whatLockedReason"`
-	NameLocked              *bool   `json:"nameLocked"`
-	NameLockedReason        *string `json:"nameLockedReason"`
-	DeleteLocked            *bool   `json:"deleteLocked"`
-	DeleteLockedReason      *string `json:"deleteLockedReason"`
-	OwnersLocked            *bool   `json:"ownersLocked"`
-	OwnersLockedReason      *string `json:"ownersLockedReason"`
+	WhoLocked               *bool   `json:"whoLocked,omitempty"`
+	WhoLockedReason         *string `json:"whoLockedReason,omitempty"`
+	InheritanceLocked       *bool   `json:"inheritanceLocked,omitempty"`
+	InheritanceLockedReason *string `json:"inheritanceLockedReason,omitempty"`
+	WhatLocked              *bool   `json:"whatLocked,omitempty"`
+	WhatLockedReason        *string `json:"whatLockedReason,omitempty"`
+	NameLocked              *bool   `json:"nameLocked,omitempty"`
+	NameLockedReason        *string `json:"nameLockedReason,omitempty"`
+	DeleteLocked            *bool   `json:"deleteLocked,omitempty"`
+	DeleteLockedReason      *string `json:"deleteLockedReason,omitempty"`
+	OwnersLocked            *bool   `json:"ownersLocked,omitempty"`
+	OwnersLockedReason      *string `json:"ownersLockedReason,omitempty"`
 
 	ActualName string `yaml:"actualName" json:"actualName"`
 	// Who represents who has access to the 'what'. Nil means that the 'who' is unknown.
 	What []WhatItem `yaml:"what" json:"what"`
 
 	// Allows the plugin to indicate that the access provider is incomplete (because not all who items, what items or permissions could be handled)
-	Incomplete *bool `json:"incomplete"`
+	Incomplete *bool `json:"incomplete,omitempty"`
 
 	Tags []*tag.Tag `json:"tags"`
+
+	// Share properties
+	CommonWhatDataObject *string `json:"commonWhatDataObject,omitempty"`
 }
 
 type OwnersInput struct {

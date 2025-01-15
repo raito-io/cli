@@ -114,6 +114,7 @@ issues:
   exclude-files:
     - ".*mock.*\\.go$"
     - ".*\\.pb\\.go$"
+  uniq-by-line: false
 
 output:
   path-prefix: ''
@@ -122,4 +123,3 @@ output:
     - format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
-  uniq-by-line: false

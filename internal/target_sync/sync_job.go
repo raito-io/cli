@@ -45,10 +45,6 @@ func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTarget
 			targetConfig.TargetLogger.Error(fmt.Sprintf("Failed execution: %s", syncError.Error()), "success")
 		} else {
 			targetConfig.TargetLogger.Info(fmt.Sprintf("Successfully finished execution in %s", time.Since(start).Round(time.Millisecond)), "success")
-
-			if jobId != "" {
-				s.jobIds = append(s.jobIds, jobId)
-			}
 		}
 	}()
 
@@ -63,6 +59,8 @@ func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTarget
 	if err != nil {
 		return err
 	}
+
+	s.jobIds = append(s.jobIds, jobId)
 
 	targetConfig.TargetLogger.Info(fmt.Sprintf("Start job with jobID: '%s'", jobId))
 	job.UpdateJobEvent(targetConfig, jobId, job.InProgress, nil)
@@ -123,6 +121,10 @@ func (s *SyncJob) TargetSync(ctx context.Context, targetConfig *types.BaseTarget
 }
 
 func (s *SyncJob) Finalize(ctx context.Context, baseConfig *types.BaseConfig, options *target.Options) error {
+	if len(s.jobIds) == 0 {
+		return errors.New("no job IDs found to send end of target")
+	}
+
 	return sendEndOfTarget(ctx, baseConfig, s.jobIds, options)
 }
 

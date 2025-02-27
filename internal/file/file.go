@@ -11,108 +11,119 @@ import (
 	"os"
 	"time"
 
+	"github.com/avast/retry-go/v4"
+
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/connect"
 )
 
-func hashFile(file string) (string, int64, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return "", 0, fmt.Errorf("unable to open file %q: %w", file, err)
-	}
-
-	defer f.Close()
-
-	fi, err := f.Stat()
-	if err != nil {
-		return "", 0, fmt.Errorf("unable to get file info of %q: %w", file, err)
-	}
-
-	fileSize := fi.Size()
-
+func calculateChecksum(file io.Reader) (string, error) {
 	h := sha256.New()
-	if _, err = io.Copy(h, f); err != nil {
-		return "", 0, fmt.Errorf("unable to hash file %q: %w", file, err)
+	if _, err := io.Copy(h, file); err != nil {
+		return "", fmt.Errorf("unable to hash file %q: %w", file, err)
 	}
 
-	return base64.StdEncoding.EncodeToString(h.Sum(nil)), fileSize, nil
+	return base64.StdEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
 // UploadFile uploads the file from the given path.
 // It returns the key to use to pass to the Raito backend to use the file.
 func UploadFile(file string, config *types.BaseTargetConfig) (string, error) {
-	hash, fileSize, err := hashFile(file)
-	if err != nil {
-		return "", fmt.Errorf("hash file: %w", err)
-	}
-
-	url, key, headers, err := getUploadURL(config, hash, fileSize)
-
-	config.TargetLogger.Info(fmt.Sprintf("Uploading file %q to %q", file, url))
-
-	if err != nil {
-		return "", err
-	}
-
-	return uploadFileToBucket(file, config, url, key, headers)
+	return uploadHashedFile(file, config, getUploadURL)
 }
 
 // UploadLogFile uploads the file from the given path.
 // It returns the key to use to pass to the Raito backend to use the file.
 func UploadLogFile(file string, config *types.BaseTargetConfig, task string) (string, error) {
-	url, key, _, err := getUploadLogsURL(config, task)
+	return uploadHashedFile(file, config, func(config *types.BaseTargetConfig, checksum string, fileSize int64) (string, string, map[string][]string, error) {
+		return getUploadLogsURL(config, task, checksum, fileSize)
+	})
+}
+
+func uploadHashedFile(file string, config *types.BaseTargetConfig, uploadURL func(config *types.BaseTargetConfig, checksum string, fileSize int64) (string, string, map[string][]string, error)) (string, error) {
+	data, err := os.Open(file)
+	if err != nil {
+		return "", fmt.Errorf("open file: %w", err)
+	}
+
+	defer data.Close()
+
+	checksum, err := calculateChecksum(data)
+	if err != nil {
+		return "", fmt.Errorf("checksum file: %w", err)
+	}
+
+	config.TargetLogger.Debug(fmt.Sprintf("Calculated checksum %q for file %q", checksum, file))
+
+	_, err = data.Seek(0, 0)
+	if err != nil {
+		return "", fmt.Errorf("seek file: %w", err)
+	}
+
+	stats, err := data.Stat()
+	if err != nil {
+		return "", fmt.Errorf("stat file: %w", err)
+	}
+
+	url, key, headers, err := uploadURL(config, checksum, stats.Size())
+
 	if err != nil {
 		return "", err
 	}
 
-	return uploadFileToBucket(file, config, url, key, map[string][]string{})
+	return uploadFileToBucket(data, url, key, stats.Size(), headers, config)
 }
 
-func uploadFileToBucket(file string, config *types.BaseTargetConfig, url string, key string, headers map[string][]string) (string, error) {
+func uploadFileToBucket(data *os.File, url string, key string, contentLength int64, headers map[string][]string, config *types.BaseTargetConfig) (string, error) {
 	start := time.Now()
 
-	data, err := os.Open(file)
-	if err != nil {
-		return "", fmt.Errorf("unable to open file %q: %s", file, err.Error())
-	}
-
-	defer data.Close()
-	stat, err := data.Stat()
-
-	if err != nil {
-		return "", fmt.Errorf("error while getting file size of %q: %s", file, err.Error())
-	}
-	req, err := http.NewRequest("PUT", url, data)
-
-	if err != nil {
-		return "", fmt.Errorf("error while executing upload: %s", err.Error())
-	}
-	req.ContentLength = stat.Size()
-
-	for headerKey, headerValue := range headers {
-		for _, value := range headerValue {
-			req.Header.Add(headerKey, value)
+	err := retry.Do(func() error {
+		// Ensure to read data from the beginning (in case of retries)
+		_, err := data.Seek(0, 0)
+		if err != nil {
+			return fmt.Errorf("error while seeking file: %s", err.Error())
 		}
-	}
 
-	client := &http.Client{}
-	res, err := client.Do(req)
+		req, err := http.NewRequest("PUT", url, data)
+
+		if err != nil {
+			return fmt.Errorf("error while executing upload: %s", err.Error())
+		}
+		req.ContentLength = contentLength
+
+		for headerKey, headerValue := range headers {
+			for _, value := range headerValue {
+				req.Header.Add(headerKey, value)
+			}
+		}
+
+		client := &http.Client{}
+		res, err := client.Do(req)
+
+		if err != nil {
+			return fmt.Errorf("error while executing upload: %s", err.Error())
+		}
+
+		defer res.Body.Close()
+
+		if res.StatusCode >= 300 {
+			buf, _ := io.ReadAll(res.Body)
+
+			return fmt.Errorf("error (HTTP %d) while executing upload: %s - %s", res.StatusCode, res.Status, string(buf))
+		}
+
+		return nil
+	}, retry.Attempts(3), retry.DelayType(retry.BackOffDelay), retry.OnRetry(func(attempt uint, err error) {
+		config.TargetLogger.Warn(fmt.Sprintf("Failed to upload file with key %q. Will retry (%d/3): %s", key, attempt, err.Error()))
+	}))
 
 	if err != nil {
-		return "", fmt.Errorf("error while executing upload: %s", err.Error())
-	}
-
-	defer res.Body.Close()
-
-	if res.StatusCode >= 300 {
-		buf, _ := io.ReadAll(res.Body)
-
-		return "", fmt.Errorf("error (HTTP %d) while executing upload: %s - %s", res.StatusCode, res.Status, string(buf))
+		return "", err
 	}
 
 	sec := time.Since(start).Round(time.Millisecond)
 
-	config.TargetLogger.Info(fmt.Sprintf("Successfully uploaded file with key %q (%d bytes) in %s.", key, stat.Size(), sec))
+	config.TargetLogger.Info(fmt.Sprintf("Successfully uploaded file with key %q (%d bytes) in %s.", key, contentLength, sec))
 
 	return key, nil
 }
@@ -120,16 +131,21 @@ func uploadFileToBucket(file string, config *types.BaseTargetConfig, url string,
 // GetUploadURL creates an S3 URL to upload a file to.
 // It returns the upload URL and the file key to use to pass to the Raito backend to use it.
 // Returns two empty strings if something went wrong (error logged)
-func getUploadURL(config *types.BaseTargetConfig, hash string, fileSize int64) (string, string, map[string][]string, error) {
+func getUploadURL(config *types.BaseTargetConfig, checksum string, fileSize int64) (string, string, map[string][]string, error) {
 	params := url.Values{}
-	params.Add("sha256", hash)
+	params.Add("sha256", checksum)
 	params.Add("contentLength", fmt.Sprintf("%d", fileSize))
 
 	return getUploadUrlAndKey(config, "file/upload/signed-url?"+params.Encode())
 }
 
-func getUploadLogsURL(config *types.BaseTargetConfig, task string) (string, string, map[string][]string, error) {
-	return getUploadUrlAndKey(config, "file/upload/logs/signed-url?task="+task)
+func getUploadLogsURL(config *types.BaseTargetConfig, task string, checksum string, fileSize int64) (string, string, map[string][]string, error) {
+	params := url.Values{}
+	params.Add("task", task)
+	params.Add("sha256", checksum)
+	params.Add("contentLength", fmt.Sprintf("%d", fileSize))
+
+	return getUploadUrlAndKey(config, "file/upload/logs/signed-url?"+params.Encode())
 }
 
 func getUploadUrlAndKey(config *types.BaseTargetConfig, path string) (string, string, map[string][]string, error) {

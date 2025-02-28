@@ -201,7 +201,7 @@ func UploadServer(fail bool, didUpload *bool, correctContent *bool) *httptest.Se
 
 func RaitoServer(uploadUrl string, failUploadUrl bool, failQuery bool, importResult string, calledImport *bool, gotSignedURL *bool) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		if req.RequestURI == "/file/upload/signed-url" && req.Method == "GET" {
+		if strings.HasPrefix(req.RequestURI, "/file/upload/signed-url") && req.Method == "GET" {
 			if failUploadUrl {
 				res.WriteHeader(500)
 				res.Write([]byte("failed"))

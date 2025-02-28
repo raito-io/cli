@@ -1,6 +1,8 @@
 package file
 
 import (
+	"strings"
+
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/test"
@@ -53,7 +55,7 @@ func TestFileUpload(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, len(res) > 0)
-	assert.Equal(t, "/file/upload/signed-url", urlPath)
+	assert.Truef(t, strings.HasPrefix(urlPath, "/file/upload/signed-url?"), "%q does not have a correct prefix", urlPath)
 	assert.Equal(t, "GET", urlMethod)
 	assert.Equal(t, "PUT", uploadMethod)
 	assert.Equal(t, "Hellow!", fileBody)

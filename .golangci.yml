@@ -51,10 +51,6 @@ linters-settings:
   predeclared:
     ignore: "error"
 
-  gomnd:
-    ignored-functions:
-      - 'math.*' # Magic number generation, should be fixed and removed?
-
   cyclop:
     max-complexity: 20
     skip-tests: true

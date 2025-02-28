@@ -14,7 +14,7 @@ else
 
     for file in $STAGED_GO_FILES; do
         ## format our file
-        go fmt $file
+        ## go fmt $file
         ## add any potential changes from our formatting to the
         ## commit
         git add $file

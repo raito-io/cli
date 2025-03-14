@@ -83,6 +83,8 @@ message DataObjectType {
 
   // DataOrigin describes the origin of the data object type.
   string dataOrigin = 8;
+
+  DataObjectShareProperties shareProperties = 9;
 }
 
 message AccessProviderType {
@@ -167,6 +169,15 @@ message DataObjectTypePermission {
 
   // CannotBeGranted can be set to false if this permission cannot be granted through the Raito Cloud UI.
   bool cannotBeGranted = 6;
+}
+
+
+message DataObjectShareProperties {
+  // shareablePermissions is a list of permissions that can be shared of a specific data object
+  repeated string shareablePermissions = 1;
+
+  // correspondingSharedTypes is a list of data object types that can be shared with the current data object type
+  repeated string correspondingSharedTypes = 2;
 }
 
 //NoLinting ToSupport GQL schema (temporarily)

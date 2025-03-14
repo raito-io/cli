@@ -40,6 +40,8 @@ type AccessProvider struct {
 
 	// Share properties
 	CommonDataObject *string `yaml:"commonDataObject,omitempty" json:"commonDataObject,omitempty"`
+
+	Owners []Owner `yaml:"owners,omitempty" json:"owners,omitempty"`
 }
 
 type Access struct {
@@ -60,6 +62,12 @@ type WhoItem struct {
 
 	// Recipients contains all identifiers of data share recipients
 	Recipients []string `yaml:"recipients,omitempty" json:"recipients,omitempty"`
+}
+
+type Owner struct {
+	Email       *string `yaml:"email,omitempty" json:"email,omitempty"`
+	AccountName *string `yaml:"accountName,omitempty" json:"accountName,omitempty"`
+	GroupName   *string `yaml:"groupName,omitempty" json:"groupName,omitempty"`
 }
 
 type WhatItem struct {

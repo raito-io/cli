@@ -26,3 +26,7 @@ accessProviders:
           - select
           - delete
     actualName: Blahkes
+    owners:
+      - email: owner@raito.io
+        accountName: ownerAccount
+      - groupName: ownerGroup

@@ -27,6 +27,15 @@
           },
           "permissions": [ "update", "select", "delete" ]
         }
+      ],
+      "owners": [
+        {
+          "email": "owner@raito.io",
+          "accountName": "ownerAccount"
+        },
+        {
+          "groupName": "ownerGroup"
+        }
       ]
     }
   ]

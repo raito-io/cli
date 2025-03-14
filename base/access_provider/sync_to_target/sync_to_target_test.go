@@ -51,4 +51,9 @@ func validateParsedAccessFile(t *testing.T, parsed *AccessProviderImport, err er
 	assert.Equal(t, 2, len(ap.What[0].Permissions))
 	assert.Equal(t, "zzz.yyy.table2", ap.What[1].DataObject.FullName)
 	assert.Equal(t, 3, len(ap.What[1].Permissions))
+
+	assert.Len(t, ap.Owners, 2)
+	assert.Equal(t, "owner@raito.io", *ap.Owners[0].Email)
+	assert.Equal(t, "ownerAccount", *ap.Owners[0].AccountName)
+	assert.Equal(t, "ownerGroup", *ap.Owners[1].GroupName)
 }

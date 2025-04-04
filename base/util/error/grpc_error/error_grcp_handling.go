@@ -39,7 +39,7 @@ func ToStatusError(err error) error {
 	unwrappedErr := err
 
 	for {
-		if unwrappedErr == nil {
+		if unwrappedErr == nil { //nolint:staticcheck
 			break
 		}
 

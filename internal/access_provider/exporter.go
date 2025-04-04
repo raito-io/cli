@@ -62,9 +62,10 @@ func (d *accessProviderExporter) TriggerExport(ctx context.Context, jobId string
 		return job.Failed, "", err
 	}
 
-	if subtask.Status == job.Failed {
+	switch subtask.Status { //nolint:exhaustive
+	case job.Failed:
 		return job.Failed, "", fmt.Errorf("export failed on server: [%s]", strings.Join(subtask.Errors, ", "))
-	} else if subtask.Status == job.TimeOut {
+	case job.TimeOut:
 		return job.TimeOut, "", fmt.Errorf("export timeout on server")
 	}
 

@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/spf13/viper"
+
+	"github.com/raito-io/cli/internal/util/tag"
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
@@ -96,9 +97,9 @@ func (i *identityStoreImporter) doImport(jobId string, userKey string, groupKey 
             subtaskId
           }
         }
-    }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, userKey, groupKey, strings.Replace(tag.SerializeTagList(i.config.TagSourcesScope), "\"", "\\\"", -1))
+    }" }"`, jobId, i.config.IdentityStoreId, i.config.DeleteUntouched, i.config.ReplaceGroups, userKey, groupKey, strings.ReplaceAll(tag.SerializeTagList(i.config.TagSourcesScope), "\"", "\\\""))
 
-	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
 	res := Response{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseConfig, &res)

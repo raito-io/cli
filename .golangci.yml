@@ -1,72 +1,21 @@
-linters-settings:
-  #check:
-  #check-type-assertions: true
-  goconst:
-    min-len: 2
-    min-occurrences: 3
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport # https://github.com/go-critic/go-critic/issues/845
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
-      - importShadow # not important for now
-      - unnamedResult # not important
-      - hugeParam #to be checked
-      - commentFormatting
-      - paramTypeCombine
-
-  govet:
-    enable:
-      - shadow
-
-  revive:
-    rules:
-      - name: exported
-        disabled: true
-
-  wsl:
-    allow-assign-and-anything: true
-    allow-cuddle-declarations: true # should be false
-
-  nolintlint:
-    allow-no-explanation: [ ]
-    require-explanation: false
-    require-specific: false
-
-  gosec:
-    excludes:
-      - G404 # To be checked: Insecure random number source (rand)
-
-  stylecheck:
-    checks: [ "all", "-ST1003"] # ST1003: No underscores in package names should be fixed and removed?
-
-  predeclared:
-    ignore: "error"
-
-  cyclop:
-    max-complexity: 20
-    skip-tests: true
-    package-average: 0.0
-
-  exhaustive:
-    default-signifies-exhaustive: true
-
+version: "2"
+run:
+  issues-exit-code: 1
+  tests: false
+output:
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true
+  path-prefix: ""
 linters:
-  disable-all: true
+  default: none
   enable:
     - asasalint
     - bodyclose
     - copyloopvar
     - cyclop
-    #- depguard #We should create a correct config to enabe depguard
     - dogsled
     - dupl
     - dupword
@@ -76,46 +25,104 @@ linters:
     - forbidigo
     - goconst
     - gocritic
-    - gofmt
-    - goimports
-    #- gomnd # Magic numbers should be fixed and enable gomnd,
     - gocyclo
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
-    - nolintlint
     - nakedret
+    - nolintlint
     - prealloc
     - predeclared
     - revive
     - staticcheck
-    - stylecheck
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
-    # - wrapcheck # 3th party errors should be wrapped to not lose context
     - wsl
-
-run:
-  issues-exit-code: 1
-  tests: false
-
+  settings:
+    cyclop:
+      max-complexity: 20
+      package-average: 0
+    exhaustive:
+      default-signifies-exhaustive: true
+    goconst:
+      min-len: 2
+      min-occurrences: 3
+    gocritic:
+      disabled-checks:
+        - dupImport
+        - ifElseChain
+        - octalLiteral
+        - whyNoLint
+        - wrapperFunc
+        - importShadow
+        - unnamedResult
+        - hugeParam
+        - commentFormatting
+        - paramTypeCombine
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gosec:
+      excludes:
+        - G404
+    govet:
+      enable:
+        - shadow
+    nolintlint:
+      require-explanation: false
+      require-specific: false
+    predeclared:
+      ignore:
+        - error
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+    staticcheck:
+      checks:
+        - all
+        - -ST1003
+    wsl:
+      allow-assign-and-anything: true
+      allow-cuddle-declarations: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - cyclop
+        path: (.+)_test\.go
+    paths:
+      - .*mock.*\.go$
+      - .*\.pb\.go$
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-files:
-    - ".*mock.*\\.go$"
-    - ".*\\.pb\\.go$"
   uniq-by-line: false
-
-output:
-  path-prefix: ''
-  sort-results: true
-  formats:
-    - format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
+  max-same-issues: 0
+  #new-from-merge-base: main # ONLY lint new changes that are not in main branch
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - .*mock.*\.go$
+      - .*\.pb\.go$
+      - third_party$
+      - builtin$
+      - examples$

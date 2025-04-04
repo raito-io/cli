@@ -25,7 +25,7 @@ func SetMetaData(config types.BaseTargetConfig, metadata *identity_store.MetaDat
         }
     }" }"`, config.IdentityStoreId, metadata.Type, metadata.Icon, metadata.CanBeLinked, metadata.CanBeMaster)
 
-	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
 	err := graphql.ExecuteGraphQLWithoutResponse(gqlQuery, &config.BaseConfig)
 	if err != nil {

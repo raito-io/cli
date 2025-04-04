@@ -282,12 +282,13 @@ func runTaskPartSync(ctx context.Context, cfg *types.BaseTargetConfig, syncTypeL
 			return err
 		}
 
-		if subtask.Status == job.Failed {
+		switch subtask.Status { //nolint:exhaustive
+		case job.Failed:
 			var subtaskErr error
 			subtaskErr = multierror.Append(subtaskErr, array.Map(subtask.Errors, func(err *string) error { return errors.New(*err) })...)
 
 			return subtaskErr
-		} else if subtask.Status == job.TimeOut {
+		case job.TimeOut:
 			return fmt.Errorf("synchronizing %s timed out", syncType)
 		}
 

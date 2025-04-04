@@ -35,9 +35,9 @@ jobs:
         run: make build
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.64.5
+          version: v2.0.1
 
       - name: Lint Protobuf
         uses: bufbuild/buf-lint-action@v1
@@ -46,6 +46,15 @@ jobs:
         run: make test
 
       - uses: codecov/codecov-action@v5
+        if: ${{ !cancelled() }}
+        name: Upload coverage to Codecov
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./junit-tests.xml

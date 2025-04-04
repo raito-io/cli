@@ -12,6 +12,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/pterm/pterm"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
+
 	dapc "github.com/raito-io/cli/base/access_provider"
 	baseconfig "github.com/raito-io/cli/base/util/config"
 	"github.com/raito-io/cli/base/util/match"
@@ -24,9 +28,6 @@ import (
 	"github.com/raito-io/cli/internal/target/types"
 	"github.com/raito-io/cli/internal/util/file"
 	"github.com/raito-io/cli/internal/version_management"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 func initApplyAccessCommand(rootCmd *cobra.Command) {
@@ -66,7 +67,7 @@ func executeApplyAccessCmd(cmd *cobra.Command, args []string) {
 
 func applyAccessCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 2 {
-		return errors.New("Expected 2 arguments after the apply-access command.") //nolint:stylecheck
+		return errors.New("expected 2 arguments after the apply-access command") //nolint:stylecheck
 	}
 
 	otherArgs := cmd.Flags().Args()
@@ -75,30 +76,30 @@ func applyAccessCmd(cmd *cobra.Command, args []string) error {
 
 	baseConfig, err := target.BuildBaseConfigFromFlags(baseLogger, health_check.NewDummyHealthChecker(baseLogger), otherArgs)
 	if err != nil {
-		return fmt.Errorf("An error occurred while parsing the configuration file: %s", err.Error()) //nolint:stylecheck
+		return fmt.Errorf("parsing the configuration file: %w", err) //nolint:stylecheck
 	}
 
 	tConfig, err := target.GetTargetConfig(args[0], baseConfig)
 	if err != nil {
-		return fmt.Errorf("An error occurred while locating the requested target in the configuration file: %s", err.Error()) //nolint:stylecheck
+		return fmt.Errorf("locating the requested target in the configuration file: %w", err)
 	}
 
 	if tConfig == nil {
-		return fmt.Errorf("No target %q found in the configuration file.", args[0]) //nolint:stylecheck
+		return fmt.Errorf("no target %q found in the configuration file", args[0])
 	}
 
 	inputFile, err := os.Open(args[1])
 	if err != nil {
-		return fmt.Errorf("Unable to read file %q: %s", args[1], err.Error()) //nolint:stylecheck
+		return fmt.Errorf("unable to read file %q: %w", args[1], err) //nolint:stylecheck
 	}
 
 	if inputFile == nil {
-		return fmt.Errorf("Unable to read file %q", args[1]) //nolint:stylecheck
+		return fmt.Errorf("unable to read file %q", args[1])
 	}
 
 	fullPath, err := filepath.Abs(inputFile.Name())
 	if err != nil {
-		return fmt.Errorf("Unable to determine full path for file %q: %s", args[1], err.Error()) //nolint:stylecheck
+		return fmt.Errorf("determine full path for file %q: %w", args[1], err)
 	}
 
 	pterm.Println()
@@ -115,7 +116,7 @@ func applyAccessCmd(cmd *cobra.Command, args []string) error {
 	filteredFile, filteredAps, totalAps, err := filterAccessProviders(tConfig.Name, fullPath, filters)
 
 	if err != nil {
-		return fmt.Errorf("Error while filtering access providers: %s", err.Error()) //nolint:stylecheck
+		return fmt.Errorf("filtering access providers: %w", err)
 	}
 
 	isFiltered := filteredFile != fullPath
@@ -174,29 +175,29 @@ func requestConfirmation() bool {
 func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile string, isFiltered bool) error {
 	client, err := plugin.NewPluginClient(tConfig.ConnectorName, tConfig.ConnectorVersion, tConfig.TargetLogger)
 	if err != nil {
-		return fmt.Errorf("Error while initializing connector plugin %q: %s", tConfig.ConnectorName, err.Error()) //nolint:stylecheck
+		return fmt.Errorf("initializing connector plugin %q: %w", tConfig.ConnectorName, err)
 	}
 
 	defer client.Close()
 
 	accessSyncer, err := client.GetAccessSyncer()
 	if err != nil {
-		return fmt.Errorf("Error while fetching the access syncer from connector %q: %s", tConfig.ConnectorName, err.Error()) //nolint:stylecheck
+		return fmt.Errorf("fetching the access syncer from connector %q: %w", tConfig.ConnectorName, err)
 	}
 
 	_, err = version_management.IsValidToSync(ctx, accessSyncer, dapc.MinimalCliVersion)
 	if err != nil {
-		return fmt.Errorf("Error while checking version compatibility of connector %q: %s", tConfig.ConnectorName, err.Error()) //nolint:stylecheck
+		return fmt.Errorf("checking version compatibility of connector %q: %w", tConfig.ConnectorName, err)
 	}
 
 	err = tConfig.CalculateFileBackupLocationForRun("apply-access")
 	if err != nil {
-		return fmt.Errorf("Error while setting up backup location: %s", err.Error()) //nolint:stylecheck
+		return fmt.Errorf("setting up backup location: %w", err) //nolint:stylecheck
 	}
 
 	targetFile, err := filepath.Abs(file.CreateUniqueFileNameForTarget(tConfig.Name, "toTarget-accessFeedback", "json"))
 	if err != nil {
-		return fmt.Errorf("Error while creating access feedback file: %s", err.Error()) //nolint:stylecheck
+		return fmt.Errorf("creating access feedback file: %w", err)
 	}
 
 	defer func() {
@@ -219,7 +220,7 @@ func applyAccess(ctx context.Context, tConfig *types.BaseTargetConfig, inputFile
 
 	_, err = accessSyncer.SyncToTarget(ctx, &syncerConfig)
 	if err != nil {
-		return fmt.Errorf("Error while syncing access from file to target %q: %s", tConfig.Name, err.Error()) //nolint:stylecheck
+		return fmt.Errorf("syncing access from file to target %q: %w", tConfig.Name, err)
 	}
 
 	return nil

@@ -129,9 +129,10 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 			}
 
 			// Show error or warning messages separately
-			if level == hclog.Error {
+			switch level { //nolint:exhaustive
+			case hclog.Error:
 				pterm.Error.Println(text)
-			} else if level == hclog.Warn {
+			case hclog.Warn:
 				pterm.Warning.Println(text)
 			}
 		} else {
@@ -150,11 +151,12 @@ func (s *sinkAdapter) Accept(name string, level hclog.Level, msg string, args ..
 }
 
 func (s *sinkAdapter) handleNormalOutput(level hclog.Level, msg string) {
-	if level == hclog.Error {
+	switch level { //nolint:exhaustive
+	case hclog.Error:
 		pterm.Error.Println(msg)
-	} else if level == hclog.Warn {
+	case hclog.Warn:
 		pterm.Warning.Println(msg)
-	} else if level == hclog.Info {
+	case hclog.Info:
 		pterm.Println(msg)
 	}
 }

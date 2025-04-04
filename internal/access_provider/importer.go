@@ -83,7 +83,7 @@ func (d *accessProviderImporter) doImport(jobId string, fileKey string) (job.Job
          }
     }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, fileKey)
 
-	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
 	res := ImportResponse{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseConfig, &res)

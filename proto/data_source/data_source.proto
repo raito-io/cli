@@ -124,6 +124,12 @@ message AccessProviderType {
      Nil indicates that all access provider types are allowed. Otherwise only defined access provider types are allowed to be part of the who list of this access provider type.
   */
   repeated string allowedWhoAccessProviderTypes = 12;
+
+  /*
+    CommonDataObjectType this access provider type lives in a subset of the data source.
+    This can be used to define database roles, application roles, etc.
+   */
+  optional string commonParentType = 13;
 }
 
 message MaskingMetadata {

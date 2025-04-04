@@ -13,7 +13,7 @@ build: generate
 	go build -o raito main.go
 
 test:
-	$(gotestsum) --debug --format pkgname -- -mod=readonly -tags=integration -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt ./...
+	$(gotestsum) --debug --format pkgname --junitfile junit-tests.xml -- -mod=readonly -tags=integration -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt ./...
 	go tool cover -html=coverage.txt -o coverage.html
 
 lint:

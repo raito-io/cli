@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/raito-io/cli/internal/util/tag"
 	"github.com/spf13/viper"
+
+	"github.com/raito-io/cli/internal/util/tag"
 
 	"github.com/raito-io/cli/internal/constants"
 	"github.com/raito-io/cli/internal/file"
@@ -87,9 +88,9 @@ func (d *dataSourceImporter) doImport(jobId, fileKey string) (job.JobStatus, str
             subtaskId
           }
         }
-    }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, fileKey, strings.Replace(tag.SerializeTagList(d.config.TagSourcesScope), "\"", "\\\"", -1))
+    }" }"`, jobId, d.config.DataSourceId, d.config.DeleteUntouched, fileKey, strings.ReplaceAll(tag.SerializeTagList(d.config.TagSourcesScope), "\"", "\\\""))
 
-	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
 	res := Response{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &d.config.BaseConfig, &res)

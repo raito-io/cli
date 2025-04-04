@@ -82,7 +82,7 @@ func (i *accessProviderFeedbackSync) doImport(jobId string, fileKey string) (job
     }" }"
 	`, jobId, i.config.DataSourceId, fileKey)
 
-	gqlQuery = strings.Replace(gqlQuery, "\n", "\\n", -1)
+	gqlQuery = strings.ReplaceAll(gqlQuery, "\n", "\\n")
 
 	res := FeedbackResponse{}
 	_, err := graphql.ExecuteGraphQL(gqlQuery, &i.config.BaseConfig, &res)

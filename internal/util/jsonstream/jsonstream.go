@@ -91,17 +91,18 @@ func parseValue(fieldValue *reflect.Value, value interface{}) error {
 
 	fieldKind := fieldValue.Kind()
 
-	if fieldKind == reflect.Ptr {
+	switch fieldKind {
+	case reflect.Ptr:
 		pointerObject := reflect.New(fieldValue.Type().Elem())
 		pointeeObject := pointerObject.Elem()
-		err := parseValue(&pointeeObject, value)
 
+		err := parseValue(&pointeeObject, value)
 		if err != nil {
 			return err
 		}
 
 		fieldValue.Set(pointerObject)
-	} else if fieldKind == reflect.Struct {
+	case reflect.Struct:
 		innerValues := value.(map[string]interface{})
 		innerObject := reflect.New(fieldValue.Type()).Interface()
 
@@ -111,7 +112,7 @@ func parseValue(fieldValue *reflect.Value, value interface{}) error {
 		}
 
 		fieldValue.Set(reflect.ValueOf(innerObject).Elem())
-	} else if fieldKind == reflect.Slice {
+	case reflect.Slice:
 		innerValues := value.([]interface{})
 		innerObjects := reflect.New(fieldValue.Type()).Elem()
 
@@ -128,7 +129,7 @@ func parseValue(fieldValue *reflect.Value, value interface{}) error {
 		}
 
 		fieldValue.Set(innerObjects)
-	} else {
+	default:
 		fieldValue.Set(reflect.ValueOf(value).Convert(fieldValue.Type()))
 	}
 

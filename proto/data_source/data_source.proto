@@ -126,7 +126,7 @@ message AccessProviderType {
   repeated string allowedWhoAccessProviderTypes = 12;
 
   /*
-    CommonDataObjectType this access provider type lives in a subset of the data source.
+    commonParentType this access provider type lives in a subset of the data source.
     This can be used to define database roles, application roles, etc.
    */
   optional string commonParentType = 13;

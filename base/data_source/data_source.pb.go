@@ -431,7 +431,7 @@ type AccessProviderType struct {
 	// AllowedWhoAccessProviderTypes lists of access provider types that could be in the who list of this access provider type
 	// Nil indicates that all access provider types are allowed. Otherwise only defined access provider types are allowed to be part of the who list of this access provider type.
 	AllowedWhoAccessProviderTypes []string `protobuf:"bytes,12,rep,name=allowedWhoAccessProviderTypes,proto3" json:"allowedWhoAccessProviderTypes,omitempty"`
-	// CommonDataObjectType this access provider type lives in a subset of the data source.
+	// commonParentType this access provider type lives in a subset of the data source.
 	// This can be used to define database roles, application roles, etc.
 	CommonParentType *string `protobuf:"bytes,13,opt,name=commonParentType,proto3,oneof" json:"commonParentType,omitempty"`
 	unknownFields    protoimpl.UnknownFields

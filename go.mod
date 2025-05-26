@@ -13,7 +13,7 @@ require (
 	github.com/avast/retry-go/v4 v4.6.1
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
-	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.52.0
+	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.53.0
 	github.com/aws/smithy-go v1.22.3
 	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
 	github.com/bcicen/jstream v1.0.1
@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.6.3
 	github.com/hashicorp/go-retryablehttp v0.7.7
-	github.com/hasura/go-graphql-client v0.14.0
+	github.com/hasura/go-graphql-client v0.14.3
 	github.com/jinzhu/copier v0.4.0
 	github.com/pterm/pterm v0.12.80
 	github.com/raito-io/bexpression v0.1.2
@@ -34,7 +34,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac
-	google.golang.org/grpc v1.72.0
+	google.golang.org/grpc v1.72.2
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v2 v2.4.0
 )

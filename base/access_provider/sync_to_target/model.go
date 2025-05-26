@@ -82,6 +82,19 @@ type AccessProviderSyncFeedback struct {
 	Type           *string  `yaml:"type" json:"type"`
 	Errors         []string `yaml:"errors" json:"errors"`
 	Warnings       []string `yaml:"warnings" json:"warnings"`
+
+	State *AccessProviderFeedbackState `yaml:"state,omitempty" json:"state,omitempty"`
+}
+
+type AccessProviderFeedbackState struct {
+	Who AccessProviderWhoFeedbackState `yaml:"who" json:"who"`
+}
+
+type AccessProviderWhoFeedbackState struct {
+	Users       []string `yaml:"users,omitempty" json:"users,omitempty"`
+	Groups      []string `yaml:"groups,omitempty" json:"groups,omitempty"`
+	InheritFrom []string `yaml:"inheritFrom,omitempty" json:"inheritFrom,omitempty"`
+	Recipients  []string `yaml:"recipients,omitempty" json:"recipients,omitempty"`
 }
 
 // The legacy format that the appserver still supports. The CLI will convert the new format to the old for now until appserver supports the new format.
